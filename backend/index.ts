@@ -104,6 +104,39 @@ type VerifiedEvidence = {
   capturedAt: string;
 };
 
+type CertificationEvidenceRecord = VerifiedEvidence & {
+  runId: string;
+  releaseFingerprint: string;
+  verdict: 'proved' | 'partial' | 'blocked';
+  verifier: string;
+  environment: string;
+  artifacts: string[];
+  invalidatedAt: string | null;
+  invalidationReason: string | null;
+};
+
+type CertificationRunResult = {
+  pillar: string;
+  status: 'proved' | 'partial' | 'blocked' | 'na';
+  message: string;
+  checkedAt: string;
+};
+
+type CertificationRunRecord = {
+  targetId: string;
+  targetSlug: string;
+  targetName: string;
+  status: 'running' | 'complete' | 'failed';
+  releaseFingerprint: string;
+  sourceSha: string;
+  startedAt: string;
+  finishedAt: string | null;
+  currentPillar: string | null;
+  completedPillars: number;
+  results: CertificationRunResult[];
+  failureReason: string | null;
+};
+
 type ProductRecord = {
   name: string;
   slug: string;
@@ -176,6 +209,8 @@ const IMPROVEMENTS = 'acs_improvements';
 const ENGINE = 'acs_engine';
 const INCIDENTS = 'acs_incidents';
 const TELEMETRY_SNAPSHOTS = 'acs_telemetry_snapshots';
+const CERTIFICATION_RUNS = 'zees_certification_runs';
+const CERTIFICATION_EVIDENCE = 'zees_certification_evidence';
 const PRIVATE_TELEMETRY_URL = 'https://arbm-control.zevanory.workers.dev/telemetry/v1';
 const TELEMETRY_RETRY_DELAYS_MS = [0, 250, 750, 1500];
 const ZEES_VERSION = 'ZEES-16/2026.09';
@@ -618,20 +653,74 @@ function certificationSystem(product: ProductRecord, systems: Array<SystemRecord
   return systemName ? systems.find(item => item.name === systemName) : undefined;
 }
 
-function verifiedEvidence(target: string, pillar: string, kind?: VerifiedEvidence['kind']) {
-  return VERIFIED_EVIDENCE
-    .filter(item => item.target === target && item.pillar === pillar && (!kind || item.kind === kind))
-    .map(item => `${item.text} [${item.sourceRef} · SHA ${item.sourceSha.slice(0, 12)} · ${item.capturedAt}]`);
+function hashFingerprint(input: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
-function buildProductCertification(product: ProductRecord, systems: Array<SystemRecord & { id?: string }>): ProductCertification {
+function certificationReleaseFingerprint(product: ProductRecord, sourceSystem?: SystemRecord & { id?: string }) {
+  const critical = JSON.stringify({
+    slug: product.slug,
+    updatedAt: product.updatedAt,
+    publicUrl: product.publicUrl,
+    checkoutUrl: product.checkoutUrl,
+    deliveryModel: product.deliveryModel,
+    channels: [...product.channels].sort(),
+    gates: product.gates,
+    status: product.status,
+    sourceSha: sourceSystem?.sha || '',
+    sourceCi: sourceSystem?.ci || '',
+    sourceDomain: sourceSystem?.domain || '',
+  });
+  return `zeesrfp_${hashFingerprint(critical)}`;
+}
+
+function formatVerifiedEvidence(item: VerifiedEvidence) {
+  return `${item.text} [${item.sourceRef} · SHA ${item.sourceSha.slice(0, 12)} · ${item.capturedAt}]`;
+}
+
+function verifiedEvidence(
+  target: string,
+  pillar: string,
+  kind: VerifiedEvidence['kind'] | undefined,
+  runtimeEvidence: CertificationEvidenceRecord[],
+  releaseFingerprint: string,
+  sourceSha: string,
+) {
+  const staticItems = VERIFIED_EVIDENCE.filter(item =>
+    item.target === target &&
+    item.pillar === pillar &&
+    (!kind || item.kind === kind) &&
+    (!sourceSha || item.sourceSha === sourceSha)
+  );
+  const runtimeItems = runtimeEvidence.filter(item =>
+    item.target === target &&
+    item.pillar === pillar &&
+    (!kind || item.kind === kind) &&
+    !item.invalidatedAt &&
+    item.releaseFingerprint === releaseFingerprint
+  );
+  return [...staticItems, ...runtimeItems].map(formatVerifiedEvidence);
+}
+
+function buildProductCertification(
+  product: ProductRecord,
+  systems: Array<SystemRecord & { id?: string }>,
+  runtimeEvidence: CertificationEvidenceRecord[] = [],
+): ProductCertification {
   const profile = certificationProfile(product);
   const sourceSystem = certificationSystem(product, systems);
+  const releaseFingerprint = certificationReleaseFingerprint(product, sourceSystem);
+  const sourceSha = sourceSystem?.sha || '';
   const sourceEvidence = sourceSystem?.evidence ?? [];
   const exactLive = Boolean(sourceSystem && sourceSystem.status === 'healthy' && sourceSystem.sha && sourceSystem.ci && !sourceSystem.ci.includes('STALE'));
   const commercial = commercialBlockers(product);
   const ev = (pattern: RegExp) => sourceEvidence.filter(item => pattern.test(item));
-  const snapshot = (pillar: string, kind?: VerifiedEvidence['kind']) => verifiedEvidence(product.slug, pillar, kind);
+  const snapshot = (pillar: string, kind?: VerifiedEvidence['kind']) => verifiedEvidence(product.slug, pillar, kind, runtimeEvidence, releaseFingerprint, sourceSha);
   const e2e = ev(/E2E:|regress/i);
   const recovery = ev(/Recovery:|restore|backup/i);
   const security = ev(/security|sast|dast|owasp|vulnerab/i);
@@ -641,10 +730,18 @@ function buildProductCertification(product: ProductRecord, systems: Array<System
 
   const pillars = ZEES_PILLARS.map<CertificationPillar>(d => {
     const explicit = sourceEvidence.filter(item => item.startsWith(`ZEES:${d.id}:PROVEN:`));
+    const runtimeProven = runtimeEvidence.filter(item =>
+      item.target === product.slug &&
+      item.pillar === d.id &&
+      item.verdict === 'proved' &&
+      item.kind === 'supporting' &&
+      !item.invalidatedAt &&
+      item.releaseFingerprint === releaseFingerprint
+    );
     const snapshotSupporting = snapshot(d.id, 'supporting');
     const snapshotBlocking = snapshot(d.id, 'blocking');
-    if (explicit.length > 0 && exactLive && snapshotBlocking.length === 0) {
-      return { ...d, status: 'proved', rationale: 'Prova ZEES explicita vinculada a fonte live, SHA e CI.', blocker: null, evidence: [...explicit, ...snapshotSupporting] };
+    if ((explicit.length > 0 && exactLive || runtimeProven.length > 0) && snapshotBlocking.length === 0) {
+      return { ...d, status: 'proved', rationale: 'Prova ZEES explícita e reproduzível vinculada à release congelada.', blocker: null, evidence: [...explicit, ...snapshotSupporting] };
     }
     const partial = (rationale: string, blocker: string, evidence: string[] = []): CertificationPillar => ({ ...d, status: 'partial', rationale, blocker, evidence });
     const blocked = (rationale: string, blocker: string, evidence: string[] = []): CertificationPillar => ({ ...d, status: 'blocked', rationale, blocker, evidence });
@@ -710,6 +807,118 @@ function buildProductCertification(product: ProductRecord, systems: Array<System
   const firstBlocking = pillars.find(x => x.status === 'blocked') ?? pillars.find(x => x.status === 'partial') ?? pillars.find(x => x.status === 'external');
   const ready = summary.blocked === 0 && summary.partial === 0 && summary.external === 0 && summary.proved === summary.applicable;
   return { standard: 'ZEVANORY ENGINEERING EXCELLENCE STANDARD', version: ZEES_VERSION, profile, ready, rootBlocker: firstBlocking ? `${firstBlocking.id} - ${firstBlocking.blocker || firstBlocking.rationale}` : null, evidenceCount: new Set(pillars.flatMap(x => x.evidence)).size, summary, pillars };
+}
+
+async function invalidateObsoleteCertificationEvidence(targetSlug: string, releaseFingerprint: string) {
+  const evidence = await db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 });
+  const now = new Date().toISOString();
+  const updates = evidence.items
+    .filter(item => item.target === targetSlug && !item.invalidatedAt && item.releaseFingerprint !== releaseFingerprint)
+    .map(item => ({
+      id: item.id,
+      record: { ...item, invalidatedAt: now, invalidationReason: 'release_fingerprint_changed' },
+    }));
+  if (updates.length) await db.update(CERTIFICATION_EVIDENCE, updates);
+  return updates.length;
+}
+
+function verifierArtifacts(pillar: CertificationPillar, product: ProductRecord, sourceSystem?: SystemRecord & { id?: string }) {
+  return Array.from(new Set([
+    product.publicUrl,
+    product.checkoutUrl,
+    sourceSystem?.domain || '',
+    sourceSystem?.sha ? `sha:${sourceSystem.sha}` : '',
+    ...pillar.evidence,
+  ].filter(Boolean))).slice(0, 12);
+}
+
+async function runCertificationExecutor(targetId: string) {
+  await ensureSeed();
+  await ensureProducts();
+  await refreshTelemetry();
+  const [systems, products, runtime] = await Promise.all([
+    db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
+    db.list<ProductRecord>(productTable(), { limit: 100 }),
+    db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
+  ]);
+  const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
+  const productId = targetId.startsWith('product:') ? targetId.slice('product:'.length) : '';
+  let product: (ProductRecord & { id?: string }) | null = productId ? products.items.find(item => item.id === productId) || null : null;
+  if (targetId === 'system:arbm-one') {
+    product = {
+      name: 'ARBM ONE', slug: 'arbm-one-system', category: 'Sistema privado',
+      description: 'Sistema privado transacional de origem, certificado separadamente do produto comercial ZEVANORY ONE.',
+      publicUrl: 'https://arbmone.api.br/', priceCents: null, currency: 'BRL', checkoutUrl: '',
+      deliveryModel: 'Sistema privado transacional', channels: [], status: 'validation', salesEnabled: false,
+      gates: { legal: false, payment: false, fulfillment: false, support: false },
+      audit: { engineering: null, infrastructure: null, ux: null, observability: null, lastAuditedAt: null },
+      notes: 'ARBM ONE certificado separadamente.', createdAt: '2026-09-19T00:00:00Z', updatedAt: '2026-09-19T00:00:00Z',
+    };
+  }
+  if (!product) throw new Error('certification_target_not_found');
+
+  const sourceSystem = certificationSystem(product, visibleSystems);
+  const releaseFingerprint = certificationReleaseFingerprint(product, sourceSystem);
+  const sourceSha = sourceSystem?.sha || releaseFingerprint;
+  await invalidateObsoleteCertificationEvidence(product.slug, releaseFingerprint);
+
+  const startedAt = new Date().toISOString();
+  const run: CertificationRunRecord = {
+    targetId, targetSlug: product.slug, targetName: product.name, status: 'running', releaseFingerprint,
+    sourceSha, startedAt, finishedAt: null, currentPillar: 'P01', completedPillars: 0, results: [], failureReason: null,
+  };
+  const [runId] = await db.add(CERTIFICATION_RUNS, [run]);
+  if (!runId) throw new Error('certification_run_create_failed');
+
+  try {
+    let currentEvidence = runtime.items.filter(item => !item.invalidatedAt && item.releaseFingerprint === releaseFingerprint);
+    const baseline = buildProductCertification(product, visibleSystems, currentEvidence);
+    for (const definition of ZEES_PILLARS) {
+      const checkedAt = new Date().toISOString();
+      const pillar = baseline.pillars.find(item => item.id === definition.id)!;
+      const status = pillar.status === 'external' ? 'blocked' : pillar.status;
+      const kind: VerifiedEvidence['kind'] = status === 'blocked' ? 'blocking' : 'supporting';
+      const marker = status === 'proved' ? `ZEES:${definition.id}:PROVEN:` : `ZEES:${definition.id}:${status.toUpperCase()}:`;
+      const record: CertificationEvidenceRecord = {
+        target: product.slug,
+        pillar: definition.id,
+        kind,
+        text: `${marker}${pillar.rationale}`,
+        sourceSha,
+        sourceRef: `ZEES Executor ${ZEES_VERSION} · run ${runId}`,
+        capturedAt: checkedAt,
+        runId,
+        releaseFingerprint,
+        verdict: status === 'na' ? 'partial' : status,
+        verifier: `zees-verifier-${definition.id.toLowerCase()}`,
+        environment: sourceSystem?.domain || product.publicUrl || 'internal',
+        artifacts: verifierArtifacts(pillar, product, sourceSystem),
+        invalidatedAt: null,
+        invalidationReason: null,
+      };
+      if (status !== 'na') {
+        await db.add(CERTIFICATION_EVIDENCE, [record]);
+        currentEvidence = [...currentEvidence, record];
+      }
+      run.results.push({ pillar: definition.id, status, message: pillar.blocker || pillar.rationale, checkedAt });
+      run.currentPillar = definition.id;
+      run.completedPillars += 1;
+      await db.update(CERTIFICATION_RUNS, [{ id: runId, record: { ...run } }]);
+    }
+    run.status = 'complete';
+    run.currentPillar = null;
+    run.finishedAt = new Date().toISOString();
+    await db.update(CERTIFICATION_RUNS, [{ id: runId, record: { ...run } }]);
+    const finalEvidence = await db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 });
+    const certification = buildProductCertification(product, visibleSystems, finalEvidence.items);
+    return { runId, releaseFingerprint, sourceSha, certification };
+  } catch (error) {
+    run.status = 'failed';
+    run.failureReason = String(error);
+    run.finishedAt = new Date().toISOString();
+    await db.update(CERTIFICATION_RUNS, [{ id: runId, record: { ...run } }]);
+    throw error;
+  }
 }
 
 async function ensureProducts() {
@@ -1114,18 +1323,20 @@ async function pinLogin(pin: unknown) {
 async function adminData() {
   await ensureSeed();
   await ensureProducts();
-  const [systems, audits, improvements, incidents, engine, products] = await Promise.all([
+  const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns] = await Promise.all([
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
     db.list<AuditRecord>(AUDITS, { limit: 20 }),
     db.list<ImprovementRecord>(IMPROVEMENTS, { limit: 20 }),
     db.list<IncidentRecord>(INCIDENTS, { limit: 20 }),
     db.list<{ lastRun: string }>(ENGINE, { limit: 1 }),
     db.list<ProductRecord>(productTable(), { limit: 100 }),
+    db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
+    db.list<CertificationRunRecord>(CERTIFICATION_RUNS, { limit: 100 }),
   ]);
   const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
   const enriched = products.items.map(product => {
     const base = enrichProduct(product);
-    const certification = buildProductCertification(product, visibleSystems);
+    const certification = buildProductCertification(product, visibleSystems, certificationEvidence.items);
     return { ...base, certification, commercialReady: base.commercialReady && certification.ready, blockers: [...base.blockers, ...(certification.ready ? [] : ['certificacao ZEES-16 incompleta'])] };
   }).sort((x, y) => {
     if (x.status === 'archived' && y.status !== 'archived') return 1;
@@ -1149,7 +1360,7 @@ async function adminData() {
     audit: { engineering: null, infrastructure: null, ux: null, observability: null, lastAuditedAt: null },
     notes: 'ARBM ONE nao e o produto comercial ZEVANORY ONE; evidencias nao sao transferidas entre eles.',
     createdAt: '2026-09-19T00:00:00Z',
-    updatedAt: new Date().toISOString(),
+    updatedAt: '2026-09-19T00:00:00Z',
   };
   const certificationTargets = [
     {
@@ -1157,7 +1368,7 @@ async function adminData() {
       name: 'ARBM ONE',
       kind: 'SISTEMA PRIVADO',
       publicUrl: arbmOneSystemRecord.publicUrl,
-      certification: buildProductCertification(arbmOneSystemRecord, visibleSystems),
+      certification: buildProductCertification(arbmOneSystemRecord, visibleSystems, certificationEvidence.items),
     },
     ...enriched.filter(item => item.status !== 'archived').map(item => ({
       id: `product:${item.id}`,
@@ -1178,6 +1389,7 @@ async function adminData() {
       policy: { zeroSpend: true, failClosed: true, destructiveActions: false, greenRule: 'Somente com evidencia reproduzivel' },
       telemetrySource: 'telemetria privada interna v1',
       lastEngineRun: engine.items[0]?.lastRun ?? new Date().toISOString(),
+      certificationRuns: certificationRuns.items.sort((a, b) => b.startedAt.localeCompare(a.startedAt)).slice(0, 20),
     },
     products: enriched,
     summary: {
@@ -1272,8 +1484,11 @@ export const handler = router({
     const product = normalizeProduct(body);
     if (!product) return error('Produto invalido: informe nome, slug valido e dados consistentes.', 400);
     const blockers = commercialBlockers(product);
-    const systems = await db.list<SystemRecord>(SYSTEMS, { limit: 50 });
-    const certification = buildProductCertification(product, systems.items.filter(item => !deprecatedVisibleSystems.has(item.name)));
+    const [systems, certificationEvidence] = await Promise.all([
+      db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
+      db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
+    ]);
+    const certification = buildProductCertification(product, systems.items.filter(item => !deprecatedVisibleSystems.has(item.name)), certificationEvidence.items);
     if (product.salesEnabled && (blockers.length > 0 || !certification.ready)) {
       const reasons = [...blockers, ...(!certification.ready ? [certification.rootBlocker || 'certificacao ZEES-16 incompleta'] : [])];
       return error(`Venda bloqueada: ${reasons.join('; ')}.`, 409);
@@ -1291,8 +1506,15 @@ export const handler = router({
     const product = normalizeProduct(body, existing);
     if (!product) return error('Produto invalido: informe nome, slug valido e dados consistentes.', 400);
     const blockers = commercialBlockers(product);
-    const systems = await db.list<SystemRecord>(SYSTEMS, { limit: 50 });
-    const certification = buildProductCertification(product, systems.items.filter(item => !deprecatedVisibleSystems.has(item.name)));
+    const [systems, certificationEvidence] = await Promise.all([
+      db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
+      db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
+    ]);
+    const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
+    const releaseFingerprint = certificationReleaseFingerprint(product, certificationSystem(product, visibleSystems));
+    await invalidateObsoleteCertificationEvidence(product.slug, releaseFingerprint);
+    const freshEvidence = await db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 });
+    const certification = buildProductCertification(product, visibleSystems, freshEvidence.items);
     if (product.salesEnabled && (blockers.length > 0 || !certification.ready)) {
       const reasons = [...blockers, ...(!certification.ready ? [certification.rootBlocker || 'certificacao ZEES-16 incompleta'] : [])];
       return error(`Venda bloqueada: ${reasons.join('; ')}.`, 409);
@@ -1311,6 +1533,16 @@ export const handler = router({
     const [updated] = await db.update(productTable(), [{ id: body.id, record: archived }]);
     if (!updated) return error('Nao foi possivel arquivar o produto.', 500);
     return json(enrichProduct({ ...archived, id: body.id }));
+  }],
+  'POST /api/certification/run': [async ctx => {
+    const body = ctx.body as { sessionToken?: string; targetId?: string };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    if (!body.targetId) return error('Alvo de certificacao ausente.', 400);
+    try {
+      return json(await runCertificationExecutor(String(body.targetId)));
+    } catch (err) {
+      return error(`Falha no executor ZEES: ${String(err)}`, 500);
+    }
   }],
   'POST /api/audit/run': [async ctx => {
     if (!await requirePinSession((ctx.body as { sessionToken?: string })?.sessionToken)) return error('Sessao invalida ou expirada.', 401);

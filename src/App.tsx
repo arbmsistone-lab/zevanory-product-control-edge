@@ -75,6 +75,18 @@ type Dashboard = {
     greenRule: string;
   };
   lastEngineRun: string;
+  certificationRuns?: Array<{
+    id: string;
+    targetId: string;
+    targetName: string;
+    status: 'running' | 'complete' | 'failed';
+    releaseFingerprint: string;
+    sourceSha: string;
+    startedAt: string;
+    finishedAt: string | null;
+    completedPillars: number;
+    currentPillar: string | null;
+  }>;
 };
 
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
@@ -360,7 +372,21 @@ function App() {
       await api.post(path, { sessionToken });
       await load();
     } catch {
-      setError('A operacao nao foi concluida. O sistema permaneceu fail-closed.');
+      setError('A operação não foi concluída. O sistema permaneceu fail-closed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runCertification = async () => {
+    if (!selectedCertificationTarget) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api.post('/api/certification/run', { sessionToken, targetId: selectedCertificationTarget.id });
+      await load();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'A certificação não foi concluída. O sistema permaneceu fail-closed.');
     } finally {
       setBusy(false);
     }
@@ -685,7 +711,10 @@ function App() {
                 <section className='panel certSummaryPanel'>
                   <div className='certTitleRow'>
                     <div><p className='kicker'>{selectedCertificationTarget.certification.version} · {selectedCertificationTarget.kind}</p><h2>{selectedCertificationTarget.name}</h2><p>{certificationProfileLabel(selectedCertificationTarget.certification.profile)}</p></div>
-                    <span className={selectedCertificationTarget.certification.ready ? 'certSeal ready' : 'certSeal blocked'}>{selectedCertificationTarget.certification.ready ? 'CERTIFICADO' : 'NAO CERTIFICADO'}</span>
+                    <div className='certActions'>
+                      <span className={selectedCertificationTarget.certification.ready ? 'certSeal ready' : 'certSeal blocked'}>{selectedCertificationTarget.certification.ready ? 'CERTIFICADO' : 'NÃO CERTIFICADO'}</span>
+                      <button className='primary compact' onClick={runCertification} disabled={busy}><RefreshCw size={14} className={busy ? 'spin' : ''} />{busy ? 'Executando P01–P16...' : 'Executar certificação'}</button>
+                    </div>
                   </div>
                   <div className='certSummaryGrid'>
                     <span><b>{selectedCertificationTarget.certification.summary.proved}</b><small>Provados</small></span>
@@ -695,6 +724,10 @@ function App() {
                     <span><b>{selectedCertificationTarget.certification.evidenceCount}</b><small>Evidencias</small></span>
                     <span><b>{selectedCertificationTarget.certification.summary.provedControls}/{selectedCertificationTarget.certification.summary.applicableControls}</b><small>Controles provados</small></span>
                   </div>
+                  {dashboard.certificationRuns?.find(run => run.targetId === selectedCertificationTarget.id) && (() => {
+                    const run = dashboard.certificationRuns!.find(item => item.targetId === selectedCertificationTarget.id)!;
+                    return <div className='certRunStrip'><span><b>Última execução</b>{run.status.toUpperCase()}</span><span><b>Release</b>{run.releaseFingerprint}</span><span><b>SHA</b>{run.sourceSha.slice(0, 12)}</span><span><b>Pilares</b>{run.completedPillars}/16</span></div>;
+                  })()}
                   {!selectedCertificationTarget.certification.ready && <div className='rootBlocker'><AlertTriangle size={16} /><span><b>Bloqueador raiz</b>{selectedCertificationTarget.certification.rootBlocker}</span></div>}
                 </section>
                 <section className='pillarGrid'>

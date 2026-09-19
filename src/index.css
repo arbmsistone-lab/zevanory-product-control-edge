@@ -964,6 +964,7 @@ a {
 .certTitleRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .certTitleRow h2 { margin: 3px 0; font-size: 19px; }
 .certTitleRow p { margin: 0; color: #7890aa; font-size: 9px; }
+.certActions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .certSeal { border-radius: 999px; padding: 7px 10px; font-size: 9px; font-weight: 900; white-space: nowrap; }
 .certSeal.ready { background: #0d2a25; color: #86e6c8; }
 .certSeal.blocked { background: #342115; color: #f4c987; }
@@ -972,6 +973,9 @@ a {
 .certSummaryGrid b, .certSummaryGrid small { display: block; }
 .certSummaryGrid b { color: #e2edf9; font-size: 13px; }
 .certSummaryGrid small { margin-top: 2px; color: #6f86a1; font-size: 7px; text-transform: uppercase; }
+.certRunStrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
+.certRunStrip span { border: 1px solid #19314b; border-radius: 8px; background: #081522; color: #8ba0b8; padding: 7px 8px; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.certRunStrip b { display: block; margin-bottom: 2px; color: #dce8f6; font-size: 7px; text-transform: uppercase; }
 .rootBlocker { display: flex; align-items: flex-start; gap: 8px; margin-top: 9px; border: 1px solid #4b3922; border-radius: 9px; background: #21180f; color: #cfb07a; padding: 9px; font-size: 9px; }
 .rootBlocker span, .rootBlocker b { display: block; }
 .rootBlocker b { margin-bottom: 2px; color: #f0cb7e; text-transform: uppercase; }
