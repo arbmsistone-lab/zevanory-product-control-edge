@@ -1,0 +1,22 @@
+name: Build Neon Function Bundle
+on:
+  workflow_dispatch:
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --prefix neon-a
+      - run: |
+          mkdir -p neon-a/dist
+          npx --yes esbuild neon-a/index.ts --bundle --platform=node --target=node24 --format=esm --banner:js="import{createRequire as ___cr}from'module';import{fileURLToPath as ___f}from'url';import{dirname as ___d}from'path';const require=___cr(import.meta.url);const __filename=___f(import.meta.url);const __dirname=___d(__filename);" --outfile=neon-a/dist/index.mjs
+          cd neon-a/dist
+          zip function.zip index.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neon-function-bundle
+          path: neon-a/dist/function.zip
+          if-no-files-found: error
