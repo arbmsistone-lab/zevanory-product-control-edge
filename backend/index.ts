@@ -822,6 +822,19 @@ async function invalidateObsoleteCertificationEvidence(targetSlug: string, relea
   return updates.length;
 }
 
+async function invalidatePriorRunEvidence(targetSlug: string, releaseFingerprint: string) {
+  const evidence = await db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 });
+  const now = new Date().toISOString();
+  const updates = evidence.items
+    .filter(item => item.target === targetSlug && !item.invalidatedAt && item.releaseFingerprint === releaseFingerprint && item.runId)
+    .map(item => ({
+      id: item.id,
+      record: { ...item, invalidatedAt: now, invalidationReason: 'superseded_by_new_run' },
+    }));
+  if (updates.length) await db.update(CERTIFICATION_EVIDENCE, updates);
+  return updates.length;
+}
+
 function verifierArtifacts(pillar: CertificationPillar, product: ProductRecord, sourceSystem?: SystemRecord & { id?: string }) {
   return Array.from(new Set([
     product.publicUrl,
@@ -836,10 +849,9 @@ async function runCertificationExecutor(targetId: string) {
   await ensureSeed();
   await ensureProducts();
   await refreshTelemetry();
-  const [systems, products, runtime] = await Promise.all([
+  const [systems, products] = await Promise.all([
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
     db.list<ProductRecord>(productTable(), { limit: 100 }),
-    db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
   ]);
   const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
   const productId = targetId.startsWith('product:') ? targetId.slice('product:'.length) : '';
@@ -861,6 +873,7 @@ async function runCertificationExecutor(targetId: string) {
   const releaseFingerprint = certificationReleaseFingerprint(product, sourceSystem);
   const sourceSha = sourceSystem?.sha || releaseFingerprint;
   await invalidateObsoleteCertificationEvidence(product.slug, releaseFingerprint);
+  await invalidatePriorRunEvidence(product.slug, releaseFingerprint);
 
   const startedAt = new Date().toISOString();
   const run: CertificationRunRecord = {
@@ -871,7 +884,8 @@ async function runCertificationExecutor(targetId: string) {
   if (!runId) throw new Error('certification_run_create_failed');
 
   try {
-    let currentEvidence = runtime.items.filter(item => !item.invalidatedAt && item.releaseFingerprint === releaseFingerprint);
+    const freshRuntime = await db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 });
+    let currentEvidence = freshRuntime.items.filter(item => !item.invalidatedAt && item.releaseFingerprint === releaseFingerprint);
     const baseline = buildProductCertification(product, visibleSystems, currentEvidence);
     for (const definition of ZEES_PILLARS) {
       const checkedAt = new Date().toISOString();
