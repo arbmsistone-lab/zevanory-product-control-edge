@@ -63,6 +63,17 @@ type Incident = {
   state: 'open' | 'watching';
 };
 
+type GlobalTrust = {
+  state: string;
+  sha: string | null;
+  evidenceRoot: string | null;
+  policyVersion: string | null;
+  quorum: { passed: number; total: number; required: number; conflicts: number; independentKeys: number };
+  zea10: { proven: number; partial: number; blocked: number };
+  engines: Array<{ id: string; state: string }>;
+  checkedAt: string | null;
+};
+
 type Dashboard = {
   systems: SystemItem[];
   audits: AuditItem[];
@@ -308,6 +319,7 @@ function LoginScreen({ onSuccess }: { onSuccess: (token: string) => void }) {
 
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
@@ -332,6 +344,7 @@ function App() {
       setError('');
       const response = await api.post('/api/admin/bootstrap', { sessionToken: token });
       setDashboard(response.data.dashboard);
+      setGlobalTrust(response.data.globalTrust ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setSummary(response.data.summary);
@@ -380,6 +393,7 @@ function App() {
     setSessionToken('');
     setAuthState('signedout');
     setDashboard(null);
+    setGlobalTrust(null);
   };
 
   const handleLogin = (token: string) => {
@@ -578,6 +592,18 @@ function App() {
         <span><Gauge size={16} /> ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
         <span><ShieldCheck size={16} /> FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
         <span><AlertTriangle size={16} /> VENDA SEM GATE: BLOQUEADA</span>
+      </section>
+
+      <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
+        <div className='trustState'>
+          <ShieldCheck size={16} />
+          <span>TRUST CHAIN</span>
+          <strong>{globalTrust?.state ?? 'BLOCKED'}</strong>
+        </div>
+        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
+        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : 'sem prova'}</b></div>
+        <div><small>SHA</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
+        <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
       </section>
 
       <nav className='tabs' aria-label='Areas do ZEVANORY PRODUCT CONTROL'>

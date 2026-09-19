@@ -1338,10 +1338,67 @@ async function pinLogin(pin: unknown) {
   return { ok: true, status: 200, ...(await createPinSession()) };
 }
 
+type GlobalTrust = {
+  state: string;
+  sha: string | null;
+  evidenceRoot: string | null;
+  policyVersion: string | null;
+  quorum: { passed: number; total: number; required: number; conflicts: number; independentKeys: number };
+  zea10: { proven: number; partial: number; blocked: number };
+  engines: Array<{ id: string; state: string }>;
+  checkedAt: string | null;
+};
+
+async function loadGlobalTrust(): Promise<GlobalTrust> {
+  try {
+    const response = await fetch('https://zevanory.api.br/api/control-plane', {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) throw new Error('control_plane_http_' + response.status);
+    const data = await response.json() as any;
+    const trust = data?.trust_chain || {};
+    const counts = data?.policy?.counts || {};
+    return {
+      state: String(trust.state || 'BLOCKED'),
+      sha: String(trust.artifact_sha || data?.release?.deployment?.commit_sha || '') || null,
+      evidenceRoot: String(trust.evidence_root || '') || null,
+      policyVersion: String(trust.policy_version || '') || null,
+      quorum: {
+        passed: Number(trust.passed || 0),
+        total: Number(trust.total || 3),
+        required: Number(trust.required || 2),
+        conflicts: Number(trust.conflicts || 0),
+        independentKeys: Number(trust.independent_keys || 0),
+      },
+      zea10: {
+        proven: Number(counts.proven || 0),
+        partial: Number(counts.partial || 0),
+        blocked: Number(counts.blocked || 0),
+      },
+      engines: Array.isArray(trust.engines)
+        ? trust.engines.map((item:any)=>({ id:String(item?.id||''), state:String(item?.state||'UNKNOWN') })).filter((item:any)=>item.id)
+        : [],
+      checkedAt: String(trust?.ledger?.checked_at || '') || null,
+    };
+  } catch {
+    return {
+      state: 'BLOCKED',
+      sha: null,
+      evidenceRoot: null,
+      policyVersion: null,
+      quorum: { passed: 0, total: 3, required: 2, conflicts: 0, independentKeys: 0 },
+      zea10: { proven: 0, partial: 0, blocked: 10 },
+      engines: [],
+      checkedAt: null,
+    };
+  }
+}
+
 async function adminData() {
   await ensureSeed();
   await ensureProducts();
-  const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns] = await Promise.all([
+  const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns, globalTrust] = await Promise.all([
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
     db.list<AuditRecord>(AUDITS, { limit: 20 }),
     db.list<ImprovementRecord>(IMPROVEMENTS, { limit: 20 }),
@@ -1350,6 +1407,7 @@ async function adminData() {
     db.list<ProductRecord>(productTable(), { limit: 100 }),
     db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
     db.list<CertificationRunRecord>(CERTIFICATION_RUNS, { limit: 100 }),
+    loadGlobalTrust(),
   ]);
   const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
   const enriched = products.items.map(product => {
@@ -1398,6 +1456,7 @@ async function adminData() {
   ];
 
   return {
+    globalTrust,
     certificationTargets,
     dashboard: {
       systems: visibleSystems,
