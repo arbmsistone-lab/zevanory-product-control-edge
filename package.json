@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "start": "tsx server.ts",
+    "start": "node server.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
