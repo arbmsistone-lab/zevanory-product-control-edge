@@ -34,20 +34,57 @@ function primaryPool() {
 async function secondaryCall(payload: Record<string, unknown>) {
   const url = env('SUPABASE_URL');
   const key = env('SUPABASE_PUBLISHABLE_KEY');
-  const secret = env('ZPC_CLUSTER_TOKEN');
-  if (!url || !key || !secret) throw new Error('secondary_database_unconfigured');
+  const token = env('ZPC_CLUSTER_TOKEN');
+  if (!url || !key || !token) throw new Error('secondary_database_unconfigured');
 
-  const response = await fetch(`${url}/rest/v1/rpc/zpc_store`, {
+  const op = String(payload.op || '');
+  const bucket = String(payload.bucket || '');
+  let rpc = '';
+  let body: Record<string, unknown> = { p_token: token };
+
+  if (op === 'list') {
+    rpc = 'zpc_worker_list';
+    body.p_bucket = bucket;
+    body.p_limit = Number(payload.limit || 100);
+  } else if (op === 'get') {
+    rpc = 'zpc_worker_get';
+    body.p_bucket = bucket;
+    body.p_ids = Array.isArray(payload.ids) ? payload.ids : [];
+  } else if (op === 'add' || op === 'update') {
+    rpc = 'zpc_worker_upsert';
+    body.p_bucket = bucket;
+    body.p_items = Array.isArray(payload.items) ? payload.items : [];
+    body.p_operation = op;
+    body.p_queue_primary = Boolean(payload.queuePrimary);
+  } else if (op === 'delete') {
+    rpc = 'zpc_worker_delete';
+    body.p_bucket = bucket;
+    body.p_ids = Array.isArray(payload.ids) ? payload.ids : [];
+    body.p_queue_primary = Boolean(payload.queuePrimary);
+  } else if (op === 'pending') {
+    rpc = 'zpc_worker_pending';
+    body.p_limit = Number(payload.limit || 20);
+  } else if (op === 'ack') {
+    rpc = 'zpc_worker_ack';
+    body.p_ids = Array.isArray(payload.ids) ? payload.ids : [];
+  } else {
+    throw new Error('secondary_database_unsupported_operation');
+  }
+
+  const response = await fetch(`${url}/rest/v1/rpc/${rpc}`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       'apikey': key,
       'authorization': `Bearer ${key}`,
     },
-    body: JSON.stringify({ payload: Object.assign({}, payload, { secret }) }),
+    body: JSON.stringify(body),
     signal: AbortSignal.timeout(8_000),
   });
-  if (!response.ok) { const detail = (await response.text()).slice(0, 160); throw new Error(`secondary_database_http_${response.status}_${detail}`); }
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 160);
+    throw new Error(`secondary_database_http_${response.status}_${detail}`);
+  }
   return await response.json() as any;
 }
 
