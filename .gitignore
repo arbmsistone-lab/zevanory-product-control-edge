@@ -1,6 +1,7 @@
 node_modules
 .vercel
 .netlify
+cf-worker/.wrangler/
 .zpc-secrets
 .env
 .env.*

@@ -1,18 +1,21 @@
 # ZEVANORY PRODUCT CONTROL - Canonical Deployment Policy
 
 ## Canonical URL
-https://zevanory-product-control-backend.netlify.app/
+https://control.zevanory.api.br/
 
 ## Permanent rule
 1. The canonical user-facing URL MUST NOT change.
-2. Every production UI update MUST target the existing Netlify site:
-   - site name: zevanory-product-control-backend
-   - site id: 56395604-d55a-4557-b223-c80fea6a05fa
-3. Alternate runtimes (Cloudflare, Render, Vercel, Railway, Supabase or others) are contingency/failover only.
-4. Alternate runtime URLs MUST NOT be presented as the canonical user-facing link.
-5. If Netlify publication is temporarily blocked, keep the gate fail-closed and report the canonical URL as stale until the same site can be updated.
-6. Never create a replacement Netlify project merely to bypass a deploy issue.
-7. Production closure requires the canonical URL to serve the intended exact release lineage.
+2. The canonical URL MUST be owned by ZEVANORY, never by a hosting provider.
+3. All production UI updates MUST preserve https://control.zevanory.api.br/ as the single public entry point.
+4. The canonical domain fronts a provider-independent routing layer. Current runtime priority:
+   - Cloudflare Worker direct runtime
+   - Render backend peer
+   - Supabase portable store / direct backend data plane
+   - Netlify/Vercel/other runtimes only as contingency origins
+5. Provider URLs such as *.netlify.app, *.onrender.com, *.vercel.app or *.workers.dev are operational endpoints only and MUST NOT be presented as the canonical link.
+6. Failure of any single provider MUST NOT change the canonical URL.
+7. Never create a replacement public URL to bypass a provider outage.
+8. Production closure requires the canonical domain to serve the intended exact release lineage and remain functional through at least one independent runtime path.
 
 Current intended UI baseline:
 - NO-SCROLL main Products screen
