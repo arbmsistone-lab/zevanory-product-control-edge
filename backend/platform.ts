@@ -34,7 +34,7 @@ function primaryPool() {
 async function secondaryCall(payload: Record<string, unknown>) {
   const url = env('SUPABASE_URL');
   const key = env('SUPABASE_PUBLISHABLE_KEY');
-  const secret = env('ZPC_REPLICATION_SECRET');
+  const secret = env('ZPC_CLUSTER_TOKEN');
   if (!url || !key || !secret) throw new Error('secondary_database_unconfigured');
 
   const response = await fetch(`${url}/rest/v1/rpc/zpc_store`, {
