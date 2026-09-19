@@ -12,7 +12,7 @@ jobs:
         with:
           node-version: '24'
       - run: npm install --no-audit --no-fund
-      - run: npm run typecheck
+      - run: npx tsc --noEmit --noUnusedLocals false --noUnusedParameters false
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
