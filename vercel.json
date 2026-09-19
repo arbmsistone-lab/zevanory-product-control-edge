@@ -1,8 +1,6 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/portable-health", "destination": "/api/entry?path=portable-health" },
+    { "source": "/api/(.*)", "destination": "/api/entry?path=$1" }
   ]
 }

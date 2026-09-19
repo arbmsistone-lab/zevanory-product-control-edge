@@ -1,4 +1,4 @@
-import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
+import { db, error, json, router, secrets } from './portable-sdk';
 
 type SystemStatus = 'healthy' | 'attention' | 'integration';
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
@@ -1049,6 +1049,12 @@ const SESSION_HOURS = 12;
 const MAX_PIN_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
+async function pinFingerprint(pin: string) {
+  const bytes = new TextEncoder().encode(`zpc-pin-state:${pin}`);
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  return Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
 async function securityState(fingerprint: string) {
   const state = await db.list<PinSecurityRecord>(PIN_SECURITY, { limit: 1 });
   if (state.items[0]) {
@@ -1093,13 +1099,14 @@ async function requirePinSession(token: unknown) {
 async function pinLogin(pin: unknown) {
   const candidate = String(pin || '').trim();
   if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
-  const verification = await verifyAdminPin(candidate);
-  const fingerprint = verification.fingerprint;
+  const configuredPin = String(await secrets.readSecret('ADMIN_PIN') || '').trim();
+  if (!/^\d{4}$/.test(configuredPin)) throw new Error('ADMIN_PIN_invalid');
+  const fingerprint = await pinFingerprint(configuredPin);
   const state = await securityState(fingerprint);
   if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
     return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
   }
-  if (!verification.valid) {
+  if (candidate !== configuredPin) {
     const failedAttempts = state.failedAttempts + 1;
     const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
       ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
@@ -1207,12 +1214,13 @@ export const handler = router({
     let stage = 'secret';
     let tempSessionId = '';
     try {
-      const pinState = await adminPinState();
-      const secretValid = pinState.configured;
-      if (!secretValid) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_unconfigured' });
+      const configuredPin = String(await secrets.readSecret('ADMIN_PIN') || '').trim();
+      const secretValid = /^\d{4}$/.test(configuredPin);
+      if (!secretValid) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'secret_invalid' });
 
       stage = 'security';
-      const state = await securityState(pinState.fingerprint);
+      const fingerprint = await pinFingerprint(configuredPin);
+      const state = await securityState(fingerprint);
       const locked = Boolean(state.lockedUntil && Date.parse(state.lockedUntil) > Date.now());
 
       stage = 'session';
@@ -1321,5 +1329,5 @@ export const handler = router({
     return json(await refreshTelemetry());
   }],
   'GET /api/_healthcheck': [async () => json({ ok: true, name: 'ZEVANORY PRODUCT CONTROL', mode: 'four-digit-pin-admin-control' })],
-  'GET /api/_portable_health': [async () => json(await portableHealth())],
 });
+

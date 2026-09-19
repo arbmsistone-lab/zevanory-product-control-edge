@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { handler } from './backend/index';
+import { db } from './backend/portable-sdk';
 
 const port = Number(process.env.PORT || 3000);
 
@@ -7,32 +8,33 @@ const server = http.createServer(async (req, res) => {
   try {
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(Buffer.from(chunk));
-    const raw = Buffer.concat(chunks);
+    const rawBody = Buffer.concat(chunks);
     const host = req.headers.host || 'localhost';
-    const proto = req.headers['x-forwarded-proto'] || 'http';
-    const url = `${proto}://${host}${req.url || '/'}`;
-    const headers = new Headers();
-    for (const [key, value] of Object.entries(req.headers)) {
-      if (value === undefined) continue;
-      headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+    const url = new URL(req.url || '/', `http://${host}`);
+
+    if (url.pathname === '/portable-health') {
+      const stores = await db.health();
+      const ok = stores.neon || stores.supabase;
+      res.statusCode = ok ? 200 : 503;
+      res.setHeader('content-type','application/json; charset=utf-8');
+      res.end(JSON.stringify({ ok, instance: process.env.BACKEND_INSTANCE_ID || 'render', stores }));
+      return;
     }
+
     const request = new Request(url, {
-      method: req.method || 'GET',
-      headers,
-      body: raw.length && !['GET','HEAD'].includes(req.method || 'GET') ? raw : undefined,
+      method: req.method,
+      headers: req.headers as HeadersInit,
+      body: rawBody.length ? rawBody : undefined,
     });
     const response = await handler(request);
     res.statusCode = response.status;
     response.headers.forEach((value, key) => res.setHeader(key, value));
     res.end(Buffer.from(await response.arrayBuffer()));
-  } catch (cause) {
-    console.error('node_server_error', cause);
+  } catch (err) {
     res.statusCode = 500;
-    res.setHeader('content-type', 'application/json');
-    res.end(JSON.stringify({ error: 'server_failure' }));
+    res.setHeader('content-type','application/json; charset=utf-8');
+    res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'internal_error' }));
   }
 });
 
-server.listen(port, '0.0.0.0', () => {
-  console.log(`ZEVANORY PRODUCT CONTROL listening on ${port}`);
-});
+server.listen(port, '0.0.0.0', () => console.log('portable backend listening', port));

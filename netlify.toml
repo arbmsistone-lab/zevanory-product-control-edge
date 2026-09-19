@@ -1,9 +1,12 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
   functions = "netlify/functions"
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/portable-health"
+  to = "/.netlify/functions/backend/portable-health"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/backend/api/:splat"
   status = 200
