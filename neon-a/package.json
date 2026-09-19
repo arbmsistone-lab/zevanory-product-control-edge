@@ -1,1 +1,0 @@
-{"name":"zpc-neon-a","private":true,"type":"module","dependencies":{"@neon/functions":"^0.8.0","pg":"^8.13.1"},"devDependencies":{"@types/pg":"latest"}}
