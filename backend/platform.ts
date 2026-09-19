@@ -47,7 +47,7 @@ async function secondaryCall(payload: Record<string, unknown>) {
     body: JSON.stringify({ payload: Object.assign({}, payload, { secret }) }),
     signal: AbortSignal.timeout(8_000),
   });
-  if (!response.ok) throw new Error(`secondary_database_http_${response.status}`);
+  if (!response.ok) { const detail = (await response.text()).slice(0, 160); throw new Error(`secondary_database_http_${response.status}_${detail}`); }
   return await response.json() as any;
 }
 
