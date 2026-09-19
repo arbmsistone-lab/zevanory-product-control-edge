@@ -885,8 +885,7 @@ async function runCertificationExecutor(targetId: string) {
   if (!runId) throw new Error('certification_run_create_failed');
 
   try {
-    const freshRuntime = await db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 });
-    let currentEvidence = freshRuntime.items.filter(item => !item.invalidatedAt && item.releaseFingerprint === releaseFingerprint);
+    const evidenceBatch: CertificationEvidenceRecord[] = [];
     for (const definition of ZEES_PILLARS) {
       const checkedAt = new Date().toISOString();
       const verifier = await executeZeesVerifier(definition.id, {
@@ -915,15 +914,15 @@ async function runCertificationExecutor(targetId: string) {
         invalidatedAt: null,
         invalidationReason: null,
       };
-      if (status !== 'na') {
-        await db.add(CERTIFICATION_EVIDENCE, [record]);
-        currentEvidence = [...currentEvidence, record];
-      }
+      if (status !== 'na') evidenceBatch.push(record);
       run.results.push({ pillar: definition.id, status, message: verifier.message, checkedAt });
       run.currentPillar = definition.id;
       run.completedPillars += 1;
-      await db.update(CERTIFICATION_RUNS, [{ id: runId, record: { ...run } }]);
+      if (run.completedPillars % 4 === 0 || run.completedPillars === ZEES_PILLARS.length) {
+        await db.update(CERTIFICATION_RUNS, [{ id: runId, record: { ...run } }]);
+      }
     }
+    if (evidenceBatch.length) await db.add(CERTIFICATION_EVIDENCE, evidenceBatch);
     run.status = 'complete';
     run.currentPillar = null;
     run.finishedAt = new Date().toISOString();
