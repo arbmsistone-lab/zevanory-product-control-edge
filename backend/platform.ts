@@ -403,7 +403,7 @@ export async function verifyAdminPin(candidate: string) {
 }
 
 function safeError(cause: unknown) {
-  const message = String((cause as any)?.code || (cause as any)?.name || 'unknown_error');
+  const message = String((cause as any)?.code || (cause as any)?.message || (cause as any)?.name || 'unknown_error');
   return message.replace(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 120);
 }
 
