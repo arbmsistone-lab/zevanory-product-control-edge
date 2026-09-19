@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { handler } from './backend/index';
-import { db } from './backend/portable-sdk';
+import { portableHealth } from './backend/platform';
 
 const port = Number(process.env.PORT || 3000);
 
@@ -13,11 +13,10 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://${host}`);
 
     if (url.pathname === '/portable-health') {
-      const stores = await db.health();
-      const ok = stores.neon || stores.supabase;
-      res.statusCode = ok ? 200 : 503;
+      const stores = await portableHealth();
+      res.statusCode = stores.ok ? 200 : 503;
       res.setHeader('content-type','application/json; charset=utf-8');
-      res.end(JSON.stringify({ ok, instance: process.env.BACKEND_INSTANCE_ID || 'render', stores }));
+      res.end(JSON.stringify({ ...stores, instance: process.env.BACKEND_INSTANCE_ID || 'render' }));
       return;
     }
 
