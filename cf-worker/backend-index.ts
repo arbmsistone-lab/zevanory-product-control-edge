@@ -846,7 +846,7 @@ function verifierArtifacts(pillar: CertificationPillar, product: ProductRecord, 
   ].filter(Boolean))).slice(0, 12);
 }
 
-export async function runCertificationExecutor(targetId: string) {
+async function runCertificationExecutor(targetId: string) {
   await ensureSeed();
   await ensureProducts();
   await refreshTelemetry();
