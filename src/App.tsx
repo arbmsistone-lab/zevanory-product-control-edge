@@ -347,6 +347,29 @@ function App() {
     void load(sessionToken);
   }, []);
 
+  useEffect(() => {
+    const hideInjectedNetlifyBadge = () => {
+      document.querySelectorAll<HTMLElement>('a, div, span').forEach(element => {
+        const text = element.textContent?.trim();
+        if (text !== 'Com tecnologia Netlify') return;
+        const style = window.getComputedStyle(element);
+        if (style.position === 'fixed') {
+          element.style.setProperty('display', 'none', 'important');
+        }
+      });
+    };
+
+    hideInjectedNetlifyBadge();
+    const observer = new MutationObserver(hideInjectedNetlifyBadge);
+    observer.observe(document.body, { childList: true, subtree: true });
+    const timer = window.setTimeout(hideInjectedNetlifyBadge, 1200);
+
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, []);
+
   const logout = async () => {
     try {
       if (sessionToken) await api.post('/api/pin/logout', { sessionToken });
