@@ -1,4 +1,4 @@
-import { adminPinFingerprint, db, error, json, router, secrets, verifyAdminPinCandidate } from './portable-sdk';
+import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 
 type SystemStatus = 'healthy' | 'attention' | 'integration';
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
@@ -1049,12 +1049,6 @@ const SESSION_HOURS = 12;
 const MAX_PIN_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
-async function pinFingerprint(pin: string) {
-  const bytes = new TextEncoder().encode(`zpc-pin-state:${pin}`);
-  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
-  return Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
 async function securityState(fingerprint: string) {
   const state = await db.list<PinSecurityRecord>(PIN_SECURITY, { limit: 1 });
   if (state.items[0]) {
@@ -1099,38 +1093,21 @@ async function requirePinSession(token: unknown) {
 async function pinLogin(pin: unknown) {
   const candidate = String(pin || '').trim();
   if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
-
-  const configuredFingerprint = await adminPinFingerprint();
-  const state = await securityState(configuredFingerprint || 'portable-bootstrap');
+  const verification = await verifyAdminPin(candidate);
+  const fingerprint = verification.fingerprint;
+  const state = await securityState(fingerprint);
   if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
     return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
   }
-
-  const verification = await verifyAdminPinCandidate(candidate);
-  if (!verification.ok) {
+  if (!verification.valid) {
     const failedAttempts = state.failedAttempts + 1;
     const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
       ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
       : null;
-    await updateSecurity(state.id, {
-      failedAttempts: lockedUntil ? 0 : failedAttempts,
-      lockedUntil,
-      updatedAt: new Date().toISOString(),
-      pinFingerprint: configuredFingerprint || 'portable-bootstrap',
-    });
+    await updateSecurity(state.id, { failedAttempts: lockedUntil ? 0 : failedAttempts, lockedUntil, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
     return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
   }
-
-  const finalFingerprint = verification.fingerprint || configuredFingerprint || await pinFingerprint(candidate);
-  const finalState = finalFingerprint === (configuredFingerprint || 'portable-bootstrap')
-    ? state
-    : await securityState(finalFingerprint);
-  await updateSecurity(finalState.id, {
-    failedAttempts: 0,
-    lockedUntil: null,
-    updatedAt: new Date().toISOString(),
-    pinFingerprint: finalFingerprint,
-  });
+  await updateSecurity(state.id, { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
   return { ok: true, status: 200, ...(await createPinSession()) };
 }
 
@@ -1230,12 +1207,12 @@ export const handler = router({
     let stage = 'secret';
     let tempSessionId = '';
     try {
-      const fingerprint = await adminPinFingerprint();
-      const secretValid = Boolean(fingerprint);
-      if (!secretValid) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_hash_pending_first_login' });
+      const pinState = await adminPinState();
+      const secretValid = pinState.configured;
+      if (!secretValid) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_unconfigured' });
 
       stage = 'security';
-      const state = await securityState(fingerprint);
+      const state = await securityState(pinState.fingerprint);
       const locked = Boolean(state.lockedUntil && Date.parse(state.lockedUntil) > Date.now());
 
       stage = 'session';
@@ -1344,5 +1321,5 @@ export const handler = router({
     return json(await refreshTelemetry());
   }],
   'GET /api/_healthcheck': [async () => json({ ok: true, name: 'ZEVANORY PRODUCT CONTROL', mode: 'four-digit-pin-admin-control' })],
+  'GET /api/_portable_health': [async () => json(await portableHealth())],
 });
-
