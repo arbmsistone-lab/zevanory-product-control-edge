@@ -938,6 +938,105 @@ a {
 }
 
 
+
+.zeesSealGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.zeesSealChip {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 24px;
+  border: 1px solid #26384d;
+  border-radius: 7px;
+  background: #101a28;
+  color: #8fa4bd;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .03em;
+  cursor: default;
+}
+
+.zeesSealChip.proved {
+  border-color: #2f7d5d;
+  background: #0e2c24;
+  color: #8ff0ca;
+  box-shadow: inset 0 0 0 1px rgba(86, 205, 157, .08);
+}
+
+.zeesSealChip.partial {
+  border-color: #7a622b;
+  background: #2c2411;
+  color: #f0cd75;
+}
+
+.zeesSealChip.blocked {
+  border-color: #734039;
+  background: #2d1717;
+  color: #f0a4a4;
+}
+
+.zeesSealChip.na,
+.zeesSealChip.external {
+  border-color: #35465b;
+  background: #162131;
+  color: #9badc2;
+}
+
+.certCompactSummary {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 7px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.certCompactSummary span {
+  color: #788da5;
+}
+
+.certCompactSummary .proved { color: #79d8b6; }
+.certCompactSummary .partial { color: #e0bc68; }
+.certCompactSummary .blocked { color: #df8f8f; }
+
+.certBlockerLine {
+  max-height: 23px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shell-products .productDescription {
+  min-height: 30px;
+  margin: 6px 0 7px;
+  line-height: 1.35;
+}
+
+.shell-products .productFacts span {
+  padding: 5px 7px;
+}
+
+.shell-products .certPanel {
+  margin-top: 6px;
+  padding: 7px;
+}
+
+.shell-products .gateRow {
+  margin: 6px 0 4px;
+}
+
+.shell-products .blockers {
+  min-height: 20px;
+  margin: 2px 0 4px;
+  line-height: 1.25;
+}
+
 .certRatio { color: #f0cb7e; font-size: 16px; }
 .certRatio.ready { color: #8de2c2; }
 .certMiniGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }

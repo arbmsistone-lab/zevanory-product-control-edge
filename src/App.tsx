@@ -611,13 +611,25 @@ function App() {
                     <div><small>ZEES-16 · CERTIFICAÇÃO DE ENGENHARIA</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
                     <b className={product.certification.ready ? 'certRatio ready' : 'certRatio'}>{product.certification.summary.proved}/{product.certification.summary.applicable}</b>
                   </div>
-                  <div className='certMiniGrid'>
-                    <span><b>{product.certification.summary.proved}</b><small>Provados</small></span>
-                    <span><b>{product.certification.summary.partial}</b><small>Parciais</small></span>
-                    <span><b>{product.certification.summary.blocked}</b><small>Bloqueados</small></span>
-                    <span><b>{product.certification.evidenceCount}</b><small>Evidencias</small></span>
+                  <div className='zeesSealGrid' aria-label='16 selos ZEES'>
+                    {product.certification.pillars.map(pillar => (
+                      <span
+                        key={pillar.id}
+                        className={`zeesSealChip ${pillar.status}`}
+                        title={`${pillar.id} · ${pillar.name} · ${certificationStatusLabel(pillar.status)}`}
+                        aria-label={`${pillar.id} ${pillar.name}: ${certificationStatusLabel(pillar.status)}`}
+                      >
+                        <b>{pillar.id}</b>
+                      </span>
+                    ))}
                   </div>
-                  <p>{product.certification.ready ? 'CERTIFICADO INTEGRALMENTE' : `Bloqueador: ${product.certification.rootBlocker ?? 'evidencia obrigatoria pendente'}`}</p>
+                  <div className='certCompactSummary'>
+                    <span className='proved'>{product.certification.summary.proved} provados</span>
+                    <span className='partial'>{product.certification.summary.partial} parciais</span>
+                    <span className='blocked'>{product.certification.summary.blocked} bloqueados</span>
+                    <span>{product.certification.summary.na} N/A</span>
+                  </div>
+                  <p className='certBlockerLine'>{product.certification.ready ? 'CERTIFICADO INTEGRALMENTE' : `Bloqueador: ${product.certification.rootBlocker ?? 'evidência obrigatória pendente'}`}</p>
                 </div>
                 <div className='gateRow'>
                   <span className={product.gates.legal ? 'gate ok' : 'gate'}>Legal</span>
@@ -692,7 +704,7 @@ function App() {
               <div><p className='kicker'>ZEES-16 · ZEVANORY ENGINEERING EXCELLENCE STANDARD</p><h2>Governanca e certificacao central</h2></div>
               <ShieldCheck size={21} />
             </div>
-            <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Configuracao, nota manual ou quantidade de testes nao promovem um pilar a PROVADO: a aprovacao exige evidencia reproduzivel vinculada a produto, release e fonte.</p>
+            <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
             <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span><b>{certificationTargets.length}</b>Alvos certificados</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
           </section>
           <section className='certWorkspace'>
