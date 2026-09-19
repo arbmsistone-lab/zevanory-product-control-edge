@@ -42,6 +42,7 @@ async function secondaryCall(payload: Record<string, unknown>) {
     headers: {
       'content-type': 'application/json',
       'apikey': key,
+      'authorization': `Bearer ${key}`,
       'x-zpc-replication-secret': secret,
     },
     body: JSON.stringify({ payload }),
