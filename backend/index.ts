@@ -1,4 +1,5 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
+import { executeZeesVerifier } from './zees-verifiers.ts';
 
 type SystemStatus = 'healthy' | 'attention' | 'integration';
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
@@ -886,18 +887,22 @@ async function runCertificationExecutor(targetId: string) {
   try {
     const freshRuntime = await db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 });
     let currentEvidence = freshRuntime.items.filter(item => !item.invalidatedAt && item.releaseFingerprint === releaseFingerprint);
-    const baseline = buildProductCertification(product, visibleSystems, currentEvidence);
     for (const definition of ZEES_PILLARS) {
       const checkedAt = new Date().toISOString();
-      const pillar = baseline.pillars.find(item => item.id === definition.id)!;
-      const status = pillar.status === 'external' ? 'blocked' : pillar.status;
+      const verifier = await executeZeesVerifier(definition.id, {
+        product,
+        profile: certificationProfile(product),
+        sourceSystem,
+        sourceSha,
+      });
+      const status = verifier.status;
       const kind: VerifiedEvidence['kind'] = status === 'blocked' ? 'blocking' : 'supporting';
       const marker = status === 'proved' ? `ZEES:${definition.id}:PROVEN:` : `ZEES:${definition.id}:${status.toUpperCase()}:`;
       const record: CertificationEvidenceRecord = {
         target: product.slug,
         pillar: definition.id,
         kind,
-        text: `${marker}${pillar.rationale}`,
+        text: `${marker}${verifier.message}`,
         sourceSha,
         sourceRef: `ZEES Executor ${ZEES_VERSION} · run ${runId}`,
         capturedAt: checkedAt,
@@ -906,7 +911,7 @@ async function runCertificationExecutor(targetId: string) {
         verdict: status === 'na' ? 'partial' : status,
         verifier: `zees-verifier-${definition.id.toLowerCase()}`,
         environment: sourceSystem?.domain || product.publicUrl || 'internal',
-        artifacts: verifierArtifacts(pillar, product, sourceSystem),
+        artifacts: verifier.artifacts,
         invalidatedAt: null,
         invalidationReason: null,
       };
@@ -914,7 +919,7 @@ async function runCertificationExecutor(targetId: string) {
         await db.add(CERTIFICATION_EVIDENCE, [record]);
         currentEvidence = [...currentEvidence, record];
       }
-      run.results.push({ pillar: definition.id, status, message: pillar.blocker || pillar.rationale, checkedAt });
+      run.results.push({ pillar: definition.id, status, message: verifier.message, checkedAt });
       run.currentPillar = definition.id;
       run.completedPillars += 1;
       await db.update(CERTIFICATION_RUNS, [{ id: runId, record: { ...run } }]);
