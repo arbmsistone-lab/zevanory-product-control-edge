@@ -1,0 +1,9 @@
+name = "zevanory-product-control-portable"
+main = "worker.ts"
+compatibility_date = "2026-09-19"
+
+[vars]
+SUPABASE_URL = "https://pvkpkqwdnnpkgvllwqbc.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_IAPNVvyZRbgLjiaEdArk_g_6qd3Dp_-"
+RENDER_BACKEND_URL = "https://zevanory-product-control-edge.onrender.com"
+BACKEND_INSTANCE_ID = "cloudflare"
