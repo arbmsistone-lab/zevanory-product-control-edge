@@ -301,6 +301,7 @@ function App() {
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
   const [view, setView] = useState<'products' | 'operations' | 'governance'>('products');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
+  const [productPage, setProductPage] = useState(0);
   const [selectedTargetId, setSelectedTargetId] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
@@ -482,6 +483,10 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [products, filter]);
+  const productPageSize = 3;
+  const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
+  const safeProductPage = Math.min(productPage, productPageCount - 1);
+  const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
 
   const selectedCertificationTarget = useMemo(
     () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
@@ -501,12 +506,12 @@ function App() {
   }
 
   return (
-    <main className='shell'>
+    <main className={`shell shell-${view}`}>
       <header className='topbar'>
         <div>
-          <p className='eyebrow'>ZEVANORY · GESTAO, GOVERNANCA E CERTIFICACAO DE PRODUTOS</p>
+          <p className='eyebrow'>ZEVANORY · GESTÃO, GOVERNANÇA E CERTIFICAÇÃO DE PRODUTOS</p>
           <h1>ZEVANORY PRODUCT CONTROL</h1>
-          <p className='subtitle'>Portfolio, operacao, evidencia e certificacao ZEES-16 de engenharia em uma unica torre fail-closed.</p>
+          <p className='subtitle'>Portfólio, operação, evidência e certificação ZEES-16 de engenharia em uma única torre fail-closed.</p>
         </div>
         <div className='actions'>
           <span className='adminChip'><ShieldCheck size={15} />PIN ADMIN ATIVO</span>
@@ -524,8 +529,8 @@ function App() {
 
       <nav className='tabs' aria-label='Areas do ZEVANORY PRODUCT CONTROL'>
         <button className={view === 'products' ? 'tab active' : 'tab'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
-        <button className={view === 'operations' ? 'tab active' : 'tab'} onClick={() => setView('operations')}><Activity size={16} />Operacoes</button>
-        <button className={view === 'governance' ? 'tab active' : 'tab'} onClick={() => setView('governance')}><SlidersHorizontal size={16} />ZEES-16 / Governanca</button>
+        <button className={view === 'operations' ? 'tab active' : 'tab'} onClick={() => setView('operations')}><Activity size={16} />Operações</button>
+        <button className={view === 'governance' ? 'tab active' : 'tab'} onClick={() => setView('governance')}><SlidersHorizontal size={16} />ZEES-16 / Governança</button>
       </nav>
 
       {error && <div className='errorbox globalError'>{error}</div>}
@@ -535,7 +540,7 @@ function App() {
           <section className='metrics'>
             <div className='metric'><span>Produtos cadastrados</span><strong>{summary.total}</strong></div>
             <div className='metric'><span>Certificados integralmente</span><strong>{summary.certified}</strong></div>
-            <div className='metric'><span>Em certificacao</span><strong>{summary.inCertification}</strong></div>
+            <div className='metric'><span>Em certificação</span><strong>{summary.inCertification}</strong></div>
             <div className='metric'><span>Bloqueados ZEES</span><strong>{summary.zeesBlocked}</strong></div>
           </section>
 
@@ -544,16 +549,23 @@ function App() {
               <p className='kicker'>PORTFOLIO CENTRAL</p>
               <h2>Produtos e programas</h2>
             </div>
-            <div className='filters'>
-              <button className={filter === 'all' ? 'filter active' : 'filter'} onClick={() => setFilter('all')}>Todos</button>
-              <button className={filter === 'selling' ? 'filter active' : 'filter'} onClick={() => setFilter('selling')}>Em venda</button>
-              <button className={filter === 'blocked' ? 'filter active' : 'filter'} onClick={() => setFilter('blocked')}>Pendentes</button>
-              <button className={filter === 'archived' ? 'filter active' : 'filter'} onClick={() => setFilter('archived')}>Arquivados</button>
+            <div className='toolbarControls'>
+              <div className='filters'>
+                <button className={filter === 'all' ? 'filter active' : 'filter'} onClick={() => { setFilter('all'); setProductPage(0); }}>Todos</button>
+                <button className={filter === 'selling' ? 'filter active' : 'filter'} onClick={() => { setFilter('selling'); setProductPage(0); }}>Em venda</button>
+                <button className={filter === 'blocked' ? 'filter active' : 'filter'} onClick={() => { setFilter('blocked'); setProductPage(0); }}>Pendentes</button>
+                <button className={filter === 'archived' ? 'filter active' : 'filter'} onClick={() => { setFilter('archived'); setProductPage(0); }}>Arquivados</button>
+              </div>
+              {productPageCount > 1 && <div className='pagination' aria-label='Paginação de produtos'>
+                <button className='filter' onClick={() => setProductPage(Math.max(0, safeProductPage - 1))} disabled={safeProductPage === 0}>‹</button>
+                <span>{safeProductPage + 1}/{productPageCount}</span>
+                <button className='filter' onClick={() => setProductPage(Math.min(productPageCount - 1, safeProductPage + 1))} disabled={safeProductPage >= productPageCount - 1}>›</button>
+              </div>}
             </div>
           </section>
 
           <section className='productGrid'>
-            {visibleProducts.map(product => (
+            {pagedProducts.map(product => (
               <article className={product.status === 'archived' ? 'productCard archived' : 'productCard'} key={product.id}>
                 <div className='productHead'>
                   <div>
@@ -570,7 +582,7 @@ function App() {
                 </div>
                 <div className='certPanel'>
                   <div className='auditHeader'>
-                    <div><small>ZEES-16 · CERTIFICACAO DE ENGENHARIA</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
+                    <div><small>ZEES-16 · CERTIFICAÇÃO DE ENGENHARIA</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
                     <b className={product.certification.ready ? 'certRatio ready' : 'certRatio'}>{product.certification.summary.proved}/{product.certification.summary.applicable}</b>
                   </div>
                   <div className='certMiniGrid'>
@@ -591,7 +603,7 @@ function App() {
                   <p className='blockers'>{product.blockers.slice(0, 2).join(' · ')}{product.blockers.length > 2 ? ` +${product.blockers.length - 2}` : ''}</p>
                 )}
                 <div className='productActions'>
-                  <button className='secondary compact' onClick={() => openCertification(product)}><ShieldCheck size={14} />Certificacao</button>
+                  <button className='secondary compact' onClick={() => openCertification(product)}><ShieldCheck size={14} />Certificação</button>
                   <button className='secondary compact' onClick={() => openEdit(product)}><Pencil size={14} />Editar</button>
                   {product.publicUrl && <a className='secondary compact linkButton' href={product.publicUrl} target='_blank' rel='noreferrer'><ExternalLink size={14} />Pagina</a>}
                   {product.status !== 'archived' && <button className='ghost compact' onClick={() => archiveProduct(product)} disabled={busy}><Archive size={14} />Arquivar</button>}
