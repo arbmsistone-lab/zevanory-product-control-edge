@@ -336,70 +336,21 @@ async function migrateLegacyBootstrap(bootstrap: any) {
 }
 
 export async function adminPinState() {
-  const configured = env('ADMIN_PIN').trim();
-  if (/^\d{4}$/.test(configured)) {
-    return { configured: true, fingerprint: await sha256(configured), source: 'environment' };
-  }
   const saved = await configRecord('admin_pin_hash');
   const hash = String(saved?.value || '');
-  if (/^[a-f0-9]{64}$/.test(hash)) return { configured: true, fingerprint: hash, source: 'portable-store' };
-  if (env('LEGACY_APP_URL')) return { configured: true, fingerprint: 'legacy-bootstrap', source: 'legacy-bootstrap' };
+  if (/^[a-f0-9]{64}$/.test(hash)) {
+    return { configured: true, fingerprint: hash, source: 'portable-store' };
+  }
   return { configured: false, fingerprint: 'unconfigured', source: 'none' };
 }
 
 export async function verifyAdminPin(candidate: string) {
-  const configured = env('ADMIN_PIN').trim();
-  if (/^\d{4}$/.test(configured)) {
-    const fingerprint = await sha256(configured);
-    return { valid: candidate === configured, fingerprint };
-  }
-
   const saved = await configRecord('admin_pin_hash');
   const savedHash = String(saved?.value || '');
-  if (/^[a-f0-9]{64}$/.test(savedHash)) {
-    return { valid: (await sha256(candidate)) === savedHash, fingerprint: savedHash };
+  if (!/^[a-f0-9]{64}$/.test(savedHash)) {
+    return { valid: false, fingerprint: 'unconfigured' };
   }
-
-  const legacy = env('LEGACY_APP_URL').replace(/\/$/, '');
-  if (!legacy) return { valid: false, fingerprint: 'unconfigured' };
-
-  const login = await fetch(`${legacy}/api/pin/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ pin: candidate }),
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!login.ok) return { valid: false, fingerprint: 'legacy-bootstrap' };
-
-  const auth = await login.json() as any;
-  const token = String(auth?.sessionToken || '');
-  if (!token) return { valid: false, fingerprint: 'legacy-bootstrap' };
-
-  try {
-    const bootstrapResponse = await fetch(`${legacy}/api/admin/bootstrap`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ sessionToken: token }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (bootstrapResponse.ok) {
-      const bootstrap = await bootstrapResponse.json();
-      await migrateLegacyBootstrap(bootstrap);
-    }
-  } finally {
-    try {
-      await fetch(`${legacy}/api/pin/logout`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ sessionToken: token }),
-        signal: AbortSignal.timeout(5_000),
-      });
-    } catch {}
-  }
-
-  const fingerprint = await sha256(candidate);
-  await setConfig('admin_pin_hash', fingerprint);
-  return { valid: true, fingerprint };
+  return { valid: (await sha256(candidate)) === savedHash, fingerprint: savedHash };
 }
 
 function safeError(cause: unknown) {
