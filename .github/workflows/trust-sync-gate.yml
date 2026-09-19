@@ -1,0 +1,22 @@
+name: Product Control Trust Sync Gate
+on:
+  push:
+    branches:
+      - chatgpt/sync-global-trust-20260919
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zevanory-product-control-dist
+          path: dist
+          if-no-files-found: error
