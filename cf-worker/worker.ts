@@ -1,4 +1,4 @@
-import { handler } from './backend-index.ts';
+import { handler, runCertificationExecutor } from './backend-index.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
 const BACKEND_SOURCE_SHA = '7ddd82c8ba23f56b309563fa0fcfa2d4951b5a71';
@@ -20,6 +20,20 @@ export default {
       return Response.json({ ok: true, runtime: 'cloudflare-worker', backendSourceSha: BACKEND_SOURCE_SHA, workerCommit: String(env.WORKER_COMMIT || 'untracked'), directBackend: true }, {
         headers: { 'cache-control': 'no-store' },
       });
+    }
+
+    if (url.pathname === '/runtime-certification-proof') {
+      const expected = String(env.SELFTEST_TOKEN || '');
+      const supplied = url.searchParams.get('t') || '';
+      const targetId = url.searchParams.get('targetId') || '';
+      if (!expected || supplied !== expected || !targetId) {
+        return Response.json({ ok: false, error: 'not_found' }, { status: 404, headers: { 'cache-control': 'no-store' } });
+      }
+      try {
+        return Response.json(await runCertificationExecutor(targetId), { headers: { 'cache-control': 'no-store' } });
+      } catch (error) {
+        return Response.json({ ok: false, error: String(error) }, { status: 500, headers: { 'cache-control': 'no-store' } });
+      }
     }
 
     if (url.pathname === '/definir-pin' || url.pathname === '/__complete-pin-migration') {
