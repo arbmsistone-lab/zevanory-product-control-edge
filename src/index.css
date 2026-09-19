@@ -137,6 +137,44 @@ a {
   opacity: 0.6;
 }
 
+.providerChip {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #25415f;
+  border-radius: 10px;
+  background: #0b1b2e;
+  color: #cfe2f4;
+  padding: 9px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.providerChip:hover,
+.providerChip:focus-visible {
+  border-color: #3c6088;
+  background: #0d2138;
+  outline: none;
+}
+
+.providerChip strong {
+  color: #edf8f7;
+  font-weight: 900;
+}
+
+.providerDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: #5be6d2;
+  box-shadow: 0 0 0 2px rgba(91, 230, 210, 0.15);
+}
+
 .adminChip {
   display: flex;
   align-items: center;

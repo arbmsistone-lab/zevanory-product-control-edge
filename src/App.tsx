@@ -540,6 +540,10 @@ function App() {
           <p className='subtitle'>Portfólio, operação, evidência e certificação ZEES-16 de engenharia em uma única torre fail-closed.</p>
         </div>
         <div className='actions'>
+          <a className='providerChip' href='https://www.netlify.com/' target='_blank' rel='noreferrer' aria-label='Com tecnologia Netlify'>
+            <span className='providerDot' aria-hidden='true' />
+            <span>Com tecnologia <strong>Netlify</strong></span>
+          </a>
           <span className='adminChip'><ShieldCheck size={15} />PIN ADMIN ATIVO</span>
           {view === 'products' && <button className='primary' onClick={openNew}><PackagePlus size={17} />Novo produto</button>}
           <button className='secondary' onClick={logout}><LogOut size={17} />Sair</button>
