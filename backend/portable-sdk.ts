@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { createHash } from 'node:crypto';
 
 type Item<T> = T & { id: string };
 type WriteItem<T> = { id: string; record: T };
@@ -221,4 +222,74 @@ export function router(routes: Record<string, RouteHandler[]>) {
     for (const handler of handlers) response = await handler({ body, request });
     return response;
   };
+}
+
+type PinHashRecord = { hash: string; migratedAt: string; source: string };
+
+function sha256(value: string) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+async function getStoredPinHash(): Promise<string> {
+  const tableName = '__portable_config__';
+  const id = 'admin_pin_hash';
+  try {
+    const [row] = await primaryGet<PinHashRecord>(tableName, [id]);
+    if (row?.hash) return row.hash;
+  } catch {}
+  try {
+    const [row] = await secondaryGet<PinHashRecord>(tableName, [id]);
+    if (row?.hash) return row.hash;
+  } catch {}
+  return '';
+}
+
+async function storePinHash(hash: string, source: string) {
+  const tableName = '__portable_config__';
+  const id = 'admin_pin_hash';
+  const record: PinHashRecord = { hash, migratedAt: new Date().toISOString(), source };
+  const opId = crypto.randomUUID();
+  const results = await Promise.allSettled([
+    primaryUpsert(tableName, id, record, opId),
+    secondaryUpsert(tableName, id, record, opId),
+  ]);
+  if (results.every(result => result.status === 'rejected')) throw new Error('pin_hash_store_failed');
+}
+
+export async function adminPinFingerprint() {
+  const envPin = String(process.env.ADMIN_PIN || '').trim();
+  if (/^\d{4}$/.test(envPin)) return sha256(envPin);
+  return await getStoredPinHash();
+}
+
+export async function verifyAdminPinCandidate(candidate: string) {
+  const envPin = String(process.env.ADMIN_PIN || '').trim();
+  if (/^\d{4}$/.test(envPin)) {
+    return { ok: candidate === envPin, fingerprint: sha256(envPin), source: 'env' };
+  }
+
+  const stored = await getStoredPinHash();
+  if (stored) return { ok: sha256(candidate) === stored, fingerprint: stored, source: 'portable-hash' };
+
+  const legacyBase = String(process.env.LEGACY_AUTH_URL || 'https://arbm-control-senior-d2xvhh.v2.appdeploy.ai').replace(/\/$/, '');
+  const response = await fetch(legacyBase + '/api/pin/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ pin: candidate }),
+  });
+  if (!response.ok) return { ok: false, fingerprint: 'legacy-bootstrap', source: 'legacy-bootstrap' };
+
+  const data = await response.json().catch(() => ({})) as { sessionToken?: string };
+  const fingerprint = sha256(candidate);
+  await storePinHash(fingerprint, 'legacy-verified-once');
+
+  if (data.sessionToken) {
+    fetch(legacyBase + '/api/pin/logout', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ sessionToken: data.sessionToken }),
+    }).catch(() => undefined);
+  }
+
+  return { ok: true, fingerprint, source: 'legacy-bootstrap-migrated' };
 }

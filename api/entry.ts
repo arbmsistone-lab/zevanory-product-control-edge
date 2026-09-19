@@ -1,8 +1,7 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handler } from '../backend/index';
 import { db } from '../backend/portable-sdk';
 
-export default async function endpoint(req: VercelRequest, res: VercelResponse) {
+export default async function endpoint(req: any, res: any) {
   try {
     const path = String(req.query.path || '');
     if (path === 'portable-health') {

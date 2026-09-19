@@ -1,4 +1,4 @@
-import { db, error, json, router, secrets } from './portable-sdk';
+import { adminPinFingerprint, db, error, json, router, secrets, verifyAdminPinCandidate } from './portable-sdk';
 
 type SystemStatus = 'healthy' | 'attention' | 'integration';
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
@@ -1099,22 +1099,38 @@ async function requirePinSession(token: unknown) {
 async function pinLogin(pin: unknown) {
   const candidate = String(pin || '').trim();
   if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
-  const configuredPin = String(await secrets.readSecret('ADMIN_PIN') || '').trim();
-  if (!/^\d{4}$/.test(configuredPin)) throw new Error('ADMIN_PIN_invalid');
-  const fingerprint = await pinFingerprint(configuredPin);
-  const state = await securityState(fingerprint);
+
+  const configuredFingerprint = await adminPinFingerprint();
+  const state = await securityState(configuredFingerprint || 'portable-bootstrap');
   if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
     return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
   }
-  if (candidate !== configuredPin) {
+
+  const verification = await verifyAdminPinCandidate(candidate);
+  if (!verification.ok) {
     const failedAttempts = state.failedAttempts + 1;
     const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
       ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
       : null;
-    await updateSecurity(state.id, { failedAttempts: lockedUntil ? 0 : failedAttempts, lockedUntil, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
+    await updateSecurity(state.id, {
+      failedAttempts: lockedUntil ? 0 : failedAttempts,
+      lockedUntil,
+      updatedAt: new Date().toISOString(),
+      pinFingerprint: configuredFingerprint || 'portable-bootstrap',
+    });
     return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
   }
-  await updateSecurity(state.id, { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
+
+  const finalFingerprint = verification.fingerprint || configuredFingerprint || await pinFingerprint(candidate);
+  const finalState = finalFingerprint === (configuredFingerprint || 'portable-bootstrap')
+    ? state
+    : await securityState(finalFingerprint);
+  await updateSecurity(finalState.id, {
+    failedAttempts: 0,
+    lockedUntil: null,
+    updatedAt: new Date().toISOString(),
+    pinFingerprint: finalFingerprint,
+  });
   return { ok: true, status: 200, ...(await createPinSession()) };
 }
 
@@ -1214,12 +1230,11 @@ export const handler = router({
     let stage = 'secret';
     let tempSessionId = '';
     try {
-      const configuredPin = String(await secrets.readSecret('ADMIN_PIN') || '').trim();
-      const secretValid = /^\d{4}$/.test(configuredPin);
-      if (!secretValid) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'secret_invalid' });
+      const fingerprint = await adminPinFingerprint();
+      const secretValid = Boolean(fingerprint);
+      if (!secretValid) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_hash_pending_first_login' });
 
       stage = 'security';
-      const fingerprint = await pinFingerprint(configuredPin);
       const state = await securityState(fingerprint);
       const locked = Boolean(state.lockedUntil && Date.parse(state.lockedUntil) > Date.now());
 
