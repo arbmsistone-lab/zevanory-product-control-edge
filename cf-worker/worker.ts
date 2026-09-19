@@ -1,7 +1,7 @@
 import { handler, runCertificationExecutor } from './backend-index.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
-const BACKEND_SOURCE_SHA = '7ddd82c8ba23f56b309563fa0fcfa2d4951b5a71';
+const BACKEND_SOURCE_SHA = 'b2a0c46488f0ea9ae14f536b6beeb71afefe346e';
 
 export default {
   async fetch(request: Request, env: Record<string, unknown>) {
