@@ -43,9 +43,8 @@ async function secondaryCall(payload: Record<string, unknown>) {
       'content-type': 'application/json',
       'apikey': key,
       'authorization': `Bearer ${key}`,
-      'x-zpc-replication-secret': secret,
     },
-    body: JSON.stringify({ payload }),
+    body: JSON.stringify({ payload: Object.assign({}, payload, { secret }) }),
     signal: AbortSignal.timeout(8_000),
   });
   if (!response.ok) throw new Error(`secondary_database_http_${response.status}`);
