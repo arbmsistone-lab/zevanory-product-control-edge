@@ -1,0 +1,65 @@
+name: ZPC Canonical Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'backend/**'
+      - 'cf-worker/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - '.github/workflows/zpc-canonical-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Guard canonical ZEES baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "zeesSealGrid" src/App.tsx
+          grep -q "shell-products" src/index.css
+          grep -q "P01" backend/zees-verifiers.ts
+          grep -q "P16" backend/zees-verifiers.ts
+          grep -q "zevanory.api.br/control" CANONICAL_DEPLOYMENT.md
+          grep -q "zevanory.api.br/control" RECONCILIATION.md
+
+      - name: Build remotely
+        run: npm run build
+
+      - name: Stamp exact lineage
+        shell: bash
+        run: |
+          printf '{"sha":"%s","repository":"%s","workflow_run":"%s"}\n' "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > dist/zpc-build.json
+
+      - name: Upload canonical artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zpc-canonical-dist
+          path: dist
+          retention-days: 7
+          if-no-files-found: error

@@ -1,7 +1,13 @@
 type ApiResponse<T = any> = { data: T; status: number };
 
+function resolveApiPath(path: string) {
+  if (typeof window === 'undefined') return path;
+  const base = window.location.pathname === '/control' || window.location.pathname.startsWith('/control/') ? '/control' : '';
+  return path.startsWith('/') ? `${base}${path}` : path;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<ApiResponse<T>> {
-  const response = await fetch(path, {
+  const response = await fetch(resolveApiPath(path), {
     method,
     headers: body === undefined ? undefined : { 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),

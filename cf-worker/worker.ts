@@ -26,7 +26,8 @@ pre{white-space:pre-wrap;word-break:break-word;background:#050d16;border:1px sol
 </main><script>
 let sessionToken='';
 const qs=(id)=>document.getElementById(id);
-async function api(path,body){const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||j.message||('HTTP '+r.status));return j}
+const API_BASE=location.pathname.startsWith('/control')?'/control':'';
+async function api(path,body){const r=await fetch(API_BASE+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||j.message||('HTTP '+r.status));return j}
 let bootstrapData=null;
 async function load(){const data=await api('/api/admin/bootstrap?runtime=cloudflare',{sessionToken});bootstrapData=data;const select=qs('target');select.innerHTML='';for(const t of data.certificationTargets||[]){const o=document.createElement('option');o.value=t.id;o.textContent=t.name+' · '+t.certification.summary.proved+'/'+t.certification.summary.applicable;select.appendChild(o)}renderSummary(data.summary);renderSeals();return data}
 function renderSummary(s){qs('summary').innerHTML=[['Produtos',s.total],['Certificados',s.certified],['Em certificação',s.inCertification],['ZEES bloqueados',s.zeesBlocked]].map(([a,b])=>'<div class="metric"><b>'+b+'</b><small>'+a+'</small></div>').join('')}
@@ -41,8 +42,12 @@ export default {
   async fetch(request: Request, env: Record<string, unknown>) {
     setWorkerEnv(env);
     const url = new URL(request.url);
+    const normalizedPath = url.pathname === '/control' ? '/' : url.pathname.startsWith('/control/') ? url.pathname.slice('/control'.length) : url.pathname;
+    const normalizedUrl = new URL(request.url);
+    normalizedUrl.pathname = normalizedPath;
+    const normalizedRequest = new Request(normalizedUrl.toString(), request);
 
-    if (url.pathname === '/' || url.pathname === '/certifier') {
+    if (normalizedPath === '/certifier') {
       return new Response(CERTIFIER_HTML, {
         headers: {
           'content-type': 'text/html; charset=utf-8',
@@ -53,7 +58,7 @@ export default {
       });
     }
 
-    if (url.pathname === '/portable-health') {
+    if (normalizedPath === '/portable-health') {
       const health = await portableHealth();
       return Response.json({ ...health, runtime: 'cloudflare-worker', backendSourceSha: BACKEND_SOURCE_SHA, workerCommit: String(env.WORKER_COMMIT || 'untracked') }, {
         status: health.ok ? 200 : 503,
@@ -61,32 +66,40 @@ export default {
       });
     }
 
-    if (url.pathname === '/runtime-proof') {
+    if (normalizedPath === '/runtime-proof') {
       return Response.json({ ok: true, runtime: 'cloudflare-worker', backendSourceSha: BACKEND_SOURCE_SHA, workerCommit: String(env.WORKER_COMMIT || 'untracked'), directBackend: true }, {
         headers: { 'cache-control': 'no-store' },
       });
     }
 
-    if (url.pathname === '/definir-pin' || url.pathname === '/__complete-pin-migration') {
+    if (normalizedPath === '/definir-pin' || normalizedPath === '/__complete-pin-migration') {
       return Response.json(
         { ok: false, error: 'migration_closed' },
         { status: 410, headers: { 'cache-control': 'no-store, max-age=0' } },
       );
     }
 
-    if (url.pathname.startsWith('/api/')) {
+    if (normalizedPath.startsWith('/api/')) {
       const forceDirect = url.searchParams.get('runtime') === 'cloudflare';
       const renderBase = forceDirect ? '' : String(env.RENDER_BACKEND_URL || '').replace(/\/$/, '');
       if (renderBase) {
         try {
-          const target = renderBase + url.pathname + url.search;
-          const primaryResponse = await fetch(new Request(target, request.clone()));
+          const target = renderBase + normalizedPath + url.search;
+          const primaryResponse = await fetch(new Request(target, normalizedRequest.clone()));
           if (primaryResponse.status < 500) return primaryResponse;
         } catch {}
       }
-      return handler(request);
+      return handler(normalizedRequest);
     }
 
-    return handler(request);
+    if (env.ASSETS && typeof (env.ASSETS as any).fetch === 'function') {
+      const assetUrl = new URL(request.url);
+      assetUrl.pathname = normalizedPath === '/' ? '/' : normalizedPath;
+      const assetResponse = await (env.ASSETS as any).fetch(new Request(assetUrl.toString(), request));
+      if (assetResponse.status !== 404) return assetResponse;
+      return (env.ASSETS as any).fetch(new Request(new URL('/', request.url).toString(), request));
+    }
+
+    return handler(normalizedRequest);
   },
 };
