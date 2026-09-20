@@ -49,6 +49,8 @@ jobs:
           grep -q "zevanory.api.br/control" RECONCILIATION.md
 
       - name: Build remotely
+        env:
+          ZPC_BASE_PATH: /control/
         run: npm run build
 
       - name: Stamp exact lineage

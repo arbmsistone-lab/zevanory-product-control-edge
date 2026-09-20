@@ -1,7 +1,7 @@
 import { handler } from './backend-index.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
-const BACKEND_SOURCE_SHA = 'b2a0c46488f0ea9ae14f536b6beeb71afefe346e';
+const BACKEND_SOURCE_SHA = 'cae3f7c3f299646e274b0f4d9f38f17821aee571';
 
 const CERTIFIER_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
