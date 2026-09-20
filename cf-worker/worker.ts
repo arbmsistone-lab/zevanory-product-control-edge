@@ -1,7 +1,7 @@
 import { handler } from './backend-index.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
-const BACKEND_SOURCE_SHA = 'cae3f7c3f299646e274b0f4d9f38f17821aee571';
+const CONTROL_PLANE_URL = 'https://zevanory.api.br/api/control-plane';
 
 const CERTIFIER_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -38,6 +38,47 @@ qs('reload').onclick=async()=>{try{await load();qs('state').textContent='Atualiz
 qs('run').onclick=async()=>{qs('run').disabled=true;qs('state').innerHTML='<span class="warn">Executando P01–P16...</span>';try{const j=await api('/api/certification/run?runtime=cloudflare',{sessionToken,targetId:qs('target').value});qs('output').textContent=JSON.stringify(j,null,2);qs('state').innerHTML=j.certification?.ready?'<span class="ok">CERTIFICADO integralmente.</span>':'<span class="warn">Execução concluída; gate permanece fail-closed.</span>';await load()}catch(e){qs('state').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('run').disabled=false}}
 </script></body></html>`;
 
+async function fetchGlobalTrust() {
+  let lastError = '';
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await fetch(`${CONTROL_PLANE_URL}?zpc=${Date.now()}-${attempt}`, {
+        headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw new Error(`control_plane_http_${response.status}`);
+      const data = await response.json() as any;
+      const trust = data?.trust_chain || {};
+      const counts = data?.policy?.counts || {};
+      return {
+        state: String(trust.state || 'BLOCKED'),
+        sha: String(trust.artifact_sha || data?.release?.deployment?.commit_sha || '') || null,
+        evidenceRoot: String(trust.evidence_root || '') || null,
+        policyVersion: String(trust.policy_version || '') || null,
+        quorum: {
+          passed: Number(trust.passed || 0),
+          total: Number(trust.total || 3),
+          required: Number(trust.required || 2),
+          conflicts: Number(trust.conflicts || 0),
+          independentKeys: Number(trust.independent_keys || 0),
+        },
+        zea10: {
+          proven: Number(counts.proven || 0),
+          partial: Number(counts.partial || 0),
+          blocked: Number(counts.blocked || 0),
+        },
+        engines: Array.isArray(trust.engines)
+          ? trust.engines.map((item:any)=>({ id:String(item?.id||''), state:String(item?.state||'UNKNOWN') })).filter((item:any)=>item.id)
+          : [],
+        checkedAt: String(trust?.ledger?.checked_at || '') || null,
+      };
+    } catch (error) {
+      lastError = String(error);
+    }
+  }
+  return { state: 'BLOCKED', sha: null, evidenceRoot: null, policyVersion: null, quorum: { passed: 0, total: 3, required: 2, conflicts: 0, independentKeys: 0 }, zea10: { proven: 0, partial: 0, blocked: 10 }, engines: [], checkedAt: null, error: lastError };
+}
+
 export default {
   async fetch(request: Request, env: Record<string, unknown>) {
     setWorkerEnv(env);
@@ -58,16 +99,23 @@ export default {
       });
     }
 
+    if (normalizedPath === '/api/_global_trust') {
+      const trust = await fetchGlobalTrust();
+      return Response.json(trust, { status: trust.state === 'GREEN' ? 200 : 503, headers: { 'cache-control': 'no-store, max-age=0' } });
+    }
+
     if (normalizedPath === '/portable-health') {
       const health = await portableHealth();
-      return Response.json({ ...health, runtime: 'cloudflare-worker', backendSourceSha: BACKEND_SOURCE_SHA, workerCommit: String(env.WORKER_COMMIT || 'untracked') }, {
+      const lineage = String(env.WORKER_COMMIT || 'untracked');
+      return Response.json({ ...health, runtime: 'cloudflare-worker', backendSourceSha: lineage, workerCommit: lineage }, {
         status: health.ok ? 200 : 503,
         headers: { 'cache-control': 'no-store' },
       });
     }
 
     if (normalizedPath === '/runtime-proof') {
-      return Response.json({ ok: true, runtime: 'cloudflare-worker', backendSourceSha: BACKEND_SOURCE_SHA, workerCommit: String(env.WORKER_COMMIT || 'untracked'), directBackend: true }, {
+      const lineage = String(env.WORKER_COMMIT || 'untracked');
+      return Response.json({ ok: true, runtime: 'cloudflare-worker', backendSourceSha: lineage, workerCommit: lineage, directBackend: true }, {
         headers: { 'cache-control': 'no-store' },
       });
     }

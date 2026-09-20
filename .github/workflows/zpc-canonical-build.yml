@@ -45,12 +45,15 @@ jobs:
           grep -q "shell-products" src/index.css
           grep -q "P01" backend/zees-verifiers.ts
           grep -q "P16" backend/zees-verifiers.ts
-          grep -q "zevanory.api.br/control" CANONICAL_DEPLOYMENT.md
-          grep -q "zevanory.api.br/control" RECONCILIATION.md
+          grep -q "controle.zevanory.api.br" CANONICAL_DEPLOYMENT.md
+          grep -q "controle.zevanory.api.br" RECONCILIATION.md
+          ! grep -q "Com tecnologia Netlify" src/App.tsx
+          grep -q "overflow: hidden" src/index.css
+          grep -q "api/_global_trust" src/App.tsx
 
       - name: Build remotely
         env:
-          ZPC_BASE_PATH: /control/
+          ZPC_BASE_PATH: /
         run: npm run build
 
       - name: Stamp exact lineage

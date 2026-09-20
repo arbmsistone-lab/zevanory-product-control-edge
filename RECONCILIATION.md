@@ -1,7 +1,7 @@
 # ZEVANORY PRODUCT CONTROL - Reconciliation Manifest
 
 ## Canonical entrypoint
-https://zevanory.api.br/control
+https://controle.zevanory.api.br/
 
 ## Reconciled lineages
 ### AppDeploy legacy (v1-v43)
@@ -59,7 +59,7 @@ Canonical implementation includes:
 
 ## Runtime baseline
 Single public entrypoint:
-https://zevanory.api.br/control
+https://controle.zevanory.api.br/
 
 Behind the entrypoint:
 1. Cloudflare Worker direct runtime
