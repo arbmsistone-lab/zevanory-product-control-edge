@@ -45,11 +45,23 @@ a {
 }
 
 .shell-products {
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
-  padding-top: 14px;
-  padding-bottom: 12px;
+  padding-top: 12px;
+  padding-bottom: 10px;
+}
+
+.shell-products > .topbar,
+.shell-products > .policybar,
+.shell-products > .trustStrip,
+.shell-products > .tabs,
+.shell-products > .metrics,
+.shell-products > .toolbar,
+.shell-products > .globalError {
+  flex: 0 0 auto;
 }
 
 .topbar {
@@ -366,9 +378,11 @@ a {
 }
 
 .shell-products .productGrid {
-  height: calc(100dvh - 535px);
+  flex: 1 1 0;
+  height: auto;
   min-height: 0;
-  max-height: calc(100dvh - 535px);
+  max-height: none;
+  align-items: stretch;
 }
 
 .productCard {
@@ -383,6 +397,7 @@ a {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 9px 10px 8px;
 }
 
 .productCard.archived {
@@ -1105,9 +1120,10 @@ a {
 }
 
 .shell-products .productDescription {
-  min-height: 30px;
-  margin: 6px 0 7px;
-  line-height: 1.35;
+  min-height: 24px;
+  margin: 4px 0 5px;
+  font-size: 10px;
+  line-height: 1.25;
 }
 
 .shell-products .productFacts span {
