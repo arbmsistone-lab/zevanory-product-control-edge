@@ -3,7 +3,8 @@ main = "worker.ts"
 compatibility_date = "2026-09-19"
 
 routes = [
-  { pattern = "controle.zevanory.api.br", custom_domain = true }
+  { pattern = "controle.zevanory.api.br", custom_domain = true },
+  { pattern = "zevanory.api.br/control*", zone_name = "zevanory.api.br" }
 ]
 
 [assets]

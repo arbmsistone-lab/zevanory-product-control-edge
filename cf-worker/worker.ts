@@ -55,7 +55,12 @@ export default {
   async fetch(request: Request, env: Record<string, unknown>) {
     setWorkerEnv(env);
     const url = new URL(request.url);
-    const normalizedPath = url.pathname === '/control' ? '/' : url.pathname.startsWith('/control/') ? url.pathname.slice('/control'.length) : url.pathname;
+    if (url.hostname === 'zevanory.api.br' && (url.pathname === '/control' || url.pathname.startsWith('/control/'))) {
+      const suffix = url.pathname === '/control' ? '/' : url.pathname.slice('/control'.length);
+      const canonical = new URL(`https://controle.zevanory.api.br${suffix}${url.search}`);
+      return Response.redirect(canonical.toString(), 308);
+    }
+    const normalizedPath = url.pathname;
     const normalizedUrl = new URL(request.url);
     normalizedUrl.pathname = normalizedPath;
     const normalizedRequest = new Request(normalizedUrl.toString(), request);
