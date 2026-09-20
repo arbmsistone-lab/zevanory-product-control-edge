@@ -14,6 +14,8 @@ on:
       - 'RECONCILIATION.md'
       - '.github/workflows/zpc-canonical-build.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
 
 permissions:
   contents: read
@@ -49,12 +51,42 @@ jobs:
           grep -q "controle.zevanory.api.br" RECONCILIATION.md
           ! grep -q "Com tecnologia Netlify" src/App.tsx
           grep -q "overflow: hidden" src/index.css
-          grep -q "api/_global_trust" src/App.tsx
+          grep -q "global-trust.json" src/App.tsx
 
       - name: Build remotely
         env:
           ZPC_BASE_PATH: /
         run: npm run build
+
+      - name: Capture live global trust
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25             https://zevanory.api.br/api/control-plane             -o /tmp/control-plane.json
+          jq -e '.trust_chain and .policy.counts' /tmp/control-plane.json >/dev/null
+          jq '{
+            state: (.trust_chain.state // "BLOCKED"),
+            sha: (.trust_chain.artifact_sha // .release.deployment.commit_sha // null),
+            evidenceRoot: (.trust_chain.evidence_root // null),
+            policyVersion: (.trust_chain.policy_version // null),
+            quorum: {
+              passed: (.trust_chain.passed // 0),
+              total: (.trust_chain.total // 3),
+              required: (.trust_chain.required // 2),
+              conflicts: (.trust_chain.conflicts // 0),
+              independentKeys: (.trust_chain.independent_keys // 0)
+            },
+            zea10: {
+              proven: (.policy.counts.proven // 0),
+              partial: (.policy.counts.partial // 0),
+              blocked: (.policy.counts.blocked // 0)
+            },
+            engines: ((.trust_chain.engines // []) | map({id: .id, state: .state})),
+            checkedAt: (.trust_chain.ledger.checked_at // .zea10_live.report.generated_at // null),
+            snapshotAt: (now | todateiso8601),
+            source: "https://zevanory.api.br/api/control-plane"
+          }' /tmp/control-plane.json > dist/global-trust.json
+          jq -e '.state and .quorum and .zea10' dist/global-trust.json >/dev/null
 
       - name: Stamp exact lineage
         shell: bash
@@ -68,3 +100,61 @@ jobs:
           path: dist
           retention-days: 7
           if-no-files-found: error
+
+  deploy:
+    needs: build
+    runs-on: [self-hosted, Windows, X64, arbm-control-zero-spend]
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v4
+
+      - name: Download canonical artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: zpc-canonical-dist
+          path: dist
+
+      - name: Confirm exact artifact lineage
+        shell: powershell
+        env:
+          EXACT_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $build = Get-Content dist/zpc-build.json -Raw | ConvertFrom-Json
+          if ($build.sha -ne $env:EXACT_SHA) { throw "artifact_sha_mismatch" }
+          $trust = Get-Content dist/global-trust.json -Raw | ConvertFrom-Json
+          if (-not $trust.state -or -not $trust.quorum) { throw "trust_snapshot_invalid" }
+
+      - name: Detect Cloudflare credential route
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          npx -y wrangler@latest whoami
+
+      - name: Deploy exact SHA to canonical domain
+        shell: powershell
+        env:
+          EXACT_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          npx -y wrangler@latest deploy --config cf-worker/wrangler.toml --var "WORKER_COMMIT:$env:EXACT_SHA"
+
+      - name: Verify canonical production
+        shell: powershell
+        env:
+          EXACT_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $build = Invoke-RestMethod -Uri 'https://controle.zevanory.api.br/zpc-build.json' -Headers @{ 'Cache-Control'='no-cache' }
+          if ($build.sha -ne $env:EXACT_SHA) { throw "production_build_sha_mismatch" }
+          $runtime = Invoke-RestMethod -Uri 'https://controle.zevanory.api.br/runtime-proof' -Headers @{ 'Cache-Control'='no-cache' }
+          if (-not $runtime.ok -or $runtime.workerCommit -ne $env:EXACT_SHA -or $runtime.backendSourceSha -ne $env:EXACT_SHA) { throw "runtime_lineage_mismatch" }
+          $health = Invoke-RestMethod -Uri 'https://controle.zevanory.api.br/portable-health' -Headers @{ 'Cache-Control'='no-cache' }
+          if (-not $health.ok) { throw "portable_health_failed" }
+          $trust = Invoke-RestMethod -Uri 'https://controle.zevanory.api.br/global-trust.json' -Headers @{ 'Cache-Control'='no-cache' }
+          if (-not $trust.state -or -not $trust.quorum) { throw "trust_snapshot_missing" }

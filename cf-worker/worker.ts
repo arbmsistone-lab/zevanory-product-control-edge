@@ -99,11 +99,6 @@ export default {
       });
     }
 
-    if (normalizedPath === '/api/_global_trust') {
-      const trust = await fetchGlobalTrust();
-      return Response.json(trust, { status: trust.state === 'GREEN' ? 200 : 503, headers: { 'cache-control': 'no-store, max-age=0' } });
-    }
-
     if (normalizedPath === '/portable-health') {
       const health = await portableHealth();
       const lineage = String(env.WORKER_COMMIT || 'untracked');

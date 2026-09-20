@@ -337,7 +337,7 @@ function App() {
 
   const loadGlobalTrustLive = async () => {
     try {
-      const response = await fetch('/api/_global_trust', { cache: 'no-store', headers: { Accept: 'application/json' } });
+      const response = await fetch(`/global-trust.json?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`trust_http_${response.status}`);
       const trust = await response.json() as GlobalTrust;
       setGlobalTrust(trust);
