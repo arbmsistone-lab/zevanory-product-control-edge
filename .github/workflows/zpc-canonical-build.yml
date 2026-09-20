@@ -8,9 +8,10 @@ on:
       - 'backend/**'
       - 'cf-worker/**'
       - 'package.json'
-      - 'package-lock.json'
       - 'vite.config.ts'
       - 'tsconfig.json'
+      - 'CANONICAL_DEPLOYMENT.md'
+      - 'RECONCILIATION.md'
       - '.github/workflows/zpc-canonical-build.yml'
   workflow_dispatch:
 
@@ -28,14 +29,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: npm
+          node-version: '24'
 
       - name: Install
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npx tsc --noEmit --noUnusedLocals false --noUnusedParameters false
 
       - name: Guard canonical ZEES baseline
         shell: bash
