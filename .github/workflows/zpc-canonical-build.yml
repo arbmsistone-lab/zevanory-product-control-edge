@@ -19,6 +19,12 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: zpc-canonical-pages
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -101,60 +107,19 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-  deploy:
-    needs: build
-    runs-on: [self-hosted, Windows, X64, arbm-control-zero-spend]
-    timeout-minutes: 10
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-      CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
-    steps:
-      - name: Checkout exact SHA
-        uses: actions/checkout@v4
-
-      - name: Download canonical artifact
-        uses: actions/download-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          name: zpc-canonical-dist
           path: dist
 
-      - name: Confirm exact artifact lineage
-        shell: powershell
-        env:
-          EXACT_SHA: ${{ github.sha }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $build = Get-Content dist/zpc-build.json -Raw | ConvertFrom-Json
-          if ($build.sha -ne $env:EXACT_SHA) { throw "artifact_sha_mismatch" }
-          $trust = Get-Content dist/global-trust.json -Raw | ConvertFrom-Json
-          if (-not $trust.state -or -not $trust.quorum) { throw "trust_snapshot_invalid" }
-
-      - name: Detect Cloudflare credential route
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          npx -y wrangler@latest whoami
-
-      - name: Deploy exact SHA to canonical domain
-        shell: powershell
-        env:
-          EXACT_SHA: ${{ github.sha }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          npx -y wrangler@latest deploy --config cf-worker/wrangler.toml --var "WORKER_COMMIT:$env:EXACT_SHA"
-
-      - name: Verify canonical production
-        shell: powershell
-        env:
-          EXACT_SHA: ${{ github.sha }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $build = Invoke-RestMethod -Uri 'https://controle.zevanory.api.br/zpc-build.json' -Headers @{ 'Cache-Control'='no-cache' }
-          if ($build.sha -ne $env:EXACT_SHA) { throw "production_build_sha_mismatch" }
-          $runtime = Invoke-RestMethod -Uri 'https://controle.zevanory.api.br/runtime-proof' -Headers @{ 'Cache-Control'='no-cache' }
-          if (-not $runtime.ok -or $runtime.workerCommit -ne $env:EXACT_SHA -or $runtime.backendSourceSha -ne $env:EXACT_SHA) { throw "runtime_lineage_mismatch" }
-          $health = Invoke-RestMethod -Uri 'https://controle.zevanory.api.br/portable-health' -Headers @{ 'Cache-Control'='no-cache' }
-          if (-not $health.ok) { throw "portable_health_failed" }
-          $trust = Invoke-RestMethod -Uri 'https://controle.zevanory.api.br/global-trust.json' -Headers @{ 'Cache-Control'='no-cache' }
-          if (-not $trust.state -or -not $trust.quorum) { throw "trust_snapshot_missing" }
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy automatic origin
+        id: deployment
+        uses: actions/deploy-pages@v4

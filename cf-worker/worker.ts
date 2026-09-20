@@ -1,7 +1,7 @@
 import { handler } from './backend-index.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
-const CONTROL_PLANE_URL = 'https://zevanory.api.br/api/control-plane';
+const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
 
 const CERTIFIER_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -38,45 +38,17 @@ qs('reload').onclick=async()=>{try{await load();qs('state').textContent='Atualiz
 qs('run').onclick=async()=>{qs('run').disabled=true;qs('state').innerHTML='<span class="warn">Executando P01–P16...</span>';try{const j=await api('/api/certification/run?runtime=cloudflare',{sessionToken,targetId:qs('target').value});qs('output').textContent=JSON.stringify(j,null,2);qs('state').innerHTML=j.certification?.ready?'<span class="ok">CERTIFICADO integralmente.</span>':'<span class="warn">Execução concluída; gate permanece fail-closed.</span>';await load()}catch(e){qs('state').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('run').disabled=false}}
 </script></body></html>`;
 
-async function fetchGlobalTrust() {
-  let lastError = '';
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      const response = await fetch(`${CONTROL_PLANE_URL}?zpc=${Date.now()}-${attempt}`, {
-        headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!response.ok) throw new Error(`control_plane_http_${response.status}`);
-      const data = await response.json() as any;
-      const trust = data?.trust_chain || {};
-      const counts = data?.policy?.counts || {};
-      return {
-        state: String(trust.state || 'BLOCKED'),
-        sha: String(trust.artifact_sha || data?.release?.deployment?.commit_sha || '') || null,
-        evidenceRoot: String(trust.evidence_root || '') || null,
-        policyVersion: String(trust.policy_version || '') || null,
-        quorum: {
-          passed: Number(trust.passed || 0),
-          total: Number(trust.total || 3),
-          required: Number(trust.required || 2),
-          conflicts: Number(trust.conflicts || 0),
-          independentKeys: Number(trust.independent_keys || 0),
-        },
-        zea10: {
-          proven: Number(counts.proven || 0),
-          partial: Number(counts.partial || 0),
-          blocked: Number(counts.blocked || 0),
-        },
-        engines: Array.isArray(trust.engines)
-          ? trust.engines.map((item:any)=>({ id:String(item?.id||''), state:String(item?.state||'UNKNOWN') })).filter((item:any)=>item.id)
-          : [],
-        checkedAt: String(trust?.ledger?.checked_at || '') || null,
-      };
-    } catch (error) {
-      lastError = String(error);
-    }
-  }
-  return { state: 'BLOCKED', sha: null, evidenceRoot: null, policyVersion: null, quorum: { passed: 0, total: 3, required: 2, conflicts: 0, independentKeys: 0 }, zea10: { proven: 0, partial: 0, blocked: 10 }, engines: [], checkedAt: null, error: lastError };
+async function fetchPagesOrigin(pathname: string) {
+  const target = PAGES_ORIGIN + (pathname === '/' ? '/' : pathname);
+  const response = await fetch(target, {
+    headers: { 'Cache-Control': 'no-cache', Accept: '*/*' },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) return null;
+  const headers = new Headers(response.headers);
+  headers.set('cache-control', pathname === '/global-trust.json' || pathname === '/zpc-build.json' ? 'no-store, max-age=0' : 'public, max-age=60');
+  headers.set('x-zpc-origin', 'github-pages');
+  return new Response(response.body, { status: response.status, headers });
 }
 
 export default {
@@ -134,6 +106,11 @@ export default {
       }
       return handler(normalizedRequest);
     }
+
+    try {
+      const pagesResponse = await fetchPagesOrigin(normalizedPath);
+      if (pagesResponse) return pagesResponse;
+    } catch {}
 
     if (env.ASSETS && typeof (env.ASSETS as any).fetch === 'function') {
       const assetUrl = new URL(request.url);
