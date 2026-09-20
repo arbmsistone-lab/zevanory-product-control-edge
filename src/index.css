@@ -1304,3 +1304,141 @@ a {
   font-size: 7px;
   line-height: 1.35;
 }
+
+/* ==========================================================================
+   ZPC PRODUCTS VIEWPORT FINAL OVERRIDE
+   Canonical rule: no page scroll, no clipped product cards, no dead space.
+   ========================================================================== */
+.shell-products {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: 10px 26px 8px;
+}
+
+.shell-products > .topbar,
+.shell-products > .policybar,
+.shell-products > .trustStrip,
+.shell-products > .tabs,
+.shell-products > .metrics,
+.shell-products > .toolbar,
+.shell-products > .globalError {
+  flex: 0 0 auto;
+}
+
+.shell-products .topbar { margin-bottom: 8px; }
+.shell-products .policybar { margin: 6px 0; }
+.shell-products .trustStrip { margin: 6px 0 7px; padding: 6px 9px; }
+.shell-products .tabs { margin: 6px 0; }
+.shell-products .tab { padding: 7px 10px; }
+.shell-products .metrics { gap: 8px; margin-bottom: 8px; }
+.shell-products .metric { padding: 8px 12px; }
+.shell-products .metric strong { font-size: 21px; }
+.shell-products .toolbar { margin: 5px 0 6px; }
+.shell-products .toolbar h2 { font-size: 16px; }
+
+.shell-products .productGrid {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.shell-products .productCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px 9px 7px;
+}
+
+.shell-products .productHead h3 { font-size: 13px; }
+.shell-products .productCategory { margin-bottom: 2px; font-size: 8px; }
+.shell-products .saleBadge { padding: 4px 6px; font-size: 8px; }
+
+.shell-products .productDescription {
+  min-height: 22px;
+  max-height: 26px;
+  margin: 3px 0 4px;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.shell-products .productFacts { gap: 4px; }
+.shell-products .productFacts span { padding: 3px 5px; }
+.shell-products .productFacts b { font-size: 9px; }
+.shell-products .productFacts small { margin-top: 1px; font-size: 6px; }
+
+.shell-products .certPanel { margin-top: 4px; padding: 5px; }
+.shell-products .auditHeader { gap: 6px; }
+.shell-products .auditHeader small { font-size: 6px; }
+.shell-products .auditHeader strong { margin-top: 1px; font-size: 8px; }
+.shell-products .certRatio { font-size: 13px; }
+
+.shell-products .zeesSealGrid {
+  gap: 3px;
+  margin-top: 4px;
+}
+.shell-products .zeesSealChip {
+  height: 18px;
+  border-radius: 5px;
+  font-size: 7px;
+}
+
+.shell-products .certCompactSummary {
+  gap: 4px;
+  flex-wrap: nowrap;
+  margin-top: 3px;
+  font-size: 6px;
+}
+.shell-products .certPanel p {
+  margin-top: 3px;
+  font-size: 6px;
+  line-height: 1.15;
+}
+.shell-products .certBlockerLine {
+  max-height: 14px;
+  white-space: nowrap;
+}
+
+.shell-products .gateRow {
+  gap: 4px;
+  margin: 3px 0 2px;
+  flex-wrap: nowrap;
+}
+.shell-products .gate {
+  padding: 2px 4px;
+  font-size: 7px;
+}
+
+.shell-products .blockers {
+  min-height: 10px;
+  max-height: 10px;
+  margin: 1px 0 2px;
+  overflow: hidden;
+  font-size: 7px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell-products .productActions {
+  gap: 4px;
+  flex-wrap: nowrap;
+  margin-top: auto;
+}
+.shell-products .productActions .compact {
+  min-height: 24px;
+  padding: 4px 6px;
+  font-size: 8px;
+}
+.shell-products .productActions svg {
+  width: 12px;
+  height: 12px;
+}
