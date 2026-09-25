@@ -623,12 +623,14 @@ function App() {
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
   const operationsPageSize = 4;
-  const incidentPageCount = Math.max(1, Math.ceil(dashboard.incidents.length / operationsPageSize));
+  const operationIncidents = dashboard?.incidents ?? [];
+  const operationAudits = dashboard?.audits ?? [];
+  const incidentPageCount = Math.max(1, Math.ceil(operationIncidents.length / operationsPageSize));
   const safeIncidentPage = Math.min(incidentPage, incidentPageCount - 1);
-  const pagedIncidents = dashboard.incidents.slice(safeIncidentPage * operationsPageSize, (safeIncidentPage + 1) * operationsPageSize);
-  const auditPageCount = Math.max(1, Math.ceil(dashboard.audits.length / operationsPageSize));
+  const pagedIncidents = operationIncidents.slice(safeIncidentPage * operationsPageSize, (safeIncidentPage + 1) * operationsPageSize);
+  const auditPageCount = Math.max(1, Math.ceil(operationAudits.length / operationsPageSize));
   const safeAuditPage = Math.min(auditPage, auditPageCount - 1);
-  const pagedAudits = dashboard.audits.slice(safeAuditPage * operationsPageSize, (safeAuditPage + 1) * operationsPageSize);
+  const pagedAudits = operationAudits.slice(safeAuditPage * operationsPageSize, (safeAuditPage + 1) * operationsPageSize);
 
   const selectedCertificationTarget = useMemo(
     () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
