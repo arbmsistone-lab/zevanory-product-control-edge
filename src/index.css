@@ -1705,7 +1705,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 }
 
 /* Governance desktop: 16 pillars fit in one executive viewport. */
-@media (min-width: 1101px) and (min-height: 850px) {
+@media (min-width: 1101px) {
   .shell-governance {
     display: flex;
     flex-direction: column;
@@ -1901,5 +1901,168 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+
+
+/* ZPC AUDIT ROUND 2 - short desktop and touch targets */
+@media (min-width: 1101px) {
+  .shell-operations {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding: 8px 26px 7px;
+  }
+  .shell-operations > .topbar,
+  .shell-operations > .policybar,
+  .shell-operations > .trustStrip,
+  .shell-operations > .tabs,
+  .shell-operations > .globalError {
+    flex: 0 0 auto;
+  }
+  .shell-operations .topbar { margin-bottom: 4px; }
+  .shell-operations .topbar h1 { margin: 2px 0 3px; font-size: 24px; }
+  .shell-operations .subtitle { font-size: 10px; }
+  .shell-operations .policybar { margin: 3px 0; }
+  .shell-operations .policybar span { padding: 5px 7px; font-size: 8px; }
+  .shell-operations .trustStrip { margin: 3px 0 4px; padding: 5px 8px; }
+  .shell-operations .tabs { margin: 3px 0 5px; }
+  .shell-operations .tab { min-height: 31px; padding: 5px 9px; }
+
+  .shell-operations .opsGrid {
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 6px;
+    overflow: hidden;
+  }
+  .shell-operations .opsGrid > .panel {
+    min-height: 0;
+    overflow: hidden;
+    padding: 8px 10px;
+  }
+  .shell-operations .opsGrid .panel:first-child {
+    padding: 7px 10px;
+  }
+  .shell-operations .panelhead { margin-bottom: 4px; }
+  .shell-operations .panelhead h2 { font-size: 14px; }
+  .shell-operations .operationSummary { gap: 5px; }
+  .shell-operations .operationSummary span {
+    padding: 5px 7px;
+    font-size: 8px;
+  }
+  .shell-operations .feed { gap: 4px; }
+  .shell-operations .feeditem {
+    min-height: 0;
+    gap: 6px;
+    padding: 5px 7px;
+  }
+  .shell-operations .feeditem strong { font-size: 8px; }
+  .shell-operations .feeditem p {
+    max-height: 23px;
+    margin: 2px 0;
+    overflow: hidden;
+    font-size: 7px;
+    line-height: 1.15;
+  }
+  .shell-operations .feeditem time { font-size: 6px; }
+  .shell-operations .state { padding: 3px 5px; font-size: 6px; }
+  .shell-operations .empty { padding: 8px; font-size: 8px; }
+}
+
+@media (min-width: 1101px) and (max-height: 820px) {
+  .shell-governance {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+  .shell-governance .topbar { margin-bottom: 2px; }
+  .shell-governance .topbar h1 { margin: 1px 0 2px; font-size: 21px; }
+  .shell-governance .subtitle { font-size: 8px; line-height: 1.05; }
+  .shell-governance .policybar { margin: 2px 0; }
+  .shell-governance .policybar span { padding: 3px 6px; font-size: 7px; }
+  .shell-governance .trustStrip { margin: 2px 0; padding: 4px 7px; }
+  .shell-governance .trustStrip small { font-size: 6px; }
+  .shell-governance .trustStrip b,
+  .shell-governance .trustStrip strong { font-size: 8px; }
+  .shell-governance .tabs { margin: 2px 0 3px; }
+  .shell-governance .tab { min-height: 28px; padding: 3px 8px; font-size: 12px; }
+
+  .shell-governance .governanceStack { gap: 3px; }
+  .shell-governance .governanceHero { padding: 5px 8px; }
+  .shell-governance .governanceHero h2 { margin: 1px 0; font-size: 13px; }
+  .shell-governance .governanceHero .productDescription {
+    max-height: 14px;
+    margin: 1px 0 2px;
+    overflow: hidden;
+    font-size: 6px;
+    line-height: 1.05;
+  }
+  .shell-governance .standardStrip { gap: 3px; margin-top: 3px; }
+  .shell-governance .standardStrip span { padding: 3px 5px; font-size: 5px; }
+  .shell-governance .standardStrip b { font-size: 9px; }
+
+  .shell-governance .certWorkspace {
+    grid-template-columns: 180px minmax(0,1fr);
+    gap: 4px;
+  }
+  .shell-governance .certSidebar { padding: 5px; }
+  .shell-governance .certSidebar h2 { margin: 1px 0 3px; font-size: 11px; }
+  .shell-governance .certProductList { gap: 2px; }
+  .shell-governance .certProductButton { padding: 3px 4px; }
+  .shell-governance .certProductButton b { font-size: 6px; }
+  .shell-governance .certProductButton small { font-size: 4px; }
+  .shell-governance .certProductButton strong { font-size: 7px; }
+
+  .shell-governance .certSummaryPanel { margin-bottom: 3px; padding: 4px 6px; }
+  .shell-governance .certTitleRow h2 { margin: 1px 0; font-size: 12px; }
+  .shell-governance .certTitleRow p { font-size: 5px; }
+  .shell-governance .certSeal { padding: 3px 6px; font-size: 5px; }
+  .shell-governance .certSummaryGrid { gap: 2px; margin-top: 3px; }
+  .shell-governance .certSummaryGrid span { padding: 3px; }
+  .shell-governance .certSummaryGrid b { font-size: 8px; }
+  .shell-governance .certSummaryGrid small { font-size: 4px; }
+  .shell-governance .certRunStrip { gap: 2px; margin-top: 3px; }
+  .shell-governance .certRunStrip span { padding: 3px 4px; font-size: 5px; }
+  .shell-governance .rootBlocker { margin-top: 3px; padding: 3px 5px; font-size: 5px; }
+
+  .shell-governance .pillarGrid { gap: 3px; }
+  .shell-governance .pillarCard { padding: 4px; border-radius: 6px; }
+  .shell-governance .pillarStatus { padding: 1px 3px; font-size: 4px; }
+  .shell-governance .pillarIndex { font-size: 5px; }
+  .shell-governance .pillarCard h3 { margin: 2px 0 1px; font-size: 7px; }
+  .shell-governance .pillarCard > p { max-height: 16px; font-size: 5px; line-height: 1.05; }
+  .shell-governance .pillarMeta { margin-top: 2px; font-size: 4px; }
+  .shell-governance .pillarEvidence {
+    max-height: 14px;
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+  .shell-governance .pillarEvidence span { font-size: 4px; }
+  .shell-governance .pillarBlocker {
+    max-height: 12px;
+    margin-top: 2px;
+    padding-top: 2px;
+    font-size: 4px;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell-products .productActions .compact,
+  .pagination .filter {
+    min-height: 44px;
+  }
+  .pagination .filter {
+    min-width: 44px;
+  }
+  .modal .formGrid input,
+  .modal .formGrid select,
+  .modal .formGrid textarea,
+  .modal .auditEditor input,
+  .modal .gateBox label,
+  .modal .saleSwitch {
+    min-height: 44px;
   }
 }
