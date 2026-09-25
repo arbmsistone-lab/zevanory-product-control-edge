@@ -2338,3 +2338,48 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .pillarEvidence span,
   .shell-governance .pillarBlocker{font-size:10px!important;line-height:1.15!important}
 }
+
+/* ZPC overview density closure: use the available viewport instead of leaving dead space. */
+@media (min-width:1101px){
+  .shell-overview .overviewGrid > .panel{
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  .shell-overview .channelTable,
+  .shell-overview .executiveList{
+    flex:1 1 0!important;
+    min-height:0!important;
+  }
+  .shell-overview .channelTable{
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  .shell-overview .channelRow{
+    flex:1 1 0!important;
+    min-height:26px!important;
+    align-content:center!important;
+    padding:6px 8px!important;
+    font-size:10px!important;
+    line-height:1.15!important;
+  }
+  .shell-overview .channelHead{
+    flex:0 0 auto!important;
+    min-height:22px!important;
+    font-size:10px!important;
+  }
+  .shell-overview .executiveList{
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  .shell-overview .executiveList div{
+    flex:1 1 0!important;
+    min-height:34px!important;
+    padding:8px 9px!important;
+  }
+  .shell-overview .executiveList span,
+  .shell-overview .executiveList b{
+    font-size:10px!important;
+    line-height:1.15!important;
+  }
+  .shell-overview .panelhead h2{font-size:15px!important}
+}
