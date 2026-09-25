@@ -2405,3 +2405,12 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-operations .feeditem strong{font-size:10px!important;line-height:1.1!important}
   .shell-operations .state{padding:3px 5px!important;font-size:10px!important;line-height:1!important}
 }
+
+/* ZPC operations internal pagination: bounded dynamic feeds, zero page scroll. */
+.opsPager{display:flex;align-items:center;gap:6px;color:#9fb0c6}
+.opsPager strong{font-size:10px;min-width:28px;text-align:center}
+.opsPager .compact{min-width:30px;min-height:28px;padding:3px 6px;font-size:12px}
+@media (min-width:1101px) and (max-height:820px){
+  .shell-operations .opsPager{gap:4px}
+  .shell-operations .opsPager .compact{min-width:28px;min-height:26px;padding:2px 5px}
+}

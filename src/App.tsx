@@ -359,6 +359,8 @@ function App() {
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance'>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
+  const [incidentPage, setIncidentPage] = useState(0);
+  const [auditPage, setAuditPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
   const [certTargetPage, setCertTargetPage] = useState(0);
   const [governanceMode, setGovernanceMode] = useState<'certification' | 'sources'>('certification');
@@ -620,6 +622,13 @@ function App() {
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
+  const operationsPageSize = 4;
+  const incidentPageCount = Math.max(1, Math.ceil(dashboard.incidents.length / operationsPageSize));
+  const safeIncidentPage = Math.min(incidentPage, incidentPageCount - 1);
+  const pagedIncidents = dashboard.incidents.slice(safeIncidentPage * operationsPageSize, (safeIncidentPage + 1) * operationsPageSize);
+  const auditPageCount = Math.max(1, Math.ceil(dashboard.audits.length / operationsPageSize));
+  const safeAuditPage = Math.min(auditPage, auditPageCount - 1);
+  const pagedAudits = dashboard.audits.slice(safeAuditPage * operationsPageSize, (safeAuditPage + 1) * operationsPageSize);
 
   const selectedCertificationTarget = useMemo(
     () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
@@ -841,11 +850,11 @@ function App() {
             </div>
           </div>
           <div className='panel'>
-            <div className='panelhead'><div><p className='kicker'>INCIDENTES</p><h2>Fila operacional</h2></div><AlertTriangle size={20} /></div>
+            <div className='panelhead'><div><p className='kicker'>INCIDENTES</p><h2>Fila operacional</h2></div><div className='opsPager'>{incidentPageCount > 1 && <><button className='secondary compact' onClick={() => setIncidentPage(Math.max(0, safeIncidentPage - 1))} disabled={safeIncidentPage === 0}>‹</button><strong>{safeIncidentPage + 1}/{incidentPageCount}</strong><button className='secondary compact' onClick={() => setIncidentPage(Math.min(incidentPageCount - 1, safeIncidentPage + 1))} disabled={safeIncidentPage >= incidentPageCount - 1}>›</button></>}<AlertTriangle size={20} /></div></div>
             <div className='feed'>
               {dashboard.incidents.length === 0
                 ? <div className='empty'>Nenhum incidente registrado.</div>
-                : dashboard.incidents.map(item => (
+                : pagedIncidents.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
                     <div><strong>{item.title}</strong><p>{item.system} · {item.detail}</p></div>
                     <span className='state proposed'>{item.state}</span>
@@ -854,11 +863,11 @@ function App() {
             </div>
           </div>
           <div className='panel'>
-            <div className='panelhead'><div><p className='kicker'>AUDITORIA</p><h2>Achados recentes</h2></div><ShieldCheck size={20} /></div>
+            <div className='panelhead'><div><p className='kicker'>AUDITORIA</p><h2>Achados recentes</h2></div><div className='opsPager'>{auditPageCount > 1 && <><button className='secondary compact' onClick={() => setAuditPage(Math.max(0, safeAuditPage - 1))} disabled={safeAuditPage === 0}>‹</button><strong>{safeAuditPage + 1}/{auditPageCount}</strong><button className='secondary compact' onClick={() => setAuditPage(Math.min(auditPageCount - 1, safeAuditPage + 1))} disabled={safeAuditPage >= auditPageCount - 1}>›</button></>}<ShieldCheck size={20} /></div></div>
             <div className='feed'>
               {dashboard.audits.length === 0
                 ? <div className='empty'>Execute uma auditoria para gerar novos achados.</div>
-                : dashboard.audits.slice(0, 8).map(item => (
+                : pagedAudits.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
                     <div><strong>{item.title}</strong><p>{item.system} · {item.detail}</p></div>
                     <time>{new Date(item.createdAt).toLocaleString('pt-BR')}</time>
