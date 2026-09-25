@@ -359,6 +359,8 @@ function App() {
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance'>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
+  const [governancePage, setGovernancePage] = useState(0);
+  const [governanceMode, setGovernanceMode] = useState<'certification' | 'sources'>('certification');
   const [selectedTargetId, setSelectedTargetId] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
@@ -622,8 +624,17 @@ function App() {
     () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
     [certificationTargets, selectedTargetId],
   );
+  const governancePageSize = 8;
+  const governancePageCount = selectedCertificationTarget ? Math.max(1, Math.ceil(selectedCertificationTarget.certification.pillars.length / governancePageSize)) : 1;
+  const safeGovernancePage = Math.min(governancePage, governancePageCount - 1);
+  const governancePillars = selectedCertificationTarget?.certification.pillars.slice(
+    safeGovernancePage * governancePageSize,
+    (safeGovernancePage + 1) * governancePageSize,
+  ) ?? [];
   const openCertification = (product: Product) => {
     setSelectedTargetId(`product:${product.id}`);
+    setGovernanceMode('certification');
+    setGovernancePage(0);
     setView('governance');
   };
 
@@ -863,7 +874,7 @@ function App() {
             <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
             <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span><b>{certificationTargets.length}</b>Alvos certificados</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
           </section>
-          <section className='certWorkspace'>
+          {governanceMode === 'certification' && <section className='certWorkspace'>
             <aside className='panel certSidebar'>
               <p className='kicker'>ESCOPO ZEES-16</p><h2>Sistemas e produtos</h2>
               <div className='certProductList'>
@@ -875,7 +886,7 @@ function App() {
               </div>
             </aside>
             <div className='certDetail'>
-              {selectedCertificationTarget && <>
+              {selectedCertificationTarget && governanceMode === 'certification' && <>
                 <section className='panel certSummaryPanel'>
                   <div className='certTitleRow'>
                     <div><p className='kicker'>{selectedCertificationTarget.certification.version} · {selectedCertificationTarget.kind}</p><h2>{selectedCertificationTarget.name}</h2><p>{certificationProfileLabel(selectedCertificationTarget.certification.profile)}</p></div>
@@ -898,8 +909,14 @@ function App() {
                   })()}
                   {!selectedCertificationTarget.certification.ready && <div className='rootBlocker'><AlertTriangle size={16} /><span><b>Bloqueador raiz</b>{selectedCertificationTarget.certification.rootBlocker}</span></div>}
                 </section>
+                <div className='governancePager'>
+                  <button className='secondary compact' onClick={() => setGovernancePage(Math.max(0, safeGovernancePage - 1))} disabled={safeGovernancePage === 0}>Anterior</button>
+                  <strong>Pilares {safeGovernancePage * governancePageSize + 1}–{Math.min((safeGovernancePage + 1) * governancePageSize, selectedCertificationTarget.certification.pillars.length)} de {selectedCertificationTarget.certification.pillars.length}</strong>
+                  <button className='secondary compact' onClick={() => setGovernancePage(Math.min(governancePageCount - 1, safeGovernancePage + 1))} disabled={safeGovernancePage >= governancePageCount - 1}>Próximos</button>
+                  <button className='secondary compact' onClick={() => setGovernanceMode('sources')}>Fontes e telemetria</button>
+                </div>
                 <section className='pillarGrid'>
-                  {selectedCertificationTarget.certification.pillars.map(pillar => (
+                  {governancePillars.map(pillar => (
                     <article className={`pillarCard ${pillar.status}`} key={pillar.id}>
                       <div className='pillarHead'><span className='pillarIndex'>{pillar.id}</span><span className={`pillarStatus ${pillar.status}`}>{certificationStatusLabel(pillar.status)}</span></div>
                       <h3>{pillar.name}</h3><p>{pillar.rationale}</p>
@@ -915,11 +932,12 @@ function App() {
                 </section>
               </>}
             </div>
-          </section>
-          <section className='panel sourcePanel'>
+          </section>}
+          {governanceMode === 'sources' && <section className='panel sourcePanel'>
             <div className='panelhead'>
               <div><p className='kicker'>SISTEMAS FONTE · EVIDENCIA OPERACIONAL</p><h2>Telemetria e provas monitoradas</h2></div>
               <div className='actions'>
+                <button className='secondary compact' onClick={() => setGovernanceMode('certification')}>Voltar à certificação</button>
                 <button className='secondary compact' onClick={() => runGovernance('/api/telemetry/refresh')} disabled={busy}><RadioTower size={15} />Telemetria</button>
                 <button className='primary compact' onClick={() => runGovernance('/api/audit/run')} disabled={busy}><RefreshCw size={15} className={busy ? 'spin' : ''} />Auditoria</button>
               </div>
@@ -938,7 +956,7 @@ function App() {
                 </article>
               ))}
             </div>
-          </section>
+          </section>}
         </section>
       )}
 

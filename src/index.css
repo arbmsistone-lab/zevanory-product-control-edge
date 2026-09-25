@@ -2148,3 +2148,110 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     height: 8px;
   }
 }
+
+/* ZPC HUMAN-READABILITY / ZERO-SCROLL CONTRACT 2026-09-25 */
+@media (min-width:1101px){
+  .shell-overview,.shell-products,.shell-operations,.shell-governance{height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  .eyebrow,.kicker{font-size:10px!important;line-height:1.2!important}
+  .subtitle{font-size:12px!important;line-height:1.25!important}
+  .policybar span,.adminChip,.providerChip{font-size:10px!important;line-height:1.15!important}
+  .trustStrip small{font-size:9px!important}.trustStrip b,.trustStrip strong{font-size:11px!important}
+  .tab{font-size:14px!important;min-height:34px!important;line-height:1.15!important}
+  .shell-overview .overviewHero .productDescription{font-size:10px!important;line-height:1.25!important}
+  .shell-overview .overviewCard span{font-size:9px!important}.shell-overview .overviewCard strong{font-size:15px!important}.shell-overview .overviewCard small{font-size:9px!important}
+  .shell-overview .channelRow,.shell-overview .executiveList span,.shell-overview .executiveList b{font-size:9px!important;line-height:1.15!important}
+  .shell-overview .channelHead{font-size:8px!important}
+  .shell-products .productCategory,.shell-products .saleBadge{font-size:9px!important}
+  .shell-products .productHead h3{font-size:14px!important}.shell-products .productDescription{font-size:10px!important;line-height:1.2!important;max-height:28px!important}
+  .shell-products .productFacts b{font-size:10px!important}.shell-products .productFacts small{font-size:8px!important}
+  .shell-products .auditHeader small,.shell-products .certCompactSummary,.shell-products .certPanel p,.shell-products .blockers,.shell-products .gate{font-size:8px!important;line-height:1.15!important}
+  .shell-products .zeesSealChip{font-size:8px!important;height:20px!important}.shell-products .productActions .compact{font-size:9px!important}
+  .shell-operations .operationSummary span{font-size:9px!important}.shell-operations .feeditem strong{font-size:10px!important}
+  .shell-operations .feeditem p{font-size:9px!important;line-height:1.2!important}.shell-operations .feeditem time,.shell-operations .state,.shell-operations .empty{font-size:8px!important}
+  .shell-governance .governanceHero .productDescription{font-size:9px!important;line-height:1.2!important}
+  .shell-governance .standardStrip span{font-size:8px!important}.shell-governance .standardStrip b{font-size:12px!important}
+}
+@media (min-width:1101px){
+  .shell-governance .governanceStack{flex:1 1 0!important;min-height:0!important;overflow:hidden!important;gap:5px!important}
+  .shell-governance .certWorkspace{flex:1 1 0!important;min-height:0!important;height:100%!important;grid-template-columns:220px minmax(0,1fr)!important;gap:7px!important;overflow:hidden!important}
+  .shell-governance .certSidebar,.shell-governance .certDetail{height:100%!important;min-height:0!important;overflow:hidden!important}
+  .shell-governance .certSidebar h2{font-size:14px!important}.shell-governance .certProductButton{padding:5px 6px!important}
+  .shell-governance .certProductButton b{font-size:9px!important}.shell-governance .certProductButton small{font-size:7px!important}.shell-governance .certProductButton strong{font-size:9px!important}
+  .shell-governance .certSummaryPanel{margin-bottom:5px!important;padding:7px 9px!important}
+  .shell-governance .certTitleRow h2{font-size:15px!important}.shell-governance .certTitleRow p{font-size:8px!important}
+  .shell-governance .certSummaryGrid b{font-size:10px!important}.shell-governance .certSummaryGrid small{font-size:7px!important}
+  .shell-governance .certRunStrip span,.shell-governance .rootBlocker{font-size:8px!important;line-height:1.15!important}
+  .governancePager{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex:0 0 auto;margin:0 0 5px}
+  .governancePager strong{margin-right:auto;color:#b9cce2;font-size:10px}
+  .governancePager .compact{min-height:30px;padding:5px 8px;font-size:9px}
+  .shell-governance .pillarGrid{flex:1 1 0!important;min-height:0!important;height:auto!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;gap:6px!important;overflow:hidden!important}
+  .shell-governance .pillarCard{min-height:0!important;height:100%!important;overflow:hidden!important;padding:8px!important}
+  .shell-governance .pillarStatus{font-size:7px!important}.shell-governance .pillarIndex{font-size:8px!important}
+  .shell-governance .pillarCard h3{font-size:10px!important;line-height:1.15!important;margin:4px 0 3px!important}
+  .shell-governance .pillarCard>p{font-size:8px!important;line-height:1.2!important;max-height:30px!important}
+  .shell-governance .pillarMeta,.shell-governance .pillarEvidence span,.shell-governance .pillarBlocker{font-size:7px!important;line-height:1.15!important}
+  .shell-governance .pillarEvidence{max-height:34px!important;overflow:hidden!important}.shell-governance .pillarBlocker{max-height:26px!important;overflow:hidden!important}
+  .shell-governance .sourcePanel{flex:1 1 0!important;min-height:0!important;height:auto!important;overflow:hidden!important;padding:9px 11px!important}
+  .shell-governance .sourcePanel .productDescription{font-size:9px!important;line-height:1.2!important}
+  .shell-governance .sourcePanel .systems{height:calc(100% - 70px);grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+  .shell-governance .sourcePanel .system{min-height:0!important;overflow:hidden!important;padding:8px!important}
+  .shell-governance .sourcePanel .systemtop h3{font-size:10px!important}.shell-governance .sourcePanel .system p{font-size:8px!important}
+  .shell-governance .sourcePanel .systemmeta,.shell-governance .sourcePanel .evidence span,.shell-governance .sourcePanel .scoreline>div:first-child{font-size:7px!important}
+}
+
+/* ZPC READABILITY FLOOR - no desktop operational text below 10px */
+@media (min-width:1101px){
+  .shell-overview .overviewHero .productDescription,
+  .shell-overview .overviewCard span,
+  .shell-overview .overviewCard small,
+  .shell-overview .channelRow,
+  .shell-overview .executiveList span,
+  .shell-overview .executiveList b,
+  .shell-products .productCategory,
+  .shell-products .saleBadge,
+  .shell-products .productDescription,
+  .shell-products .productFacts b,
+  .shell-products .auditHeader strong,
+  .shell-products .certCompactSummary,
+  .shell-products .certPanel p,
+  .shell-products .blockers,
+  .shell-products .gate,
+  .shell-products .productActions .compact,
+  .shell-operations .operationSummary span,
+  .shell-operations .feeditem strong,
+  .shell-operations .feeditem p,
+  .shell-governance .governanceHero .productDescription,
+  .shell-governance .standardStrip span,
+  .shell-governance .certProductButton b,
+  .shell-governance .certProductButton strong,
+  .shell-governance .certTitleRow p,
+  .shell-governance .certSummaryGrid small,
+  .shell-governance .certRunStrip span,
+  .shell-governance .rootBlocker,
+  .governancePager strong,
+  .governancePager .compact,
+  .shell-governance .pillarStatus,
+  .shell-governance .pillarIndex,
+  .shell-governance .pillarMeta,
+  .shell-governance .pillarEvidence span,
+  .shell-governance .pillarBlocker,
+  .shell-governance .sourcePanel .productDescription,
+  .shell-governance .sourcePanel .systemtop h3,
+  .shell-governance .sourcePanel .system p,
+  .shell-governance .sourcePanel .systemmeta,
+  .shell-governance .sourcePanel .evidence span,
+  .shell-governance .sourcePanel .scoreline>div:first-child {font-size:10px!important}
+  .shell-overview .channelHead,
+  .shell-products .productFacts small,
+  .shell-products .auditHeader small,
+  .shell-products .zeesSealChip,
+  .shell-operations .feeditem time,
+  .shell-operations .state,
+  .shell-operations .empty,
+  .shell-governance .certProductButton small {font-size:9px!important}
+  .shell-governance .pillarCard h3{font-size:12px!important}
+  .shell-governance .pillarCard>p{font-size:10px!important;line-height:1.25!important;max-height:34px!important}
+  .shell-products .productDescription{font-size:11px!important;line-height:1.25!important}
+  .shell-overview .overviewHero .productDescription{font-size:11px!important}
+  .shell-operations .feeditem p{font-size:10px!important}
+}
