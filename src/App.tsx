@@ -413,6 +413,43 @@ function App() {
     return () => window.clearInterval(timer);
   }, [authState]);
 
+  useEffect(() => {
+    if (!formOpen) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = document.querySelector<HTMLElement>('.modal[role="dialog"]');
+    const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]',
+    ) ?? []).filter(element => element.offsetParent !== null);
+    focusable()[0]?.focus();
+
+    const onDialogKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setFormOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onDialogKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onDialogKeyDown);
+      previous?.focus();
+    };
+  }, [formOpen]);
+
+
   const logout = async () => {
     try {
       if (sessionToken) await api.post('/api/pin/logout', { sessionToken });
@@ -633,10 +670,10 @@ function App() {
       </section>
 
       <nav className='tabs' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
-        <button className={view === 'overview' ? 'tab active' : 'tab'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
-        <button className={view === 'products' ? 'tab active' : 'tab'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
-        <button className={view === 'operations' ? 'tab active' : 'tab'} onClick={() => setView('operations')}><Activity size={16} />Operações</button>
-        <button className={view === 'governance' ? 'tab active' : 'tab'} onClick={() => setView('governance')}><SlidersHorizontal size={16} />ZEES-16 / Governança</button>
+        <button className={view === 'overview' ? 'tab active' : 'tab'} aria-pressed={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
+        <button className={view === 'products' ? 'tab active' : 'tab'} aria-pressed={view === 'products'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
+        <button className={view === 'operations' ? 'tab active' : 'tab'} aria-pressed={view === 'operations'} onClick={() => setView('operations')}><Activity size={16} />Operações</button>
+        <button className={view === 'governance' ? 'tab active' : 'tab'} aria-pressed={view === 'governance'} onClick={() => setView('governance')}><SlidersHorizontal size={16} />ZEES-16 / Governança</button>
       </nav>
 
       {error && <div className='errorbox globalError'>{error}</div>}
@@ -906,12 +943,12 @@ function App() {
       )}
 
       {formOpen && (
-        <div className='modalBackdrop' role='presentation'>
-          <section className='modal' role='dialog' aria-modal='true' aria-label={editing ? 'Editar produto' : 'Novo produto'}>
+        <div className='modalBackdrop' role='presentation' onMouseDown={event => { if (event.target === event.currentTarget) setFormOpen(false); }}>
+          <section className='modal' role='dialog' aria-modal='true' aria-labelledby='product-modal-title'>
             <div className='modalHead'>
               <div>
                 <p className='kicker'>{editing ? 'EDICAO ADMINISTRATIVA' : 'NOVO PRODUTO'}</p>
-                <h2>{editing ? editing.name : 'Cadastrar produto'}</h2>
+                <h2 id='product-modal-title'>{editing ? editing.name : 'Cadastrar produto'}</h2>
               </div>
               <button className='iconButton' onClick={() => setFormOpen(false)} aria-label='Fechar'><X size={20} /></button>
             </div>
