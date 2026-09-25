@@ -2278,3 +2278,22 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .pillarCard>p{max-height:28px!important}
   .shell-governance .pillarEvidence{max-height:28px!important}
 }
+
+/* ZPC absolute desktop readability floor: visible operational labels >= 10px */
+@media (min-width:1101px){
+  .trustStrip small,
+  .shell-overview .channelHead,
+  .shell-overview .certSeal,
+  .shell-products .productFacts small,
+  .shell-products .auditHeader small,
+  .shell-products .zeesSealChip,
+  .shell-products .certCompactSummary,
+  .shell-products .certPanel p,
+  .shell-products .blockers,
+  .shell-products .gate,
+  .shell-operations .state,
+  .shell-operations .empty,
+  .shell-operations .feeditem time,
+  .shell-governance .certProductButton small,
+  .shell-governance .certSeal {font-size:10px!important}
+}
