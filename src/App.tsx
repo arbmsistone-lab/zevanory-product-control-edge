@@ -623,6 +623,45 @@ function App() {
 
       {error && <div className='errorbox globalError'>{error}</div>}
 
+      {view === 'overview' && (
+        <section className='overviewStack'>
+          <section className='overviewHero panel'>
+            <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2><p className='productDescription'>O Control Plane e o gerenciamento de produtos agora ficam no mesmo painel, com leitura executiva antes dos detalhes.</p></div>
+            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'OPERACIONAL' : 'ATENÇÃO'}</span>
+          </section>
+          <section className='overviewCards'>
+            <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
+            <article className='overviewCard'><span>Vendas</span><strong>{operations?.runtime.sales ?? 'unknown'}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>
+            <article className='overviewCard'><span>WhatsApp</span><strong>{operations?.runtime.whatsapp ?? 'unknown'}</strong><small>dependência obrigatória: {operations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></article>
+            <article className='overviewCard'><span>Quorum técnico</span><strong>{operations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{operations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></article>
+            <article className='overviewCard'><span>ZEES-16</span><strong>{operations?.zees16.proven ?? 0}/16</strong><small>{operations?.zees16.partial ?? 0} parciais · {operations?.zees16.blocked ?? 0} bloqueados</small></article>
+            <article className='overviewCard'><span>ZEA-10</span><strong>{operations?.zea10.proven ?? 0}/10</strong><small>{operations?.zea10.partial ?? 0} parciais · {operations?.zea10.blocked ?? 0} bloqueados</small></article>
+            <article className='overviewCard'><span>Produtos</span><strong>{summary.total}</strong><small>{summary.salesEnabled} em venda · {summary.blocked} pendentes</small></article>
+            <article className='overviewCard'><span>Banco</span><strong>{operations?.health.requiredTables ?? 0} tabelas</strong><small>{operations?.health.requiredMigrations ?? 0} migrations · faltas {(operations?.health.missingTables ?? 0)+(operations?.health.missingMigrations ?? 0)}</small></article>
+          </section>
+          <section className='overviewGrid'>
+            <article className='panel'>
+              <div className='panelhead'><div><p className='kicker'>CANAIS</p><h2>Estado comercial</h2></div></div>
+              <div className='channelTable'>
+                <div className='channelRow channelHead'><span>Canal</span><span>Escopo</span><span>Gate</span><span>Execução</span></div>
+                {(operations?.channels ?? []).map(channel => <div className='channelRow' key={channel.name}><b>{channel.name}</b><span>{channel.scopeStatus}</span><span>{channel.releaseGate}</span><span>{channel.commercialExecution}</span></div>)}
+                {(operations?.channels ?? []).length === 0 && <div className='empty'>Snapshot de canais indisponível.</div>}
+              </div>
+            </article>
+            <article className='panel'>
+              <div className='panelhead'><div><p className='kicker'>ATENÇÃO EXECUTIVA</p><h2>O que está bloqueando</h2></div><AlertTriangle size={20} /></div>
+              <div className='executiveList'>
+                <div><span>Estado global</span><b>{operations?.control.globalState ?? 'unknown'}</b></div>
+                <div><span>Bloqueador raiz</span><b>{operations?.control.rootBlocker ?? 'unknown'}</b></div>
+                <div><span>Decisão do core</span><b>{operations?.control.decision ?? 'unknown'}</b></div>
+                <div><span>Produtos bloqueados</span><b>{summary.blocked}</b></div>
+                <div><span>Incidentes</span><b>{dashboard.incidents.length}</b></div>
+              </div>
+            </article>
+          </section>
+        </section>
+      )}
+
       {view === 'products' && (
         <>
           <section className='metrics'>
