@@ -1395,10 +1395,88 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
   }
 }
 
+type OperationalSnapshot = {
+  available: boolean;
+  generatedAt: string | null;
+  releaseSha: string | null;
+  health: { ready: boolean; live: boolean; databaseReachable: boolean; schemaReady: boolean; requiredTables: number; requiredMigrations: number; missingTables: number; missingMigrations: number; };
+  runtime: { sales: string; checkout: string; financial: string; whatsapp: string };
+  control: { globalState: string; rootBlocker: string; decision: string };
+  continuity: { quorumOk: boolean; mode: string; channels: string[]; whatsappDependencyRequired: boolean };
+  channels: Array<{ name: string; scopeStatus: string; releaseGate: string; commercialExecution: string }>;
+  zees16: { proven: number; partial: number; blocked: number };
+  zea10: { proven: number; partial: number; blocked: number; unknown: number };
+};
+
+async function loadOperationalSnapshot(): Promise<OperationalSnapshot> {
+  try {
+    const response = await fetch('https://zevanory.api.br/api/core/v1/snapshot', {
+      headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Control-Center/1.0' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) throw new Error('core_snapshot_http_' + response.status);
+    const core = await response.json() as any;
+    const status = core?.status || {};
+    const health = core?.health || {};
+    const control = core?.control || {};
+    const continuity = core?.continuity || {};
+    const channels = Object.entries(status?.channel_readiness || {}).map(([name, value]: [string, any]) => ({
+      name,
+      scopeStatus: String(value?.scope_status || 'unknown'),
+      releaseGate: String(value?.release_gate || 'unknown'),
+      commercialExecution: String(value?.commercial_execution || 'unknown'),
+    }));
+    return {
+      available: true,
+      generatedAt: String(core?.generated_at || '') || null,
+      releaseSha: String(core?.release_sha || '') || null,
+      health: {
+        ready: Boolean(health?.ready),
+        live: Boolean(health?.live ?? health?.ready),
+        databaseReachable: Boolean(health?.checks?.database_reachable),
+        schemaReady: Boolean(health?.checks?.schema_ready),
+        requiredTables: Number(health?.schema?.required_tables || 0),
+        requiredMigrations: Number(health?.schema?.required_migrations || 0),
+        missingTables: Number(health?.schema?.missing_tables_count || 0),
+        missingMigrations: Number(health?.schema?.missing_migrations_count || 0),
+      },
+      runtime: {
+        sales: String(status?.runtime?.sales || 'unknown'),
+        checkout: String(status?.runtime?.checkout || 'unknown'),
+        financial: String(status?.runtime?.financial || 'unknown'),
+        whatsapp: String(status?.runtime?.whatsapp || 'unknown'),
+      },
+      control: {
+        globalState: String(control?.global_state || 'unknown'),
+        rootBlocker: String(control?.root_blocker || 'none'),
+        decision: String(core?.decision?.decision || control?.decision || 'unknown'),
+      },
+      continuity: {
+        quorumOk: Boolean(continuity?.quorum_ok),
+        mode: String(continuity?.mode || 'unknown'),
+        channels: Array.isArray(continuity?.available_channels) ? continuity.available_channels.map(String) : [],
+        whatsappDependencyRequired: Boolean(continuity?.whatsapp_dependency_required),
+      },
+      channels,
+      zees16: { proven: Number(core?.zees16?.counts?.proven || 0), partial: Number(core?.zees16?.counts?.partial || 0), blocked: Number(core?.zees16?.counts?.blocked || 0) },
+      zea10: { proven: Number(core?.zea10?.counts?.proven || 0), partial: Number(core?.zea10?.counts?.partial || 0), blocked: Number(core?.zea10?.counts?.blocked || 0), unknown: Number(core?.zea10?.counts?.unknown || 0) },
+    };
+  } catch {
+    return {
+      available: false, generatedAt: null, releaseSha: null,
+      health: { ready: false, live: false, databaseReachable: false, schemaReady: false, requiredTables: 0, requiredMigrations: 0, missingTables: 0, missingMigrations: 0 },
+      runtime: { sales: 'unknown', checkout: 'unknown', financial: 'unknown', whatsapp: 'unknown' },
+      control: { globalState: 'snapshot_unavailable', rootBlocker: 'operational_snapshot_unavailable', decision: 'unknown' },
+      continuity: { quorumOk: false, mode: 'unknown', channels: [], whatsappDependencyRequired: false },
+      channels: [], zees16: { proven: 0, partial: 0, blocked: 16 }, zea10: { proven: 0, partial: 0, blocked: 10, unknown: 0 },
+    };
+  }
+}
+
 async function adminData() {
   await ensureSeed();
   await ensureProducts();
-  const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns, globalTrust] = await Promise.all([
+  const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns, globalTrust, operations] = await Promise.all([
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
     db.list<AuditRecord>(AUDITS, { limit: 20 }),
     db.list<ImprovementRecord>(IMPROVEMENTS, { limit: 20 }),
@@ -1408,6 +1486,7 @@ async function adminData() {
     db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
     db.list<CertificationRunRecord>(CERTIFICATION_RUNS, { limit: 100 }),
     loadGlobalTrust(),
+    loadOperationalSnapshot(),
   ]);
   const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
   const enriched = products.items.map(product => {
@@ -1457,6 +1536,7 @@ async function adminData() {
 
   return {
     globalTrust,
+    operations,
     certificationTargets,
     dashboard: {
       systems: visibleSystems,

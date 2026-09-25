@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   SlidersHorizontal,
+  LayoutDashboard,
   X,
 } from 'lucide-react';
 import { api } from './api';
@@ -72,6 +73,19 @@ type GlobalTrust = {
   zea10: { proven: number; partial: number; blocked: number };
   engines: Array<{ id: string; state: string }>;
   checkedAt: string | null;
+};
+
+type OperationalSnapshot = {
+  available: boolean;
+  generatedAt: string | null;
+  releaseSha: string | null;
+  health: { ready: boolean; live: boolean; databaseReachable: boolean; schemaReady: boolean; requiredTables: number; requiredMigrations: number; missingTables: number; missingMigrations: number; };
+  runtime: { sales: string; checkout: string; financial: string; whatsapp: string };
+  control: { globalState: string; rootBlocker: string; decision: string };
+  continuity: { quorumOk: boolean; mode: string; channels: string[]; whatsappDependencyRequired: boolean };
+  channels: Array<{ name: string; scopeStatus: string; releaseGate: string; commercialExecution: string }>;
+  zees16: { proven: number; partial: number; blocked: number };
+  zea10: { proven: number; partial: number; blocked: number; unknown: number };
 };
 
 type Dashboard = {
@@ -320,10 +334,11 @@ function LoginScreen({ onSuccess }: { onSuccess: (token: string) => void }) {
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
+  const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
-  const [view, setView] = useState<'products' | 'operations' | 'governance'>('products');
+  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance'>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [selectedTargetId, setSelectedTargetId] = useState('');
@@ -357,6 +372,7 @@ function App() {
       const response = await api.post('/api/admin/bootstrap', { sessionToken: token });
       setDashboard(response.data.dashboard);
       setGlobalTrust(response.data.globalTrust ?? null);
+      setOperations(response.data.operations ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setSummary(response.data.summary);
@@ -568,9 +584,9 @@ function App() {
     <main className={`shell shell-${view}`}>
       <header className='topbar'>
         <div>
-          <p className='eyebrow'>ZEVANORY · GESTÃO, GOVERNANÇA E CERTIFICAÇÃO DE PRODUTOS</p>
-          <h1>ZEVANORY PRODUCT CONTROL</h1>
-          <p className='subtitle'>Portfólio, operação, evidência e certificação ZEES-16 de engenharia em uma única torre fail-closed.</p>
+          <p className='eyebrow'>ZEVANORY · ADMINISTRATIVO GERAL</p>
+          <h1>ZEVANORY CONTROL CENTER</h1>
+          <p className='subtitle'>Operação, produtos, canais, evidência e certificação em uma única central administrativa.</p>
         </div>
         <div className='actions'>
           <span className='adminChip'><ShieldCheck size={15} />PIN ADMIN ATIVO</span>
@@ -598,7 +614,8 @@ function App() {
         <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
       </section>
 
-      <nav className='tabs' aria-label='Areas do ZEVANORY PRODUCT CONTROL'>
+      <nav className='tabs' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
+        <button className={view === 'overview' ? 'tab active' : 'tab'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
         <button className={view === 'products' ? 'tab active' : 'tab'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
         <button className={view === 'operations' ? 'tab active' : 'tab'} onClick={() => setView('operations')}><Activity size={16} />Operações</button>
         <button className={view === 'governance' ? 'tab active' : 'tab'} onClick={() => setView('governance')}><SlidersHorizontal size={16} />ZEES-16 / Governança</button>
