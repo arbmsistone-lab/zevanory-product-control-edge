@@ -629,7 +629,7 @@ function App() {
   const certTargetPageCount = Math.max(1, Math.ceil(certificationTargets.length / certTargetPageSize));
   const safeCertTargetPage = Math.min(certTargetPage, certTargetPageCount - 1);
   const pagedCertificationTargets = certificationTargets.slice(safeCertTargetPage * certTargetPageSize, (safeCertTargetPage + 1) * certTargetPageSize);
-  const governancePageSize = 8;
+  const governancePageSize = 4;
   const governancePageCount = selectedCertificationTarget ? Math.max(1, Math.ceil(selectedCertificationTarget.certification.pillars.length / governancePageSize)) : 1;
   const safeGovernancePage = Math.min(governancePage, governancePageCount - 1);
   const governancePillars = selectedCertificationTarget?.certification.pillars.slice(
