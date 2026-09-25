@@ -2383,3 +2383,25 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   }
   .shell-overview .panelhead h2{font-size:15px!important}
 }
+
+/* ZPC operations 1280x720 closure: keep all four incident cards inside viewport at readable 10px. */
+@media (min-width:1101px) and (max-height:820px){
+  .shell-operations{padding-top:5px!important;padding-bottom:5px!important}
+  .shell-operations .topbar{margin-bottom:2px!important}
+  .shell-operations .topbar h1{margin:1px 0 2px!important;font-size:22px!important}
+  .shell-operations .policybar{margin:2px 0!important}
+  .shell-operations .policybar span{padding:4px 7px!important}
+  .shell-operations .trustStrip{margin:2px 0 3px!important;padding:4px 8px!important}
+  .shell-operations .tabs{margin:2px 0 3px!important}
+  .shell-operations .tab{min-height:30px!important;padding:4px 9px!important}
+  .shell-operations .opsGrid{gap:4px!important}
+  .shell-operations .opsGrid>.panel{padding:6px 8px!important}
+  .shell-operations .opsGrid .panel:first-child{padding:5px 8px!important}
+  .shell-operations .panelhead{margin-bottom:2px!important}
+  .shell-operations .operationSummary span{padding:4px 6px!important}
+  .shell-operations .feed{gap:3px!important}
+  .shell-operations .feeditem{gap:4px!important;padding:4px 6px!important}
+  .shell-operations .feeditem p{margin:1px 0!important;max-height:22px!important;font-size:10px!important;line-height:1.1!important}
+  .shell-operations .feeditem strong{font-size:10px!important;line-height:1.1!important}
+  .shell-operations .state{padding:3px 5px!important;font-size:10px!important;line-height:1!important}
+}
