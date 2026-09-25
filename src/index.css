@@ -2255,3 +2255,26 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-overview .overviewHero .productDescription{font-size:11px!important}
   .shell-operations .feeditem p{font-size:10px!important}
 }
+
+/* ZPC governance residue closure */
+@media (min-width:1101px){
+  .shell-governance .certSeal{font-size:10px!important;line-height:1.1!important;padding:5px 8px!important}
+  .certTargetPager{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px}
+  .certTargetPager .compact{min-width:34px;min-height:30px;padding:4px 7px;font-size:12px!important}
+  .certTargetPager strong{font-size:10px;color:#b9cce2}
+  .shell-governance .certProductList{gap:4px!important}
+  .shell-governance .pillarCard{padding:7px!important}
+  .shell-governance .pillarGrid{gap:5px!important}
+  .shell-governance .pillarBlocker{max-height:22px!important;line-height:1.05!important}
+}
+@media (min-width:1101px) and (max-height:820px){
+  .shell-governance .certSeal{font-size:10px!important;padding:4px 7px!important}
+  .shell-governance .certProductButton{padding:4px 5px!important}
+  .shell-governance .certProductButton b{font-size:10px!important}
+  .shell-governance .certProductButton small{font-size:9px!important}
+  .shell-governance .certProductButton strong{font-size:10px!important}
+  .certTargetPager{margin-top:4px}
+  .certTargetPager .compact{min-height:28px}
+  .shell-governance .pillarCard>p{max-height:28px!important}
+  .shell-governance .pillarEvidence{max-height:28px!important}
+}

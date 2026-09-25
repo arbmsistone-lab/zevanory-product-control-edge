@@ -360,6 +360,7 @@ function App() {
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
+  const [certTargetPage, setCertTargetPage] = useState(0);
   const [governanceMode, setGovernanceMode] = useState<'certification' | 'sources'>('certification');
   const [selectedTargetId, setSelectedTargetId] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
@@ -624,6 +625,10 @@ function App() {
     () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
     [certificationTargets, selectedTargetId],
   );
+  const certTargetPageSize = 6;
+  const certTargetPageCount = Math.max(1, Math.ceil(certificationTargets.length / certTargetPageSize));
+  const safeCertTargetPage = Math.min(certTargetPage, certTargetPageCount - 1);
+  const pagedCertificationTargets = certificationTargets.slice(safeCertTargetPage * certTargetPageSize, (safeCertTargetPage + 1) * certTargetPageSize);
   const governancePageSize = 8;
   const governancePageCount = selectedCertificationTarget ? Math.max(1, Math.ceil(selectedCertificationTarget.certification.pillars.length / governancePageSize)) : 1;
   const safeGovernancePage = Math.min(governancePage, governancePageCount - 1);
@@ -878,11 +883,16 @@ function App() {
             <aside className='panel certSidebar'>
               <p className='kicker'>ESCOPO ZEES-16</p><h2>Sistemas e produtos</h2>
               <div className='certProductList'>
-                {certificationTargets.map(target => (
-                  <button key={target.id} className={selectedCertificationTarget?.id === target.id ? 'certProductButton active' : 'certProductButton'} onClick={() => setSelectedTargetId(target.id)}>
+                {pagedCertificationTargets.map(target => (
+                  <button key={target.id} className={selectedCertificationTarget?.id === target.id ? 'certProductButton active' : 'certProductButton'} onClick={() => { setSelectedTargetId(target.id); setGovernancePage(0); }}>
                     <span><b>{target.name}</b><small>{target.kind} · {certificationProfileLabel(target.certification.profile)}</small></span><strong>{target.certification.summary.proved}/{target.certification.summary.applicable}</strong>
                   </button>
                 ))}
+              </div>
+              <div className='certTargetPager'>
+                <button className='secondary compact' onClick={() => setCertTargetPage(Math.max(0, safeCertTargetPage - 1))} disabled={safeCertTargetPage === 0}>‹</button>
+                <strong>{safeCertTargetPage + 1}/{certTargetPageCount}</strong>
+                <button className='secondary compact' onClick={() => setCertTargetPage(Math.min(certTargetPageCount - 1, safeCertTargetPage + 1))} disabled={safeCertTargetPage >= certTargetPageCount - 1}>›</button>
               </div>
             </aside>
             <div className='certDetail'>
