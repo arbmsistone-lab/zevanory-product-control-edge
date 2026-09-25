@@ -2066,3 +2066,85 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     min-height: 44px;
   }
 }
+
+
+/* ZPC AUDIT ROUND 3 - compact governance source evidence */
+@media (min-width: 1101px) and (max-height: 820px) {
+  .shell-governance .sourcePanel {
+    min-height: 0;
+    overflow: hidden;
+    padding: 5px 7px;
+  }
+  .shell-governance .sourcePanel .panelhead {
+    margin-bottom: 2px;
+  }
+  .shell-governance .sourcePanel .panelhead h2 {
+    margin: 1px 0;
+    font-size: 11px;
+  }
+  .shell-governance .sourcePanel .panelhead .kicker {
+    font-size: 6px;
+  }
+  .shell-governance .sourcePanel .productDescription {
+    max-height: 12px;
+    margin: 1px 0 3px;
+    overflow: hidden;
+    font-size: 5px;
+    line-height: 1.05;
+  }
+  .shell-governance .sourcePanel .actions {
+    gap: 4px;
+  }
+  .shell-governance .sourcePanel .actions .compact {
+    min-height: 25px;
+    padding: 3px 6px;
+    font-size: 7px;
+  }
+  .shell-governance .sourcePanel .systems {
+    gap: 4px;
+  }
+  .shell-governance .sourcePanel .system {
+    padding: 5px;
+    border-radius: 6px;
+  }
+  .shell-governance .sourcePanel .systemtop h3 {
+    margin: 0;
+    font-size: 8px;
+  }
+  .shell-governance .sourcePanel .system p {
+    margin: 1px 0 0;
+    font-size: 6px;
+    line-height: 1.05;
+  }
+  .shell-governance .sourcePanel .pill {
+    padding: 2px 4px;
+    font-size: 5px;
+  }
+  .shell-governance .sourcePanel .scoreline {
+    margin: 3px 0;
+  }
+  .shell-governance .sourcePanel .scoreline > div:first-child {
+    font-size: 6px;
+  }
+  .shell-governance .sourcePanel .bar {
+    height: 3px;
+    margin-top: 2px;
+  }
+  .shell-governance .sourcePanel .systemmeta {
+    gap: 4px;
+    font-size: 5px;
+  }
+  .shell-governance .sourcePanel .evidence {
+    gap: 2px;
+    margin-top: 3px;
+  }
+  .shell-governance .sourcePanel .evidence span {
+    padding: 2px 3px;
+    font-size: 5px;
+    line-height: 1;
+  }
+  .shell-governance .sourcePanel .evidence svg {
+    width: 8px;
+    height: 8px;
+  }
+}
