@@ -257,6 +257,24 @@ function certificationProfileLabel(profile: string) {
   return ({ AI_AGENTIC_PLATFORM: 'AI / AGENTIC PLATFORM', COMMERCE_CONTROL_PLANE: 'COMMERCE CONTROL PLANE', SAAS_TRANSACTIONAL: 'SAAS TRANSACIONAL', DIGITAL_CONTENT: 'PRODUTO DIGITAL' } as Record<string, string>)[profile] || profile;
 }
 
+function operationalLabel(value: string | null | undefined) {
+  const raw = String(value || 'unknown').trim().toLowerCase();
+  const labels: Record<string, string> = {
+    ready: 'READY',
+    pass: 'PASS',
+    fail: 'FAIL',
+    disabled: 'DESATIVADO',
+    enabled: 'ATIVO',
+    blocked: 'BLOQUEADO',
+    'globally-blocked': 'BLOQUEADO GLOBALMENTE',
+    active: 'ATIVO',
+    unknown: 'DESCONHECIDO',
+    unavailable: 'INDISPONÍVEL',
+    snapshot_unavailable: 'SNAPSHOT INDISPONÍVEL',
+  };
+  return labels[raw] || String(value || 'DESCONHECIDO').replaceAll('_', ' ').toUpperCase();
+}
+
 function LoginScreen({ onSuccess }: { onSuccess: (token: string) => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -627,12 +645,12 @@ function App() {
         <section className='overviewStack'>
           <section className='overviewHero panel'>
             <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2><p className='productDescription'>O Control Plane e o gerenciamento de produtos agora ficam no mesmo painel, com leitura executiva antes dos detalhes.</p></div>
-            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'OPERACIONAL' : 'ATENÇÃO'}</span>
+            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
           </section>
           <section className='overviewCards'>
             <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
-            <article className='overviewCard'><span>Vendas</span><strong>{operations?.runtime.sales ?? 'unknown'}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>
-            <article className='overviewCard'><span>WhatsApp</span><strong>{operations?.runtime.whatsapp ?? 'unknown'}</strong><small>dependência obrigatória: {operations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></article>
+            <article className='overviewCard'><span>Vendas</span><strong>{operationalLabel(operations?.runtime.sales)}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>
+            <article className='overviewCard'><span>WhatsApp</span><strong>{operationalLabel(operations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {operations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></article>
             <article className='overviewCard'><span>Quorum técnico</span><strong>{operations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{operations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></article>
             <article className='overviewCard'><span>ZEES-16</span><strong>{operations?.zees16.proven ?? 0}/16</strong><small>{operations?.zees16.partial ?? 0} parciais · {operations?.zees16.blocked ?? 0} bloqueados</small></article>
             <article className='overviewCard'><span>ZEA-10</span><strong>{operations?.zea10.proven ?? 0}/10</strong><small>{operations?.zea10.partial ?? 0} parciais · {operations?.zea10.blocked ?? 0} bloqueados</small></article>
@@ -644,16 +662,16 @@ function App() {
               <div className='panelhead'><div><p className='kicker'>CANAIS</p><h2>Estado comercial</h2></div></div>
               <div className='channelTable'>
                 <div className='channelRow channelHead'><span>Canal</span><span>Escopo</span><span>Gate</span><span>Execução</span></div>
-                {(operations?.channels ?? []).map(channel => <div className='channelRow' key={channel.name}><b>{channel.name}</b><span>{channel.scopeStatus}</span><span>{channel.releaseGate}</span><span>{channel.commercialExecution}</span></div>)}
+                {(operations?.channels ?? []).map(channel => <div className='channelRow' key={channel.name}><b>{channel.name}</b><span>{operationalLabel(channel.scopeStatus)}</span><span>{operationalLabel(channel.releaseGate)}</span><span>{operationalLabel(channel.commercialExecution)}</span></div>)}
                 {(operations?.channels ?? []).length === 0 && <div className='empty'>Snapshot de canais indisponível.</div>}
               </div>
             </article>
             <article className='panel'>
               <div className='panelhead'><div><p className='kicker'>ATENÇÃO EXECUTIVA</p><h2>O que está bloqueando</h2></div><AlertTriangle size={20} /></div>
               <div className='executiveList'>
-                <div><span>Estado global</span><b>{operations?.control.globalState ?? 'unknown'}</b></div>
+                <div><span>Estado global</span><b>{operationalLabel(operations?.control.globalState)}</b></div>
                 <div><span>Bloqueador raiz</span><b>{operations?.control.rootBlocker ?? 'unknown'}</b></div>
-                <div><span>Decisão do core</span><b>{operations?.control.decision ?? 'unknown'}</b></div>
+                <div><span>Decisão do core</span><b>{operationalLabel(operations?.control.decision)}</b></div>
                 <div><span>Produtos bloqueados</span><b>{summary.blocked}</b></div>
                 <div><span>Incidentes</span><b>{dashboard.incidents.length}</b></div>
               </div>

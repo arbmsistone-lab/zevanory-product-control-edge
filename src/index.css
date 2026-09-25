@@ -1444,3 +1444,104 @@ a {
 }
 
 .overviewStack{display:flex;flex-direction:column;gap:10px}.overviewHero{display:flex;align-items:center;justify-content:space-between;gap:14px}.overviewHero h2{margin:3px 0 4px;font-size:21px}.overviewCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.overviewCard{border:1px solid #1b3049;border-radius:11px;background:#091624;padding:12px}.overviewCard span,.overviewCard strong,.overviewCard small{display:block}.overviewCard span{color:#7890aa;font-size:9px;text-transform:uppercase;font-weight:800}.overviewCard strong{margin:5px 0 7px;color:#eef6ff;font-size:18px;overflow:hidden;text-overflow:ellipsis}.overviewCard small{color:#8195ad;font-size:8px}.overviewGrid{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}.channelTable{display:flex;flex-direction:column;gap:5px}.channelRow{display:grid;grid-template-columns:1.2fr 1fr 1.2fr 1.2fr;gap:8px;align-items:center;border:1px solid #172a42;border-radius:8px;background:#091624;padding:8px 9px;color:#91a5bc;font-size:9px}.channelRow b{color:#e6eef8}.channelHead{border:none;background:transparent;color:#6f86a1;padding-top:0;text-transform:uppercase;font-size:7px;font-weight:900}.executiveList{display:flex;flex-direction:column;gap:6px}.executiveList div{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #172a42;border-radius:8px;background:#091624;padding:9px}.executiveList span{color:#7e93aa;font-size:9px}.executiveList b{color:#e2edf9;font-size:9px;text-align:right;max-width:58%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:1100px){.overviewCards{grid-template-columns:repeat(2,minmax(0,1fr))}.overviewGrid{grid-template-columns:1fr}}@media(max-width:760px){.overviewCards{grid-template-columns:1fr}.channelRow{grid-template-columns:1fr 1fr}}
+
+
+/* ==========================================================================
+   ZEVANORY CONTROL CENTER - EXECUTIVE VIEWPORT CONTRACT
+   Desktop main overview is a single-screen control surface: no page scroll,
+   no clipping, no ambiguous state emphasis. Smaller screens degrade safely.
+   ========================================================================== */
+.shell-overview {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: 10px 26px 8px;
+}
+.shell-overview > .topbar,
+.shell-overview > .policybar,
+.shell-overview > .trustStrip,
+.shell-overview > .tabs,
+.shell-overview > .globalError {
+  flex: 0 0 auto;
+}
+.shell-overview .topbar { margin-bottom: 6px; }
+.shell-overview .topbar h1 { margin: 3px 0 4px; font-size: 28px; }
+.shell-overview .subtitle { margin: 0; font-size: 11px; }
+.shell-overview .policybar { margin: 5px 0; padding: 5px 8px; }
+.shell-overview .trustStrip { margin: 5px 0 6px; padding: 6px 9px; }
+.shell-overview .tabs { margin: 5px 0 7px; }
+.shell-overview .tab { padding: 7px 10px; }
+
+.shell-overview .overviewStack {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  gap: 7px;
+}
+.shell-overview .overviewHero {
+  flex: 0 0 auto;
+  min-height: 0;
+  padding: 9px 12px;
+}
+.shell-overview .overviewHero h2 { margin: 2px 0 3px; font-size: 17px; }
+.shell-overview .overviewHero .productDescription {
+  min-height: 0;
+  margin: 2px 0 0;
+  font-size: 8px;
+}
+.shell-overview .overviewCards {
+  flex: 0 0 auto;
+  gap: 6px;
+}
+.shell-overview .overviewCard {
+  min-height: 74px;
+  padding: 8px 10px;
+}
+.shell-overview .overviewCard span { font-size: 7px; }
+.shell-overview .overviewCard strong { margin: 3px 0 4px; font-size: 15px; line-height: 1.05; }
+.shell-overview .overviewCard small { font-size: 7px; line-height: 1.15; }
+
+.shell-overview .overviewGrid {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  gap: 7px;
+}
+.shell-overview .overviewGrid > .panel {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 9px 11px;
+}
+.shell-overview .panelhead { margin-bottom: 5px; }
+.shell-overview .panelhead h2 { margin: 2px 0; font-size: 14px; }
+.shell-overview .channelTable,
+.shell-overview .executiveList { gap: 4px; }
+.shell-overview .channelRow { min-height: 0; padding: 5px 7px; font-size: 7px; }
+.shell-overview .channelHead { padding-top: 0; font-size: 6px; }
+.shell-overview .executiveList div { padding: 6px 7px; }
+.shell-overview .executiveList span,
+.shell-overview .executiveList b { font-size: 7px; }
+
+@media (max-height: 820px) and (min-width: 1101px) {
+  .shell-overview { padding-top: 7px; padding-bottom: 6px; }
+  .shell-overview .topbar h1 { font-size: 24px; }
+  .shell-overview .overviewCard { min-height: 64px; padding: 6px 8px; }
+  .shell-overview .overviewHero { padding: 7px 10px; }
+  .shell-overview .overviewHero h2 { font-size: 15px; }
+}
+
+@media (max-width: 1100px) {
+  .shell-overview {
+    height: auto;
+    max-height: none;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+  .shell-overview .overviewStack,
+  .shell-overview .overviewGrid {
+    overflow: visible;
+  }
+}
