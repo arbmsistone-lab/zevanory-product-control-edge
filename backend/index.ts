@@ -1373,6 +1373,78 @@ async function canonicalDigitalPortfolioTechnicalEvidence(
   }
 }
 
+const DIGITAL_PORTFOLIO_P16_PROTECTED_PROOF = {
+  workflowHead: '3541dd4ab40e995b4a3264a48c692c8a88948894',
+  workflowRunId: 36250979659,
+  runtimeSha: 'c3845cf898acf60e84a06e51cf08db7cfd09bbe3',
+  artifactExpiresAt: '2026-12-25T15:10:02Z',
+  targets: {
+    'ia-na-pratica': { blob: '7c5b9dac20fc1ff0421e64f52ab7b6d2689d2d22', artifactId: 10909240622 },
+    'vendas-na-pratica': { blob: '2a6b9be0bd12a2ffbd9e7a4a8e9941829eab30d3', artifactId: 10908873545 },
+    'combo-ia-vendas': { blob: '2d0c53565af6eef646439b1c4f505a331c842705', artifactId: 10909175593 },
+    'lucro-e-caixa': { blob: '427e208349bd280128413af2f16e31bca1cb9a43', artifactId: 10909370418 },
+    'negocio-completo': { blob: 'd4fb45a28616cf714c1f33b93bf39bfcacfbfce3', artifactId: 10908694577 },
+  },
+} as const;
+
+async function canonicalDigitalPortfolioP16Evidence(
+  product: ProductRecord,
+): Promise<CertificationEvidenceRecord[]> {
+  const proof = DIGITAL_PORTFOLIO_P16_PROTECTED_PROOF;
+  const target = proof.targets[product.slug as keyof typeof proof.targets];
+  if (!target) return [];
+  if (Date.now() >= Date.parse(proof.artifactExpiresAt)) return [];
+
+  try {
+    const [targetBlob, workflowBlob] = await Promise.all([
+      rawGithubBlobSha(product.slug + '/index.html'),
+      rawGithubBlobSha('.github/workflows/portfolio-five-digital-p16-exact.yml'),
+    ]);
+    if (targetBlob !== target.blob || !workflowBlob) return [];
+
+    const releaseResponse = await fetch('https://zevanory.api.br/api/release', {
+      headers: { accept: 'application/json', 'user-agent': 'ZEVANORY-Portfolio-P16-Durable-Readback/2026.09' },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!releaseResponse.ok) return [];
+    const release = await releaseResponse.json() as any;
+    const liveRuntimeSha = String(release?.deployment?.commit_sha || '').trim().toLowerCase();
+    if (liveRuntimeSha !== proof.runtimeSha) return [];
+
+    const artifactName = 'portfolio-p16-' + product.slug + '-' + proof.workflowHead;
+    const releaseFingerprint = certificationReleaseFingerprint(product, undefined);
+    return [{
+      target: product.slug,
+      pillar: 'P16',
+      kind: 'supporting',
+      text: 'ZEES:P16:PROVEN:Ciclo de vida especifico do alvo comprovado em sandbox deterministico exact-runtime com checkout, webhook assinado, idempotencia, entitlement, fulfillment, reembolso terminal e vendas globais preservadas em fail-closed.',
+      sourceSha: proof.workflowHead,
+      sourceRef: 'Protected portfolio P16 exact run ' + String(proof.workflowRunId),
+      capturedAt: '2026-09-26T15:10:12Z',
+      runId: 'portfolio-p16-protected-' + String(proof.workflowRunId),
+      releaseFingerprint,
+      verdict: 'proved',
+      verifier: 'portfolio-p16-protected-readback',
+      environment: product.publicUrl || 'internal',
+      artifacts: [
+        'github_actions_run:' + String(proof.workflowRunId),
+        'workflow_head_sha:' + proof.workflowHead,
+        'target_blob:' + target.blob,
+        'runtime_sha:' + proof.runtimeSha,
+        'artifact:' + artifactName,
+        'artifact_id:' + String(target.artifactId),
+        'artifact_expires_at:' + proof.artifactExpiresAt,
+        'sales_mode:globally-blocked',
+        'false_green:0',
+      ],
+      invalidatedAt: null,
+      invalidationReason: null,
+    }];
+  } catch {
+    return [];
+  }
+}
+
 async function runCertificationExecutor(targetId: string) {
   await ensureSeed();
   await ensureProducts();
@@ -2238,7 +2310,10 @@ async function adminData() {
   const digitalPortfolioTechnicalEvidence = (await Promise.all(
     products.items.map(item => canonicalDigitalPortfolioTechnicalEvidence(item))
   )).flat();
-  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...zevanoryDirectExactEvidence, ...digitalPortfolioTechnicalEvidence];
+  const digitalPortfolioP16Evidence = (await Promise.all(
+    products.items.map(item => canonicalDigitalPortfolioP16Evidence(item))
+  )).flat();
+  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...zevanoryDirectExactEvidence, ...digitalPortfolioTechnicalEvidence, ...digitalPortfolioP16Evidence];
   const enriched = products.items.map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, effectiveCertificationEvidence);
