@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "npm run audit:commercial && vite build",
     "start": "tsx server.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "audit:commercial": "node scripts/ped-commercial-audit.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
