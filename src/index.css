@@ -1820,6 +1820,31 @@ small {
     display: none;
   }
 
+  .productCard .blockers {
+    display: none;
+  }
+
+  .pillarGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .pillarCard {
+    padding: 8px;
+  }
+
+  .pillarCard h3 {
+    display: none;
+  }
+
+  .pillarHead {
+    align-items: center;
+  }
+
+  .pillarStatus {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
   .certSummaryPanel {
     padding: 8px;
   }
