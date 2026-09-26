@@ -60,6 +60,12 @@ for path in css_files:
 for token in REQUIRED_TOKENS:
     if token not in all_css: fail("MISSING_TOKEN","src/index.css",token)
 
+# Pseudo selectors must never be separated by whitespace.
+for path in css_files:
+    text=path.read_text(encoding="utf-8",errors="ignore")
+    for m in re.finditer(r":\s+(disabled|hover|active|focus-visible|focus|first-child|last-child|checked|before|after)\b",text,re.I):
+        fail("BROKEN_PSEUDO_SELECTOR",path,m.group(0))
+
 for needle,code in [
     (":focus-visible","MISSING_FOCUS_VISIBLE"),
     (":hover","MISSING_HOVER"),
