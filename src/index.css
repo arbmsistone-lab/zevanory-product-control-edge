@@ -3234,8 +3234,11 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .commercialProofStrip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Summary-first tablet contract: detailed activity remains available in the
+     dedicated modules, while Comercial stays single-screen and overlap-free. */
+  .shell-commercial .commercialDashboardGrid,
+  .shell-commercial .commercialProofStrip {
+    display: none;
   }
 
   .approvalGrid {
@@ -3296,17 +3299,39 @@ textarea:focus-visible {
   }
 
   .commercialMetrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .commercialMetrics article {
-    min-height: 88px;
+    grid-template-columns: 16px minmax(0, 1fr);
+    min-height: 72px;
+    gap: 4px;
     padding: 8px;
   }
 
+  .commercialMetrics article > svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .commercialMetrics span {
+    font-size: 10px;
+    line-height: 12px;
+  }
+
   .commercialMetrics strong {
-    font-size: 21px;
+    margin-top: 0;
+    font-size: 18px;
     line-height: 24px;
+  }
+
+  .shell-commercial .commercialHeader > div:first-child > p:last-child {
+    display: none;
+  }
+
+  .shell-commercial .robotBadge {
+    min-height: 48px;
   }
 
   .commercialDashboardGrid,
