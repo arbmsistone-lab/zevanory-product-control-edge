@@ -115,15 +115,18 @@ for(const size of sizes){
       if(!dom.mainClass.includes('shell-'+key)) fail('VIEW_CLASS',dom.mainClass);
 
       const axe=await page.evaluate(async()=>await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}}));
-      const violations=axe.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length}));
+      const violations=axe.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,html:n.html,summary:n.failureSummary}))}));
       row.axe=violations;
       if(violations.length) fail('AXE',JSON.stringify(violations));
 
       const themeToggle=page.getByRole('button',{name:/tema (claro|escuro)/i});
-      await themeToggle.focus();
-      const focus=await themeToggle.evaluate(el=>{const s=getComputedStyle(el);return {outlineWidth:s.outlineWidth,outlineStyle:s.outlineStyle,outlineColor:s.outlineColor};});
+      await page.locator('body').click({position:{x:1,y:1}});
+      await page.keyboard.press('Tab');
+      let active=await page.evaluate(()=>String(document.activeElement?.className||''));
+      for(let i=0;i<8 && !active.includes('themeToggle');i++){await page.keyboard.press('Tab');active=await page.evaluate(()=>String(document.activeElement?.className||''));}
+      const focus=await themeToggle.evaluate(el=>{const s=getComputedStyle(el);return {active:String(document.activeElement===el),outlineWidth:s.outlineWidth,outlineStyle:s.outlineStyle,outlineColor:s.outlineColor};});
       row.focus=focus;
-      if(parseFloat(focus.outlineWidth||'0')<4||focus.outlineStyle==='none') fail('FOCUS_RING',JSON.stringify(focus));
+      if(focus.active!=='true'||parseFloat(focus.outlineWidth||'0')<4||focus.outlineStyle==='none') fail('FOCUS_RING',JSON.stringify(focus));
 
       const shot=`${outDir}/${size.name}-${theme}-${key}.png`;
       await page.screenshot({path:shot,fullPage:true});
