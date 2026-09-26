@@ -1804,6 +1804,36 @@ small {
   .pillarBlocker {
     display: none;
   }
+
+  .executiveList > div {
+    min-height: 24px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .productCard .zeesSealGrid {
+    display: none;
+  }
+
+  .productActions .linkButton,
+  .productActions .ghost {
+    display: none;
+  }
+
+  .certSummaryPanel {
+    padding: 8px;
+  }
+
+  .certSummaryPanel .certRunStrip {
+    display: none;
+  }
+
+  .rootBlocker {
+    min-height: 32px;
+    margin-top: 4px;
+    padding: 4px 8px;
+  }
+
 }
 
 @media (max-height: 920px) and (min-width: 1124px) {
@@ -2131,6 +2161,33 @@ small {
   .loginCard {
     padding: 24px;
   }
+
+  .productCard .productDescription {
+    display: none;
+  }
+
+  .certSummaryPanel .certSummaryGrid,
+  .certSummaryPanel .certRunStrip {
+    display: none;
+  }
+
+  .certSummaryPanel .certTitleRow > div:first-child > p:not(.kicker) {
+    display: none;
+  }
+
+  .certSummaryPanel {
+    padding: 8px;
+  }
+
+  .certSummaryPanel .certActions .primary {
+    min-height: 32px;
+    padding: 4px 8px;
+  }
+
+  .governancePager .secondary:last-child {
+    display: none;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
