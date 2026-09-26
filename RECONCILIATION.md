@@ -69,3 +69,6 @@ Behind the entrypoint:
 
 ## Fail-closed rule
 No product is certified or sales-enabled unless all applicable ZEES pillars are PROVADO for the frozen release fingerprint.
+
+
+<!-- trust snapshot refresh after Control Core KV recovery: 2026-09-26 -->
