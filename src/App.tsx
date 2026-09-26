@@ -371,7 +371,6 @@ function App() {
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
   const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>('checking');
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem('zpc_theme') === 'light' ? 'light' : 'dark'));
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('zpc_theme');
     if (saved === 'light' || saved === 'dark') return saved;
