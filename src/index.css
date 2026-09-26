@@ -3794,3 +3794,16 @@ textarea:focus-visible {
 :root[data-theme='light'] .cfoReceivableRow strong {
   color: var(--text-primary);
 }
+
+
+/* PED-Versal AAA Light Mode text corrections */
+:root[data-theme='light'] .trustState span {
+  color: var(--text-secondary);
+}
+:root[data-theme='light'] .kicker,
+:root[data-theme='light'] .eyebrow {
+  color: var(--status-info);
+}
+:root[data-theme='light'] .certTargetPager > strong {
+  color: var(--text-primary);
+}
