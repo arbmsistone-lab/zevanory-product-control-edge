@@ -1443,12 +1443,20 @@ type OperationalSnapshot = {
 
 async function loadOperationalSnapshot(): Promise<OperationalSnapshot> {
   try {
-    const response = await fetch('https://zevanory.api.br/api/core/v1/snapshot', {
-      headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Control-Center/1.0' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!response.ok) throw new Error('core_snapshot_http_' + response.status);
-    const core = await response.json() as any;
+    const [snapshotResponse, decisionResponse] = await Promise.all([
+      fetch('https://zevanory.api.br/api/core/v1/snapshot', {
+        headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Control-Center/1.0' },
+        signal: AbortSignal.timeout(8000),
+      }),
+      fetch('https://zevanory.api.br/api/core/v1/decision', {
+        headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Control-Center/1.0' },
+        signal: AbortSignal.timeout(8000),
+      }),
+    ]);
+    if (!snapshotResponse.ok) throw new Error('core_snapshot_http_' + snapshotResponse.status);
+    if (!decisionResponse.ok) throw new Error('core_decision_http_' + decisionResponse.status);
+    const core = await snapshotResponse.json() as any;
+    const coreDecision = await decisionResponse.json() as any;
     const status = core?.status || {};
     const health = core?.health || {};
     const control = core?.control || {};
@@ -1482,7 +1490,7 @@ async function loadOperationalSnapshot(): Promise<OperationalSnapshot> {
       control: {
         globalState: String(control?.global_state || 'unknown'),
         rootBlocker: String(control?.root_blocker || 'none'),
-        decision: String(core?.decision?.decision || control?.decision || 'unknown'),
+        decision: String(coreDecision?.decision || control?.decision || 'unknown'),
       },
       continuity: {
         quorumOk: Boolean(continuity?.quorum_ok),
