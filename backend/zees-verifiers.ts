@@ -56,6 +56,36 @@ function result(status: ZeesVerifierStatus, message: string, artifacts: string[]
   return { status, message, artifacts: unique(artifacts) };
 }
 
+async function exactZevanoryCoreProof(pillar: string, ctx: ZeesVerifierContext): Promise<ZeesVerifierResult | null> {
+  if (ctx.product.slug !== 'zevanory') return null;
+  try {
+    const response = await fetch('https://zevanory.api.br/api/core/v1/snapshot', {
+      headers: { accept: 'application/json', 'user-agent': 'ZEVANORY-ZEES-16/2026.09-product-certifier' },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return null;
+    const snapshot = await response.json() as any;
+    const releaseSha = String(snapshot?.release_sha || '');
+    const decisionHash = String(snapshot?.zees16?.decision_hash || '');
+    const sourceSha = String(ctx.sourceSha || '');
+    if (!releaseSha || !sourceSha || releaseSha !== sourceSha) return null;
+    const item = Array.isArray(snapshot?.zees16?.pillars)
+      ? snapshot.zees16.pillars.find((entry: any) => String(entry?.id || '') === pillar)
+      : null;
+    if (!item || String(item?.state || '').toUpperCase() !== 'PROVADO') return null;
+    const evidenceItems = Array.isArray(item?.evidence)
+      ? item.evidence.filter((entry: any) => entry?.ok === true).map((entry: any) => String(entry?.url || entry?.key || '')).filter(Boolean)
+      : [];
+    return result('proved', 'Pilar comprovado pelo ZEES-16 canônico da mesma release do produto ZEVANORY.', [
+      `core_release:${releaseSha}`,
+      decisionHash ? `zees16_decision:${decisionHash}` : '',
+      ...evidenceItems,
+    ]);
+  } catch {
+    return null;
+  }
+}
+
 async function probeHttp(url: string): Promise<HttpProbe> {
   if (!/^https?:\/\//i.test(url || '')) {
     return { ok: false, status: 0, latencyMs: 0, finalUrl: '', contentType: '', bodySample: '', securityHeaders: [], error: 'url_missing_or_invalid' };
@@ -285,6 +315,8 @@ const VERIFIERS: Record<string, (ctx: ZeesVerifierContext) => Promise<ZeesVerifi
 };
 
 export async function executeZeesVerifier(pillar: string, ctx: ZeesVerifierContext): Promise<ZeesVerifierResult> {
+  const canonical = await exactZevanoryCoreProof(pillar, ctx);
+  if (canonical) return canonical;
   const verifier = VERIFIERS[pillar];
   if (!verifier) return result('blocked', `Verificador ${pillar} não implementado.`, []);
   return verifier(ctx);
