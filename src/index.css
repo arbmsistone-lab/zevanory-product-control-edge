@@ -3993,3 +3993,64 @@ html {
     min-height: 96px;
   }
 }
+
+
+/* PED-Versal shell geometry closure
+   The document itself never scrolls; the active workspace owns the remaining viewport.
+*/
+main.shell {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1480px);
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  margin: 0 auto;
+  overflow: hidden;
+  padding: 8px 24px;
+}
+
+main.shell > .topbar,
+main.shell > .policybar,
+main.shell > .trustStrip,
+main.shell > .controlCenterTabs,
+main.shell > .tabs,
+main.shell > .areaSelectWrap,
+main.shell > .globalError {
+  flex: 0 0 auto;
+}
+
+main.shell > .overviewStack,
+main.shell > .productGrid,
+main.shell > .commercialWorkspace,
+main.shell > .cfoWorkspace,
+main.shell > .operationsStack,
+main.shell > .governanceStack,
+main.shell > .evidenceStack {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+}
+
+main.shell > .commercialWorkspace > *,
+main.shell > .cfoWorkspace > *,
+main.shell > .overviewStack > *,
+main.shell > .governanceStack > *,
+main.shell > .operationsStack > *,
+main.shell > .evidenceStack > * {
+  min-height: 0;
+}
+
+@media (max-width: 1100px) {
+  main.shell {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  main.shell {
+    padding: 8px;
+  }
+}
