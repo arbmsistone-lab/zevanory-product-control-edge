@@ -501,6 +501,19 @@ function App() {
     }
   };
 
+  const runCertificationBatch = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await api.post('/api/certification/run-batch', { sessionToken });
+      await load();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'A certificação em lote não foi concluída. O sistema permaneceu fail-closed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const openNew = () => {
     setEditing(null);
     setForm(emptyForm);
@@ -913,6 +926,7 @@ function App() {
                     <div><p className='kicker'>{selectedCertificationTarget.certification.version} · {selectedCertificationTarget.kind}</p><h2>{selectedCertificationTarget.name}</h2><p>{certificationProfileLabel(selectedCertificationTarget.certification.profile)}</p></div>
                     <div className='certActions'>
                       <span className={selectedCertificationTarget.certification.ready ? 'certSeal ready' : 'certSeal blocked'}>{selectedCertificationTarget.certification.ready ? 'CERTIFICADO' : 'NÃO CERTIFICADO'}</span>
+                      <button className='secondary compact' onClick={runCertificationBatch} disabled={busy}><RefreshCw size={14} className={busy ? 'spin' : ''} />{busy ? 'Executando lote...' : 'Certificar todos'}</button>
                       <button className='primary compact' onClick={runCertification} disabled={busy}><RefreshCw size={14} className={busy ? 'spin' : ''} />{busy ? 'Executando P01–P16...' : 'Executar certificação'}</button>
                     </div>
                   </div>
