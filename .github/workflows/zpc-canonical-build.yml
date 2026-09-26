@@ -68,31 +68,60 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25             https://zevanory.api.br/api/control-plane             -o /tmp/control-plane.json
-          jq -e '.trust_chain and .policy.counts' /tmp/control-plane.json >/dev/null
-          jq '{
-            state: (.trust_chain.state // "BLOCKED"),
-            sha: (.trust_chain.artifact_sha // .release.deployment.commit_sha // null),
-            evidenceRoot: (.trust_chain.evidence_root // null),
-            policyVersion: (.trust_chain.policy_version // null),
-            quorum: {
-              passed: (.trust_chain.passed // 0),
-              total: (.trust_chain.total // 3),
-              required: (.trust_chain.required // 2),
-              conflicts: (.trust_chain.conflicts // 0),
-              independentKeys: (.trust_chain.independent_keys // 0)
-            },
-            zea10: {
-              proven: (.policy.counts.proven // 0),
-              partial: (.policy.counts.partial // 0),
-              blocked: (.policy.counts.blocked // 0)
-            },
-            engines: ((.trust_chain.engines // []) | map({id: .id, state: .state})),
-            checkedAt: (.trust_chain.ledger.checked_at // .zea10_live.report.generated_at // null),
-            snapshotAt: (now | todateiso8601),
-            source: "https://zevanory.api.br/api/control-plane"
-          }' /tmp/control-plane.json > dist/global-trust.json
-          jq -e '.state and .quorum and .zea10' dist/global-trust.json >/dev/null
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25 \
+            https://zevanory.api.br/api/core/v1/snapshot \
+            -o /tmp/core-snapshot.json
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25 \
+            https://zevanory.api.br/api/core/v1/decision \
+            -o /tmp/core-decision.json
+
+          jq -e '.release_sha and .zees16.counts and .zea10.counts and .continuity.quorum_ok' /tmp/core-snapshot.json >/dev/null
+          jq -e '.decision and .checks and .eligible_for_critical_promotion != null' /tmp/core-decision.json >/dev/null
+
+          jq -n \
+            --slurpfile s /tmp/core-snapshot.json \
+            --slurpfile d /tmp/core-decision.json \
+            '($s[0]) as $s | ($d[0]) as $d |
+             ($s.continuity.min_quorum // 3) as $required |
+             (($s.continuity.quorum_ok == true) and
+              (($s.zees16.counts.proven // 0) == 16) and
+              (($s.zees16.counts.partial // 0) == 0) and
+              (($s.zees16.counts.blocked // 0) == 0) and
+              (($s.zea10.counts.proven // 0) == 10) and
+              (($s.zea10.counts.partial // 0) == 0) and
+              (($s.zea10.counts.blocked // 0) == 0) and
+              (($s.zea10.counts.unknown // 0) == 0) and
+              ($d.decision == "ALLOW") and
+              ($d.eligible_for_critical_promotion == true) and
+              (($d.blockers // []) | length == 0)) as $green |
+             {
+               state: (if $green then "GREEN" else "BLOCKED" end),
+               sha: ($s.release_sha // $d.release_sha // null),
+               evidenceRoot: ($s.zees16.decision_hash // $d.zees16_decision_hash // null),
+               policyVersion: ($s.zea10.evaluator // $s.zea10.framework // "ZEA-10"),
+               quorum: {
+                 passed: (if $s.continuity.quorum_ok == true then $required else 0 end),
+                 total: $required,
+                 required: $required,
+                 conflicts: 0,
+                 independentKeys: 0
+               },
+               zea10: {
+                 proven: ($s.zea10.counts.proven // 0),
+                 partial: ($s.zea10.counts.partial // 0),
+                 blocked: (($s.zea10.counts.blocked // 0) + ($s.zea10.counts.unknown // 0))
+               },
+               engines: [
+                 {id:"zees16-core", state:(if (($s.zees16.counts.proven // 0) == 16 and ($s.zees16.counts.partial // 0) == 0 and ($s.zees16.counts.blocked // 0) == 0) then "GREEN" else "BLOCKED" end)},
+                 {id:"zea10-evaluator", state:(if (($s.zea10.counts.proven // 0) == 10 and ($s.zea10.counts.partial // 0) == 0 and ($s.zea10.counts.blocked // 0) == 0 and ($s.zea10.counts.unknown // 0) == 0) then "GREEN" else "BLOCKED" end)},
+                 {id:"control-core", state:(if ($d.decision == "ALLOW" and $d.eligible_for_critical_promotion == true and (($d.blockers // []) | length == 0)) then "GREEN" else "BLOCKED" end)}
+               ],
+               checkedAt: ($s.generated_at // $d.generated_at // null),
+               snapshotAt: (now | todateiso8601),
+               source: "https://zevanory.api.br/api/core/v1/snapshot + /api/core/v1/decision"
+             }' > dist/global-trust.json
+
+          jq -e '.state and .quorum and .zea10 and .engines' dist/global-trust.json >/dev/null
 
       - name: Stamp exact lineage
         shell: bash
