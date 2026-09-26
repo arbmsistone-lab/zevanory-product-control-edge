@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -9,6 +10,10 @@ export default defineConfig({
     sourcemap:
       process.env.APPDEPLOY_VITE_SOURCEMAP === 'hidden' ? 'hidden' : false,
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        visualAudit: resolve(__dirname, 'visual-audit.html'),
+      },
       maxParallelFileOps: 128,
     },
   },
