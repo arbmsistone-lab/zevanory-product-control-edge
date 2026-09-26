@@ -1292,7 +1292,7 @@ async function rawGithubBlobSha(path: string): Promise<string | null> {
     );
     if (!response.ok) return null;
     const body = new Uint8Array(await response.arrayBuffer());
-    const prefix = new TextEncoder().encode('blob ' + String(body.byteLength) + '\\0');
+    const prefix = new TextEncoder().encode('blob ' + String(body.byteLength) + '\0');
     const payload = new Uint8Array(prefix.byteLength + body.byteLength);
     payload.set(prefix, 0);
     payload.set(body, prefix.byteLength);
