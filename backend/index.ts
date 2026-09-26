@@ -1733,8 +1733,23 @@ export const handler = router({
       stage = 'bootstrap';
       let bootstrapOk = false;
       if (sessionRoundtrip) {
-        await adminData();
+        const diagnosticData = await adminData();
         bootstrapOk = true;
+        try {
+          const targets = Array.isArray(diagnosticData?.certificationTargets)
+            ? diagnosticData.certificationTargets.map((item:any)=>({
+                id:item.id,
+                name:item.name,
+                ready:item.certification?.ready,
+                summary:item.certification?.summary,
+                rootBlocker:item.certification?.rootBlocker,
+              }))
+            : [];
+          const systems = Array.isArray(diagnosticData?.dashboard?.systems)
+            ? diagnosticData.dashboard.systems.map((item:any)=>({name:item.name,sha:item.sha,ci:item.ci,status:item.status}))
+            : [];
+          console.info('zpc_certification_diagnostic', JSON.stringify({targets,systems}));
+        } catch {}
       }
 
       if (tempSessionId) await db.delete(PIN_CURRENT_SESSION, [tempSessionId]);
