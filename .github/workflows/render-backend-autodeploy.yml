@@ -1,0 +1,49 @@
+name: Render Backend Auto Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'server.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/render-backend-autodeploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-backend-autodeploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trigger Render production deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE_ID: srv-danbhc942hec73dujn7g
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${RENDER_DEPLOY_HOOK_URL:-}" ]; then
+            curl --fail --silent --show-error --retry 3 --max-time 30 -X POST "$RENDER_DEPLOY_HOOK_URL" -o /tmp/render-deploy.json
+            echo "RENDER_AUTODEPLOY_ROUTE=DEPLOY_HOOK"
+          elif [ -n "${RENDER_API_KEY:-}" ]; then
+            curl --fail --silent --show-error --retry 3 --max-time 30 \
+              -X POST "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d '{}' -o /tmp/render-deploy.json
+            echo "RENDER_AUTODEPLOY_ROUTE=API"
+          else
+            echo "::error::Neither RENDER_DEPLOY_HOOK_URL nor RENDER_API_KEY is configured."
+            exit 1
+          fi
+          test -s /tmp/render-deploy.json
+          echo "RENDER_BACKEND_AUTODEPLOY_TRIGGERED=PASS"
