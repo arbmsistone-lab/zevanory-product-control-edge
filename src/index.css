@@ -3813,3 +3813,25 @@ textarea:focus-visible {
 html {
   background: var(--bg-primary);
 }
+
+
+/* PED-Versal AAA closure: preserve semantic hierarchy while meeting 7:1 for secondary text. */
+:root[data-theme='dark'] {
+  --palette-6f86a1: #A0B5CC;
+  --palette-7890aa: #A0B5CC;
+  --palette-7e93aa: #A0B5CC;
+  --palette-7f93ab: #A0B5CC;
+  --palette-8195ad: #A0B5CC;
+  --palette-8197b1: #A0B5CC;
+  --palette-7f9bbd: #A0B5CC;
+}
+
+:root[data-theme='light'] {
+  --status-success: #075236;
+}
+
+:root[data-theme='light'] .topbar {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
