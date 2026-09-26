@@ -80,10 +80,13 @@ for(const size of sizes){
     await page.getByText('ZEVANORY CONTROL CENTER',{exact:true}).waitFor({state:'visible',timeout:15000});
     await page.addScriptTag({path:axePath});
 
-    for(const [key,label] of views){
-      const row={viewport:size,theme,view:key,label,failures:[]};
+    const auditViews=views.flatMap(([key,label])=>key==='overview' && size.width<=760
+      ? [0,1,2,3].map(overviewPage=>[key,label,overviewPage]) : [[key,label,0]]);
+    for(const [key,label,overviewPage] of auditViews){
+      const row={viewport:size,theme,view:key,label,overviewPage,failures:[]};
       const fail=(code,detail)=>{row.failures.push({code,detail});failed=true;};
       try{await navigate(page,size.width,key,label);}catch(e){fail('NAVIGATION',String(e));report.push(row);continue;}
+      if(key==='overview' && size.width<=760) await page.getByRole('navigation',{name:'Páginas da visão geral'}).getByRole('button').nth(overviewPage).click();
       await page.waitForTimeout(80);
       const dom=await page.evaluate(({allowedFonts})=>{
         const de=document.documentElement, body=document.body, main=document.querySelector('main');
@@ -224,7 +227,7 @@ for(const size of sizes){
       row.focus=focus;
       if(focus.active!=='true'||parseFloat(focus.outlineWidth||'0')<4||focus.outlineStyle==='none') fail('FOCUS_RING',JSON.stringify(focus));
 
-      const shot=`${outDir}/${size.name}-${theme}-${key}.png`;
+      const shot=`${outDir}/${size.name}-${theme}-${key}${overviewPage ? '-page'+(overviewPage+1) : ''}.png`;
       await page.screenshot({path:shot,fullPage:true});
       row.screenshot=shot;
       report.push(row);
