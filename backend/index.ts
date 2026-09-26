@@ -858,7 +858,9 @@ async function canonicalZevanoryEvidence(
     const releaseFingerprint = certificationReleaseFingerprint(product, sourceSystem);
     const capturedAt = String(snapshot?.generated_at || new Date().toISOString());
     const decisionHash = String(snapshot?.zees16?.decision_hash || '');
+    const reusable = new Set(['P01','P02','P04','P06','P10','P14','P15']);
     return ZEES_PILLARS.flatMap(definition => {
+      if (!reusable.has(definition.id)) return [];
       const item = pillars.find((entry: any) => String(entry?.id || '') === definition.id);
       if (!item || String(item?.state || '').toUpperCase() !== 'PROVADO') return [];
       const artifacts = Array.isArray(item?.evidence)
