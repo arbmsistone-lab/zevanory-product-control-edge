@@ -1012,6 +1012,50 @@ async function canonicalZevanoryP13Evidence(
   }
 }
 
+
+async function canonicalZevanoryExactVerifierEvidence(
+  product: ProductRecord,
+  sourceSystem: (SystemRecord & { id?: string }) | undefined,
+  pillarIds: Array<'P03' | 'P05' | 'P11'>,
+): Promise<CertificationEvidenceRecord[]> {
+  if (product.slug !== 'zevanory') return [];
+  const sourceSha = String(sourceSystem?.sha || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) return [];
+  const releaseFingerprint = certificationReleaseFingerprint(product, sourceSystem);
+  const rows: CertificationEvidenceRecord[] = [];
+  for (const pillar of pillarIds) {
+    try {
+      const verifier = await executeZeesVerifier(pillar, {
+        product,
+        profile: certificationProfile(product),
+        sourceSystem,
+        sourceSha,
+      });
+      if (verifier.status !== 'proved') continue;
+      rows.push({
+        target: product.slug,
+        pillar,
+        kind: 'supporting',
+        text: `ZEES:${pillar}:PROVEN:${verifier.message}`,
+        sourceSha,
+        sourceRef: 'Exact-release collected workflow proof',
+        capturedAt: new Date().toISOString(),
+        runId: `${pillar.toLowerCase()}-exact-readback`,
+        releaseFingerprint,
+        verdict: 'proved',
+        verifier: `zees-verifier-${pillar.toLowerCase()}-exact-readback`,
+        environment: sourceSystem?.domain || product.publicUrl || 'internal',
+        artifacts: verifier.artifacts,
+        invalidatedAt: null,
+        invalidationReason: null,
+      });
+    } catch {
+      // Fail closed per pillar.
+    }
+  }
+  return rows;
+}
+
 async function runCertificationExecutor(targetId: string) {
   await ensureSeed();
   await ensureProducts();
@@ -1830,7 +1874,10 @@ async function adminData() {
   const zevanoryP13Evidence = zevanoryProduct
     ? await canonicalZevanoryP13Evidence(zevanoryProduct, zevanorySystem)
     : [];
-  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence];
+  const zevanoryExactWorkflowEvidence = zevanoryProduct
+    ? await canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P11'])
+    : [];
+  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence];
   const enriched = products.items.map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, effectiveCertificationEvidence);
