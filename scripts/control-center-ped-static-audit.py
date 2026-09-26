@@ -70,13 +70,14 @@ for required,code in [
 app=(ROOT/"src/App.tsx").read_text(encoding="utf-8")
 commercial=(ROOT/"src/CommercialWorkspace.tsx").read_text(encoding="utf-8")
 cfo=(ROOT/"src/CfoWorkspace.tsx").read_text(encoding="utf-8")
+commercial_model=(ROOT/"src/commercial-model.ts").read_text(encoding="utf-8")
 required_text=[
   "ZEVANORY CONTROL CENTER","Visão Geral","Produtos","Comercial","Criativos","Aprovações","Publicações",
   "Prospecção","CRM/Vendas","Atendimento","Financeiro","ZEVANORY CFO","Evidências",
   "Operações técnicas","ZEES-16 / Governança","ROBÔ COMERCIAL: ATIVO",
   "Leads encontrados hoje","Aguardando aprovação","Saldo consolidado","Projeção 30 dias"
 ]
-blob="\n".join([app,commercial,cfo])
+blob="\n".join([app,commercial,cfo,commercial_model])
 for item in required_text:
     if item not in blob: fail("content_integrity",item)
 
