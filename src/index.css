@@ -4059,7 +4059,7 @@ main.shell > .evidenceStack > * {
 /* Compact navigation keeps all actions reachable without spending the viewport
    on repeated headings. Overview details remain available through page buttons. */
 .overviewPager { display: none; }
-@media (max-width: 760px) {
+@media (max-width: 960px) {
   main.shell .topbar { gap: 8px; margin-bottom: 4px; }
   main.shell .topbar h1 { font-size: 21px; line-height: 24px; margin: 4px 0; }
   main.shell .subtitle { font-size: 12px; line-height: 16px; }
