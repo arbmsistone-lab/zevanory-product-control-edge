@@ -156,7 +156,61 @@ async function p02(ctx: ZeesVerifierContext) {
   return result('partial', 'UI foi observada ao vivo, porém falta regressão visual/Design System reproduzível.', [...liveArtifacts(probe), ...visual]);
 }
 
+async function exactZevanoryCollectedWorkflowProof(
+  ctx: ZeesVerifierContext,
+  requiredNames: string[],
+  workflowMarkers: string[],
+  message: string,
+): Promise<ZeesVerifierResult | null> {
+  if (ctx.product.slug !== 'zevanory') return null;
+  const sourceSha = String(ctx.sourceSha || ctx.sourceSystem?.sha || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) return null;
+  const base = String(ctx.product.publicUrl || 'https://zevanory.api.br').replace(/\/$/, '');
+  try {
+    const [controlResponse, workflowResponse] = await Promise.all([
+      fetch(base + '/api/control-plane', { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8_000) }),
+      fetch(`https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/${sourceSha}/.github/workflows/zevanory-apex-engineering.yml`,
+        { signal: AbortSignal.timeout(8_000) }),
+    ]);
+    if (!controlResponse.ok || !workflowResponse.ok) return null;
+    const [control, workflow] = await Promise.all([
+      controlResponse.json() as Promise<any>,
+      workflowResponse.text(),
+    ]);
+    if (String(control?.release?.deployment?.commit_sha || '').toLowerCase() !== sourceSha) return null;
+    const assets = Array.isArray(control?.zea10_live?.report?.assets) ? control.zea10_live.report.assets : [];
+    const asset = assets.find((item: any) => String(item?.id || '') === 'zevanory' && String(item?.sha || '').toLowerCase() === sourceSha);
+    if (!asset || asset?.eligible !== true) return null;
+    const allEvidence = Object.values(asset?.pillars || {}).flatMap((pillar: any) =>
+      Array.isArray(pillar?.evidence) ? pillar.evidence : []
+    );
+    const matched = requiredNames.map(name => allEvidence.find((item: any) =>
+      String(item?.name || '') === name &&
+      String(item?.sha || '').toLowerCase() === sourceSha &&
+      String(item?.status || '') === 'PASS' &&
+      item?.exact_version_bound === true &&
+      item?.reproducible === true &&
+      item?.deterministic === true
+    ));
+    if (matched.some(item => !item)) return null;
+    if (!workflowMarkers.every(marker => workflow.includes(marker))) return null;
+    return result('proved', message, [
+      `source_sha:${sourceSha}`,
+      base + '/api/control-plane',
+      ...matched.map((item: any) => String(item?.url || '')).filter(Boolean),
+    ]);
+  } catch {
+    return null;
+  }
+}
+
 async function p03(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryCollectedWorkflowProof(ctx,
+    ['ZEVANORY apex engineering gate','zevanory-p02-visual-regression','zevanory-p04-wcag','zevanory-remote-quality-gates'],
+    ['Verify responsive geometry typography and interaction quality','Verify WCAG AA zero automated errors','Verify apex Lighthouse thresholds'],
+    'Geometria, tipografia, contraste, responsividade e regressão visual comprovados por gates exact-release reproduzíveis.'
+  );
+  if (exactProof) return exactProof;
   const probe = await probeHttp(ctx.product.publicUrl);
   const geometry = evidence(ctx, /token|grid|contrast|contraste|geometry|geometria|typograph|tipograf|spacing|espacamento/i);
   const viewport = /name=["']viewport["']/i.test(probe.bodySample);
@@ -182,6 +236,12 @@ async function p04(ctx: ZeesVerifierContext) {
 }
 
 async function p05(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryCollectedWorkflowProof(ctx,
+    ['ZEVANORY apex engineering gate','ZEES-16 Evidence Gate'],
+    ['Verify apex manifest and required pillars','Verify source hygiene and immutable production provenance'],
+    'Engenharia de código comprovada por gate apex exact-release, integridade de fonte, higiene estática, arquitetura e proveniência.'
+  );
+  if (exactProof) return exactProof;
   const engineering = evidence(ctx, /lint|typecheck|code review|quality gate|complexity|static analysis|engenharia/i);
   if (!ctx.sourceSha || !ctx.sourceSystem) return result('blocked', 'Repositório/SHA fonte não está vinculado ao produto.', engineering);
   if (ciHealthy(ctx.sourceSystem) && engineering.length > 0) return result('proved', 'SHA, CI e controles de qualidade de código estão vinculados e verdes.', [`sha:${ctx.sourceSha}`, `ci:${ctx.sourceSystem.ci || ''}`, ...engineering]);
@@ -385,6 +445,12 @@ async function p10(ctx: ZeesVerifierContext) {
 }
 
 async function p11(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryCollectedWorkflowProof(ctx,
+    ['ZEVANORY apex engineering gate','zevanory-remote-quality-gates','zevanory-p12-continuous-slo'],
+    ['Verify apex Lighthouse thresholds'],
+    'Performance e escalabilidade comprovadas por três amostras Lighthouse, gates de qualidade remotos e SLO contínuo vinculados ao SHA exato.'
+  );
+  if (exactProof) return exactProof;
   if (!ctx.product.publicUrl) return result('blocked', 'URL pública ausente para teste de performance.', []);
   const samples = await Promise.all([probeHttp(ctx.product.publicUrl), probeHttp(ctx.product.publicUrl), probeHttp(ctx.product.publicUrl)]);
   const okSamples = samples.filter(item => item.ok);
