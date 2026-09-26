@@ -94,6 +94,7 @@ for (const match of geometryMatches) {
 assert(ped.includes('font-size: 16px'), 'perfect_fourth_base_missing');
 assert(ped.includes('font-size: 21px'), 'perfect_fourth_h3_missing');
 assert(ped.includes('font-size: 28px'), 'perfect_fourth_h2_missing');
+assert(ped.includes('font-size: 37px'), 'perfect_fourth_h1_missing');
 
 if (failures.length) {
   console.error('PED_COMMERCIAL_AUDIT=FAIL');
