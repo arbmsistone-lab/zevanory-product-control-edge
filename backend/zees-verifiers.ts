@@ -463,7 +463,83 @@ async function p11(ctx: ZeesVerifierContext) {
   return result('blocked', 'Performance não pôde ser medida de forma estável em três probes.', artifacts);
 }
 
+async function exactZevanoryP12ObservabilityProof(ctx: ZeesVerifierContext): Promise<ZeesVerifierResult | null> {
+  if (ctx.product.slug !== 'zevanory') return null;
+  const sourceSha = String(ctx.sourceSha || ctx.sourceSystem?.sha || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) return null;
+  const base = String(ctx.product.publicUrl || 'https://zevanory.api.br').replace(/\/$/, '');
+  try {
+    const headers = { 'user-agent': 'ZEVANORY-P12-Certifier/2026.09' };
+    const [statusResponse, healthResponse, controlResponse, sourceResponse, sloWorkflowResponse] = await Promise.all([
+      fetch(base + '/api/status', { headers: { ...headers, accept: 'application/json' }, signal: AbortSignal.timeout(8_000) }),
+      fetch(base + '/api/health', { headers: { ...headers, accept: 'application/json' }, signal: AbortSignal.timeout(8_000) }),
+      fetch(base + '/api/control-plane', { headers: { ...headers, accept: 'application/json' }, signal: AbortSignal.timeout(8_000) }),
+      fetch(`https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/${sourceSha}/worker/cloudflare-worker.recovered.mjs`, { headers, signal: AbortSignal.timeout(10_000) }),
+      fetch(`https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/${sourceSha}/.github/workflows/zevanory-p12-continuous-slo.yml`, { headers, signal: AbortSignal.timeout(8_000) }),
+    ]);
+    if (![statusResponse, healthResponse, controlResponse, sourceResponse, sloWorkflowResponse].every(response => response.ok)) return null;
+    const [status, health, control, source, sloWorkflow] = await Promise.all([
+      statusResponse.json() as Promise<any>,
+      healthResponse.json() as Promise<any>,
+      controlResponse.json() as Promise<any>,
+      sourceResponse.text(),
+      sloWorkflowResponse.text(),
+    ]);
+    if (String(control?.release?.deployment?.commit_sha || '').toLowerCase() !== sourceSha) return null;
+    if (String(control?.proof_chain?.sha || '').toLowerCase() !== sourceSha) return null;
+
+    const metricsOk = status?.runtime?.telemetry === 'active' &&
+      status?.metrics && typeof status.metrics === 'object' &&
+      ['page_views','orders','payments_confirmed'].every(key => Number.isFinite(Number(status.metrics[key])));
+    const requestId = String(health?.request_id || '');
+    const correlationOk = /^[0-9a-f-]{36}$/i.test(requestId) &&
+      source.includes('function attachRequestContext(req, res, route)') &&
+      source.includes('res.setHeader("x-request-id", requestId)') &&
+      source.includes('function operationalLog(context, status') &&
+      source.includes('capabilities: ["observability:log"]') &&
+      source.includes('trace_id');
+    const assets = Array.isArray(control?.zea10_live?.report?.assets) ? control.zea10_live.report.assets : [];
+    const asset = assets.find((item:any) => String(item?.id || '') === 'zevanory' && String(item?.sha || '').toLowerCase() === sourceSha);
+    const collected = Object.values(asset?.pillars || {}).flatMap((pillar:any) => Array.isArray(pillar?.evidence) ? pillar.evidence : []);
+    const exactEvidence = (name:string) => collected.find((item:any) =>
+      String(item?.name || '') === name &&
+      String(item?.sha || '').toLowerCase() === sourceSha &&
+      String(item?.status || '') === 'PASS' &&
+      item?.exact_version_bound === true &&
+      item?.reproducible === true &&
+      item?.deterministic === true
+    );
+    const slo = exactEvidence('zevanory-p12-continuous-slo');
+    const dr = exactEvidence('ZEVANORY portable disaster recovery');
+    const closure = exactEvidence('ZEVANORY consolidated closure gate');
+    const sloOk = Boolean(slo) &&
+      sloWorkflow.includes('Probe independent production endpoints') &&
+      sloWorkflow.includes('latency_ms') &&
+      sloWorkflow.includes('"all_ok"');
+    const incidentOk = Boolean(dr && closure) &&
+      source.includes('ROLLBACK_ORDER') &&
+      source.includes('verify_fail_closed') &&
+      source.includes('critical_incident_initial_response_target_business_hours');
+    if (![metricsOk, correlationOk, sloOk, incidentOk].every(Boolean)) return null;
+
+    return result('proved', 'Observabilidade comprovada por métricas live, request correlation e logs estruturados no source exact-SHA, SLO contínuo reproduzível e cadeia de DR/resposta a incidente vinculada à mesma release.', [
+      `source_sha:${sourceSha}`,
+      base + '/api/status',
+      base + '/api/health',
+      base + '/api/control-plane',
+      String(slo?.url || ''),
+      String(dr?.url || ''),
+      String(closure?.url || ''),
+      `request_id:${requestId}`,
+    ]);
+  } catch {
+    return null;
+  }
+}
+
 async function p12(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryP12ObservabilityProof(ctx);
+  if (exactProof) return exactProof;
   const probe = await probeHttp(ctx.product.publicUrl);
   const metrics = evidence(ctx, /metric|metrica|métrica/i);
   const logs = evidence(ctx, /logs?/i);
