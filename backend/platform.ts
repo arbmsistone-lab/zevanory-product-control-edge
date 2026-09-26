@@ -330,48 +330,6 @@ async function configRecord(key: string) {
   return current.items.find(item => item.key === key) || null;
 }
 
-async function setConfig(key: string, value: unknown) {
-  const current = await configRecord(key);
-  const record = { key, value, updatedAt: new Date().toISOString() };
-  if (current) await db.update(CONFIG_BUCKET, [{ id: current.id, record }]);
-  else await db.add(CONFIG_BUCKET, [record]);
-}
-
-async function replaceBucket(bucket: string, records: any[]) {
-  const current = await db.list<any>(bucket, { limit: 1000 });
-  if (current.items.length) await db.delete(bucket, current.items.map(item => item.id));
-  if (records.length) await db.add(bucket, records);
-}
-
-function stripId<T extends Record<string, any>>(item: T) {
-  const { id, ...record } = item;
-  return record;
-}
-
-async function migrateLegacyBootstrap(bootstrap: any) {
-  if (!bootstrap || await configRecord('legacy_bootstrap_migrated')) return;
-  const dashboard = bootstrap.dashboard || {};
-
-  if (Array.isArray(dashboard.systems)) await replaceBucket('acs_systems', dashboard.systems.map(stripId));
-  if (Array.isArray(dashboard.audits)) await replaceBucket('acs_audits', dashboard.audits.map(stripId));
-  if (Array.isArray(dashboard.improvements)) await replaceBucket('acs_improvements', dashboard.improvements.map(stripId));
-  if (Array.isArray(dashboard.incidents)) await replaceBucket('acs_incidents', dashboard.incidents.map(stripId));
-  await replaceBucket('acs_engine', [{ lastRun: dashboard.lastEngineRun || new Date().toISOString() }]);
-
-  if (Array.isArray(bootstrap.products)) {
-    const products = bootstrap.products.map((item: any) => {
-      const {
-        id, certification, commercialReady, blockers, auditOverall, auditStatus,
-        ...record
-      } = item;
-      return record;
-    });
-    await replaceBucket('acs_products_admin', products);
-  }
-
-  await setConfig('legacy_bootstrap_migrated', true);
-}
-
 export async function adminPinState() {
   const saved = await configRecord('admin_pin_hash');
   const hash = String(saved?.value || '');
