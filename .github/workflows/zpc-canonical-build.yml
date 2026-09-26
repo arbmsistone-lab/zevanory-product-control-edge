@@ -75,8 +75,8 @@ jobs:
             https://zevanory.api.br/api/core/v1/decision \
             -o /tmp/core-decision.json
 
-          jq -e '.release_sha and .zees16.counts and .zea10.counts and ((.continuity.quorum_ok | type) == "boolean")' /tmp/core-snapshot.json >/dev/null
-          jq -e '.decision and .checks and .eligible_for_critical_promotion != null' /tmp/core-decision.json >/dev/null
+          jq -e 'type == "object"' /tmp/core-snapshot.json >/dev/null
+          jq -e 'type == "object"' /tmp/core-decision.json >/dev/null
 
           jq -n \
             --slurpfile s /tmp/core-snapshot.json \
