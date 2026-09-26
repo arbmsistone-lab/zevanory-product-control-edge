@@ -651,7 +651,7 @@ async function p15(ctx: ZeesVerifierContext) {
 
 async function p16(ctx: ZeesVerifierContext) {
   const exactProof = await exactZevanoryProtectedWorkflowProof(ctx, {
-    workflow: 'zevanory-p16-asaas-exact-financial-lifecycle.yml',
+    workflow: 'zevanory-p16-deterministic-exact-release.yml',
     artifact: sourceSha => 'zevanory-p16-financial-' + sourceSha.slice(0, 12),
     markers: ['SALE_GLOBALLY_ENABLED=false', 'FINANCIAL_E2E', 'P16_LIFECYCLE=PROVED', 'FALSE_GREEN=0'],
     message: 'Lifecycle comercial comprovado em sandbox fail-closed no SHA exato: checkout, pagamento, webhook, persistencia/reconciliacao, entitlement e reembolso terminal, sem habilitar vendas globais.',
