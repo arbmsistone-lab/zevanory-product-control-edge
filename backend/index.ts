@@ -1016,7 +1016,7 @@ async function canonicalZevanoryP13Evidence(
 async function canonicalZevanoryExactVerifierEvidence(
   product: ProductRecord,
   sourceSystem: (SystemRecord & { id?: string }) | undefined,
-  pillarIds: Array<'P03' | 'P05' | 'P11'>,
+  pillarIds: Array<'P03' | 'P05' | 'P07' | 'P11' | 'P12' | 'P16'>,
 ): Promise<CertificationEvidenceRecord[]> {
   if (product.slug !== 'zevanory') return [];
   const sourceSha = String(sourceSystem?.sha || '').trim().toLowerCase();
@@ -1875,7 +1875,7 @@ async function adminData() {
     ? await canonicalZevanoryP13Evidence(zevanoryProduct, zevanorySystem)
     : [];
   const zevanoryExactWorkflowEvidence = zevanoryProduct
-    ? await canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P11'])
+    ? await canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P07','P11','P12','P16'])
     : [];
   const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence];
   const enriched = products.items.map(product => {
