@@ -143,14 +143,14 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <div className='commercialDashboardGrid'>
             <article className='commercialPanel'>
               <div className='commercialPanelTitle'><Activity size={17}/><div><b>Atividade recente</b><small>Eventos persistidos e autenticados</small></div></div>
-              <div className='commercialList'>
+              <div className='commercialList' tabIndex={0} aria-label='Atividade comercial recente'>
                 {data.events.slice(0, 5).map(item => <RecordRow key={item.id} item={item}/>)}
                 {!data.events.length && <div className='commercialEmpty'>Nenhum evento comercial comprovado ainda.</div>}
               </div>
             </article>
             <article className='commercialPanel'>
               <div className='commercialPanelTitle'><Megaphone size={17}/><div><b>Pipeline de conteúdo</b><small>Criativo → aprovação → publicação</small></div></div>
-              <div className='commercialList'>
+              <div className='commercialList' tabIndex={0} aria-label='Pipeline comercial de conteúdo'>
                 {[...data.creatives, ...data.publications].slice(0, 5).map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
                 {!data.creatives.length && !data.publications.length && <div className='commercialEmpty'>Nenhum criativo ou publicação registrado.</div>}
               </div>
@@ -200,7 +200,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             {section === 'evidence' && <ShieldCheck size={17}/>}
             <div><b>{meta.title}</b><small>{items.length} registro(s)</small></div>
           </div>
-          <div className='commercialList commercialListTall'>
+          <div className='commercialList commercialListTall' tabIndex={0} aria-label={meta.title + ' — registros'}>
             {items.map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
             {!items.length && <div className='commercialEmpty'>Nenhum registro comprovado nesta área. O painel não preencherá dados fictícios.</div>}
           </div>
