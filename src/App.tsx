@@ -371,6 +371,7 @@ function App() {
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
   const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>('checking');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem('zpc_theme') === 'light' ? 'light' : 'dark'));
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('zpc_theme');
     if (saved === 'light' || saved === 'dark') return saved;
@@ -421,6 +422,11 @@ function App() {
   useEffect(() => {
     void load(sessionToken);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('zpc_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (authState !== 'ready') return;
@@ -705,6 +711,15 @@ function App() {
             {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
           </button>
           <span className='adminChip'><ShieldCheck size={15} />PIN ADMIN ATIVO</span>
+          <button
+            className='secondary themeToggle'
+            onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+            aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+            title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+          >
+            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            {theme === 'dark' ? 'Claro' : 'Escuro'}
+          </button>
           {view === 'products' && <button className='primary' onClick={openNew}><PackagePlus size={17} />Novo produto</button>}
           <button className='secondary' onClick={logout}><LogOut size={17} />Sair</button>
         </div>
