@@ -115,33 +115,86 @@ for(const size of sizes){
       if(!dom.mainClass.includes('shell-'+key)) fail('VIEW_CLASS',dom.mainClass);
 
       const contrast=await page.evaluate(()=>{
-        const parse=c=>{
-          const m=String(c).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i); return m?[+m[1],+m[2],+m[3]]:null;
+        const parseColor=value=>{
+          const c=String(value||'').trim();
+          if(!c||c==='transparent') return null;
+          let m=c.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+))?\s*\)$/i);
+          if(m) return {rgb:[+m[1],+m[2],+m[3]],a:m[4]===undefined?1:+m[4]};
+          m=c.match(/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+          if(m){
+            let h=m[1];
+            if(h.length===3) h=h.split('').map(x=>x+x).join('');
+            const a=h.length===8?parseInt(h.slice(6,8),16)/255:1;
+            return {rgb:[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)],a};
+          }
+          return null;
+        };
+        const blend=(top,bottom)=>{
+          const a=top.a+(bottom.a*(1-top.a));
+          if(a<=0) return {rgb:[0,0,0],a:0};
+          return {
+            rgb:top.rgb.map((v,i)=>(v*top.a+bottom.rgb[i]*bottom.a*(1-top.a))/a),
+            a
+          };
         };
         const L=rgb=>{
-          const v=rgb.map(x=>x/255).map(x=>x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4));
+          const v=rgb.map(x=>Math.max(0,Math.min(255,x))/255).map(x=>x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4));
           return .2126*v[0]+.7152*v[1]+.0722*v[2];
         };
         const ratio=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
-        const bgOf=el=>{
-          let n=el;
-          while(n){
-            const s=getComputedStyle(n), bg=parse(s.backgroundColor);
-            if(bg && s.backgroundColor!=='rgba(0, 0, 0, 0)' && s.backgroundColor!=='transparent') return bg;
-            n=n.parentElement;
+        const tokenBase=()=>{
+          const raw=getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim();
+          return parseColor(raw)||{rgb:[255,255,255],a:1};
+        };
+        const gradientStops=el=>{
+          const image=getComputedStyle(el).backgroundImage;
+          if(!image||image==='none') return [];
+          const values=[];
+          for(const match of image.matchAll(/rgba?\([^)]*\)|#[0-9a-fA-F]{3,8}\b/g)){
+            const c=parseColor(match[0]); if(c&&c.a>0) values.push(c);
           }
-          return parse(getComputedStyle(document.body).backgroundColor)||[255,255,255];
+          return values;
+        };
+        const backgroundCandidates=el=>{
+          const chain=[]; let n=el.parentElement;
+          while(n){chain.unshift(n);n=n.parentElement;}
+          let effective=tokenBase();
+          let hasOpaqueSurface=false;
+          const candidates=[];
+          for(const node of chain){
+            const s=getComputedStyle(node);
+            const bg=parseColor(s.backgroundColor);
+            if(bg&&bg.a>0){
+              effective=blend(bg,effective);
+              if(bg.a>=.999) hasOpaqueSurface=true;
+            }
+            const stops=gradientStops(node);
+            if(stops.length&&!hasOpaqueSurface){
+              for(const stop of stops){
+                const composed=blend(stop,effective);
+                candidates.push(composed.rgb);
+              }
+            }
+          }
+          candidates.push(effective.rgb);
+          return candidates;
         };
         const bad=[];
         for(const el of document.querySelectorAll('main *')){
           if(el.children.length || !(el.textContent||'').trim()) continue;
           const r=el.getBoundingClientRect(),s=getComputedStyle(el);
           if(r.width<=0||r.height<=0||s.display==='none'||s.visibility==='hidden') continue;
-          const fg=parse(s.color),bg=bgOf(el); if(!fg||!bg) continue;
+          const fg=parseColor(s.color); if(!fg) continue;
+          const backgrounds=backgroundCandidates(el);
           const tag=el.tagName.toLowerCase();
           const floor=/^h[1-6]$/.test(tag)?4.5:7.0;
-          const cr=ratio(fg,bg);
-          if(cr+1e-6<floor) bad.push({tag,cls:String(el.className),text:(el.textContent||'').trim().slice(0,80),ratio:+cr.toFixed(2),floor,color:s.color,background:getComputedStyle(el).backgroundColor});
+          const ratios=backgrounds.map(bg=>ratio(fg.rgb,bg));
+          const cr=Math.min(...ratios);
+          if(cr+1e-6<floor) bad.push({
+            tag,cls:String(el.className),text:(el.textContent||'').trim().slice(0,80),
+            ratio:+cr.toFixed(2),floor,color:s.color,
+            candidates:backgrounds.map(bg=>bg.map(x=>Math.round(x)))
+          });
           if(bad.length>=40) break;
         }
         return bad;
