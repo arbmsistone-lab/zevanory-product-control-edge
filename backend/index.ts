@@ -1351,35 +1351,64 @@ type GlobalTrust = {
 
 async function loadGlobalTrust(): Promise<GlobalTrust> {
   try {
-    const response = await fetch('https://zevanory.api.br/api/control-plane', {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!response.ok) throw new Error('control_plane_http_' + response.status);
-    const data = await response.json() as any;
-    const trust = data?.trust_chain || {};
-    const counts = data?.policy?.counts || {};
+    const [snapshotResponse, decisionResponse] = await Promise.all([
+      fetch('https://zevanory.api.br/api/core/v1/snapshot', {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      }),
+      fetch('https://zevanory.api.br/api/core/v1/decision', {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      }),
+    ]);
+    if (!snapshotResponse.ok) throw new Error('core_snapshot_http_' + snapshotResponse.status);
+    if (!decisionResponse.ok) throw new Error('core_decision_http_' + decisionResponse.status);
+
+    const snapshot = await snapshotResponse.json() as any;
+    const decision = await decisionResponse.json() as any;
+    const zeesCounts = snapshot?.zees16?.counts || {};
+    const zeaCounts = snapshot?.zea10?.counts || {};
+    const required = Number(snapshot?.continuity?.min_quorum || 3);
+    const quorumOk = snapshot?.continuity?.quorum_ok === true;
+    const zeesComplete =
+      Number(zeesCounts.proven || 0) === 16 &&
+      Number(zeesCounts.partial || 0) === 0 &&
+      Number(zeesCounts.blocked || 0) === 0;
+    const zeaComplete =
+      Number(zeaCounts.proven || 0) === 10 &&
+      Number(zeaCounts.partial || 0) === 0 &&
+      Number(zeaCounts.blocked || 0) === 0 &&
+      Number(zeaCounts.unknown || 0) === 0;
+    const coreAllow =
+      decision?.decision === 'ALLOW' &&
+      decision?.eligible_for_critical_promotion === true &&
+      Array.isArray(decision?.blockers) &&
+      decision.blockers.length === 0;
+    const green = quorumOk && zeesComplete && zeaComplete && coreAllow;
+
     return {
-      state: String(trust.state || 'BLOCKED'),
-      sha: String(trust.artifact_sha || data?.release?.deployment?.commit_sha || '') || null,
-      evidenceRoot: String(trust.evidence_root || '') || null,
-      policyVersion: String(trust.policy_version || '') || null,
+      state: green ? 'GREEN' : 'BLOCKED',
+      sha: String(snapshot?.release_sha || decision?.release_sha || '') || null,
+      evidenceRoot: String(snapshot?.zees16?.decision_hash || decision?.zees16_decision_hash || '') || null,
+      policyVersion: String(snapshot?.zea10?.evaluator || snapshot?.zea10?.framework || 'ZEA-10') || null,
       quorum: {
-        passed: Number(trust.passed || 0),
-        total: Number(trust.total || 3),
-        required: Number(trust.required || 2),
-        conflicts: Number(trust.conflicts || 0),
-        independentKeys: Number(trust.independent_keys || 0),
+        passed: quorumOk ? required : 0,
+        total: required,
+        required,
+        conflicts: 0,
+        independentKeys: 0,
       },
       zea10: {
-        proven: Number(counts.proven || 0),
-        partial: Number(counts.partial || 0),
-        blocked: Number(counts.blocked || 0),
+        proven: Number(zeaCounts.proven || 0),
+        partial: Number(zeaCounts.partial || 0),
+        blocked: Number(zeaCounts.blocked || 0) + Number(zeaCounts.unknown || 0),
       },
-      engines: Array.isArray(trust.engines)
-        ? trust.engines.map((item:any)=>({ id:String(item?.id||''), state:String(item?.state||'UNKNOWN') })).filter((item:any)=>item.id)
-        : [],
-      checkedAt: String(trust?.ledger?.checked_at || '') || null,
+      engines: [
+        { id: 'zees16-core', state: zeesComplete ? 'GREEN' : 'BLOCKED' },
+        { id: 'zea10-evaluator', state: zeaComplete ? 'GREEN' : 'BLOCKED' },
+        { id: 'control-core', state: coreAllow ? 'GREEN' : 'BLOCKED' },
+      ],
+      checkedAt: String(snapshot?.generated_at || decision?.generated_at || '') || null,
     };
   } catch {
     return {
@@ -1387,9 +1416,13 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
       sha: null,
       evidenceRoot: null,
       policyVersion: null,
-      quorum: { passed: 0, total: 3, required: 2, conflicts: 0, independentKeys: 0 },
+      quorum: { passed: 0, total: 3, required: 3, conflicts: 0, independentKeys: 0 },
       zea10: { proven: 0, partial: 0, blocked: 10 },
-      engines: [],
+      engines: [
+        { id: 'zees16-core', state: 'UNAVAILABLE' },
+        { id: 'zea10-evaluator', state: 'UNAVAILABLE' },
+        { id: 'control-core', state: 'UNAVAILABLE' },
+      ],
       checkedAt: null,
     };
   }
