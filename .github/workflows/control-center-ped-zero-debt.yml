@@ -1,0 +1,96 @@
+name: Control Center PED-Versal Supreme Zero-Debt
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/ped_versal_zero_debt_audit.py'
+      - 'scripts/control-center-ped-runtime.mjs'
+      - '.github/workflows/control-center-ped-zero-debt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: control-center-ped-zero-debt-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "EXACT_SHA=PASS sha=$GITHUB_SHA"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install application and auditors
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.0 axe-core@4.10.3 lighthouse@12
+          npx playwright install --with-deps chromium
+
+      - name: Typecheck and production build
+        run: |
+          npm run typecheck
+          npm run build
+
+      - name: Exhaustive zero-debt static audit
+        run: python3 scripts/ped_versal_zero_debt_audit.py
+
+      - name: Start production preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/zpc-vite-preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4173 >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/zpc-vite-preview.log
+          exit 1
+
+      - name: Audit 14 areas x 4 viewports x 2 themes
+        env:
+          CONTROL_CENTER_AUDIT_URL: http://127.0.0.1:4173
+        run: node scripts/control-center-ped-runtime.mjs
+
+      - name: Lighthouse production-candidate audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux*/chrome' | head -n1 || true)"
+          test -n "$CHROME_PATH"
+          npx lighthouse http://127.0.0.1:4173             --chrome-path="$CHROME_PATH"             --chrome-flags="--headless=new --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage"             --only-categories=performance,accessibility,best-practices             --output=json --output-path=control-center-lighthouse.json --quiet
+          node - <<'NODE'
+          const r=require('./control-center-lighthouse.json');
+          const s=Object.fromEntries(Object.entries(r.categories).map(([k,v])=>[k,Math.round(v.score*100)]));
+          console.log(JSON.stringify(s));
+          if(s.performance<90||s.accessibility<100||s['best-practices']<95) process.exit(1);
+          NODE
+
+      - name: Upload immutable evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: control-center-ped-supreme-${{ github.sha }}
+          path: |
+            control-center-audit/
+            control-center-lighthouse.json
+          retention-days: 90
