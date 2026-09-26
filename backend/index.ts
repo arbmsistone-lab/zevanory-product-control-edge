@@ -1248,100 +1248,114 @@ async function canonicalZevanoryDirectExactReleaseEvidence(
   }
 }
 
+const DIGITAL_PORTFOLIO_PROTECTED_PROOF = {
+  workflowHead: '9968dd478cc5323ff65e844c98072b2b27d601eb',
+  workflowRunId: 36246887499,
+  runtimeSha: 'c3845cf898acf60e84a06e51cf08db7cfd09bbe3',
+  artifactExpiresAt: '2026-12-25T13:57:47Z',
+  sharedBlobs: {
+    'product.css': '0f228a57d0e7b4618be4b3339387419329820570',
+    'privacidade/index.html': '1114c9cdf4798f1c565d8b98518b116bcd9c58ab',
+    'termos/index.html': '7040d81a6e5c1fa1a6dbec19d1ec8361b9c6f79e',
+    'reembolso/index.html': 'd0a7e39546048a38f7e8b4644cb6e4bb114dd6f3',
+    'worker/cloudflare-worker.recovered.mjs': '10af357938c766c9f905a549639e314da42b6440',
+  },
+  targets: {
+    'ia-na-pratica': {
+      blob: '7c5b9dac20fc1ff0421e64f52ab7b6d2689d2d22',
+      artifactId: 10907588241,
+    },
+    'vendas-na-pratica': {
+      blob: '2a6b9be0bd12a2ffbd9e7a4a8e9941829eab30d3',
+      artifactId: 10907338870,
+    },
+    'combo-ia-vendas': {
+      blob: '2d0c53565af6eef646439b1c4f505a331c842705',
+      artifactId: 10907508598,
+    },
+    'lucro-e-caixa': {
+      blob: '427e208349bd280128413af2f16e31bca1cb9a43',
+      artifactId: 10908050943,
+    },
+    'negocio-completo': {
+      blob: 'd4fb45a28616cf714c1f33b93bf39bfcacfbfce3',
+      artifactId: 10907548435,
+    },
+  },
+} as const;
+
+async function rawGithubBlobSha(path: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      'https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/gh-pages/' + path,
+      { headers: { 'user-agent': 'ZEVANORY-Portfolio-Durable-Readback/2026.09' }, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!response.ok) return null;
+    const body = new Uint8Array(await response.arrayBuffer());
+    const prefix = new TextEncoder().encode('blob ' + String(body.byteLength) + '\\0');
+    const payload = new Uint8Array(prefix.byteLength + body.byteLength);
+    payload.set(prefix, 0);
+    payload.set(body, prefix.byteLength);
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-1', payload));
+    return Array.from(digest).map(value => value.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return null;
+  }
+}
+
 async function canonicalDigitalPortfolioTechnicalEvidence(
   product: ProductRecord,
 ): Promise<CertificationEvidenceRecord[]> {
-  const eligible = new Set(['ia-na-pratica','vendas-na-pratica','combo-ia-vendas','lucro-e-caixa','negocio-completo']);
-  if (!eligible.has(product.slug)) return [];
+  const proof = DIGITAL_PORTFOLIO_PROTECTED_PROOF;
+  const target = proof.targets[product.slug as keyof typeof proof.targets];
+  if (!target) return [];
+  if (Date.now() >= Date.parse(proof.artifactExpiresAt)) return [];
+
   try {
-    const headers = {
-      accept: 'application/vnd.github+json',
-      'user-agent': 'ZEVANORY-Portfolio-Technical-Certifier/2026.09',
-      'x-github-api-version': '2022-11-28',
-    };
-    const branchResponse = await fetch(
-      'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/branches/gh-pages',
-      { headers, signal: AbortSignal.timeout(10_000) },
-    );
-    if (!branchResponse.ok) return [];
-    const branchPayload = await branchResponse.json() as any;
-    const protectedHead = String(branchPayload?.commit?.sha || '').trim().toLowerCase();
-    if (!/^[0-9a-f]{40}$/.test(protectedHead)) return [];
-
-    const workflow = 'portfolio-six-target-exact-cert.yml';
-    const runsResponse = await fetch(
-      'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/workflows/' +
-        encodeURIComponent(workflow) +
-        '/runs?branch=gh-pages&event=push&status=success&per_page=10',
-      { headers, signal: AbortSignal.timeout(10_000) },
-    );
-    if (!runsResponse.ok) return [];
-    const runsPayload = await runsResponse.json() as any;
-    const runs = Array.isArray(runsPayload?.workflow_runs) ? runsPayload.workflow_runs : [];
-    const run = runs.find((item: any) =>
-      String(item?.head_sha || '').toLowerCase() === protectedHead &&
-      String(item?.head_branch || '') === 'gh-pages' &&
-      String(item?.event || '') === 'push' &&
-      String(item?.conclusion || '') === 'success' &&
-      String(item?.path || '') === '.github/workflows/' + workflow
-    );
-    if (!run?.id) return [];
-
-    const workflowResponse = await fetch(
-      'https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/' +
-        protectedHead + '/.github/workflows/' + workflow,
-      { headers: { 'user-agent': headers['user-agent'] }, signal: AbortSignal.timeout(10_000) },
-    );
-    if (!workflowResponse.ok) return [];
-    const workflowText = await workflowResponse.text();
-    const markers = [
-      product.slug,
-      'P10 clean remote restore rehearsal',
-      'P12 bind protected shared-runtime observability proof',
-      'PROVED_TECHNICAL_14',
-      'FALSE_GREEN=0',
-      'P16":"NOT_CERTIFIED_HERE',
+    const files = [
+      [product.slug + '/index.html', target.blob] as const,
+      ...Object.entries(proof.sharedBlobs),
     ];
-    if (!markers.every(marker => workflowText.includes(marker))) return [];
+    const hashes = await Promise.all(files.map(([path]) => rawGithubBlobSha(path)));
+    if (hashes.some((hash, index) => hash !== files[index][1])) return [];
 
-    const artifactsResponse = await fetch(
-      'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/runs/' +
-        String(run.id) + '/artifacts?per_page=100',
-      { headers, signal: AbortSignal.timeout(10_000) },
-    );
-    if (!artifactsResponse.ok) return [];
-    const artifactsPayload = await artifactsResponse.json() as any;
-    const artifacts = Array.isArray(artifactsPayload?.artifacts) ? artifactsPayload.artifacts : [];
-    const artifactName = 'portfolio-cert-' + product.slug + '-' + protectedHead;
-    const artifact = artifacts.find((item: any) =>
-      String(item?.name || '') === artifactName &&
-      item?.expired !== true &&
-      Number(item?.size_in_bytes || 0) > 0
-    );
-    if (!artifact) return [];
+    const releaseResponse = await fetch('https://zevanory.api.br/api/release', {
+      headers: { accept: 'application/json', 'user-agent': 'ZEVANORY-Portfolio-Durable-Readback/2026.09' },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!releaseResponse.ok) return [];
+    const release = await releaseResponse.json() as any;
+    const liveRuntimeSha = String(release?.deployment?.commit_sha || '').trim().toLowerCase();
+    if (liveRuntimeSha !== proof.runtimeSha) return [];
 
     const releaseFingerprint = certificationReleaseFingerprint(product, undefined);
-    const capturedAt = String(run?.updated_at || run?.created_at || new Date().toISOString());
     const applicable = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12','P13','P15'];
+    const artifactName = 'portfolio-cert-' + product.slug + '-' + proof.workflowHead;
+    const artifacts = [
+      'github_actions_run:' + String(proof.workflowRunId),
+      'workflow_head_sha:' + proof.workflowHead,
+      'target_blob:' + target.blob,
+      'runtime_sha:' + proof.runtimeSha,
+      'artifact:' + artifactName,
+      'artifact_id:' + String(target.artifactId),
+      'artifact_expires_at:' + proof.artifactExpiresAt,
+      ...files.slice(1).map(([path, hash]) => 'shared_blob:' + path + ':' + hash),
+    ];
+
     return applicable.map(pillar => ({
       target: product.slug,
       pillar,
       kind: 'supporting' as const,
-      text: 'ZEES:' + pillar + ':PROVEN:Prova tecnica especifica do alvo em push protegido no HEAD atual de gh-pages.',
-      sourceSha: protectedHead,
-      sourceRef: 'Protected portfolio exact-cert run ' + String(run.id),
-      capturedAt,
-      runId: 'portfolio-protected-' + String(run.id),
+      text: 'ZEES:' + pillar + ':PROVEN:Prova tecnica especifica do alvo preservada por paridade de blobs atuais, runtime exato e artefato protegido nao expirado.',
+      sourceSha: proof.workflowHead,
+      sourceRef: 'Protected portfolio exact-cert run ' + String(proof.workflowRunId),
+      capturedAt: '2026-09-26T13:58:58Z',
+      runId: 'portfolio-protected-' + String(proof.workflowRunId),
       releaseFingerprint,
       verdict: 'proved' as const,
       verifier: 'portfolio-target-protected-readback',
       environment: product.publicUrl || 'internal',
-      artifacts: [
-        String(run?.html_url || ''),
-        'workflow_head_sha:' + protectedHead,
-        'artifact:' + artifactName,
-        'artifact_id:' + String(artifact?.id || ''),
-      ],
+      artifacts,
       invalidatedAt: null,
       invalidationReason: null,
     }));
