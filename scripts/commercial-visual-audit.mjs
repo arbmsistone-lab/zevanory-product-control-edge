@@ -111,7 +111,14 @@ for (const size of sizes) {
   }));
 
   await page.goto(baseUrl, { waitUntil:'domcontentloaded', timeout:30_000 });
-  await page.getByRole('button', { name:'Comercial', exact:true }).waitFor({ state:'visible', timeout:20_000 });
+  try {
+    await page.getByRole('button', { name:'Comercial', exact:true }).waitFor({ state:'visible', timeout:20_000 });
+  } catch (error) {
+    const bodyText = await page.locator('body').innerText().catch(() => '');
+    await page.screenshot({ path: outDir + '/' + size.name + '-pre-nav-failure.png', fullPage:true }).catch(() => {});
+    await fs.writeFile(outDir + '/' + size.name + '-pre-nav-failure.txt', bodyText);
+    throw error;
+  }
   await page.getByRole('button', { name:'Comercial', exact:true }).click();
   await page.getByText('ROBÔ COMERCIAL: ATIVO', { exact:true }).waitFor({ state:'visible', timeout:15_000 });
 
