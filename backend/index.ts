@@ -891,16 +891,6 @@ async function canonicalZevanoryEvidence(
   }
 }
 
-function verifierArtifacts(pillar: CertificationPillar, product: ProductRecord, sourceSystem?: SystemRecord & { id?: string }) {
-  return Array.from(new Set([
-    product.publicUrl,
-    product.checkoutUrl,
-    sourceSystem?.domain || '',
-    sourceSystem?.sha ? `sha:${sourceSystem.sha}` : '',
-    ...pillar.evidence,
-  ].filter(Boolean))).slice(0, 12);
-}
-
 async function canonicalZevanoryP08Evidence(
   product: ProductRecord,
   sourceSystem?: SystemRecord & { id?: string },
@@ -2075,10 +2065,7 @@ export const handler = router({
     const product = normalizeProduct(body, existing);
     if (!product) return error('Produto invalido: informe nome, slug valido e dados consistentes.', 400);
     const blockers = commercialBlockers(product);
-    const [systems, certificationEvidence] = await Promise.all([
-      db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
-      db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
-    ]);
+    const systems = await db.list<SystemRecord>(SYSTEMS, { limit: 50 });
     const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
     const releaseFingerprint = certificationReleaseFingerprint(product, certificationSystem(product, visibleSystems));
     await invalidateObsoleteCertificationEvidence(product.slug, releaseFingerprint);
