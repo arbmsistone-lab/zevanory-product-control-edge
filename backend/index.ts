@@ -899,6 +899,43 @@ function verifierArtifacts(pillar: CertificationPillar, product: ProductRecord, 
   ].filter(Boolean))).slice(0, 12);
 }
 
+async function canonicalZevanoryP08Evidence(
+  product: ProductRecord,
+  sourceSystem?: SystemRecord & { id?: string },
+): Promise<CertificationEvidenceRecord[]> {
+  if (product.slug !== 'zevanory') return [];
+  const sourceSha = String(sourceSystem?.sha || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) return [];
+  try {
+    const verifier = await executeZeesVerifier('P08', {
+      product,
+      profile: certificationProfile(product),
+      sourceSystem,
+      sourceSha,
+    });
+    if (verifier.status !== 'proved') return [];
+    return [{
+      target: product.slug,
+      pillar: 'P08',
+      kind: 'supporting',
+      text: `ZEES:P08:PROVEN:${verifier.message}`,
+      sourceSha,
+      sourceRef: 'Protected gh-pages P08 exact-release proof',
+      capturedAt: new Date().toISOString(),
+      runId: 'p08-protected-readback',
+      releaseFingerprint: certificationReleaseFingerprint(product, sourceSystem),
+      verdict: 'proved',
+      verifier: 'zees-verifier-p08-protected-readback',
+      environment: sourceSystem?.domain || product.publicUrl || 'internal',
+      artifacts: verifier.artifacts,
+      invalidatedAt: null,
+      invalidationReason: null,
+    }];
+  } catch {
+    return [];
+  }
+}
+
 async function runCertificationExecutor(targetId: string) {
   await ensureSeed();
   await ensureProducts();
@@ -1708,7 +1745,10 @@ async function adminData() {
   const zevanoryCanonicalEvidence = zevanoryProduct
     ? await canonicalZevanoryEvidence(zevanoryProduct, zevanorySystem)
     : [];
-  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence];
+  const zevanoryP08Evidence = zevanoryProduct
+    ? await canonicalZevanoryP08Evidence(zevanoryProduct, zevanorySystem)
+    : [];
+  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence];
   const enriched = products.items.map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, effectiveCertificationEvidence);
