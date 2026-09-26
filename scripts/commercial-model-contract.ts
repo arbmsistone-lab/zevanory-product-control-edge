@@ -34,11 +34,21 @@ const active = deriveCommercialRobotState(readyOps, new Date().toISOString());
 assert.equal(active.state, 'ACTIVE');
 assert.equal(active.externalProspecting, true);
 
-const standby = deriveCommercialRobotState({
+const activeWithoutPublishChannel = deriveCommercialRobotState({
   ...readyOps,
   runtime: { ...readyOps.runtime, sales: 'disabled' },
+  channels: [],
 }, new Date().toISOString());
-assert.equal(standby.state, 'STANDBY');
+assert.equal(activeWithoutPublishChannel.state, 'ACTIVE');
+assert.equal(activeWithoutPublishChannel.externalProspecting, true);
+assert.equal(activeWithoutPublishChannel.publishAdapterReady, false);
+
+const staleHeartbeat = deriveCommercialRobotState(
+  readyOps,
+  new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+);
+assert.equal(staleHeartbeat.state, 'STANDBY');
+assert.equal(staleHeartbeat.externalProspecting, false);
 
 const metrics = computeCommercialMetrics({
   leads: [
@@ -71,4 +81,5 @@ assert.equal(metrics.publishedToday, 1);
 assert.equal(metrics.salesCentsToday, 10000, 'refund/pending finance must not count as sales');
 
 console.log('COMMERCIAL_MODEL_CONTRACT=PASS');
+console.log('ROBOT_HEARTBEAT_CONTRACT=PASS');
 console.log(JSON.stringify(metrics));
