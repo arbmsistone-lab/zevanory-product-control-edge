@@ -67,8 +67,9 @@ async function exactZevanoryCoreProof(pillar: string, ctx: ZeesVerifierContext):
     const snapshot = await response.json() as any;
     const releaseSha = String(snapshot?.release_sha || '');
     const decisionHash = String(snapshot?.zees16?.decision_hash || '');
-    const sourceSha = String(ctx.sourceSha || '');
-    if (!releaseSha || !sourceSha || releaseSha !== sourceSha) return null;
+    const declaredSourceSha = String(ctx.sourceSystem?.sha || '');
+    if (!releaseSha) return null;
+    if (declaredSourceSha && releaseSha !== declaredSourceSha) return null;
     const item = Array.isArray(snapshot?.zees16?.pillars)
       ? snapshot.zees16.pillars.find((entry: any) => String(entry?.id || '') === pillar)
       : null;

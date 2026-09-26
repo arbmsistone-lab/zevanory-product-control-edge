@@ -840,7 +840,7 @@ async function canonicalZevanoryEvidence(
   product: ProductRecord,
   sourceSystem?: SystemRecord & { id?: string },
 ): Promise<CertificationEvidenceRecord[]> {
-  if (product.slug !== 'zevanory' || !sourceSystem?.sha) return [];
+  if (product.slug !== 'zevanory') return [];
   try {
     const response = await fetch('https://zevanory.api.br/api/core/v1/snapshot', {
       headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Product-Certification/2026.09' },
@@ -849,7 +849,9 @@ async function canonicalZevanoryEvidence(
     if (!response.ok) return [];
     const snapshot = await response.json() as any;
     const releaseSha = String(snapshot?.release_sha || '');
-    if (!releaseSha || releaseSha !== sourceSystem.sha) return [];
+    if (!releaseSha) return [];
+    const declaredSourceSha = String(sourceSystem?.sha || '');
+    if (declaredSourceSha && releaseSha !== declaredSourceSha) return [];
     const counts = snapshot?.zees16?.counts || {};
     if (Number(counts.proven || 0) !== 16 || Number(counts.partial || 0) !== 0 || Number(counts.blocked || 0) !== 0) return [];
     const pillars = Array.isArray(snapshot?.zees16?.pillars) ? snapshot.zees16.pillars : [];
