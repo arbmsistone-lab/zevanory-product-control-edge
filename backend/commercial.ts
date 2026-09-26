@@ -43,7 +43,7 @@ function normalizeCommercialRecord(
   if (!title) return null;
   const now = new Date().toISOString();
   const valueRaw = raw.valueCents ?? existing?.valueCents ?? null;
-  const valueCents = valueRaw === null || valueRaw === undefined || valueRaw === ''
+  const valueCents = valueRaw === null || valueRaw === undefined
     ? null
     : Math.max(0, Math.round(Number(valueRaw)));
   if (valueCents !== null && !Number.isFinite(valueCents)) return null;
@@ -60,7 +60,7 @@ function normalizeCommercialRecord(
     source: cleanString(raw.source ?? existing?.source ?? 'control-center', 180),
     sourceKey: cleanNullable(raw.sourceKey ?? existing?.sourceKey, 220),
     evidence: cleanEvidence(raw.evidence ?? existing?.evidence),
-    createdAt: existing?.createdAt ?? cleanString(raw.createdAt, 64) || now,
+    createdAt: existing?.createdAt ?? (cleanString(raw.createdAt, 64) || now),
     updatedAt: now,
     publishedAt,
   };
@@ -214,4 +214,3 @@ export async function commercialAdapterIngest(request: Request, body: unknown) {
   return json({ ok: true, persisted: persisted.length, at: new Date().toISOString() });
 }
 
-export const commercialBuckets = BUCKETS;
