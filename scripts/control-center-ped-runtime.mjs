@@ -156,7 +156,7 @@ for(const size of sizes){
           return values;
         };
         const backgroundCandidates=el=>{
-          const chain=[]; let n=el.parentElement;
+          const chain=[]; let n=el;
           while(n){chain.unshift(n);n=n.parentElement;}
           let effective=tokenBase();
           let hasOpaqueSurface=false;
