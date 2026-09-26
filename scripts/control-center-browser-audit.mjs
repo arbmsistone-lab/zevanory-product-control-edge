@@ -120,8 +120,16 @@ for(const viewport of viewports){
       localStorage.setItem('zpc_theme',theme);
     },{theme});
     await page.route('**/global-trust.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
-    await page.route('**/api/admin/bootstrap',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap)}));
-    await page.route('**/api/**',route=>route.fulfill({status:200,contentType:'application/json',body:'{}'}));
+    await page.route('**/api/**',route=>{
+      const pathname=new URL(route.request().url()).pathname;
+      if(pathname.endsWith('/api/admin/bootstrap')) {
+        return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap)});
+      }
+      if(pathname.endsWith('/api/_auth_diagnostic')) {
+        return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({secretValid:true,locked:false,sessionRoundtrip:true,bootstrapOk:true,stage:'fixture'})});
+      }
+      return route.fulfill({status:200,contentType:'application/json',body:'{}'});
+    });
     const response=await page.goto(base,{waitUntil:'networkidle',timeout:30000});
     if(!response?.ok()) throw new Error('audit page did not load '+response?.status());
     await page.getByText('ZEVANORY CONTROL CENTER').waitFor({state:'visible',timeout:10000});
