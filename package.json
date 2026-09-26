@@ -4,11 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run audit:commercial && npm run test:commercial-contract && vite build",
+    "build": "npm run audit:commercial && npm run test:commercial-contract && npm run audit:cfo && npm run test:cfo-contract && vite build",
     "start": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "audit:commercial": "node scripts/ped-commercial-audit.mjs",
-    "test:commercial-contract": "tsx scripts/commercial-model-contract.ts"
+    "test:commercial-contract": "tsx scripts/commercial-model-contract.ts",
+    "audit:cfo": "node scripts/cfo-audit.mjs",
+    "test:cfo-contract": "tsx scripts/cfo-model-contract.ts"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
