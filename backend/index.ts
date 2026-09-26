@@ -939,6 +939,48 @@ async function runCertificationExecutor(targetId: string) {
   }
 }
 
+async function runCertificationBatch(targetIds?: string[]) {
+  await ensureSeed();
+  await ensureProducts();
+  const data = await adminData();
+  const available = data.certificationTargets.map(item => item.id);
+  const requested = Array.isArray(targetIds) && targetIds.length
+    ? targetIds.filter(id => available.includes(id))
+    : available.filter(id => id !== 'system:arbm-one');
+  const ordered = [
+    ...requested.filter(id => data.certificationTargets.find(item => item.id === id)?.name === 'ZEVANORY'),
+    ...requested.filter(id => data.certificationTargets.find(item => item.id === id)?.name === 'ARBM SIST'),
+    ...requested.filter(id => {
+      const name = data.certificationTargets.find(item => item.id === id)?.name;
+      return name !== 'ZEVANORY' && name !== 'ARBM SIST';
+    }),
+  ];
+  const results: Array<{ targetId: string; name: string; ready: boolean; proved: number; partial: number; blocked: number; na: number; rootBlocker: string | null }> = [];
+  for (const targetId of ordered) {
+    const target = data.certificationTargets.find(item => item.id === targetId);
+    if (!target) continue;
+    const run = await runCertificationExecutor(targetId);
+    results.push({
+      targetId,
+      name: target.name,
+      ready: run.certification.ready,
+      proved: run.certification.summary.proved,
+      partial: run.certification.summary.partial,
+      blocked: run.certification.summary.blocked,
+      na: run.certification.summary.na,
+      rootBlocker: run.certification.rootBlocker,
+    });
+  }
+  return {
+    ok: true,
+    order: ordered,
+    results,
+    certified: results.filter(item => item.ready).length,
+    total: results.length,
+    failClosed: true,
+  };
+}
+
 async function ensureProducts() {
   const table = productTable();
   const current = await db.list<ProductRecord>(table, { limit: 100 });
@@ -1740,6 +1782,15 @@ export const handler = router({
       return json(await runCertificationExecutor(String(body.targetId)));
     } catch (err) {
       return error(`Falha no executor ZEES: ${String(err)}`, 500);
+    }
+  }],
+  'POST /api/certification/run-batch': [async ctx => {
+    const body = ctx.body as { sessionToken?: string; targetIds?: string[] };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    try {
+      return json(await runCertificationBatch(Array.isArray(body.targetIds) ? body.targetIds.map(String) : undefined));
+    } catch (err) {
+      return error(`Falha no executor ZEES em lote: ${String(err)}`, 500);
     }
   }],
   'POST /api/audit/run': [async ctx => {
