@@ -1330,19 +1330,6 @@ async function refreshTelemetry() {
     const repo = telemetry?.repositories.find(item => item.label === system.name);
     const production = telemetry?.production.find(item => item.label === system.name);
     const canonicalFallbackApplied = Boolean(system.name === 'ZEVANORY' && canonicalZevanory);
-    if (canonicalFallbackApplied && canonicalZevanory) {
-      next = {
-        ...next,
-        status: canonicalZevanory.status,
-        score: canonicalZevanory.score,
-        sha: canonicalZevanory.sha,
-        ci: canonicalZevanory.ci,
-        source: canonicalZevanory.source,
-        evidence: canonicalZevanory.evidence,
-        availability: 100,
-        gate: 'ZEES-16 16/16 + ZEA-10 10/10 + Control Core ALLOW',
-      };
-    }
 
     if (repo) {
       next.source = repo.source;
@@ -1374,7 +1361,21 @@ async function refreshTelemetry() {
       }
     }
 
-    if (!repo && system.status !== 'integration' && telemetry) {
+    if (canonicalFallbackApplied && canonicalZevanory) {
+      next = {
+        ...next,
+        status: canonicalZevanory.status,
+        score: canonicalZevanory.score,
+        sha: canonicalZevanory.sha,
+        ci: canonicalZevanory.ci,
+        source: canonicalZevanory.source,
+        evidence: canonicalZevanory.evidence,
+        availability: 100,
+        gate: 'ZEES-16 16/16 + ZEA-10 10/10 + Control Core ALLOW',
+      };
+    }
+
+    if (!repo && system.status !== 'integration' && telemetry && !canonicalFallbackApplied) {
       next.status = 'attention';
       next.ci = 'fonte privada nao mapeada';
     }
