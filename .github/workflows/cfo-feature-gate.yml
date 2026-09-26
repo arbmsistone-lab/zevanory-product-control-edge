@@ -1,6 +1,8 @@
 name: ZEVANORY CFO Feature Gate
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches:
       - feature/zevanory-cfo-v1
