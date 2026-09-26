@@ -1,0 +1,115 @@
+name: Control Center PED-Supreme Strict Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'contracts/control-center-ped-supreme.v1.json'
+      - 'scripts/control-center-ped-static-audit.py'
+      - 'scripts/control-center-browser-audit.mjs'
+      - '.github/workflows/control-center-ped-supreme-strict.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: control-center-ped-supreme-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "CONTROL_CENTER_EXACT_SHA=PASS sha=$GITHUB_SHA"
+
+      - name: Static PED-Supreme audit
+        run: python3 scripts/control-center-ped-static-audit.py
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install project dependencies without repository mutation
+        run: npm install --no-package-lock
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Existing commercial and CFO contracts
+        run: |
+          npm run audit:commercial
+          npm run test:commercial-contract
+          npm run audit:cfo
+          npm run test:cfo-contract
+
+      - name: Candidate build
+        run: npm run build
+
+      - name: Install browser auditors
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0 axe-core@4.10.3 lighthouse@12
+          npx playwright install --with-deps chromium
+
+      - name: Serve exact candidate build
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vite preview --host 127.0.0.1 --port 4173 >/tmp/zpc-preview.log 2>&1 &
+          echo $! >/tmp/zpc-preview.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/zpc-preview.log
+          exit 1
+
+      - name: Browser 14-areas x 4-viewports x 2-themes matrix
+        env:
+          ZPC_AUDIT_URL: http://127.0.0.1:4173/
+        run: node scripts/control-center-browser-audit.mjs
+
+      - name: Lighthouse candidate audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux*/chrome' | head -n1 || true)"
+          test -n "$CHROME_PATH"
+          npx lighthouse http://127.0.0.1:4173/             --chrome-path="$CHROME_PATH"             --chrome-flags="--headless=new --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage"             --only-categories=performance,accessibility,best-practices,seo             --output=json --output-path=control-center-lighthouse.json --quiet
+          node - <<'NODE'
+          const r=require('./control-center-lighthouse.json');
+          const s=Object.fromEntries(Object.entries(r.categories).map(([k,v])=>[k,Math.round(v.score*100)]));
+          console.log(JSON.stringify(s));
+          if(s.performance<90||s.accessibility<100||s['best-practices']<95||s.seo<95) process.exit(1);
+          NODE
+
+      - name: Re-run static audit after build tools
+        run: python3 scripts/control-center-ped-static-audit.py
+
+      - name: Upload immutable certification evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: control-center-ped-supreme-${{ github.sha }}
+          path: |
+            control-center-browser-evidence.json
+            control-center-*.png
+            control-center-lighthouse.json
+            contracts/control-center-ped-supreme.v1.json
+          retention-days: 90
