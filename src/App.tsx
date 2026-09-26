@@ -423,7 +423,32 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    void load(sessionToken);
+    const auditToken = new URLSearchParams(window.location.search).get('visual_audit');
+    if (!auditToken) {
+      void load(sessionToken);
+      return;
+    }
+
+    void fetch('/api/_visual_audit_session', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: auditToken }),
+    })
+      .then(async response => {
+        if (!response.ok) throw new Error('visual_audit_auth_failed');
+        return await response.json() as { sessionToken?: string };
+      })
+      .then(result => {
+        if (!result.sessionToken) throw new Error('visual_audit_session_missing');
+        localStorage.setItem('arbm_admin_session', result.sessionToken);
+        setSessionToken(result.sessionToken);
+        setView('commercial');
+        window.history.replaceState({}, '', window.location.pathname);
+        return load(result.sessionToken);
+      })
+      .catch(() => {
+        setAuthState('signedout');
+      });
   }, []);
 
   useEffect(() => {
