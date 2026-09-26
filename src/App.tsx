@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Activity,
   AlertTriangle,
   Archive,
   CheckCircle2,
@@ -14,7 +13,6 @@ import {
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
-  SlidersHorizontal,
   LayoutDashboard,
   Moon,
   Sun,
@@ -237,10 +235,6 @@ const emptyForm: ProductForm = {
 function formatMoney(cents: number | null) {
   if (cents === null) return 'Preco pendente';
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
-}
-
-function formatAuditScore(value: number | null) {
-  return value === null ? 'Pendente' : `${value.toFixed(1)}/10`;
 }
 
 function statusLabel(status: ProductStatus) {
