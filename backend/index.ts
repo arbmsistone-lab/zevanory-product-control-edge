@@ -2211,6 +2211,12 @@ async function adminData() {
       // Fail closed: no synthetic identity without live release+health.
     }
   }
+  if (zevanorySystem?.sha && /^[0-9a-f]{40}$/.test(String(zevanorySystem.sha).toLowerCase())) {
+    visibleSystems = visibleSystems.map(item => item.name === 'ZEVANORY'
+      ? { ...item, ...zevanorySystem }
+      : item);
+  }
+
   const zevanoryCanonicalEvidence = zevanoryProduct
     ? await canonicalZevanoryEvidence(zevanoryProduct, zevanorySystem)
     : [];
