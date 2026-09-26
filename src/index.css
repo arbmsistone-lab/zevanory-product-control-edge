@@ -41,7 +41,7 @@ a {
 .shell {
   max-width: 1480px;
   margin: 0 auto;
-  padding: 18px 26px 22px;
+  padding: 20px 28px 24px;
 }
 
 .shell-products {
@@ -51,7 +51,7 @@ a {
   max-height: 100dvh;
   overflow: hidden;
   padding-top: 12px;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
 .shell-products > .topbar,
@@ -67,7 +67,7 @@ a {
 .topbar {
   display: flex;
   justify-content: space-between;
-  gap: 22px;
+  gap: 24px;
   align-items: flex-start;
   margin-bottom: 12px;
 }
@@ -76,22 +76,22 @@ a {
 .kicker {
   margin: 0;
   color: #7f9bbd;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .topbar h1 {
-  margin: 5px 0;
-  font-size: 31px;
+  margin: 4px 0;
+  font-size: 28px;
 }
 
 .subtitle {
   max-width: 780px;
   margin: 0;
   color: #9fb0c6;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .actions,
@@ -111,7 +111,7 @@ a {
 .filter,
 .tab,
 .iconButton {
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: 800;
 }
@@ -120,10 +120,10 @@ a {
 .secondary,
 .ghost {
   display: inline-flex;
-  gap: 7px;
+  gap: 8px;
   align-items: center;
   justify-content: center;
-  padding: 10px 13px;
+  padding: 12px 12px;
 }
 
 .primary {
@@ -145,15 +145,15 @@ a {
 }
 
 .compact {
-  padding: 7px 9px;
-  font-size: 11px;
+  padding: 8px 8px;
+  font-size: 12px;
 }
 
 .linkButton {
   text-decoration: none;
 }
 
-.primary:disabled,
+.primary: disabled,
 .secondary:disabled,
 .ghost:disabled {
   cursor: not-allowed;
@@ -167,18 +167,18 @@ a {
   justify-content: center;
   gap: 8px;
   border: 1px solid #25415f;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #0b1b2e;
   color: #cfe2f4;
-  padding: 9px 12px;
-  font-size: 11px;
+  padding: 8px 12px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.providerChip:hover,
+.providerChip: hover,
 .providerChip:focus-visible {
   border-color: #3c6088;
   background: #0d2138;
@@ -191,9 +191,9 @@ a {
 }
 
 .providerDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
   background: #5be6d2;
   box-shadow: 0 0 0 2px rgba(91, 230, 210, 0.15);
 }
@@ -201,30 +201,30 @@ a {
 .adminChip {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   border: 1px solid #25415f;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #0b1b2e;
   color: #bcd2ea;
-  padding: 9px 11px;
-  font-size: 11px;
+  padding: 8px 12px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .policybar {
-  margin: 10px 0;
+  margin: 12px 0;
 }
 
 .policybar span {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   border: 1px solid #1a2d45;
   border-radius: 8px;
   background: #0a1727;
   color: #b6c5d8;
-  padding: 7px 9px;
-  font-size: 10px;
+  padding: 8px 8px;
+  font-size: 12px;
 }
 
 .trustStrip {
@@ -232,10 +232,10 @@ a {
   grid-template-columns: 1.05fr repeat(4, minmax(0, 1fr));
   gap: 8px;
   align-items: center;
-  margin: 8px 0 10px;
-  padding: 8px 10px;
+  margin: 8px 0 12px;
+  padding: 8px 12px;
   border: 1px solid #1d3851;
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgba(8, 22, 36, 0.92);
 }
 .trustStrip.green { border-color: rgba(72, 202, 151, .45); box-shadow: inset 0 0 0 1px rgba(72, 202, 151, .06); }
@@ -244,7 +244,7 @@ a {
 .trustStrip small {
   display: block;
   color: #7f93ab;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -252,9 +252,9 @@ a {
 .trustStrip b,
 .trustStrip strong {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   color: #e9f4ff;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -262,28 +262,28 @@ a {
 .trustState {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   color: #9fb0c6;
 }
-.trustState span { font-size: 10px; font-weight: 900; letter-spacing: .08em; }
+.trustState span { font-size: 12px; font-weight: 900; letter-spacing: .08em; }
 .trustStrip.green .trustState strong { color: #55e7a2; }
 .trustStrip.blocked .trustState strong { color: #ffc85a; }
 
 .tabs {
-  margin: 10px 0;
+  margin: 12px 0;
   border-bottom: 1px solid #1b2d44;
 }
 
 .tab {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: transparent;
   color: #7f93ab;
-  padding: 9px 12px;
+  padding: 8px 12px;
 }
 
 .tab.active {
@@ -294,7 +294,7 @@ a {
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
@@ -308,44 +308,44 @@ a {
 }
 
 .metric {
-  border-radius: 11px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 12px 16px;
 }
 
 .metric span {
   display: block;
   color: #8fa2ba;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .metric strong {
-  font-size: 24px;
+  font-size: 21px;
 }
 
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
   margin: 8px 0 8px;
 }
 
 .toolbarControls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .pagination {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #9fb0c6;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
-.pagination .filter:disabled {
+.pagination .filter: disabled {
   cursor: not-allowed;
   opacity: .35;
 }
@@ -353,16 +353,16 @@ a {
 .toolbar h2,
 .panelhead h2,
 .modalHead h2 {
-  margin: 2px 0;
-  font-size: 17px;
+  margin: 4px 0;
+  font-size: 16px;
 }
 
 .filter {
   border: 1px solid #223951;
   background: #0a1727;
   color: #8197b1;
-  padding: 7px 10px;
-  font-size: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
 }
 
 .filter.active {
@@ -374,7 +374,7 @@ a {
 .productGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .shell-products .productGrid {
@@ -386,7 +386,7 @@ a {
 }
 
 .productCard {
-  min-height: 250px;
+  min-height: 252px;
   border-radius: 12px;
   padding: 12px;
 }
@@ -397,7 +397,7 @@ a {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 9px 10px 8px;
+  padding: 8px 12px 8px;
 }
 
 .productCard.archived {
@@ -417,7 +417,7 @@ a {
 .productCategory {
   margin: 0 0 4px;
   color: #738aa5;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -430,9 +430,9 @@ a {
 }
 
 .saleBadge {
-  padding: 5px 7px;
-  border-radius: 999px;
-  font-size: 9px;
+  padding: 4px 8px;
+  border-radius: 1000px;
+  font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -448,24 +448,24 @@ a {
 }
 
 .productDescription {
-  min-height: 35px;
-  margin: 8px 0 10px;
+  min-height: 36px;
+  margin: 8px 0 12px;
   color: #8fa2ba;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
 .productFacts {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
 }
 
 .productFacts span {
   border: 1px solid #162a41;
   border-radius: 8px;
   background: #091624;
-  padding: 7px;
+  padding: 8px;
 }
 
 .productFacts b,
@@ -476,32 +476,32 @@ a {
 .productFacts b {
   overflow: hidden;
   color: #dce8f6;
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .productFacts small {
-  margin-top: 3px;
+  margin-top: 4px;
   color: #637a95;
-  font-size: 8px;
+  font-size: 12px;
   text-transform: uppercase;
 }
 
 .auditPanel,
 .certPanel {
-  margin-top: 9px;
+  margin-top: 8px;
   border: 1px solid #203650;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #08131f;
-  padding: 9px;
+  padding: 8px;
 }
 
 .auditHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .auditHeader small,
@@ -511,15 +511,15 @@ a {
 
 .auditHeader small {
   color: #6783a2;
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: .08em;
 }
 
 .auditHeader strong {
-  margin-top: 2px;
+  margin-top: 4px;
   color: #dce8f6;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .auditOverall {
@@ -529,20 +529,20 @@ a {
 
 .auditOverall.pending {
   color: #f0cb7e;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .auditGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 5px;
+  gap: 4px;
   margin-top: 8px;
 }
 
 .auditGrid span {
   border: 1px solid #162a41;
-  border-radius: 7px;
-  padding: 6px;
+  border-radius: 8px;
+  padding: 8px;
 }
 
 .auditGrid b,
@@ -552,33 +552,33 @@ a {
 
 .auditGrid b {
   color: #cfe0f3;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .auditGrid small {
-  margin-top: 2px;
+  margin-top: 4px;
   color: #617891;
-  font-size: 7px;
+  font-size: 12px;
   text-transform: uppercase;
 }
 
 .auditPanel p,
 .certPanel p {
-  margin: 7px 0 0;
+  margin: 8px 0 0;
   color: #617891;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .gateRow {
-  margin: 9px 0 6px;
+  margin: 8px 0 8px;
 }
 
 .gate {
-  border-radius: 6px;
+  border-radius: 8px;
   background: #241d16;
   color: #bca67b;
-  padding: 4px 6px;
-  font-size: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -588,10 +588,10 @@ a {
 }
 
 .blockers {
-  min-height: 27px;
-  margin: 4px 0 7px;
+  min-height: 28px;
+  margin: 4px 0 8px;
   color: #b99470;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -600,23 +600,23 @@ a {
 }
 
 .panel {
-  border-radius: 13px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 16px;
 }
 
 .opsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
-.opsGrid .panel:first-child {
+.opsGrid .panel: first-child {
   grid-column: 1 / -1;
 }
 
 .operationSummary {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -625,37 +625,37 @@ a {
   border-radius: 8px;
   background: #091624;
   color: #8fa2ba;
-  padding: 9px 11px;
-  font-size: 11px;
+  padding: 8px 12px;
+  font-size: 12px;
 }
 
 .operationSummary b {
-  margin-left: 7px;
+  margin-left: 8px;
   color: #eef6ff;
 }
 
 .systems {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 
 .system {
-  border-radius: 11px;
+  border-radius: 12px;
   padding: 12px;
   background: #0a1727;
 }
 
 .system p {
-  margin: 3px 0 0;
+  margin: 4px 0 0;
   color: #879ab2;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .pill {
-  padding: 5px 7px;
-  border-radius: 999px;
-  font-size: 9px;
+  padding: 4px 8px;
+  border-radius: 1000px;
+  font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -676,21 +676,21 @@ a {
 }
 
 .scoreline {
-  margin: 10px 0 8px;
+  margin: 12px 0 8px;
 }
 
-.scoreline > div:first-child {
+.scoreline > div: first-child {
   display: flex;
   justify-content: space-between;
   color: #8fa2ba;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .bar {
-  height: 6px;
+  height: 8px;
   overflow: hidden;
-  margin-top: 6px;
-  border-radius: 999px;
+  margin-top: 8px;
+  border-radius: 1000px;
   background: #13243a;
 }
 
@@ -702,15 +702,15 @@ a {
 
 .systemmeta {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   color: #7f93ab;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .evidence {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   margin-top: 8px;
 }
@@ -719,27 +719,27 @@ a {
   display: flex;
   align-items: center;
   gap: 4px;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #0d1d31;
   color: #9db0c7;
-  padding: 4px 6px;
-  font-size: 9px;
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 .feed {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .feeditem {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   border: 1px solid #172a42;
-  border-radius: 9px;
+  border-radius: 8px;
   background: #091624;
-  padding: 9px;
+  padding: 8px;
 }
 
 .feeditem.warning {
@@ -755,38 +755,38 @@ a {
 }
 
 .feeditem strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .feeditem p {
-  margin: 3px 0;
+  margin: 4px 0;
   color: #8fa2ba;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .feeditem time {
   color: #6f849d;
-  font-size: 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
 .state {
   display: inline-block;
-  border-radius: 5px;
+  border-radius: 4px;
   background: #17243a;
   color: #a9c8ef;
-  padding: 4px 6px;
-  font-size: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .empty {
   border: 1px dashed #203650;
-  border-radius: 9px;
+  border-radius: 8px;
   color: #7f93ab;
   padding: 12px;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .modalBackdrop {
@@ -808,7 +808,7 @@ a {
   border-radius: 16px;
   background: #081522;
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.48);
-  padding: 17px;
+  padding: 16px;
 }
 
 .iconButton {
@@ -824,13 +824,13 @@ a {
 .formGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
+  gap: 8px;
   margin-top: 12px;
 }
 
 .formGrid label {
   color: #8197b0;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -838,16 +838,16 @@ a {
 .formGrid textarea,
 .formGrid select {
   width: 100%;
-  margin-top: 5px;
+  margin-top: 4px;
   border: 1px solid #223a56;
   border-radius: 8px;
   outline: none;
   background: #07111d;
   color: #e8eef8;
-  padding: 9px 10px;
+  padding: 8px 12px;
 }
 
-.formGrid input:focus,
+.formGrid input: focus,
 .formGrid textarea:focus,
 .formGrid select:focus {
   border-color: #6e9bd0;
@@ -869,34 +869,34 @@ a {
   align-items: end;
   margin-top: 12px;
   border: 1px solid #203650;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #08131f;
-  padding: 11px;
+  padding: 12px;
 }
 
 .auditEditor h3 {
-  margin: 2px 0;
-  font-size: 11px;
+  margin: 4px 0;
+  font-size: 12px;
 }
 
 .auditEditor p {
   margin: 4px 0 0;
   color: #71869e;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
 .auditEditor label {
   color: #8197b0;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .auditEditor input {
   width: 100%;
-  margin-top: 5px;
+  margin-top: 4px;
   border: 1px solid #223a56;
-  border-radius: 7px;
+  border-radius: 8px;
   background: #07121f;
   color: #e7eef8;
   padding: 8px;
@@ -909,23 +909,23 @@ a {
   align-items: center;
   margin-top: 12px;
   border: 1px solid #223a56;
-  border-radius: 11px;
+  border-radius: 12px;
   background: #091725;
-  padding: 11px;
+  padding: 12px;
 }
 
 .gateBox h3 {
-  margin: 2px 0;
-  font-size: 11px;
+  margin: 4px 0;
+  font-size: 12px;
 }
 
 .check,
 .saleSwitch {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
   color: #a6b8cd;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -951,8 +951,8 @@ a {
 }
 
 .loader {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border: 3px solid #213a59;
   border-top-color: #8db8ec;
   border-radius: 50%;
@@ -971,14 +971,14 @@ a {
 
 .errorbox {
   border: 1px solid #5d2b2b;
-  border-radius: 9px;
+  border-radius: 8px;
   background: #321919;
   color: #ffc0c0;
-  padding: 9px 10px;
+  padding: 8px 12px;
 }
 
 .globalError {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .loginShell {
@@ -991,7 +991,7 @@ a {
 .loginCard {
   width: min(460px, 100%);
   border: 1px solid #203650;
-  border-radius: 18px;
+  border-radius: 20px;
   background: #0a1727;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
   padding: 28px;
@@ -1014,7 +1014,7 @@ a {
   border-radius: 12px;
   background: #06101c;
   color: #f5f9ff;
-  padding: 14px;
+  padding: 16px;
   font-size: 28px;
   font-weight: 900;
   letter-spacing: 0.5em;
@@ -1022,7 +1022,7 @@ a {
   outline: none;
 }
 
-.pinInput:focus {
+.pinInput: focus {
   border-color: #8db8ec;
   box-shadow: 0 0 0 3px rgba(141, 184, 236, 0.12);
 }
@@ -1030,7 +1030,7 @@ a {
 .loginCard .primary,
 .loginCard .secondary {
   width: 100%;
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .authDiagnostic {
@@ -1039,8 +1039,8 @@ a {
   border-radius: 8px;
   background: #07111d;
   color: #8fa2ba;
-  padding: 8px 10px;
-  font-size: 9px;
+  padding: 8px 12px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -1050,7 +1050,7 @@ a {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 4px;
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
 .zeesSealChip {
@@ -1059,10 +1059,10 @@ a {
   min-width: 0;
   height: 24px;
   border: 1px solid #26384d;
-  border-radius: 7px;
+  border-radius: 8px;
   background: #101a28;
   color: #8fa4bd;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: .03em;
   cursor: default;
@@ -1096,11 +1096,11 @@ a {
 
 .certCompactSummary {
   display: flex;
-  gap: 7px;
+  gap: 8px;
   align-items: center;
   flex-wrap: wrap;
-  margin-top: 6px;
-  font-size: 7px;
+  margin-top: 8px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -1114,95 +1114,95 @@ a {
 .certCompactSummary .blocked { color: #df8f8f; }
 
 .certBlockerLine {
-  max-height: 23px;
+  max-height: 24px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .shell-products .productDescription {
   min-height: 24px;
-  margin: 4px 0 5px;
-  font-size: 10px;
+  margin: 4px 0 4px;
+  font-size: 12px;
   line-height: 1.25;
 }
 
 .shell-products .productFacts span {
-  padding: 5px 7px;
+  padding: 4px 8px;
 }
 
 .shell-products .certPanel {
-  margin-top: 6px;
-  padding: 7px;
+  margin-top: 8px;
+  padding: 8px;
 }
 
 .shell-products .gateRow {
-  margin: 6px 0 4px;
+  margin: 8px 0 4px;
 }
 
 .shell-products .blockers {
   min-height: 20px;
-  margin: 2px 0 4px;
+  margin: 4px 0 4px;
   line-height: 1.25;
 }
 
 .certRatio { color: #f0cb7e; font-size: 16px; }
 .certRatio.ready { color: #8de2c2; }
-.certMiniGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
-.certMiniGrid span { border: 1px solid #162a41; border-radius: 7px; padding: 6px; }
+.certMiniGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 8px; }
+.certMiniGrid span { border: 1px solid #162a41; border-radius: 8px; padding: 8px; }
 .certMiniGrid b, .certMiniGrid small { display: block; }
-.certMiniGrid b { color: #dce8f6; font-size: 10px; }
-.certMiniGrid small { margin-top: 2px; color: #617891; font-size: 7px; text-transform: uppercase; }
-.governanceStack { display: flex; flex-direction: column; gap: 10px; }
+.certMiniGrid b { color: #dce8f6; font-size: 12px; }
+.certMiniGrid small { margin-top: 4px; color: #617891; font-size: 12px; text-transform: uppercase; }
+.governanceStack { display: flex; flex-direction: column; gap: 12px; }
 .governanceHero .productDescription { min-height: 0; max-width: 980px; }
-.standardStrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
-.standardStrip span { border: 1px solid #1b3049; border-radius: 9px; background: #091624; color: #8298b1; padding: 8px 10px; font-size: 9px; text-transform: uppercase; }
-.standardStrip b { display: block; margin-bottom: 2px; color: #eef6ff; font-size: 13px; }
-.certWorkspace { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 10px; align-items: start; }
-.certSidebar h2 { margin: 3px 0 10px; font-size: 17px; }
-.certProductList { display: flex; flex-direction: column; gap: 6px; }
-.certProductButton { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid #192f48; border-radius: 9px; background: #091624; color: #cbd9e9; padding: 9px; text-align: left; cursor: pointer; }
+.standardStrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.standardStrip span { border: 1px solid #1b3049; border-radius: 8px; background: #091624; color: #8298b1; padding: 8px 12px; font-size: 12px; text-transform: uppercase; }
+.standardStrip b { display: block; margin-bottom: 4px; color: #eef6ff; font-size: 12px; }
+.certWorkspace { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 12px; align-items: start; }
+.certSidebar h2 { margin: 4px 0 12px; font-size: 16px; }
+.certProductList { display: flex; flex-direction: column; gap: 8px; }
+.certProductButton { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid #192f48; border-radius: 8px; background: #091624; color: #cbd9e9; padding: 8px; text-align: left; cursor: pointer; }
 .certProductButton.active { border-color: #668eb9; background: #112944; }
 .certProductButton span, .certProductButton b, .certProductButton small { display: block; }
-.certProductButton b { font-size: 10px; }
-.certProductButton small { margin-top: 2px; color: #6f87a2; font-size: 7px; }
-.certProductButton strong { color: #dbe9f8; font-size: 11px; }
+.certProductButton b { font-size: 12px; }
+.certProductButton small { margin-top: 4px; color: #6f87a2; font-size: 12px; }
+.certProductButton strong { color: #dbe9f8; font-size: 12px; }
 .certDetail { min-width: 0; }
-.certSummaryPanel { margin-bottom: 10px; }
+.certSummaryPanel { margin-bottom: 12px; }
 .certTitleRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.certTitleRow h2 { margin: 3px 0; font-size: 19px; }
-.certTitleRow p { margin: 0; color: #7890aa; font-size: 9px; }
+.certTitleRow h2 { margin: 4px 0; font-size: 21px; }
+.certTitleRow p { margin: 0; color: #7890aa; font-size: 12px; }
 .certActions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.certSeal { border-radius: 999px; padding: 7px 10px; font-size: 9px; font-weight: 900; white-space: nowrap; }
+.certSeal { border-radius: 1000px; padding: 8px 12px; font-size: 12px; font-weight: 900; white-space: nowrap; }
 .certSeal.ready { background: #0d2a25; color: #86e6c8; }
 .certSeal.blocked { background: #342115; color: #f4c987; }
-.certSummaryGrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.certSummaryGrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .certSummaryGrid span { border: 1px solid #172c45; border-radius: 8px; background: #091624; padding: 8px; }
 .certSummaryGrid b, .certSummaryGrid small { display: block; }
-.certSummaryGrid b { color: #e2edf9; font-size: 13px; }
-.certSummaryGrid small { margin-top: 2px; color: #6f86a1; font-size: 7px; text-transform: uppercase; }
-.certRunStrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
-.certRunStrip span { border: 1px solid #19314b; border-radius: 8px; background: #081522; color: #8ba0b8; padding: 7px 8px; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.certRunStrip b { display: block; margin-bottom: 2px; color: #dce8f6; font-size: 7px; text-transform: uppercase; }
-.rootBlocker { display: flex; align-items: flex-start; gap: 8px; margin-top: 9px; border: 1px solid #4b3922; border-radius: 9px; background: #21180f; color: #cfb07a; padding: 9px; font-size: 9px; }
+.certSummaryGrid b { color: #e2edf9; font-size: 12px; }
+.certSummaryGrid small { margin-top: 4px; color: #6f86a1; font-size: 12px; text-transform: uppercase; }
+.certRunStrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.certRunStrip span { border: 1px solid #19314b; border-radius: 8px; background: #081522; color: #8ba0b8; padding: 8px 8px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.certRunStrip b { display: block; margin-bottom: 4px; color: #dce8f6; font-size: 12px; text-transform: uppercase; }
+.rootBlocker { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; border: 1px solid #4b3922; border-radius: 8px; background: #21180f; color: #cfb07a; padding: 8px; font-size: 12px; }
 .rootBlocker span, .rootBlocker b { display: block; }
-.rootBlocker b { margin-bottom: 2px; color: #f0cb7e; text-transform: uppercase; }
+.rootBlocker b { margin-bottom: 4px; color: #f0cb7e; text-transform: uppercase; }
 .pillarGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.pillarCard { min-height: 174px; border: 1px solid #1c3048; border-radius: 11px; background: #081522; padding: 10px; }
+.pillarCard { min-height: 176px; border: 1px solid #1c3048; border-radius: 12px; background: #081522; padding: 12px; }
 .pillarCard.proved { border-color: #225642; }
 .pillarCard.partial { border-color: #4a4127; }
 .pillarCard.blocked { border-color: #51312b; }
 .pillarCard.na { border-color: #29384c; opacity: .84; }
-.pillarHead { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
-.pillarIndex { color: #7290b2; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
-.pillarStatus { border-radius: 999px; padding: 4px 6px; font-size: 7px; font-weight: 900; }
+.pillarHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pillarIndex { color: #7290b2; font-size: 12px; font-weight: 900; letter-spacing: .08em; }
+.pillarStatus { border-radius: 1000px; padding: 4px 8px; font-size: 12px; font-weight: 900; }
 .pillarStatus.proved { background: #102b24; color: #8de2c2; }
 .pillarStatus.partial { background: #302410; color: #f0cb7e; }
 .pillarStatus.blocked { background: #321919; color: #efa2a2; }
 .pillarStatus.na, .pillarStatus.external { background: #17243a; color: #a9c8ef; }
-.pillarCard h3 { margin: 7px 0 5px; color: #e2edf9; font-size: 11px; line-height: 1.25; }
-.pillarCard > p { min-height: 44px; margin: 0; color: #8297af; font-size: 8px; line-height: 1.45; }
-.pillarMeta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; color: #6f86a1; font-size: 7px; text-transform: uppercase; }
-.pillarBlocker { margin-top: 7px; border-top: 1px solid #1b2d44; padding-top: 6px; color: #b99273; font-size: 8px; line-height: 1.35; }
+.pillarCard h3 { margin: 8px 0 4px; color: #e2edf9; font-size: 12px; line-height: 1.25; }
+.pillarCard > p { min-height: 44px; margin: 0; color: #8297af; font-size: 12px; line-height: 1.45; }
+.pillarMeta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; color: #6f86a1; font-size: 12px; text-transform: uppercase; }
+.pillarBlocker { margin-top: 8px; border-top: 1px solid #1b2d44; padding-top: 8px; color: #b99273; font-size: 12px; line-height: 1.35; }
 @media (max-width: 1100px) {
   .productGrid,
   .systems,
@@ -1233,7 +1233,7 @@ a {
   .certSummaryGrid { grid-template-columns: 1fr 1fr; }
   .pillarGrid { grid-template-columns: 1fr; }
   .shell {
-    padding: 15px;
+    padding: 16px;
   }
 
   .topbar,
@@ -1249,7 +1249,7 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .opsGrid .panel:first-child,
+  .opsGrid .panel: first-child,
   .span2 {
     grid-column: auto;
   }
@@ -1292,16 +1292,16 @@ a {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 7px;
+  margin-top: 8px;
   border-top: 1px solid #162a41;
-  padding-top: 6px;
+  padding-top: 8px;
 }
 .pillarEvidence span {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   align-items: flex-start;
   color: #8ea6bf;
-  font-size: 7px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -1315,7 +1315,7 @@ a {
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
-  padding: 10px 26px 8px;
+  padding: 12px 28px 8px;
 }
 
 .shell-products > .topbar,
@@ -1329,14 +1329,14 @@ a {
 }
 
 .shell-products .topbar { margin-bottom: 8px; }
-.shell-products .policybar { margin: 6px 0; }
-.shell-products .trustStrip { margin: 6px 0 7px; padding: 6px 9px; }
-.shell-products .tabs { margin: 6px 0; }
-.shell-products .tab { padding: 7px 10px; }
+.shell-products .policybar { margin: 8px 0; }
+.shell-products .trustStrip { margin: 8px 0 8px; padding: 8px 8px; }
+.shell-products .tabs { margin: 8px 0; }
+.shell-products .tab { padding: 8px 12px; }
 .shell-products .metrics { gap: 8px; margin-bottom: 8px; }
 .shell-products .metric { padding: 8px 12px; }
 .shell-products .metric strong { font-size: 21px; }
-.shell-products .toolbar { margin: 5px 0 6px; }
+.shell-products .toolbar { margin: 4px 0 8px; }
 .shell-products .toolbar h2 { font-size: 16px; }
 
 .shell-products .productGrid {
@@ -1354,75 +1354,75 @@ a {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: 8px 9px 7px;
+  padding: 8px 8px 8px;
 }
 
-.shell-products .productHead h3 { font-size: 13px; }
-.shell-products .productCategory { margin-bottom: 2px; font-size: 8px; }
-.shell-products .saleBadge { padding: 4px 6px; font-size: 8px; }
+.shell-products .productHead h3 { font-size: 12px; }
+.shell-products .productCategory { margin-bottom: 4px; font-size: 12px; }
+.shell-products .saleBadge { padding: 4px 8px; font-size: 12px; }
 
 .shell-products .productDescription {
-  min-height: 22px;
-  max-height: 26px;
-  margin: 3px 0 4px;
+  min-height: 24px;
+  max-height: 28px;
+  margin: 4px 0 4px;
   overflow: hidden;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.2;
 }
 
 .shell-products .productFacts { gap: 4px; }
-.shell-products .productFacts span { padding: 3px 5px; }
-.shell-products .productFacts b { font-size: 9px; }
-.shell-products .productFacts small { margin-top: 1px; font-size: 6px; }
+.shell-products .productFacts span { padding: 4px 4px; }
+.shell-products .productFacts b { font-size: 12px; }
+.shell-products .productFacts small { margin-top: 4px; font-size: 12px; }
 
-.shell-products .certPanel { margin-top: 4px; padding: 5px; }
-.shell-products .auditHeader { gap: 6px; }
-.shell-products .auditHeader small { font-size: 6px; }
-.shell-products .auditHeader strong { margin-top: 1px; font-size: 8px; }
-.shell-products .certRatio { font-size: 13px; }
+.shell-products .certPanel { margin-top: 4px; padding: 4px; }
+.shell-products .auditHeader { gap: 8px; }
+.shell-products .auditHeader small { font-size: 12px; }
+.shell-products .auditHeader strong { margin-top: 4px; font-size: 12px; }
+.shell-products .certRatio { font-size: 12px; }
 
 .shell-products .zeesSealGrid {
-  gap: 3px;
+  gap: 4px;
   margin-top: 4px;
 }
 .shell-products .zeesSealChip {
-  height: 18px;
-  border-radius: 5px;
-  font-size: 7px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 12px;
 }
 
 .shell-products .certCompactSummary {
   gap: 4px;
   flex-wrap: nowrap;
-  margin-top: 3px;
-  font-size: 6px;
+  margin-top: 4px;
+  font-size: 12px;
 }
 .shell-products .certPanel p {
-  margin-top: 3px;
-  font-size: 6px;
+  margin-top: 4px;
+  font-size: 12px;
   line-height: 1.15;
 }
 .shell-products .certBlockerLine {
-  max-height: 14px;
+  max-height: 16px;
   white-space: nowrap;
 }
 
 .shell-products .gateRow {
   gap: 4px;
-  margin: 3px 0 2px;
+  margin: 4px 0 4px;
   flex-wrap: nowrap;
 }
 .shell-products .gate {
-  padding: 2px 4px;
-  font-size: 7px;
+  padding: 4px 4px;
+  font-size: 12px;
 }
 
 .shell-products .blockers {
-  min-height: 10px;
-  max-height: 10px;
-  margin: 1px 0 2px;
+  min-height: 12px;
+  max-height: 12px;
+  margin: 4px 0 4px;
   overflow: hidden;
-  font-size: 7px;
+  font-size: 12px;
   line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1435,15 +1435,15 @@ a {
 }
 .shell-products .productActions .compact {
   min-height: 24px;
-  padding: 4px 6px;
-  font-size: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
 }
 .shell-products .productActions svg {
   width: 12px;
   height: 12px;
 }
 
-.overviewStack{display:flex;flex-direction:column;gap:10px}.overviewHero{display:flex;align-items:center;justify-content:space-between;gap:14px}.overviewHero h2{margin:3px 0 4px;font-size:21px}.overviewCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.overviewCard{border:1px solid #1b3049;border-radius:11px;background:#091624;padding:12px}.overviewCard span,.overviewCard strong,.overviewCard small{display:block}.overviewCard span{color:#7890aa;font-size:9px;text-transform:uppercase;font-weight:800}.overviewCard strong{margin:5px 0 7px;color:#eef6ff;font-size:18px;overflow:hidden;text-overflow:ellipsis}.overviewCard small{color:#8195ad;font-size:8px}.overviewGrid{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}.channelTable{display:flex;flex-direction:column;gap:5px}.channelRow{display:grid;grid-template-columns:1.2fr 1fr 1.2fr 1.2fr;gap:8px;align-items:center;border:1px solid #172a42;border-radius:8px;background:#091624;padding:8px 9px;color:#91a5bc;font-size:9px}.channelRow b{color:#e6eef8}.channelHead{border:none;background:transparent;color:#6f86a1;padding-top:0;text-transform:uppercase;font-size:7px;font-weight:900}.executiveList{display:flex;flex-direction:column;gap:6px}.executiveList div{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #172a42;border-radius:8px;background:#091624;padding:9px}.executiveList span{color:#7e93aa;font-size:9px}.executiveList b{color:#e2edf9;font-size:9px;text-align:right;max-width:58%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:1100px){.overviewCards{grid-template-columns:repeat(2,minmax(0,1fr))}.overviewGrid{grid-template-columns:1fr}}@media(max-width:760px){.overviewCards{grid-template-columns:1fr}.channelRow{grid-template-columns:1fr 1fr}}
+.overviewStack{display: flex;flex-direction: column;gap: 12px}.overviewHero{display: flex;align-items: center;justify-content: space-between;gap: 16px}.overviewHero h2{margin: 4px 0 4px;font-size: 21px}.overviewCards{display: grid;grid-template-columns: repeat(4,minmax(0,1fr));gap: 8px}.overviewCard{border: 1px solid #1b3049;border-radius: 12px;background: #091624;padding: 12px}.overviewCard span,.overviewCard strong,.overviewCard small{display: block}.overviewCard span{color: #7890aa;font-size: 12px;text-transform: uppercase;font-weight: 800}.overviewCard strong{margin: 4px 0 8px;color: #eef6ff;font-size: 16px;overflow: hidden;text-overflow: ellipsis}.overviewCard small{color: #8195ad;font-size: 12px}.overviewGrid{display: grid;grid-template-columns: 1.4fr 1fr;gap: 12px}.channelTable{display: flex;flex-direction: column;gap: 4px}.channelRow{display: grid;grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr;gap: 8px;align-items: center;border: 1px solid #172a42;border-radius: 8px;background: #091624;padding: 8px 8px;color: #91a5bc;font-size: 12px}.channelRow b{color: #e6eef8}.channelHead{border: none;background: transparent;color: #6f86a1;padding-top: 0;text-transform: uppercase;font-size: 12px;font-weight: 900}.executiveList{display: flex;flex-direction: column;gap: 8px}.executiveList div{display: flex;align-items: center;justify-content: space-between;gap: 12px;border: 1px solid #172a42;border-radius: 8px;background: #091624;padding: 8px}.executiveList span{color: #7e93aa;font-size: 12px}.executiveList b{color: #e2edf9;font-size: 12px;text-align: right;max-width: 58%;overflow: hidden;text-overflow: ellipsis;white-space: nowrap}@media(max-width: 1100px){.overviewCards{grid-template-columns: repeat(2,minmax(0,1fr))}.overviewGrid{grid-template-columns: 1fr}}@media(max-width: 760px){.overviewCards{grid-template-columns: 1fr}.channelRow{grid-template-columns: 1fr 1fr}}
 
 
 /* ==========================================================================
@@ -1457,7 +1457,7 @@ a {
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
-  padding: 10px 26px 8px;
+  padding: 12px 28px 8px;
 }
 .shell-overview > .topbar,
 .shell-overview > .policybar,
@@ -1466,71 +1466,71 @@ a {
 .shell-overview > .globalError {
   flex: 0 0 auto;
 }
-.shell-overview .topbar { margin-bottom: 6px; }
-.shell-overview .topbar h1 { margin: 3px 0 4px; font-size: 28px; }
-.shell-overview .subtitle { margin: 0; font-size: 11px; }
-.shell-overview .policybar { margin: 5px 0; padding: 5px 8px; }
-.shell-overview .trustStrip { margin: 5px 0 6px; padding: 6px 9px; }
-.shell-overview .tabs { margin: 5px 0 7px; }
-.shell-overview .tab { padding: 7px 10px; }
+.shell-overview .topbar { margin-bottom: 8px; }
+.shell-overview .topbar h1 { margin: 4px 0 4px; font-size: 28px; }
+.shell-overview .subtitle { margin: 0; font-size: 12px; }
+.shell-overview .policybar { margin: 4px 0; padding: 4px 8px; }
+.shell-overview .trustStrip { margin: 4px 0 8px; padding: 8px 8px; }
+.shell-overview .tabs { margin: 4px 0 8px; }
+.shell-overview .tab { padding: 8px 12px; }
 
 .shell-overview .overviewStack {
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
-  gap: 7px;
+  gap: 8px;
 }
 .shell-overview .overviewHero {
   flex: 0 0 auto;
   min-height: 0;
-  padding: 9px 12px;
+  padding: 8px 12px;
 }
-.shell-overview .overviewHero h2 { margin: 2px 0 3px; font-size: 17px; }
+.shell-overview .overviewHero h2 { margin: 4px 0 4px; font-size: 16px; }
 .shell-overview .overviewHero .productDescription {
   min-height: 0;
-  margin: 2px 0 0;
-  font-size: 8px;
+  margin: 4px 0 0;
+  font-size: 12px;
 }
 .shell-overview .overviewCards {
   flex: 0 0 auto;
-  gap: 6px;
+  gap: 8px;
 }
 .shell-overview .overviewCard {
-  min-height: 74px;
-  padding: 8px 10px;
+  min-height: 76px;
+  padding: 8px 12px;
 }
-.shell-overview .overviewCard span { font-size: 7px; }
-.shell-overview .overviewCard strong { margin: 3px 0 4px; font-size: 15px; line-height: 1.05; }
-.shell-overview .overviewCard small { font-size: 7px; line-height: 1.15; }
+.shell-overview .overviewCard span { font-size: 12px; }
+.shell-overview .overviewCard strong { margin: 4px 0 4px; font-size: 14px; line-height: 1.05; }
+.shell-overview .overviewCard small { font-size: 12px; line-height: 1.15; }
 
 .shell-overview .overviewGrid {
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
-  gap: 7px;
+  gap: 8px;
 }
 .shell-overview .overviewGrid > .panel {
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  padding: 9px 11px;
+  padding: 8px 12px;
 }
-.shell-overview .panelhead { margin-bottom: 5px; }
-.shell-overview .panelhead h2 { margin: 2px 0; font-size: 14px; }
+.shell-overview .panelhead { margin-bottom: 4px; }
+.shell-overview .panelhead h2 { margin: 4px 0; font-size: 14px; }
 .shell-overview .channelTable,
 .shell-overview .executiveList { gap: 4px; }
-.shell-overview .channelRow { min-height: 0; padding: 5px 7px; font-size: 7px; }
-.shell-overview .channelHead { padding-top: 0; font-size: 6px; }
-.shell-overview .executiveList div { padding: 6px 7px; }
+.shell-overview .channelRow { min-height: 0; padding: 4px 8px; font-size: 12px; }
+.shell-overview .channelHead { padding-top: 0; font-size: 12px; }
+.shell-overview .executiveList div { padding: 8px 8px; }
 .shell-overview .executiveList span,
-.shell-overview .executiveList b { font-size: 7px; }
+.shell-overview .executiveList b { font-size: 12px; }
 
-@media (max-height: 820px) and (min-width: 1101px) {
-  .shell-overview { padding-top: 7px; padding-bottom: 6px; }
-  .shell-overview .topbar h1 { font-size: 24px; }
-  .shell-overview .overviewCard { min-height: 64px; padding: 6px 8px; }
-  .shell-overview .overviewHero { padding: 7px 10px; }
-  .shell-overview .overviewHero h2 { font-size: 15px; }
+@media (max-height: 820px) and (min-width: 1100px) {
+  .shell-overview { padding-top: 8px; padding-bottom: 8px; }
+  .shell-overview .topbar h1 { font-size: 21px; }
+  .shell-overview .overviewCard { min-height: 64px; padding: 8px 8px; }
+  .shell-overview .overviewHero { padding: 8px 12px; }
+  .shell-overview .overviewHero h2 { font-size: 14px; }
 }
 
 @media (max-width: 1100px) {
@@ -1550,9 +1550,9 @@ a {
 /* ZPC FINAL VISUAL AUDIT HARDENING 2026-09-25 */
 :where(button, a, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid #9cc8ff;
-  outline-offset: 2px;
+  outline-offset: 4px;
 }
-button:disabled { cursor: not-allowed; opacity: .58; }
+button: disabled { cursor: not-allowed; opacity: .58; }
 .modalBackdrop { overscroll-behavior: contain; }
 
 .filter,
@@ -1560,78 +1560,78 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   min-height: 32px;
 }
 .shell-products .productActions .compact {
-  padding: 5px 7px;
+  padding: 4px 8px;
 }
 .gateBox label,
 .saleSwitch {
   min-height: 32px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 .gateBox input[type='checkbox'],
 .saleSwitch input[type='checkbox'] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex: 0 0 18px;
 }
 
 /* Desktop executive view: every channel must fit without clipping. */
 @media (min-width: 1101px) and (max-height: 820px) {
   .shell-overview {
-    padding: 6px 26px 5px;
+    padding: 8px 28px 4px;
   }
   .shell-overview .topbar {
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
   .shell-overview .topbar h1 {
-    margin: 1px 0 2px;
-    font-size: 22px;
+    margin: 4px 0 4px;
+    font-size: 21px;
   }
   .shell-overview .subtitle {
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.1;
   }
   .shell-overview .actions .secondary,
   .shell-overview .adminChip {
     min-height: 32px;
-    padding: 6px 9px;
+    padding: 8px 8px;
   }
   .shell-overview .policybar {
-    margin: 2px 0;
-    gap: 5px;
-    padding: 2px 0;
+    margin: 4px 0;
+    gap: 4px;
+    padding: 4px 0;
   }
   .shell-overview .policybar span {
-    padding: 4px 7px;
-    font-size: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
   .shell-overview .trustStrip {
-    margin: 2px 0 3px;
+    margin: 4px 0 4px;
     padding: 4px 8px;
   }
-  .shell-overview .trustStrip small { font-size: 7px; }
+  .shell-overview .trustStrip small { font-size: 12px; }
   .shell-overview .trustStrip b,
-  .shell-overview .trustStrip strong { font-size: 9px; }
+  .shell-overview .trustStrip strong { font-size: 12px; }
   .shell-overview .tabs {
-    margin: 2px 0 4px;
+    margin: 4px 0 4px;
   }
   .shell-overview .tab {
-    min-height: 30px;
-    padding: 4px 9px;
-    font-size: 13px;
+    min-height: 32px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
   .shell-overview .overviewStack { gap: 4px; }
   .shell-overview .overviewHero {
-    padding: 5px 10px;
+    padding: 4px 12px;
   }
   .shell-overview .overviewHero h2 {
-    margin: 1px 0;
+    margin: 4px 0;
     font-size: 14px;
   }
   .shell-overview .overviewHero .productDescription {
-    margin: 1px 0 0;
-    font-size: 6px;
+    margin: 4px 0 0;
+    font-size: 12px;
     line-height: 1.05;
   }
   .shell-overview .overviewCards {
@@ -1639,53 +1639,53 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   }
   .shell-overview .overviewCard {
     min-height: 52px;
-    padding: 5px 8px;
+    padding: 4px 8px;
   }
-  .shell-overview .overviewCard span { font-size: 6px; }
+  .shell-overview .overviewCard span { font-size: 12px; }
   .shell-overview .overviewCard strong {
-    margin: 2px 0;
-    font-size: 13px;
+    margin: 4px 0;
+    font-size: 12px;
   }
   .shell-overview .overviewCard small {
-    font-size: 6px;
+    font-size: 12px;
     line-height: 1.05;
   }
   .shell-overview .overviewGrid {
-    gap: 5px;
+    gap: 4px;
   }
   .shell-overview .overviewGrid > .panel {
-    padding: 6px 8px;
+    padding: 8px 8px;
   }
   .shell-overview .panelhead {
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
-  .shell-overview .panelhead .kicker { font-size: 7px; }
+  .shell-overview .panelhead .kicker { font-size: 12px; }
   .shell-overview .panelhead h2 {
-    margin: 1px 0;
+    margin: 4px 0;
     font-size: 12px;
   }
   .shell-overview .channelTable,
   .shell-overview .executiveList {
-    gap: 2px;
+    gap: 4px;
   }
   .shell-overview .channelRow {
-    padding: 2px 5px;
-    border-radius: 5px;
-    font-size: 6px;
+    padding: 4px 4px;
+    border-radius: 4px;
+    font-size: 12px;
     line-height: 1;
   }
   .shell-overview .channelHead {
     min-height: 12px;
-    padding: 0 5px;
-    font-size: 5px;
+    padding: 0 4px;
+    font-size: 12px;
   }
   .shell-overview .executiveList div {
-    min-height: 25px;
-    padding: 4px 6px;
+    min-height: 24px;
+    padding: 4px 8px;
   }
   .shell-overview .executiveList span,
   .shell-overview .executiveList b {
-    font-size: 6px;
+    font-size: 12px;
   }
 }
 
@@ -1712,7 +1712,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
-    padding: 8px 26px 7px;
+    padding: 8px 28px 8px;
   }
   .shell-governance > .topbar,
   .shell-governance > .policybar,
@@ -1722,45 +1722,45 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     flex: 0 0 auto;
   }
   .shell-governance .topbar { margin-bottom: 4px; }
-  .shell-governance .topbar h1 { margin: 2px 0 3px; font-size: 25px; }
-  .shell-governance .subtitle { font-size: 10px; }
-  .shell-governance .policybar { margin: 3px 0; }
-  .shell-governance .policybar span { padding: 5px 7px; font-size: 8px; }
-  .shell-governance .trustStrip { margin: 3px 0 4px; padding: 5px 8px; }
-  .shell-governance .tabs { margin: 3px 0 5px; }
-  .shell-governance .tab { min-height: 32px; padding: 5px 9px; }
+  .shell-governance .topbar h1 { margin: 4px 0 4px; font-size: 28px; }
+  .shell-governance .subtitle { font-size: 12px; }
+  .shell-governance .policybar { margin: 4px 0; }
+  .shell-governance .policybar span { padding: 4px 8px; font-size: 12px; }
+  .shell-governance .trustStrip { margin: 4px 0 4px; padding: 4px 8px; }
+  .shell-governance .tabs { margin: 4px 0 4px; }
+  .shell-governance .tab { min-height: 32px; padding: 4px 8px; }
 
   .shell-governance .governanceStack {
     flex: 1 1 0;
     min-height: 0;
     overflow: hidden;
-    gap: 5px;
+    gap: 4px;
   }
   .shell-governance .governanceHero {
     flex: 0 0 auto;
-    padding: 7px 10px;
+    padding: 8px 12px;
   }
   .shell-governance .governanceHero .productDescription {
-    margin: 3px 0 4px;
-    font-size: 7px;
+    margin: 4px 0 4px;
+    font-size: 12px;
     line-height: 1.15;
   }
   .shell-governance .standardStrip {
-    gap: 5px;
-    margin-top: 5px;
+    gap: 4px;
+    margin-top: 4px;
   }
   .shell-governance .standardStrip span {
-    padding: 5px 7px;
-    font-size: 7px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
-  .shell-governance .standardStrip b { font-size: 11px; }
+  .shell-governance .standardStrip b { font-size: 12px; }
 
   .shell-governance .certWorkspace {
     flex: 1 1 0;
     min-height: 0;
     height: 100%;
     grid-template-columns: 205px minmax(0, 1fr);
-    gap: 6px;
+    gap: 8px;
     overflow: hidden;
   }
   .shell-governance .certSidebar,
@@ -1770,20 +1770,20 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     overflow: hidden;
   }
   .shell-governance .certSidebar {
-    padding: 7px;
+    padding: 8px;
   }
   .shell-governance .certSidebar h2 {
-    margin: 2px 0 5px;
-    font-size: 13px;
+    margin: 4px 0 4px;
+    font-size: 12px;
   }
-  .shell-governance .certProductList { gap: 3px; }
+  .shell-governance .certProductList { gap: 4px; }
   .shell-governance .certProductButton {
     min-height: 0;
-    padding: 5px 6px;
+    padding: 4px 8px;
   }
-  .shell-governance .certProductButton b { font-size: 8px; }
-  .shell-governance .certProductButton small { font-size: 5px; }
-  .shell-governance .certProductButton strong { font-size: 9px; }
+  .shell-governance .certProductButton b { font-size: 12px; }
+  .shell-governance .certProductButton small { font-size: 12px; }
+  .shell-governance .certProductButton strong { font-size: 12px; }
 
   .shell-governance .certDetail {
     display: flex;
@@ -1791,32 +1791,32 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   }
   .shell-governance .certSummaryPanel {
     flex: 0 0 auto;
-    margin-bottom: 5px;
-    padding: 7px 9px;
+    margin-bottom: 4px;
+    padding: 8px 8px;
   }
-  .shell-governance .certTitleRow h2 { font-size: 15px; }
-  .shell-governance .certTitleRow p { font-size: 7px; }
-  .shell-governance .certActions { gap: 5px; }
-  .shell-governance .certSeal { padding: 5px 8px; font-size: 7px; }
+  .shell-governance .certTitleRow h2 { font-size: 14px; }
+  .shell-governance .certTitleRow p { font-size: 12px; }
+  .shell-governance .certActions { gap: 4px; }
+  .shell-governance .certSeal { padding: 4px 8px; font-size: 12px; }
   .shell-governance .certSummaryGrid {
     gap: 4px;
-    margin-top: 5px;
+    margin-top: 4px;
   }
-  .shell-governance .certSummaryGrid span { padding: 5px; }
-  .shell-governance .certSummaryGrid b { font-size: 10px; }
-  .shell-governance .certSummaryGrid small { font-size: 5px; }
+  .shell-governance .certSummaryGrid span { padding: 4px; }
+  .shell-governance .certSummaryGrid b { font-size: 12px; }
+  .shell-governance .certSummaryGrid small { font-size: 12px; }
   .shell-governance .certRunStrip {
     gap: 4px;
-    margin-top: 5px;
+    margin-top: 4px;
   }
   .shell-governance .certRunStrip span {
-    padding: 4px 5px;
-    font-size: 6px;
+    padding: 4px 4px;
+    font-size: 12px;
   }
   .shell-governance .rootBlocker {
-    margin-top: 5px;
-    padding: 5px 7px;
-    font-size: 7px;
+    margin-top: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
   .shell-governance .pillarGrid {
     flex: 1 1 0;
@@ -1831,14 +1831,14 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     min-height: 0;
     height: 100%;
     overflow: hidden;
-    border-radius: 7px;
-    padding: 6px;
+    border-radius: 8px;
+    padding: 8px;
   }
-  .shell-governance .pillarStatus { padding: 2px 4px; font-size: 5px; }
-  .shell-governance .pillarIndex { font-size: 6px; }
+  .shell-governance .pillarStatus { padding: 4px 4px; font-size: 12px; }
+  .shell-governance .pillarIndex { font-size: 12px; }
   .shell-governance .pillarCard h3 {
-    margin: 3px 0 2px;
-    font-size: 8px;
+    margin: 4px 0 4px;
+    font-size: 12px;
     line-height: 1.1;
   }
   .shell-governance .pillarCard > p {
@@ -1846,31 +1846,31 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     max-height: 24px;
     overflow: hidden;
     margin: 0;
-    font-size: 6px;
+    font-size: 12px;
     line-height: 1.15;
   }
   .shell-governance .pillarMeta {
-    margin-top: 3px;
-    gap: 3px;
-    font-size: 5px;
+    margin-top: 4px;
+    gap: 4px;
+    font-size: 12px;
   }
   .shell-governance .pillarEvidence {
-    max-height: 22px;
-    gap: 2px;
-    margin-top: 3px;
-    padding-top: 3px;
+    max-height: 24px;
+    gap: 4px;
+    margin-top: 4px;
+    padding-top: 4px;
     overflow: hidden;
   }
   .shell-governance .pillarEvidence span {
-    font-size: 5px;
+    font-size: 12px;
     line-height: 1.05;
   }
   .shell-governance .pillarBlocker {
-    max-height: 18px;
-    margin-top: 3px;
-    padding-top: 3px;
+    max-height: 20px;
+    margin-top: 4px;
+    padding-top: 4px;
     overflow: hidden;
-    font-size: 5px;
+    font-size: 12px;
     line-height: 1.1;
   }
 }
@@ -1885,7 +1885,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   overflow-y: auto;
 }
 @media (max-width: 760px) {
-  .modalBackdrop { padding: 6px; }
+  .modalBackdrop { padding: 8px; }
   .modal {
     width: min(100%, 720px);
     max-height: calc(100dvh - 12px);
@@ -1906,14 +1906,14 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 
 /* ZPC AUDIT ROUND 2 - short desktop and touch targets */
-@media (min-width: 1101px) {
+@media (min-width: 1100px) {
   .shell-operations {
     display: flex;
     flex-direction: column;
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
-    padding: 8px 26px 7px;
+    padding: 8px 28px 8px;
   }
   .shell-operations > .topbar,
   .shell-operations > .policybar,
@@ -1923,129 +1923,129 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     flex: 0 0 auto;
   }
   .shell-operations .topbar { margin-bottom: 4px; }
-  .shell-operations .topbar h1 { margin: 2px 0 3px; font-size: 24px; }
-  .shell-operations .subtitle { font-size: 10px; }
-  .shell-operations .policybar { margin: 3px 0; }
-  .shell-operations .policybar span { padding: 5px 7px; font-size: 8px; }
-  .shell-operations .trustStrip { margin: 3px 0 4px; padding: 5px 8px; }
-  .shell-operations .tabs { margin: 3px 0 5px; }
-  .shell-operations .tab { min-height: 31px; padding: 5px 9px; }
+  .shell-operations .topbar h1 { margin: 4px 0 4px; font-size: 21px; }
+  .shell-operations .subtitle { font-size: 12px; }
+  .shell-operations .policybar { margin: 4px 0; }
+  .shell-operations .policybar span { padding: 4px 8px; font-size: 12px; }
+  .shell-operations .trustStrip { margin: 4px 0 4px; padding: 4px 8px; }
+  .shell-operations .tabs { margin: 4px 0 4px; }
+  .shell-operations .tab { min-height: 32px; padding: 4px 8px; }
 
   .shell-operations .opsGrid {
     flex: 1 1 0;
     min-height: 0;
     height: 100%;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: 6px;
+    gap: 8px;
     overflow: hidden;
   }
   .shell-operations .opsGrid > .panel {
     min-height: 0;
     overflow: hidden;
-    padding: 8px 10px;
+    padding: 8px 12px;
   }
-  .shell-operations .opsGrid .panel:first-child {
-    padding: 7px 10px;
+  .shell-operations .opsGrid .panel: first-child {
+    padding: 8px 12px;
   }
   .shell-operations .panelhead { margin-bottom: 4px; }
   .shell-operations .panelhead h2 { font-size: 14px; }
-  .shell-operations .operationSummary { gap: 5px; }
+  .shell-operations .operationSummary { gap: 4px; }
   .shell-operations .operationSummary span {
-    padding: 5px 7px;
-    font-size: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
   .shell-operations .feed { gap: 4px; }
   .shell-operations .feeditem {
     min-height: 0;
-    gap: 6px;
-    padding: 5px 7px;
+    gap: 8px;
+    padding: 4px 8px;
   }
-  .shell-operations .feeditem strong { font-size: 8px; }
+  .shell-operations .feeditem strong { font-size: 12px; }
   .shell-operations .feeditem p {
-    max-height: 23px;
-    margin: 2px 0;
+    max-height: 24px;
+    margin: 4px 0;
     overflow: hidden;
-    font-size: 7px;
+    font-size: 12px;
     line-height: 1.15;
   }
-  .shell-operations .feeditem time { font-size: 6px; }
-  .shell-operations .state { padding: 3px 5px; font-size: 6px; }
-  .shell-operations .empty { padding: 8px; font-size: 8px; }
+  .shell-operations .feeditem time { font-size: 12px; }
+  .shell-operations .state { padding: 4px 4px; font-size: 12px; }
+  .shell-operations .empty { padding: 8px; font-size: 12px; }
 }
 
-@media (min-width: 1101px) and (max-height: 820px) {
+@media (min-width: 1100px) and (max-height: 820px) {
   .shell-governance {
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding-top: 4px;
+    padding-bottom: 4px;
   }
-  .shell-governance .topbar { margin-bottom: 2px; }
-  .shell-governance .topbar h1 { margin: 1px 0 2px; font-size: 21px; }
-  .shell-governance .subtitle { font-size: 8px; line-height: 1.05; }
-  .shell-governance .policybar { margin: 2px 0; }
-  .shell-governance .policybar span { padding: 3px 6px; font-size: 7px; }
-  .shell-governance .trustStrip { margin: 2px 0; padding: 4px 7px; }
-  .shell-governance .trustStrip small { font-size: 6px; }
+  .shell-governance .topbar { margin-bottom: 4px; }
+  .shell-governance .topbar h1 { margin: 4px 0 4px; font-size: 21px; }
+  .shell-governance .subtitle { font-size: 12px; line-height: 1.05; }
+  .shell-governance .policybar { margin: 4px 0; }
+  .shell-governance .policybar span { padding: 4px 8px; font-size: 12px; }
+  .shell-governance .trustStrip { margin: 4px 0; padding: 4px 8px; }
+  .shell-governance .trustStrip small { font-size: 12px; }
   .shell-governance .trustStrip b,
-  .shell-governance .trustStrip strong { font-size: 8px; }
-  .shell-governance .tabs { margin: 2px 0 3px; }
-  .shell-governance .tab { min-height: 28px; padding: 3px 8px; font-size: 12px; }
+  .shell-governance .trustStrip strong { font-size: 12px; }
+  .shell-governance .tabs { margin: 4px 0 4px; }
+  .shell-governance .tab { min-height: 28px; padding: 4px 8px; font-size: 12px; }
 
-  .shell-governance .governanceStack { gap: 3px; }
-  .shell-governance .governanceHero { padding: 5px 8px; }
-  .shell-governance .governanceHero h2 { margin: 1px 0; font-size: 13px; }
+  .shell-governance .governanceStack { gap: 4px; }
+  .shell-governance .governanceHero { padding: 4px 8px; }
+  .shell-governance .governanceHero h2 { margin: 4px 0; font-size: 12px; }
   .shell-governance .governanceHero .productDescription {
-    max-height: 14px;
-    margin: 1px 0 2px;
+    max-height: 16px;
+    margin: 4px 0 4px;
     overflow: hidden;
-    font-size: 6px;
+    font-size: 12px;
     line-height: 1.05;
   }
-  .shell-governance .standardStrip { gap: 3px; margin-top: 3px; }
-  .shell-governance .standardStrip span { padding: 3px 5px; font-size: 5px; }
-  .shell-governance .standardStrip b { font-size: 9px; }
+  .shell-governance .standardStrip { gap: 4px; margin-top: 4px; }
+  .shell-governance .standardStrip span { padding: 4px 4px; font-size: 12px; }
+  .shell-governance .standardStrip b { font-size: 12px; }
 
   .shell-governance .certWorkspace {
     grid-template-columns: 180px minmax(0,1fr);
     gap: 4px;
   }
-  .shell-governance .certSidebar { padding: 5px; }
-  .shell-governance .certSidebar h2 { margin: 1px 0 3px; font-size: 11px; }
-  .shell-governance .certProductList { gap: 2px; }
-  .shell-governance .certProductButton { padding: 3px 4px; }
-  .shell-governance .certProductButton b { font-size: 6px; }
-  .shell-governance .certProductButton small { font-size: 4px; }
-  .shell-governance .certProductButton strong { font-size: 7px; }
+  .shell-governance .certSidebar { padding: 4px; }
+  .shell-governance .certSidebar h2 { margin: 4px 0 4px; font-size: 12px; }
+  .shell-governance .certProductList { gap: 4px; }
+  .shell-governance .certProductButton { padding: 4px 4px; }
+  .shell-governance .certProductButton b { font-size: 12px; }
+  .shell-governance .certProductButton small { font-size: 12px; }
+  .shell-governance .certProductButton strong { font-size: 12px; }
 
-  .shell-governance .certSummaryPanel { margin-bottom: 3px; padding: 4px 6px; }
-  .shell-governance .certTitleRow h2 { margin: 1px 0; font-size: 12px; }
-  .shell-governance .certTitleRow p { font-size: 5px; }
-  .shell-governance .certSeal { padding: 3px 6px; font-size: 5px; }
-  .shell-governance .certSummaryGrid { gap: 2px; margin-top: 3px; }
-  .shell-governance .certSummaryGrid span { padding: 3px; }
-  .shell-governance .certSummaryGrid b { font-size: 8px; }
-  .shell-governance .certSummaryGrid small { font-size: 4px; }
-  .shell-governance .certRunStrip { gap: 2px; margin-top: 3px; }
-  .shell-governance .certRunStrip span { padding: 3px 4px; font-size: 5px; }
-  .shell-governance .rootBlocker { margin-top: 3px; padding: 3px 5px; font-size: 5px; }
+  .shell-governance .certSummaryPanel { margin-bottom: 4px; padding: 4px 8px; }
+  .shell-governance .certTitleRow h2 { margin: 4px 0; font-size: 12px; }
+  .shell-governance .certTitleRow p { font-size: 12px; }
+  .shell-governance .certSeal { padding: 4px 8px; font-size: 12px; }
+  .shell-governance .certSummaryGrid { gap: 4px; margin-top: 4px; }
+  .shell-governance .certSummaryGrid span { padding: 4px; }
+  .shell-governance .certSummaryGrid b { font-size: 12px; }
+  .shell-governance .certSummaryGrid small { font-size: 12px; }
+  .shell-governance .certRunStrip { gap: 4px; margin-top: 4px; }
+  .shell-governance .certRunStrip span { padding: 4px 4px; font-size: 12px; }
+  .shell-governance .rootBlocker { margin-top: 4px; padding: 4px 4px; font-size: 12px; }
 
-  .shell-governance .pillarGrid { gap: 3px; }
-  .shell-governance .pillarCard { padding: 4px; border-radius: 6px; }
-  .shell-governance .pillarStatus { padding: 1px 3px; font-size: 4px; }
-  .shell-governance .pillarIndex { font-size: 5px; }
-  .shell-governance .pillarCard h3 { margin: 2px 0 1px; font-size: 7px; }
-  .shell-governance .pillarCard > p { max-height: 16px; font-size: 5px; line-height: 1.05; }
-  .shell-governance .pillarMeta { margin-top: 2px; font-size: 4px; }
+  .shell-governance .pillarGrid { gap: 4px; }
+  .shell-governance .pillarCard { padding: 4px; border-radius: 8px; }
+  .shell-governance .pillarStatus { padding: 4px 4px; font-size: 12px; }
+  .shell-governance .pillarIndex { font-size: 12px; }
+  .shell-governance .pillarCard h3 { margin: 4px 0 4px; font-size: 12px; }
+  .shell-governance .pillarCard > p { max-height: 16px; font-size: 12px; line-height: 1.05; }
+  .shell-governance .pillarMeta { margin-top: 4px; font-size: 12px; }
   .shell-governance .pillarEvidence {
-    max-height: 14px;
-    margin-top: 2px;
-    padding-top: 2px;
+    max-height: 16px;
+    margin-top: 4px;
+    padding-top: 4px;
   }
-  .shell-governance .pillarEvidence span { font-size: 4px; }
+  .shell-governance .pillarEvidence span { font-size: 12px; }
   .shell-governance .pillarBlocker {
     max-height: 12px;
-    margin-top: 2px;
-    padding-top: 2px;
-    font-size: 4px;
+    margin-top: 4px;
+    padding-top: 4px;
+    font-size: 12px;
   }
 }
 
@@ -2069,78 +2069,78 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 
 /* ZPC AUDIT ROUND 3 - compact governance source evidence */
-@media (min-width: 1101px) and (max-height: 820px) {
+@media (min-width: 1100px) and (max-height: 820px) {
   .shell-governance .sourcePanel {
     min-height: 0;
     overflow: hidden;
-    padding: 5px 7px;
+    padding: 4px 8px;
   }
   .shell-governance .sourcePanel .panelhead {
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
   .shell-governance .sourcePanel .panelhead h2 {
-    margin: 1px 0;
-    font-size: 11px;
+    margin: 4px 0;
+    font-size: 12px;
   }
   .shell-governance .sourcePanel .panelhead .kicker {
-    font-size: 6px;
+    font-size: 12px;
   }
   .shell-governance .sourcePanel .productDescription {
     max-height: 12px;
-    margin: 1px 0 3px;
+    margin: 4px 0 4px;
     overflow: hidden;
-    font-size: 5px;
+    font-size: 12px;
     line-height: 1.05;
   }
   .shell-governance .sourcePanel .actions {
     gap: 4px;
   }
   .shell-governance .sourcePanel .actions .compact {
-    min-height: 25px;
-    padding: 3px 6px;
-    font-size: 7px;
+    min-height: 24px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
   .shell-governance .sourcePanel .systems {
     gap: 4px;
   }
   .shell-governance .sourcePanel .system {
-    padding: 5px;
-    border-radius: 6px;
+    padding: 4px;
+    border-radius: 8px;
   }
   .shell-governance .sourcePanel .systemtop h3 {
     margin: 0;
-    font-size: 8px;
+    font-size: 12px;
   }
   .shell-governance .sourcePanel .system p {
-    margin: 1px 0 0;
-    font-size: 6px;
+    margin: 4px 0 0;
+    font-size: 12px;
     line-height: 1.05;
   }
   .shell-governance .sourcePanel .pill {
-    padding: 2px 4px;
-    font-size: 5px;
+    padding: 4px 4px;
+    font-size: 12px;
   }
   .shell-governance .sourcePanel .scoreline {
-    margin: 3px 0;
+    margin: 4px 0;
   }
-  .shell-governance .sourcePanel .scoreline > div:first-child {
-    font-size: 6px;
+  .shell-governance .sourcePanel .scoreline > div: first-child {
+    font-size: 12px;
   }
   .shell-governance .sourcePanel .bar {
-    height: 3px;
-    margin-top: 2px;
+    height: 4px;
+    margin-top: 4px;
   }
   .shell-governance .sourcePanel .systemmeta {
     gap: 4px;
-    font-size: 5px;
+    font-size: 12px;
   }
   .shell-governance .sourcePanel .evidence {
-    gap: 2px;
-    margin-top: 3px;
+    gap: 4px;
+    margin-top: 4px;
   }
   .shell-governance .sourcePanel .evidence span {
-    padding: 2px 3px;
-    font-size: 5px;
+    padding: 4px 4px;
+    font-size: 12px;
     line-height: 1;
   }
   .shell-governance .sourcePanel .evidence svg {
@@ -2150,57 +2150,57 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 }
 
 /* ZPC HUMAN-READABILITY / ZERO-SCROLL CONTRACT 2026-09-25 */
-@media (min-width:1101px){
-  .shell-overview,.shell-products,.shell-operations,.shell-governance{height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
-  .eyebrow,.kicker{font-size:10px!important;line-height:1.2!important}
-  .subtitle{font-size:12px!important;line-height:1.25!important}
-  .policybar span,.adminChip,.providerChip{font-size:10px!important;line-height:1.15!important}
-  .trustStrip small{font-size:9px!important}.trustStrip b,.trustStrip strong{font-size:11px!important}
-  .tab{font-size:14px!important;min-height:34px!important;line-height:1.15!important}
-  .shell-overview .overviewHero .productDescription{font-size:10px!important;line-height:1.25!important}
-  .shell-overview .overviewCard span{font-size:9px!important}.shell-overview .overviewCard strong{font-size:15px!important}.shell-overview .overviewCard small{font-size:9px!important}
-  .shell-overview .channelRow,.shell-overview .executiveList span,.shell-overview .executiveList b{font-size:9px!important;line-height:1.15!important}
-  .shell-overview .channelHead{font-size:8px!important}
-  .shell-products .productCategory,.shell-products .saleBadge{font-size:9px!important}
-  .shell-products .productHead h3{font-size:14px!important}.shell-products .productDescription{font-size:10px!important;line-height:1.2!important;max-height:28px!important}
-  .shell-products .productFacts b{font-size:10px!important}.shell-products .productFacts small{font-size:8px!important}
-  .shell-products .auditHeader small,.shell-products .certCompactSummary,.shell-products .certPanel p,.shell-products .blockers,.shell-products .gate{font-size:8px!important;line-height:1.15!important}
-  .shell-products .zeesSealChip{font-size:8px!important;height:20px!important}.shell-products .productActions .compact{font-size:9px!important}
-  .shell-operations .operationSummary span{font-size:9px!important}.shell-operations .feeditem strong{font-size:10px!important}
-  .shell-operations .feeditem p{font-size:9px!important;line-height:1.2!important}.shell-operations .feeditem time,.shell-operations .state,.shell-operations .empty{font-size:8px!important}
-  .shell-governance .governanceHero .productDescription{font-size:9px!important;line-height:1.2!important}
-  .shell-governance .standardStrip span{font-size:8px!important}.shell-governance .standardStrip b{font-size:12px!important}
+@media (min-width: 1100px){
+  .shell-overview,.shell-products,.shell-operations,.shell-governance{height: 100dvh!important;max-height: 100dvh!important;overflow: hidden!important}
+  .eyebrow,.kicker{font-size: 12px!important;line-height: 1.2!important}
+  .subtitle{font-size: 12px!important;line-height: 1.25!important}
+  .policybar span,.adminChip,.providerChip{font-size: 12px!important;line-height: 1.15!important}
+  .trustStrip small{font-size: 12px!important}.trustStrip b,.trustStrip strong{font-size: 12px!important}
+  .tab{font-size: 14px!important;min-height: 36px!important;line-height: 1.15!important}
+  .shell-overview .overviewHero .productDescription{font-size: 12px!important;line-height: 1.25!important}
+  .shell-overview .overviewCard span{font-size: 12px!important}.shell-overview .overviewCard strong{font-size: 14px!important}.shell-overview .overviewCard small{font-size: 12px!important}
+  .shell-overview .channelRow,.shell-overview .executiveList span,.shell-overview .executiveList b{font-size: 12px!important;line-height: 1.15!important}
+  .shell-overview .channelHead{font-size: 12px!important}
+  .shell-products .productCategory,.shell-products .saleBadge{font-size: 12px!important}
+  .shell-products .productHead h3{font-size: 14px!important}.shell-products .productDescription{font-size: 12px!important;line-height: 1.2!important;max-height: 28px!important}
+  .shell-products .productFacts b{font-size: 12px!important}.shell-products .productFacts small{font-size: 12px!important}
+  .shell-products .auditHeader small,.shell-products .certCompactSummary,.shell-products .certPanel p,.shell-products .blockers,.shell-products .gate{font-size: 12px!important;line-height: 1.15!important}
+  .shell-products .zeesSealChip{font-size: 12px!important;height: 20px!important}.shell-products .productActions .compact{font-size: 12px!important}
+  .shell-operations .operationSummary span{font-size: 12px!important}.shell-operations .feeditem strong{font-size: 12px!important}
+  .shell-operations .feeditem p{font-size: 12px!important;line-height: 1.2!important}.shell-operations .feeditem time,.shell-operations .state,.shell-operations .empty{font-size: 12px!important}
+  .shell-governance .governanceHero .productDescription{font-size: 12px!important;line-height: 1.2!important}
+  .shell-governance .standardStrip span{font-size: 12px!important}.shell-governance .standardStrip b{font-size: 12px!important}
 }
-@media (min-width:1101px){
-  .shell-governance .governanceStack{flex:1 1 0!important;min-height:0!important;overflow:hidden!important;gap:5px!important}
-  .shell-governance .certWorkspace{flex:1 1 0!important;min-height:0!important;height:100%!important;grid-template-columns:220px minmax(0,1fr)!important;gap:7px!important;overflow:hidden!important}
-  .shell-governance .certSidebar,.shell-governance .certDetail{height:100%!important;min-height:0!important;overflow:hidden!important}
-  .shell-governance .certSidebar h2{font-size:14px!important}.shell-governance .certProductButton{padding:5px 6px!important}
-  .shell-governance .certProductButton b{font-size:9px!important}.shell-governance .certProductButton small{font-size:7px!important}.shell-governance .certProductButton strong{font-size:9px!important}
-  .shell-governance .certSummaryPanel{margin-bottom:5px!important;padding:7px 9px!important}
-  .shell-governance .certTitleRow h2{font-size:15px!important}.shell-governance .certTitleRow p{font-size:8px!important}
-  .shell-governance .certSummaryGrid b{font-size:10px!important}.shell-governance .certSummaryGrid small{font-size:7px!important}
-  .shell-governance .certRunStrip span,.shell-governance .rootBlocker{font-size:8px!important;line-height:1.15!important}
-  .governancePager{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex:0 0 auto;margin:0 0 5px}
-  .governancePager strong{margin-right:auto;color:#b9cce2;font-size:10px}
-  .governancePager .compact{min-height:30px;padding:5px 8px;font-size:9px}
-  .shell-governance .pillarGrid{flex:1 1 0!important;min-height:0!important;height:auto!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;gap:6px!important;overflow:hidden!important}
-  .shell-governance .pillarCard{min-height:0!important;height:100%!important;overflow:hidden!important;padding:8px!important}
-  .shell-governance .pillarStatus{font-size:7px!important}.shell-governance .pillarIndex{font-size:8px!important}
-  .shell-governance .pillarCard h3{font-size:10px!important;line-height:1.15!important;margin:4px 0 3px!important}
-  .shell-governance .pillarCard>p{font-size:8px!important;line-height:1.2!important;max-height:30px!important}
-  .shell-governance .pillarMeta,.shell-governance .pillarEvidence span,.shell-governance .pillarBlocker{font-size:7px!important;line-height:1.15!important}
-  .shell-governance .pillarEvidence{max-height:34px!important;overflow:hidden!important}.shell-governance .pillarBlocker{max-height:26px!important;overflow:hidden!important}
-  .shell-governance .sourcePanel{flex:1 1 0!important;min-height:0!important;height:auto!important;overflow:hidden!important;padding:9px 11px!important}
-  .shell-governance .sourcePanel .productDescription{font-size:9px!important;line-height:1.2!important}
-  .shell-governance .sourcePanel .systems{height:calc(100% - 70px);grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
-  .shell-governance .sourcePanel .system{min-height:0!important;overflow:hidden!important;padding:8px!important}
-  .shell-governance .sourcePanel .systemtop h3{font-size:10px!important}.shell-governance .sourcePanel .system p{font-size:8px!important}
-  .shell-governance .sourcePanel .systemmeta,.shell-governance .sourcePanel .evidence span,.shell-governance .sourcePanel .scoreline>div:first-child{font-size:7px!important}
+@media (min-width: 1100px){
+  .shell-governance .governanceStack{flex: 1 1 0!important;min-height: 0!important;overflow: hidden!important;gap: 4px!important}
+  .shell-governance .certWorkspace{flex: 1 1 0!important;min-height: 0!important;height: 100%!important;grid-template-columns: 220px minmax(0,1fr)!important;gap: 8px!important;overflow: hidden!important}
+  .shell-governance .certSidebar,.shell-governance .certDetail{height: 100%!important;min-height: 0!important;overflow: hidden!important}
+  .shell-governance .certSidebar h2{font-size: 14px!important}.shell-governance .certProductButton{padding: 4px 8px!important}
+  .shell-governance .certProductButton b{font-size: 12px!important}.shell-governance .certProductButton small{font-size: 12px!important}.shell-governance .certProductButton strong{font-size: 12px!important}
+  .shell-governance .certSummaryPanel{margin-bottom: 4px!important;padding: 8px 8px!important}
+  .shell-governance .certTitleRow h2{font-size: 14px!important}.shell-governance .certTitleRow p{font-size: 12px!important}
+  .shell-governance .certSummaryGrid b{font-size: 12px!important}.shell-governance .certSummaryGrid small{font-size: 12px!important}
+  .shell-governance .certRunStrip span,.shell-governance .rootBlocker{font-size: 12px!important;line-height: 1.15!important}
+  .governancePager{display: flex;align-items: center;justify-content: flex-end;gap: 8px;flex: 0 0 auto;margin: 0 0 4px}
+  .governancePager strong{margin-right: auto;color: #b9cce2;font-size: 12px}
+  .governancePager .compact{min-height: 32px;padding: 4px 8px;font-size: 12px}
+  .shell-governance .pillarGrid{flex: 1 1 0!important;min-height: 0!important;height: auto!important;grid-template-columns: repeat(4,minmax(0,1fr))!important;grid-template-rows: repeat(2,minmax(0,1fr))!important;gap: 8px!important;overflow: hidden!important}
+  .shell-governance .pillarCard{min-height: 0!important;height: 100%!important;overflow: hidden!important;padding: 8px!important}
+  .shell-governance .pillarStatus{font-size: 12px!important}.shell-governance .pillarIndex{font-size: 12px!important}
+  .shell-governance .pillarCard h3{font-size: 12px!important;line-height: 1.15!important;margin: 4px 0 4px!important}
+  .shell-governance .pillarCard>p{font-size: 12px!important;line-height: 1.2!important;max-height: 32px!important}
+  .shell-governance .pillarMeta,.shell-governance .pillarEvidence span,.shell-governance .pillarBlocker{font-size: 12px!important;line-height: 1.15!important}
+  .shell-governance .pillarEvidence{max-height: 36px!important;overflow: hidden!important}.shell-governance .pillarBlocker{max-height: 28px!important;overflow: hidden!important}
+  .shell-governance .sourcePanel{flex: 1 1 0!important;min-height: 0!important;height: auto!important;overflow: hidden!important;padding: 8px 12px!important}
+  .shell-governance .sourcePanel .productDescription{font-size: 12px!important;line-height: 1.2!important}
+  .shell-governance .sourcePanel .systems{height: calc(100% - 72px);grid-template-columns: repeat(2,minmax(0,1fr))!important;gap: 8px!important}
+  .shell-governance .sourcePanel .system{min-height: 0!important;overflow: hidden!important;padding: 8px!important}
+  .shell-governance .sourcePanel .systemtop h3{font-size: 12px!important}.shell-governance .sourcePanel .system p{font-size: 12px!important}
+  .shell-governance .sourcePanel .systemmeta,.shell-governance .sourcePanel .evidence span,.shell-governance .sourcePanel .scoreline>div: first-child{font-size: 12px!important}
 }
 
 /* ZPC READABILITY FLOOR - no desktop operational text below 10px */
-@media (min-width:1101px){
+@media (min-width: 1100px){
   .shell-overview .overviewHero .productDescription,
   .shell-overview .overviewCard span,
   .shell-overview .overviewCard small,
@@ -2240,7 +2240,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .sourcePanel .system p,
   .shell-governance .sourcePanel .systemmeta,
   .shell-governance .sourcePanel .evidence span,
-  .shell-governance .sourcePanel .scoreline>div:first-child {font-size:10px!important}
+  .shell-governance .sourcePanel .scoreline>div: first-child {font-size: 12px!important}
   .shell-overview .channelHead,
   .shell-products .productFacts small,
   .shell-products .auditHeader small,
@@ -2248,35 +2248,35 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-operations .feeditem time,
   .shell-operations .state,
   .shell-operations .empty,
-  .shell-governance .certProductButton small {font-size:9px!important}
-  .shell-governance .pillarCard h3{font-size:12px!important}
-  .shell-governance .pillarCard>p{font-size:10px!important;line-height:1.25!important;max-height:34px!important}
-  .shell-products .productDescription{font-size:11px!important;line-height:1.25!important}
-  .shell-overview .overviewHero .productDescription{font-size:11px!important}
-  .shell-operations .feeditem p{font-size:10px!important}
+  .shell-governance .certProductButton small {font-size: 12px!important}
+  .shell-governance .pillarCard h3{font-size: 12px!important}
+  .shell-governance .pillarCard>p{font-size: 12px!important;line-height: 1.25!important;max-height: 36px!important}
+  .shell-products .productDescription{font-size: 12px!important;line-height: 1.25!important}
+  .shell-overview .overviewHero .productDescription{font-size: 12px!important}
+  .shell-operations .feeditem p{font-size: 12px!important}
 }
 
 /* ZPC governance residue closure */
-@media (min-width:1101px){
-  .shell-governance .certSeal{font-size:10px!important;line-height:1.1!important;padding:5px 8px!important}
-  .certTargetPager{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px}
-  .certTargetPager .compact{min-width:34px;min-height:30px;padding:4px 7px;font-size:12px!important}
-  .certTargetPager strong{font-size:10px;color:#b9cce2}
-  .shell-governance .certProductList{gap:4px!important}
-  .shell-governance .pillarCard{padding:7px!important}
-  .shell-governance .pillarGrid{gap:5px!important}
-  .shell-governance .pillarBlocker{max-height:22px!important;line-height:1.05!important}
+@media (min-width: 1100px){
+  .shell-governance .certSeal{font-size: 12px!important;line-height: 1.1!important;padding: 4px 8px!important}
+  .certTargetPager{display: flex;align-items: center;justify-content: space-between;gap: 8px;margin-top: 8px}
+  .certTargetPager .compact{min-width: 36px;min-height: 32px;padding: 4px 8px;font-size: 12px!important}
+  .certTargetPager strong{font-size: 12px;color: #b9cce2}
+  .shell-governance .certProductList{gap: 4px!important}
+  .shell-governance .pillarCard{padding: 8px!important}
+  .shell-governance .pillarGrid{gap: 4px!important}
+  .shell-governance .pillarBlocker{max-height: 24px!important;line-height: 1.05!important}
 }
-@media (min-width:1101px) and (max-height:820px){
-  .shell-governance .certSeal{font-size:10px!important;padding:4px 7px!important}
-  .shell-governance .certProductButton{padding:4px 5px!important}
-  .shell-governance .certProductButton b{font-size:10px!important}
-  .shell-governance .certProductButton small{font-size:9px!important}
-  .shell-governance .certProductButton strong{font-size:10px!important}
-  .certTargetPager{margin-top:4px}
-  .certTargetPager .compact{min-height:28px}
-  .shell-governance .pillarCard>p{max-height:28px!important}
-  .shell-governance .pillarEvidence{max-height:28px!important}
+@media (min-width: 1100px) and (max-height:820px){
+  .shell-governance .certSeal{font-size: 12px!important;padding: 4px 8px!important}
+  .shell-governance .certProductButton{padding: 4px 4px!important}
+  .shell-governance .certProductButton b{font-size: 12px!important}
+  .shell-governance .certProductButton small{font-size: 12px!important}
+  .shell-governance .certProductButton strong{font-size: 12px!important}
+  .certTargetPager{margin-top: 4px}
+  .certTargetPager .compact{min-height: 28px}
+  .shell-governance .pillarCard>p{max-height: 28px!important}
+  .shell-governance .pillarEvidence{max-height: 28px!important}
 }
 
 /* ZPC absolute desktop readability floor: visible operational labels >= 10px */
@@ -2295,129 +2295,129 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-operations .empty,
   .shell-operations .feeditem time,
   .shell-governance .certProductButton small,
-  .shell-governance .certSeal {font-size:10px!important}
+  .shell-governance .certSeal {font-size: 12px!important}
 }
 
 /* ZPC governance full-readability closure: 4 pillars/page, no clipping, no scroll */
 @media (min-width:1101px){
   .shell-governance .pillarGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    grid-template-rows:repeat(2,minmax(0,1fr))!important;
-    gap:8px!important;
+    grid-template-columns: repeat(2,minmax(0,1fr))!important;
+    grid-template-rows: repeat(2,minmax(0,1fr))!important;
+    gap: 8px!important;
   }
   .shell-governance .pillarCard{
-    min-height:0!important;
-    height:100%!important;
-    padding:10px!important;
-    overflow:hidden!important;
+    min-height: 0!important;
+    height: 100%!important;
+    padding: 12px!important;
+    overflow: hidden!important;
   }
-  .shell-governance .pillarCard h3{font-size:13px!important;line-height:1.2!important}
+  .shell-governance .pillarCard h3{font-size: 12px!important;line-height: 1.2!important}
   .shell-governance .pillarCard>p{
-    font-size:11px!important;
-    line-height:1.3!important;
-    max-height:none!important;
-    overflow:visible!important;
+    font-size: 12px!important;
+    line-height: 1.3!important;
+    max-height: none!important;
+    overflow: visible!important;
   }
   .shell-governance .pillarMeta,
   .shell-governance .pillarEvidence span,
   .shell-governance .pillarBlocker{
-    font-size:10px!important;
-    line-height:1.25!important;
+    font-size: 12px!important;
+    line-height: 1.25!important;
   }
   .shell-governance .pillarEvidence,
   .shell-governance .pillarBlocker{
-    max-height:none!important;
-    overflow:visible!important;
+    max-height: none!important;
+    overflow: visible!important;
   }
 }
-@media (min-width:1101px) and (max-height:820px){
-  .shell-governance .pillarCard{padding:8px!important}
-  .shell-governance .pillarCard h3{font-size:12px!important}
-  .shell-governance .pillarCard>p{font-size:10px!important;line-height:1.2!important}
+@media (min-width: 1100px) and (max-height:820px){
+  .shell-governance .pillarCard{padding: 8px!important}
+  .shell-governance .pillarCard h3{font-size: 12px!important}
+  .shell-governance .pillarCard>p{font-size: 12px!important;line-height: 1.2!important}
   .shell-governance .pillarMeta,
   .shell-governance .pillarEvidence span,
-  .shell-governance .pillarBlocker{font-size:10px!important;line-height:1.15!important}
+  .shell-governance .pillarBlocker{font-size: 12px!important;line-height: 1.15!important}
 }
 
 /* ZPC overview density closure: use the available viewport instead of leaving dead space. */
 @media (min-width:1101px){
   .shell-overview .overviewGrid > .panel{
-    display:flex!important;
-    flex-direction:column!important;
+    display: flex!important;
+    flex-direction: column!important;
   }
   .shell-overview .channelTable,
   .shell-overview .executiveList{
-    flex:1 1 0!important;
-    min-height:0!important;
+    flex: 1 1 0!important;
+    min-height: 0!important;
   }
   .shell-overview .channelTable{
-    display:flex!important;
-    flex-direction:column!important;
+    display: flex!important;
+    flex-direction: column!important;
   }
   .shell-overview .channelRow{
-    flex:1 1 0!important;
-    min-height:26px!important;
-    align-content:center!important;
-    padding:6px 8px!important;
-    font-size:10px!important;
-    line-height:1.15!important;
+    flex: 1 1 0!important;
+    min-height: 28px!important;
+    align-content: center!important;
+    padding: 8px 8px!important;
+    font-size: 12px!important;
+    line-height: 1.15!important;
   }
   .shell-overview .channelHead{
-    flex:0 0 auto!important;
-    min-height:22px!important;
-    font-size:10px!important;
+    flex: 0 0 auto!important;
+    min-height: 24px!important;
+    font-size: 12px!important;
   }
   .shell-overview .executiveList{
-    display:flex!important;
-    flex-direction:column!important;
+    display: flex!important;
+    flex-direction: column!important;
   }
   .shell-overview .executiveList div{
-    flex:1 1 0!important;
-    min-height:34px!important;
-    padding:8px 9px!important;
+    flex: 1 1 0!important;
+    min-height: 36px!important;
+    padding: 8px 8px!important;
   }
   .shell-overview .executiveList span,
   .shell-overview .executiveList b{
-    font-size:10px!important;
-    line-height:1.15!important;
+    font-size: 12px!important;
+    line-height: 1.15!important;
   }
-  .shell-overview .panelhead h2{font-size:15px!important}
+  .shell-overview .panelhead h2{font-size: 14px!important}
 }
 
 /* ZPC operations 1280x720 closure: keep all four incident cards inside viewport at readable 10px. */
 @media (min-width:1101px) and (max-height:820px){
-  .shell-operations{padding-top:5px!important;padding-bottom:5px!important}
-  .shell-operations .topbar{margin-bottom:2px!important}
-  .shell-operations .topbar h1{margin:1px 0 2px!important;font-size:22px!important}
-  .shell-operations .policybar{margin:2px 0!important}
-  .shell-operations .policybar span{padding:4px 7px!important}
-  .shell-operations .trustStrip{margin:2px 0 3px!important;padding:4px 8px!important}
-  .shell-operations .tabs{margin:2px 0 3px!important}
-  .shell-operations .tab{min-height:30px!important;padding:4px 9px!important}
-  .shell-operations .opsGrid{gap:4px!important}
-  .shell-operations .opsGrid>.panel{padding:6px 8px!important}
-  .shell-operations .opsGrid .panel:first-child{padding:5px 8px!important}
-  .shell-operations .panelhead{margin-bottom:2px!important}
-  .shell-operations .operationSummary span{padding:4px 6px!important}
-  .shell-operations .feed{gap:3px!important}
-  .shell-operations .feeditem{gap:4px!important;padding:4px 6px!important}
-  .shell-operations .feeditem p{margin:1px 0!important;max-height:22px!important;font-size:10px!important;line-height:1.1!important}
-  .shell-operations .feeditem strong{font-size:10px!important;line-height:1.1!important}
-  .shell-operations .state{padding:3px 5px!important;font-size:10px!important;line-height:1!important}
+  .shell-operations{padding-top: 4px!important;padding-bottom: 4px!important}
+  .shell-operations .topbar{margin-bottom: 4px!important}
+  .shell-operations .topbar h1{margin: 4px 0 4px!important;font-size: 21px!important}
+  .shell-operations .policybar{margin: 4px 0!important}
+  .shell-operations .policybar span{padding: 4px 8px!important}
+  .shell-operations .trustStrip{margin: 4px 0 4px!important;padding: 4px 8px!important}
+  .shell-operations .tabs{margin: 4px 0 4px!important}
+  .shell-operations .tab{min-height: 32px!important;padding: 4px 8px!important}
+  .shell-operations .opsGrid{gap: 4px!important}
+  .shell-operations .opsGrid>.panel{padding: 8px 8px!important}
+  .shell-operations .opsGrid .panel: first-child{padding: 4px 8px!important}
+  .shell-operations .panelhead{margin-bottom: 4px!important}
+  .shell-operations .operationSummary span{padding: 4px 8px!important}
+  .shell-operations .feed{gap: 4px!important}
+  .shell-operations .feeditem{gap: 4px!important;padding: 4px 8px!important}
+  .shell-operations .feeditem p{margin: 4px 0!important;max-height: 24px!important;font-size: 12px!important;line-height: 1.1!important}
+  .shell-operations .feeditem strong{font-size: 12px!important;line-height: 1.1!important}
+  .shell-operations .state{padding: 4px 4px!important;font-size: 12px!important;line-height: 1!important}
 }
 
 /* ZPC operations internal pagination: bounded dynamic feeds, zero page scroll. */
-.opsPager{display:flex;align-items:center;gap:6px;color:#9fb0c6}
-.opsPager strong{font-size:10px;min-width:28px;text-align:center}
-.opsPager .compact{min-width:30px;min-height:28px;padding:3px 6px;font-size:12px}
-@media (min-width:1101px) and (max-height:820px){
-  .shell-operations .opsPager{gap:4px}
-  .shell-operations .opsPager .compact{min-width:28px;min-height:26px;padding:2px 5px}
+.opsPager{display: flex;align-items: center;gap: 8px;color: #9fb0c6}
+.opsPager strong{font-size: 12px;min-width: 28px;text-align: center}
+.opsPager .compact{min-width: 32px;min-height: 28px;padding: 4px 8px;font-size: 12px}
+@media (min-width: 1100px) and (max-height:820px){
+  .shell-operations .opsPager{gap: 4px}
+  .shell-operations .opsPager .compact{min-width: 28px;min-height: 28px;padding: 4px 4px}
 }
 
 
 /* ZPC GOVERNANCE LEGIBILITY HARDENING 2026-09-25 */
-@media (min-width: 1101px) {
+@media (min-width: 1100px) {
   .shell-governance {
     display: flex;
     flex-direction: column;
@@ -2425,7 +2425,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     max-height: 100dvh;
     overflow: hidden;
     padding-top: 8px;
-    padding-bottom: 7px;
+    padding-bottom: 8px;
   }
 
   .shell-governance > .topbar,
@@ -2436,48 +2436,48 @@ button:disabled { cursor: not-allowed; opacity: .58; }
     flex: 0 0 auto;
   }
 
-  .shell-governance .topbar { margin-bottom: 5px; }
-  .shell-governance .topbar h1 { margin: 2px 0 3px; font-size: 28px; }
+  .shell-governance .topbar { margin-bottom: 4px; }
+  .shell-governance .topbar h1 { margin: 4px 0 4px; font-size: 28px; }
   .shell-governance .subtitle { font-size: 12px; line-height: 1.22; }
   .shell-governance .eyebrow,
-  .shell-governance .kicker { font-size: 10px; }
+  .shell-governance .kicker { font-size: 12px; }
 
-  .shell-governance .policybar { margin: 4px 0; gap: 6px; }
-  .shell-governance .policybar span { padding: 5px 8px; font-size: 10px; }
+  .shell-governance .policybar { margin: 4px 0; gap: 8px; }
+  .shell-governance .policybar span { padding: 4px 8px; font-size: 12px; }
 
-  .shell-governance .trustStrip { margin: 4px 0 5px; padding: 6px 9px; gap: 8px; }
-  .shell-governance .trustStrip small { font-size: 9px; }
+  .shell-governance .trustStrip { margin: 4px 0 4px; padding: 8px 8px; gap: 8px; }
+  .shell-governance .trustStrip small { font-size: 12px; }
   .shell-governance .trustStrip b,
   .shell-governance .trustStrip strong { font-size: 12px; }
-  .shell-governance .trustState span { font-size: 10px; }
+  .shell-governance .trustState span { font-size: 12px; }
 
-  .shell-governance .tabs { margin: 4px 0 6px; }
-  .shell-governance .tab { min-height: 32px; padding: 5px 10px; font-size: 13px; }
+  .shell-governance .tabs { margin: 4px 0 8px; }
+  .shell-governance .tab { min-height: 32px; padding: 4px 12px; font-size: 12px; }
 
   .shell-governance .governanceStack {
     flex: 1 1 0;
     min-height: 0;
-    gap: 6px;
+    gap: 8px;
     overflow: hidden;
   }
 
-  .shell-governance .governanceHero { flex: 0 0 auto; padding: 8px 10px; }
+  .shell-governance .governanceHero { flex: 0 0 auto; padding: 8px 12px; }
   .shell-governance .governanceHero .productDescription {
     min-height: 0;
-    margin: 3px 0 0;
-    font-size: 10px;
+    margin: 4px 0 0;
+    font-size: 12px;
     line-height: 1.2;
   }
 
-  .shell-governance .standardStrip { gap: 6px; margin-top: 6px; }
-  .shell-governance .standardStrip span { padding: 6px 8px; font-size: 9px; }
-  .shell-governance .standardStrip b { margin-bottom: 1px; font-size: 13px; }
+  .shell-governance .standardStrip { gap: 8px; margin-top: 8px; }
+  .shell-governance .standardStrip span { padding: 8px 8px; font-size: 12px; }
+  .shell-governance .standardStrip b { margin-bottom: 4px; font-size: 12px; }
 
   .shell-governance .certWorkspace {
     flex: 1 1 0;
     min-height: 0;
     grid-template-columns: 268px minmax(0, 1fr);
-    gap: 7px;
+    gap: 8px;
     align-items: stretch;
     overflow: hidden;
   }
@@ -2485,64 +2485,64 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .certDetail { min-height: 0; }
 
   .shell-governance .certSidebar { padding: 8px; overflow: hidden; }
-  .shell-governance .certSidebar h2 { margin: 2px 0 6px; font-size: 17px; }
+  .shell-governance .certSidebar h2 { margin: 4px 0 8px; font-size: 16px; }
   .shell-governance .certProductList { gap: 4px; }
-  .shell-governance .certProductButton { min-height: 38px; padding: 6px 8px; }
-  .shell-governance .certProductButton b { font-size: 11px; }
-  .shell-governance .certProductButton small { font-size: 9px; }
-  .shell-governance .certProductButton strong { font-size: 11px; }
+  .shell-governance .certProductButton { min-height: 40px; padding: 8px 8px; }
+  .shell-governance .certProductButton b { font-size: 12px; }
+  .shell-governance .certProductButton small { font-size: 12px; }
+  .shell-governance .certProductButton strong { font-size: 12px; }
 
   .shell-governance .certDetail { display: flex; flex-direction: column; overflow: hidden; }
-  .shell-governance .certSummaryPanel { flex: 0 0 auto; margin-bottom: 6px; padding: 8px 10px; }
-  .shell-governance .certTitleRow h2 { margin: 1px 0 2px; font-size: 19px; }
-  .shell-governance .certTitleRow p { font-size: 10px; line-height: 1.18; }
-  .shell-governance .certSeal { padding: 6px 9px; font-size: 10px; }
+  .shell-governance .certSummaryPanel { flex: 0 0 auto; margin-bottom: 8px; padding: 8px 12px; }
+  .shell-governance .certTitleRow h2 { margin: 4px 0 4px; font-size: 21px; }
+  .shell-governance .certTitleRow p { font-size: 12px; line-height: 1.18; }
+  .shell-governance .certSeal { padding: 8px 8px; font-size: 12px; }
 
-  .shell-governance .certSummaryGrid { gap: 5px; margin-top: 6px; }
-  .shell-governance .certSummaryGrid span { padding: 5px 6px; }
-  .shell-governance .certSummaryGrid b { font-size: 13px; }
-  .shell-governance .certSummaryGrid small { font-size: 9px; }
+  .shell-governance .certSummaryGrid { gap: 4px; margin-top: 8px; }
+  .shell-governance .certSummaryGrid span { padding: 4px 8px; }
+  .shell-governance .certSummaryGrid b { font-size: 12px; }
+  .shell-governance .certSummaryGrid small { font-size: 12px; }
 
-  .shell-governance .certRunStrip { gap: 5px; margin-top: 5px; }
-  .shell-governance .certRunStrip span { padding: 5px 6px; font-size: 10px; }
-  .shell-governance .certRunStrip b { font-size: 9px; }
+  .shell-governance .certRunStrip { gap: 4px; margin-top: 4px; }
+  .shell-governance .certRunStrip span { padding: 4px 8px; font-size: 12px; }
+  .shell-governance .certRunStrip b { font-size: 12px; }
 
-  .shell-governance .rootBlocker { margin-top: 5px; padding: 6px 7px; font-size: 10px; line-height: 1.2; }
+  .shell-governance .rootBlocker { margin-top: 4px; padding: 8px 8px; font-size: 12px; line-height: 1.2; }
 
   .shell-governance .pillarGrid {
     flex: 1 1 0;
     min-height: 0;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 5px;
+    gap: 4px;
     align-items: stretch;
     overflow: hidden;
   }
-  .shell-governance .pillarCard { height: 100%; min-height: 0; overflow: hidden; padding: 7px 8px; }
-  .shell-governance .pillarIndex { font-size: 10px; }
-  .shell-governance .pillarStatus { padding: 4px 6px; font-size: 9px; }
-  .shell-governance .pillarCard h3 { margin: 5px 0 3px; font-size: 12px; line-height: 1.16; }
-  .shell-governance .pillarCard > p { min-height: 0; margin: 0; color: #93a8c0; font-size: 10px; line-height: 1.2; }
-  .shell-governance .pillarMeta { gap: 5px; margin-top: 4px; font-size: 9px; }
-  .shell-governance .pillarBlocker { margin-top: 4px; padding-top: 4px; font-size: 10px; line-height: 1.2; }
-  .shell-governance .pillarEvidence { gap: 3px; margin-top: 4px; padding-top: 4px; }
-  .shell-governance .pillarEvidence span { gap: 4px; color: #a0b5cc; font-size: 9px; line-height: 1.2; }
-  .shell-governance .pagination { font-size: 10px; }
+  .shell-governance .pillarCard { height: 100%; min-height: 0; overflow: hidden; padding: 8px 8px; }
+  .shell-governance .pillarIndex { font-size: 12px; }
+  .shell-governance .pillarStatus { padding: 4px 8px; font-size: 12px; }
+  .shell-governance .pillarCard h3 { margin: 4px 0 4px; font-size: 12px; line-height: 1.16; }
+  .shell-governance .pillarCard > p { min-height: 0; margin: 0; color: #93a8c0; font-size: 12px; line-height: 1.2; }
+  .shell-governance .pillarMeta { gap: 4px; margin-top: 4px; font-size: 12px; }
+  .shell-governance .pillarBlocker { margin-top: 4px; padding-top: 4px; font-size: 12px; line-height: 1.2; }
+  .shell-governance .pillarEvidence { gap: 4px; margin-top: 4px; padding-top: 4px; }
+  .shell-governance .pillarEvidence span { gap: 4px; color: #a0b5cc; font-size: 12px; line-height: 1.2; }
+  .shell-governance .pagination { font-size: 12px; }
 }
 
-@media (min-width: 1101px) and (max-height: 820px) {
-  .shell-governance .topbar h1 { font-size: 25px; }
-  .shell-governance .subtitle { font-size: 11px; }
+@media (min-width: 1100px) and (max-height: 820px) {
+  .shell-governance .topbar h1 { font-size: 28px; }
+  .shell-governance .subtitle { font-size: 12px; }
   .shell-governance .trustStrip b,
-  .shell-governance .trustStrip strong { font-size: 11px; }
+  .shell-governance .trustStrip strong { font-size: 12px; }
   .shell-governance .certSidebar h2 { font-size: 16px; }
-  .shell-governance .certProductButton b { font-size: 10px; }
-  .shell-governance .certProductButton small { font-size: 9px; }
-  .shell-governance .certProductButton strong { font-size: 10px; }
-  .shell-governance .certTitleRow h2 { font-size: 18px; }
+  .shell-governance .certProductButton b { font-size: 12px; }
+  .shell-governance .certProductButton small { font-size: 12px; }
+  .shell-governance .certProductButton strong { font-size: 12px; }
+  .shell-governance .certTitleRow h2 { font-size: 16px; }
   .shell-governance .certSummaryGrid b { font-size: 12px; }
-  .shell-governance .pillarCard h3 { font-size: 11px; }
+  .shell-governance .pillarCard h3 { font-size: 12px; }
   .shell-governance .pillarCard > p,
-  .shell-governance .pillarBlocker { font-size: 9px; }
+  .shell-governance .pillarBlocker { font-size: 12px; }
 }
 
 
@@ -2592,22 +2592,20 @@ body {
 }
 
 :root[data-theme='dark'] body {
-  background:
-    radial-gradient(circle at 16% 0%, #10233d 0, var(--bg-primary) 36%, #03070D 100%);
+  background: radial-gradient(circle at 16% 0%, #10233d 0, var(--bg-primary) 36%, #03070D 100%);
 }
 
 :root[data-theme='light'] body {
-  background:
-    radial-gradient(circle at 16% 0%, #E9F2FC 0, var(--bg-primary) 40%, #F8FAFD 100%);
+  background: radial-gradient(circle at 16% 0%, #E9F2FC 0, var(--bg-primary) 40%, #F8FAFD 100%);
 }
 
-button:focus-visible,
+button: focus-visible,
 a:focus-visible,
 select:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
   outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: 4px;
 }
 
 .themeToggle {
@@ -2641,7 +2639,7 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.controlCenterTabs .tab:hover {
+.controlCenterTabs .tab: hover {
   background: var(--surface-elevated);
   color: var(--text-primary);
 }
@@ -2778,7 +2776,7 @@ textarea:focus-visible {
   letter-spacing: -0.02em;
 }
 
-.commercialHeader > div > p:last-child {
+.commercialHeader > div > p: last-child {
   margin: 8px 0 0;
   color: var(--text-secondary);
   font-size: 16px;
@@ -2990,7 +2988,7 @@ textarea:focus-visible {
   border: 1px solid var(--border);
   border-radius: 24px;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 16px;
 }
@@ -3141,7 +3139,7 @@ textarea:focus-visible {
   color: var(--status-error);
 }
 
-.approvalActions button:disabled {
+.approvalActions button: disabled {
   cursor: not-allowed;
   opacity: 0.56;
 }
@@ -3288,7 +3286,7 @@ textarea:focus-visible {
     line-height: 24px;
   }
 
-  .commercialHeader > div > p:last-child {
+  .commercialHeader > div > p: last-child {
     font-size: 14px;
     line-height: 24px;
   }
@@ -3316,17 +3314,17 @@ textarea:focus-visible {
   }
 
   .commercialMetrics span {
-    font-size: 10px;
+    font-size: 12px;
     line-height: 16px;
   }
 
   .commercialMetrics strong {
     margin-top: 0;
-    font-size: 18px;
+    font-size: 16px;
     line-height: 24px;
   }
 
-  .shell-commercial .commercialHeader > div:first-child > p:last-child {
+  .shell-commercial .commercialHeader > div: first-child > p:last-child {
     display: none;
   }
 
@@ -3472,7 +3470,7 @@ textarea:focus-visible {
 .cfoAction {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px 10px;
+  gap: 8px 12px;
   align-items: start;
   padding: 8px;
   border: 1px solid var(--border);
@@ -3524,7 +3522,7 @@ textarea:focus-visible {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.cfoReceivableRow > span:first-child,
+.cfoReceivableRow > span: first-child,
 .cfoReceivableRow > span:nth-child(2) {
   display: grid;
   gap: 8px;
