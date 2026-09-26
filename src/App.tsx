@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Activity,
   AlertTriangle,
   Archive,
   CheckCircle2,
@@ -14,11 +13,14 @@ import {
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
-  SlidersHorizontal,
   LayoutDashboard,
+  Moon,
+  Sun,
   X,
 } from 'lucide-react';
 import { api } from './api';
+import CommercialWorkspace from './CommercialWorkspace';
+import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 
 type SystemItem = {
   id: string;
@@ -235,10 +237,6 @@ function formatMoney(cents: number | null) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 
-function formatAuditScore(value: number | null) {
-  return value === null ? 'Pendente' : `${value.toFixed(1)}/10`;
-}
-
 function statusLabel(status: ProductStatus) {
   return {
     draft: 'Rascunho',
@@ -353,10 +351,11 @@ function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
   const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
+  const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
-  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance'>('overview');
+  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
@@ -372,6 +371,11 @@ function App() {
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
   const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>('checking');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('zpc_theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
 
   const loadGlobalTrustLive = async () => {
     try {
@@ -396,6 +400,7 @@ function App() {
       setDashboard(response.data.dashboard);
       setGlobalTrust(response.data.globalTrust ?? null);
       setOperations(response.data.operations ?? null);
+      setCommercial(response.data.commercial ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setSummary(response.data.summary);
@@ -407,6 +412,11 @@ function App() {
       setAuthState('signedout');
     }
   };
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('zpc_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     void load(sessionToken);
@@ -466,6 +476,7 @@ function App() {
     setAuthState('signedout');
     setDashboard(null);
     setGlobalTrust(null);
+    setCommercial(null);
   };
 
   const handleLogin = (token: string) => {
@@ -684,6 +695,15 @@ function App() {
           <p className='subtitle'>Operação, produtos, canais, evidência e certificação em uma única central administrativa.</p>
         </div>
         <div className='actions'>
+          <button
+            className='secondary themeToggle'
+            onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+            aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+            title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+          >
+            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+          </button>
           <span className='adminChip'><ShieldCheck size={15} />PIN ADMIN ATIVO</span>
           {view === 'products' && <button className='primary' onClick={openNew}><PackagePlus size={17} />Novo produto</button>}
           <button className='secondary' onClick={logout}><LogOut size={17} />Sair</button>
@@ -709,20 +729,59 @@ function App() {
         <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
       </section>
 
-      <nav className='tabs' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
+      <nav className='tabs controlCenterTabs' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
         <button className={view === 'overview' ? 'tab active' : 'tab'} aria-pressed={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
         <button className={view === 'products' ? 'tab active' : 'tab'} aria-pressed={view === 'products'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
-        <button className={view === 'operations' ? 'tab active' : 'tab'} aria-pressed={view === 'operations'} onClick={() => setView('operations')}><Activity size={16} />Operações</button>
-        <button className={view === 'governance' ? 'tab active' : 'tab'} aria-pressed={view === 'governance'} onClick={() => setView('governance')}><SlidersHorizontal size={16} />ZEES-16 / Governança</button>
+        <button className={view === 'commercial' ? 'tab active' : 'tab'} aria-pressed={view === 'commercial'} onClick={() => setView('commercial')}>Comercial</button>
+        <button className={view === 'creatives' ? 'tab active' : 'tab'} aria-pressed={view === 'creatives'} onClick={() => setView('creatives')}>Criativos</button>
+        <button className={view === 'approvals' ? 'tab active' : 'tab'} aria-pressed={view === 'approvals'} onClick={() => setView('approvals')}>Aprovações</button>
+        <button className={view === 'publications' ? 'tab active' : 'tab'} aria-pressed={view === 'publications'} onClick={() => setView('publications')}>Publicações</button>
+        <button className={view === 'prospecting' ? 'tab active' : 'tab'} aria-pressed={view === 'prospecting'} onClick={() => setView('prospecting')}>Prospecção</button>
+        <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM/Vendas</button>
+        <button className={view === 'support' ? 'tab active' : 'tab'} aria-pressed={view === 'support'} onClick={() => setView('support')}>Atendimento</button>
+        <button className={view === 'finance' ? 'tab active' : 'tab'} aria-pressed={view === 'finance'} onClick={() => setView('finance')}>Financeiro</button>
+        <button className={view === 'evidence' ? 'tab active' : 'tab'} aria-pressed={view === 'evidence'} onClick={() => setView('evidence')}>Evidências</button>
       </nav>
 
+      <label className='areaSelectWrap'>
+        <span>Área do Control Center</span>
+        <select value={view} onChange={event => setView(event.target.value as typeof view)} aria-label='Selecionar área do Control Center'>
+          <option value='overview'>Visão Geral</option>
+          <option value='products'>Produtos</option>
+          <option value='commercial'>Comercial</option>
+          <option value='creatives'>Criativos</option>
+          <option value='approvals'>Aprovações</option>
+          <option value='publications'>Publicações</option>
+          <option value='prospecting'>Prospecção</option>
+          <option value='crm'>CRM/Vendas</option>
+          <option value='support'>Atendimento</option>
+          <option value='finance'>Financeiro</option>
+          <option value='evidence'>Evidências</option>
+          <option value='operations'>Operações técnicas</option>
+          <option value='governance'>ZEES-16 / Governança</option>
+        </select>
+      </label>
+
       {error && <div className='errorbox globalError'>{error}</div>}
+
+      {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
+        <CommercialWorkspace
+          section={view as CommercialSection}
+          data={commercial}
+          sessionToken={sessionToken}
+          onRefresh={() => load()}
+        />
+      )}
 
       {view === 'overview' && (
         <section className='overviewStack'>
           <section className='overviewHero panel'>
             <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2><p className='productDescription'>O Control Plane e o gerenciamento de produtos agora ficam no mesmo painel, com leitura executiva antes dos detalhes.</p></div>
-            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
+            <div className='overviewHeroActions'>
+              <button className='secondary compact' onClick={() => setView('operations')}>Operações técnicas</button>
+              <button className='secondary compact' onClick={() => setView('governance')}>ZEES-16 / Governança</button>
+              <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
+            </div>
           </section>
           <section className='overviewCards'>
             <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>

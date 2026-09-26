@@ -1,5 +1,7 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
+import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialWorkspace } from './commercial.ts';
+import type { CommercialRecordKind } from '../src/commercial-model.ts';
 
 type SystemStatus = 'healthy' | 'attention' | 'integration';
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
@@ -887,16 +889,6 @@ async function canonicalZevanoryEvidence(
   } catch {
     return [];
   }
-}
-
-function verifierArtifacts(pillar: CertificationPillar, product: ProductRecord, sourceSystem?: SystemRecord & { id?: string }) {
-  return Array.from(new Set([
-    product.publicUrl,
-    product.checkoutUrl,
-    sourceSystem?.domain || '',
-    sourceSystem?.sha ? `sha:${sourceSystem.sha}` : '',
-    ...pillar.evidence,
-  ].filter(Boolean))).slice(0, 12);
 }
 
 async function canonicalZevanoryP08Evidence(
@@ -1923,9 +1915,12 @@ async function adminData() {
     })),
   ];
 
+  const commercial = await commercialWorkspace(operations);
+
   return {
     globalTrust,
     operations,
+    commercial,
     certificationTargets,
     dashboard: {
       systems: visibleSystems,
@@ -2070,10 +2065,7 @@ export const handler = router({
     const product = normalizeProduct(body, existing);
     if (!product) return error('Produto invalido: informe nome, slug valido e dados consistentes.', 400);
     const blockers = commercialBlockers(product);
-    const [systems, certificationEvidence] = await Promise.all([
-      db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
-      db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
-    ]);
+    const systems = await db.list<SystemRecord>(SYSTEMS, { limit: 50 });
     const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
     const releaseFingerprint = certificationReleaseFingerprint(product, certificationSystem(product, visibleSystems));
     await invalidateObsoleteCertificationEvidence(product.slug, releaseFingerprint);
@@ -2098,6 +2090,36 @@ export const handler = router({
     if (!updated) return error('Nao foi possivel arquivar o produto.', 500);
     return json(enrichProduct({ ...archived, id: body.id }));
   }],
+  'POST /api/commercial/create': [async ctx => {
+    const body = ctx.body as { sessionToken?: string } & Record<string, unknown>;
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    try {
+      return json(await commercialAdminCreate(body as any), 201);
+    } catch (err) {
+      return error(`Registro comercial invalido: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/commercial/update': [async ctx => {
+    const body = ctx.body as { sessionToken?: string; id?: string; kind?: CommercialRecordKind } & Record<string, unknown>;
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    if (!body.id || !body.kind) return error('Registro comercial invalido.', 400);
+    try {
+      return json(await commercialAdminUpdate(String(body.id), body.kind, body as any));
+    } catch (err) {
+      return error(`Falha ao atualizar registro comercial: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/commercial/approval': [async ctx => {
+    const body = ctx.body as { sessionToken?: string; id?: string; kind?: 'creative' | 'publication'; action?: 'approve' | 'reject' | 'request-changes'; note?: string };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    if (!body.id || !body.kind || !body.action) return error('Acao de aprovacao invalida.', 400);
+    try {
+      return json(await commercialApprovalAction({ id: String(body.id), kind: body.kind, action: body.action, note: body.note }));
+    } catch (err) {
+      return error(`Falha na aprovacao comercial: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/commercial/adapter/ingest': [async ctx => commercialAdapterIngest(ctx.request, ctx.body)],
   'POST /api/certification/run': [async ctx => {
     const body = ctx.body as { sessionToken?: string; targetId?: string };
     if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
