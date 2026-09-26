@@ -3807,3 +3807,9 @@ textarea:focus-visible {
 :root[data-theme='light'] .certTargetPager > strong {
   color: var(--text-primary);
 }
+
+
+/* Theme root must never expose the opposite theme during overscroll. */
+html {
+  background: var(--bg-primary);
+}
