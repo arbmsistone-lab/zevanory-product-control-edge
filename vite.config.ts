@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
+
+const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
@@ -11,8 +14,8 @@ export default defineConfig({
       process.env.APPDEPLOY_VITE_SOURCEMAP === 'hidden' ? 'hidden' : false,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        visualAudit: resolve(__dirname, 'visual-audit.html'),
+        main: resolve(rootDir, 'index.html'),
+        visualAudit: resolve(rootDir, 'visual-audit.html'),
       },
       maxParallelFileOps: 128,
     },
