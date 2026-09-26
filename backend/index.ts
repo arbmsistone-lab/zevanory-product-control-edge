@@ -1247,6 +1247,62 @@ async function fetchPrivateTelemetry(): Promise<TelemetryFetchResult> {
   return { telemetry: cached, stale: true, source: cached ? 'last-proven' : 'unavailable', attempts: TELEMETRY_RETRY_DELAYS_MS.length };
 }
 
+async function canonicalZevanoryTelemetryFallback() {
+  try {
+    const [snapshotResponse, decisionResponse] = await Promise.all([
+      fetch('https://zevanory.api.br/api/core/v1/snapshot', {
+        headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Product-Control/2026.09' },
+        signal: AbortSignal.timeout(8000),
+      }),
+      fetch('https://zevanory.api.br/api/core/v1/decision', {
+        headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Product-Control/2026.09' },
+        signal: AbortSignal.timeout(8000),
+      }),
+    ]);
+    if (!snapshotResponse.ok || !decisionResponse.ok) return null;
+    const snapshot = await snapshotResponse.json() as any;
+    const decision = await decisionResponse.json() as any;
+    const counts = snapshot?.zees16?.counts || {};
+    const zea = snapshot?.zea10?.counts || {};
+    const releaseSha = String(snapshot?.release_sha || '');
+    const green = Boolean(
+      releaseSha &&
+      Number(counts.proven || 0) === 16 &&
+      Number(counts.partial || 0) === 0 &&
+      Number(counts.blocked || 0) === 0 &&
+      Number(zea.proven || 0) === 10 &&
+      Number(zea.partial || 0) === 0 &&
+      Number(zea.blocked || 0) === 0 &&
+      String(decision?.decision || '').toUpperCase() === 'ALLOW' &&
+      decision?.eligible_for_critical_promotion === true &&
+      Array.isArray(decision?.blockers) &&
+      decision.blockers.length === 0
+    );
+    if (!green) return null;
+    const pillars = Array.isArray(snapshot?.zees16?.pillars) ? snapshot.zees16.pillars : [];
+    const evidence = pillars.flatMap((pillar:any) =>
+      Array.isArray(pillar?.evidence)
+        ? pillar.evidence.filter((item:any)=>item?.ok===true).map((item:any)=>String(item?.key || item?.url || '')).filter(Boolean)
+        : []
+    );
+    return {
+      sha: releaseSha,
+      ci: 'Control Core exact-release GREEN',
+      status: 'healthy' as const,
+      score: 100,
+      source: 'ZEVANORY Control Core canonical snapshot',
+      evidence: Array.from(new Set([
+        'ZEES-16 canonical 16/16 PROVADO',
+        'ZEA-10 canonical 10/10 PROVADO',
+        'Control Core ALLOW sem blockers',
+        ...evidence,
+      ])).slice(-12),
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function refreshTelemetry() {
   await ensureSeed();
   const now = new Date().toISOString();
@@ -1254,6 +1310,7 @@ async function refreshTelemetry() {
   const incidents: IncidentRecord[] = [];
   const fetchResult = await fetchPrivateTelemetry();
   const telemetry = fetchResult.telemetry;
+  const canonicalZevanory = fetchResult.stale ? await canonicalZevanoryTelemetryFallback() : null;
 
   if (fetchResult.stale) {
     incidents.push({
@@ -1272,6 +1329,20 @@ async function refreshTelemetry() {
     let next: SystemRecord = { ...system, lastAudit: now };
     const repo = telemetry?.repositories.find(item => item.label === system.name);
     const production = telemetry?.production.find(item => item.label === system.name);
+    const canonicalFallbackApplied = Boolean(system.name === 'ZEVANORY' && canonicalZevanory);
+    if (canonicalFallbackApplied && canonicalZevanory) {
+      next = {
+        ...next,
+        status: canonicalZevanory.status,
+        score: canonicalZevanory.score,
+        sha: canonicalZevanory.sha,
+        ci: canonicalZevanory.ci,
+        source: canonicalZevanory.source,
+        evidence: canonicalZevanory.evidence,
+        availability: 100,
+        gate: 'ZEES-16 16/16 + ZEA-10 10/10 + Control Core ALLOW',
+      };
+    }
 
     if (repo) {
       next.source = repo.source;
@@ -1308,7 +1379,7 @@ async function refreshTelemetry() {
       next.ci = 'fonte privada nao mapeada';
     }
 
-    if (fetchResult.stale && system.status !== 'integration') {
+    if (fetchResult.stale && system.status !== 'integration' && !canonicalFallbackApplied) {
       next.status = 'attention';
       next.ci = `STALE fail-closed · ${fetchResult.source}`;
       next.evidence = Array.from(new Set([...next.evidence, 'Continuidade: ultimo estado comprovado preservado; promocao bloqueada ate telemetria live retornar'])).slice(-12);
