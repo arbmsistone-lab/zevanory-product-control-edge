@@ -58,6 +58,8 @@ function result(status: ZeesVerifierStatus, message: string, artifacts: string[]
 
 async function exactZevanoryCoreProof(pillar: string, ctx: ZeesVerifierContext): Promise<ZeesVerifierResult | null> {
   if (ctx.product.slug !== 'zevanory') return null;
+  const reusable = new Set(['P01','P02','P04','P06','P10','P14','P15']);
+  if (!reusable.has(pillar)) return null;
   try {
     const response = await fetch('https://zevanory.api.br/api/core/v1/snapshot', {
       headers: { accept: 'application/json', 'user-agent': 'ZEVANORY-ZEES-16/2026.09-product-certifier' },
