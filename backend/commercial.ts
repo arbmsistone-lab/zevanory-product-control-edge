@@ -214,3 +214,152 @@ export async function commercialAdapterIngest(request: Request, body: unknown) {
   return json({ ok: true, persisted: persisted.length, at: new Date().toISOString() });
 }
 
+
+
+type ProspectResult = { title: string; url: string; description: string; query: string };
+
+const DEFAULT_PROSPECT_QUERIES = [
+  'empresa varejo Ceara automacao WhatsApp',
+  'clinica Ceara atendimento WhatsApp Instagram',
+  'salao Ceara agendamento WhatsApp Instagram',
+  'loja Ceara vendas Instagram WhatsApp',
+];
+
+function decodeXml(value: string) {
+  return value
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractTag(xml: string, tag: string) {
+  const match = xml.match(new RegExp('<' + tag + '[^>]*>([\\s\\S]*?)<\\/' + tag + '>', 'i'));
+  return match ? decodeXml(match[1]) : '';
+}
+
+async function searchProspects(query: string): Promise<ProspectResult[]> {
+  const response = await fetch('https://www.bing.com/search?format=rss&q=' + encodeURIComponent(query), {
+    headers: {
+      accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8',
+      'user-agent': 'ZEVANORY-Commercial-Research/2026.09',
+    },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!response.ok) throw new Error('prospect_search_http_' + response.status);
+  const xml = await response.text();
+  const items = xml.match(/<item>[\s\S]*?<\/item>/gi) || [];
+  const seen = new Set<string>();
+  const results: ProspectResult[] = [];
+  for (const item of items) {
+    const title = extractTag(item, 'title');
+    const url = extractTag(item, 'link');
+    const description = extractTag(item, 'description');
+    if (!title || !/^https?:\/\//i.test(url) || seen.has(url)) continue;
+    seen.add(url);
+    results.push({ title: title.slice(0, 180), url, description: description.slice(0, 1200), query });
+    if (results.length >= 4) break;
+  }
+  return results;
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+async function generateDailyBriefs() {
+  const [products, creatives] = await Promise.all([
+    db.list<any>('acs_products_admin', { limit: 100 }),
+    listKind('creative', 1000),
+  ]);
+  let created = 0;
+  for (const product of products.items.filter(item => item.status !== 'archived').slice(0, 3)) {
+    const sourceKey = 'robot-brief:' + String(product.slug || product.id) + ':' + todayKey();
+    if (creatives.some(item => item.source === 'commercial-robot' && item.sourceKey === sourceKey)) continue;
+    await upsertBySourceKey({
+      kind: 'creative',
+      title: 'Brief comercial · ' + cleanString(product.name || product.slug || 'Produto', 120),
+      detail: [
+        'Objetivo: gerar uma peça orientada à descoberta e educação, sem promessa não comprovada.',
+        product.description ? 'Contexto do produto: ' + cleanString(product.description, 600) : '',
+        'Regra: nenhum conteúdo será publicado sem passar pela fila de aprovação.',
+      ].filter(Boolean).join(' '),
+      status: 'brief',
+      product: cleanString(product.name || '', 180) || null,
+      productId: String(product.id || '') || null,
+      source: 'commercial-robot',
+      sourceKey,
+      evidence: ['generated-by:commercial-robot', 'approval-required', new Date().toISOString()],
+    });
+    created += 1;
+  }
+  return created;
+}
+
+let robotTickRunning = false;
+
+export async function commercialRobotTick() {
+  if (robotTickRunning) return { ok: false, skipped: true, reason: 'tick_already_running' };
+  robotTickRunning = true;
+  const startedAt = new Date().toISOString();
+  let discovered = 0;
+  let queryFailures = 0;
+  try {
+    const configuredQueries = String(process.env.COMMERCIAL_PROSPECT_QUERIES || '')
+      .split('|')
+      .map(item => item.trim())
+      .filter(Boolean);
+    const queries = (configuredQueries.length ? configuredQueries : DEFAULT_PROSPECT_QUERIES).slice(0, 6);
+
+    for (const query of queries) {
+      try {
+        const results = await searchProspects(query);
+        for (const result of results) {
+          await upsertBySourceKey({
+            kind: 'lead',
+            title: result.title,
+            detail: result.description || 'Lead público descoberto por pesquisa web.',
+            status: 'new',
+            channel: 'web',
+            product: 'ZEVANORY',
+            source: 'public-search',
+            sourceKey: ('bing:' + result.url).slice(0, 220),
+            evidence: [result.url, 'query:' + query, 'discovered-at:' + startedAt],
+          });
+          discovered += 1;
+        }
+      } catch {
+        queryFailures += 1;
+      }
+    }
+
+    const briefsCreated = await generateDailyBriefs();
+    const hourKey = new Date().toISOString().slice(0, 13);
+    await upsertBySourceKey({
+      kind: 'event',
+      title: 'Ciclo de prospecção concluído',
+      detail: `${discovered} resultado(s) processado(s) em ${queries.length} busca(s); ${queryFailures} busca(s) com falha; ${briefsCreated} brief(s) criado(s).`,
+      status: 'research',
+      source: 'commercial-robot',
+      sourceKey: 'research-cycle:' + hourKey,
+      evidence: ['public-search-only', 'no-auto-contact', 'no-auto-publish', startedAt],
+    });
+    await upsertBySourceKey({
+      kind: 'event',
+      title: 'Heartbeat do robô comercial',
+      detail: 'Worker de prospecção e produção de briefs executando. Contato e publicação externos permanecem condicionados aos gates.',
+      status: 'heartbeat',
+      source: 'commercial-robot',
+      sourceKey: 'commercial-orchestrator-heartbeat',
+      evidence: ['runtime-worker', 'public-search-only', 'approval-required', new Date().toISOString()],
+    });
+    return { ok: true, discovered, queryFailures, briefsCreated, at: new Date().toISOString() };
+  } finally {
+    robotTickRunning = false;
+  }
+}
