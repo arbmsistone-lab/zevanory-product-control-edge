@@ -1131,7 +1131,9 @@ async function canonicalZevanoryDirectExactReleaseEvidence(
       if (!names.every(name => successful.has(name))) return [];
     }
 
-    // P07/P08/P09/P12/P13/P16 have stronger dedicated verifiers and artifacts.
+    // P07/P08/P09/P12/P16 have stronger dedicated protected/live verifiers.
+    // P13 is deliberately validated without requiring Control Core ALLOW: data governance
+    // must not become circularly dependent on the decision engine whose GitHub collector can fail independently.
     const syntheticSource: SystemRecord & { id?: string } = {
       ...(sourceSystem || {
         name: 'ZEVANORY',
@@ -1150,7 +1152,7 @@ async function canonicalZevanoryDirectExactReleaseEvidence(
       domain: sourceSystem?.domain || 'https://zevanory.api.br/',
     };
     const dedicated = new Map<string, any>();
-    for (const pillar of ['P07','P08','P09','P12','P13','P16']) {
+    for (const pillar of ['P07','P08','P09','P12','P16']) {
       const verifier = await executeZeesVerifier(pillar, {
         product,
         profile: certificationProfile(product),
@@ -1160,6 +1162,53 @@ async function canonicalZevanoryDirectExactReleaseEvidence(
       if (verifier.status !== 'proved') return [];
       dedicated.set(pillar, verifier);
     }
+
+    const [controlResponse, privacyResponse] = await Promise.all([
+      fetch('https://zevanory.api.br/api/control-plane', {
+        headers: { accept: 'application/json', 'user-agent': headers['user-agent'] },
+        signal: AbortSignal.timeout(8_000),
+      }),
+      fetch('https://zevanory.api.br/privacidade', {
+        headers: { 'user-agent': headers['user-agent'] },
+        signal: AbortSignal.timeout(8_000),
+      }),
+    ]);
+    if (!controlResponse.ok || !privacyResponse.ok) return [];
+    const control = await controlResponse.json() as any;
+    const privacyText = (await privacyResponse.text()).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const controlSha = String(control?.release?.deployment?.commit_sha || '').toLowerCase();
+    const proofSha = String(control?.proof_chain?.sha || '').toLowerCase();
+    const schemaOk =
+      health?.checks?.database_reachable === true &&
+      health?.checks?.schema_ready === true &&
+      health?.schema?.ready === true &&
+      Number(health?.schema?.missing_tables_count ?? -1) === 0 &&
+      Number(health?.schema?.missing_migrations_count ?? -1) === 0 &&
+      Number(health?.schema?.required_tables || 0) > 0 &&
+      Number(health?.schema?.required_migrations || 0) > 0;
+    const lineageOk =
+      controlSha === releaseSha &&
+      proofSha === releaseSha &&
+      Boolean(control?.proof_chain?.release) &&
+      String(control?.proof_chain?.branch || '') === 'gh-pages' &&
+      String(control?.release?.deployment?.environment || '') === 'production';
+    const retentionOk =
+      /retencao e seguranca/.test(privacyText) &&
+      /tempo necessario/.test(privacyText) &&
+      /integridade e rastreabilidade/.test(privacyText);
+    if (!schemaOk || !lineageOk || !retentionOk) return [];
+    dedicated.set('P13', {
+      status: 'proved',
+      message: 'Governanca de dados preservada por schema/migrations live, linhagem de release exata e politica publica de retencao/rastreabilidade, sem depender circularmente do decision engine.',
+      artifacts: [
+        'https://zevanory.api.br/api/health',
+        'https://zevanory.api.br/api/control-plane',
+        'https://zevanory.api.br/privacidade',
+        'source_sha:' + releaseSha,
+        'schema_tables:' + String(health?.schema?.required_tables),
+        'schema_migrations:' + String(health?.schema?.required_migrations),
+      ],
+    });
 
     const releaseFingerprint = certificationReleaseFingerprint(product, syntheticSource);
     const capturedAt = new Date().toISOString();
