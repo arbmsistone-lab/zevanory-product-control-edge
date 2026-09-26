@@ -123,18 +123,6 @@ export function deriveCommercialRobotState(
     ? Date.now() - Date.parse(lastHeartbeatAt) <= 20 * 60 * 1000
     : false;
 
-  if (!operations?.available || !infraReady) {
-    return {
-      state: 'BLOCKED',
-      label: 'ROBÔ COMERCIAL: BLOQUEADO',
-      reason: 'Control Core, infraestrutura ou quorum não estão comprovadamente prontos.',
-      lastHeartbeatAt,
-      externalProspecting: false,
-      publishAdapterReady: false,
-      activeChannels: [],
-    };
-  }
-
   if (heartbeatFresh) {
     return {
       state: 'ACTIVE',
@@ -146,6 +134,18 @@ export function deriveCommercialRobotState(
       externalProspecting: true,
       publishAdapterReady,
       activeChannels,
+    };
+  }
+
+  if (!operations?.available || !infraReady) {
+    return {
+      state: 'BLOCKED',
+      label: 'ROBÔ COMERCIAL: BLOQUEADO',
+      reason: 'Sem heartbeat recente e sem infraestrutura/quorum comprovadamente prontos.',
+      lastHeartbeatAt,
+      externalProspecting: false,
+      publishAdapterReady: false,
+      activeChannels: [],
     };
   }
 
