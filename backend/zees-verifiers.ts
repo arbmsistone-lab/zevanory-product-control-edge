@@ -260,7 +260,75 @@ async function p06(ctx: ZeesVerifierContext) {
   return result('blocked', 'Nenhuma suíte de testes reproduzível foi encontrada para a release.', []);
 }
 
+async function exactZevanoryProtectedWorkflowProof(
+  ctx: ZeesVerifierContext,
+  config: { workflow: string; artifact: (sourceSha: string) => string; markers: string[]; message: string },
+): Promise<ZeesVerifierResult | null> {
+  if (ctx.product.slug !== 'zevanory') return null;
+  const sourceSha = String(ctx.sourceSha || ctx.sourceSystem?.sha || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) return null;
+  try {
+    const headers = {
+      accept: 'application/vnd.github+json',
+      'user-agent': 'ZEVANORY-Exact-Workflow-Certifier/2026.09',
+      'x-github-api-version': '2022-11-28',
+    };
+    const encodedWorkflow = encodeURIComponent(config.workflow);
+    const runsUrl = 'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/workflows/' + encodedWorkflow + '/runs?branch=gh-pages&event=push&status=success&per_page=10';
+    const runsResponse = await fetch(runsUrl, { headers, signal: AbortSignal.timeout(10_000) });
+    if (!runsResponse.ok) return null;
+    const payload = await runsResponse.json() as any;
+    const runs = Array.isArray(payload?.workflow_runs) ? payload.workflow_runs : [];
+    for (const run of runs) {
+      const runId = Number(run?.id || 0);
+      const runHeadSha = String(run?.head_sha || '').toLowerCase();
+      if (!runId || !/^[0-9a-f]{40}$/.test(runHeadSha)) continue;
+      if (String(run?.head_branch || '') !== 'gh-pages') continue;
+      if (String(run?.event || '') !== 'push' || String(run?.conclusion || '') !== 'success') continue;
+      if (String(run?.path || '') !== '.github/workflows/' + config.workflow) continue;
+
+      const workflowUrl = 'https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/' + runHeadSha + '/.github/workflows/' + config.workflow;
+      const workflowResponse = await fetch(workflowUrl, { headers: { 'user-agent': headers['user-agent'] }, signal: AbortSignal.timeout(10_000) });
+      if (!workflowResponse.ok) continue;
+      const workflow = await workflowResponse.text();
+      const requiredMarkers = [sourceSha, ...config.markers];
+      if (!requiredMarkers.every(marker => workflow.includes(marker))) continue;
+
+      const artifactsResponse = await fetch(
+        'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/runs/' + runId + '/artifacts?per_page=100',
+        { headers, signal: AbortSignal.timeout(10_000) },
+      );
+      if (!artifactsResponse.ok) continue;
+      const artifactsPayload = await artifactsResponse.json() as any;
+      const artifacts = Array.isArray(artifactsPayload?.artifacts) ? artifactsPayload.artifacts : [];
+      const expectedArtifact = config.artifact(sourceSha);
+      const artifact = artifacts.find((item: any) =>
+        String(item?.name || '') === expectedArtifact && item?.expired !== true && Number(item?.size_in_bytes || 0) > 0
+      );
+      if (!artifact) continue;
+
+      return result('proved', config.message, [
+        'source_sha:' + sourceSha,
+        'github_actions_run:' + runId,
+        String(run?.html_url || ''),
+        'workflow_head_sha:' + runHeadSha,
+        'artifact:' + expectedArtifact,
+        'artifact_id:' + String(artifact?.id || ''),
+      ]);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 async function p07(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryProtectedWorkflowProof(ctx, {
+    workflow: 'zevanory-p07-app-security.yml',
+    artifact: sourceSha => 'zevanory-p07-security-' + sourceSha.slice(0, 12),
+    markers: ['SAST=PASS', 'DAST=PASS', 'SCA=PASS', 'P07_SECURITY=PROVED', 'FALSE_GREEN=0'],
+    message: 'Seguranca de aplicacao comprovada por workflow protegido exact-release com threat model, SAST, DAST, SCA e contrato fail-closed.',
+  });
+  if (exactProof) return exactProof;
   const probe = await probeHttp(ctx.product.publicUrl);
   const sast = evidence(ctx, /SAST|static.*security/i);
   const dast = evidence(ctx, /DAST|dynamic.*security/i);
@@ -464,6 +532,13 @@ async function p11(ctx: ZeesVerifierContext) {
 }
 
 async function p12(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryProtectedWorkflowProof(ctx, {
+    workflow: 'zevanory-p12-observability-exact-release.yml',
+    artifact: sourceSha => 'zevanory-p12-observability-' + sourceSha.slice(0, 12),
+    markers: ['METRICS=PASS', 'TRACE_INSTRUMENTATION=PASS', 'SLO=PASS', 'INCIDENT_VISIBILITY=PASS', 'P12_OBSERVABILITY=PROVED', 'FALSE_GREEN=0'],
+    message: 'Observabilidade e operacao comprovadas por exact-release: metricas live, logs estruturados, correlacao/traces, SLO e visibilidade de incidentes.',
+  });
+  if (exactProof) return exactProof;
   const probe = await probeHttp(ctx.product.publicUrl);
   const metrics = evidence(ctx, /metric|metrica|métrica/i);
   const logs = evidence(ctx, /logs?/i);
@@ -575,6 +650,13 @@ async function p15(ctx: ZeesVerifierContext) {
 }
 
 async function p16(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryProtectedWorkflowProof(ctx, {
+    workflow: 'zevanory-p16-deterministic-exact-release.yml',
+    artifact: sourceSha => 'zevanory-p16-financial-' + sourceSha.slice(0, 12),
+    markers: ['SALE_GLOBALLY_ENABLED=false', 'FINANCIAL_E2E', 'P16_LIFECYCLE=PROVED', 'FALSE_GREEN=0'],
+    message: 'Lifecycle comercial comprovado em sandbox fail-closed no SHA exato: checkout, pagamento, webhook, persistencia/reconciliacao, entitlement e reembolso terminal, sem habilitar vendas globais.',
+  });
+  if (exactProof) return exactProof;
   const checkout = await probeHttp(ctx.product.checkoutUrl);
   const gates = Object.values(ctx.product.gates).every(Boolean);
   const payment = evidence(ctx, /payment|pagamento|webhook/i);
