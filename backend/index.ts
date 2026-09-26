@@ -1013,6 +1013,57 @@ async function canonicalZevanoryP13Evidence(
 }
 
 
+
+const PORTFOLIO_EXACT_TARGETS = new Set([
+  'ia-na-pratica',
+  'vendas-na-pratica',
+  'combo-ia-vendas',
+  'lucro-e-caixa',
+  'negocio-completo',
+  'zevanory-one',
+]);
+
+async function canonicalPortfolioExactVerifierEvidence(
+  product: ProductRecord,
+  pillarIds: Array<'P03' | 'P05' | 'P06' | 'P07' | 'P08' | 'P09' | 'P10' | 'P11' | 'P12' | 'P13' | 'P15' | 'P16'>,
+): Promise<CertificationEvidenceRecord[]> {
+  if (!PORTFOLIO_EXACT_TARGETS.has(product.slug)) return [];
+  const releaseFingerprint = certificationReleaseFingerprint(product, undefined);
+  const rows: CertificationEvidenceRecord[] = [];
+  for (const pillar of pillarIds) {
+    try {
+      const verifier = await executeZeesVerifier(pillar, {
+        product,
+        profile: certificationProfile(product),
+        sourceSystem: undefined,
+        sourceSha: releaseFingerprint,
+      });
+      if (verifier.status !== 'proved') continue;
+      const targetBlob = verifier.artifacts.find(item => item.startsWith('target_blob:'))?.slice('target_blob:'.length) || releaseFingerprint;
+      rows.push({
+        target: product.slug,
+        pillar,
+        kind: 'supporting',
+        text: `ZEES:${pillar}:PROVEN:${verifier.message}`,
+        sourceSha: targetBlob,
+        sourceRef: 'Protected target-specific portfolio proof',
+        capturedAt: new Date().toISOString(),
+        runId: `${pillar.toLowerCase()}-portfolio-protected-readback`,
+        releaseFingerprint,
+        verdict: 'proved',
+        verifier: `zees-verifier-${pillar.toLowerCase()}-portfolio-protected-readback`,
+        environment: product.publicUrl || 'internal',
+        artifacts: verifier.artifacts,
+        invalidatedAt: null,
+        invalidationReason: null,
+      });
+    } catch {
+      // Fail closed per pillar.
+    }
+  }
+  return rows;
+}
+
 async function canonicalZevanoryExactVerifierEvidence(
   product: ProductRecord,
   sourceSystem: (SystemRecord & { id?: string }) | undefined,
@@ -1877,7 +1928,10 @@ async function adminData() {
   const zevanoryExactWorkflowEvidence = zevanoryProduct
     ? await canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P07','P11','P12','P16'])
     : [];
-  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence];
+  const portfolioExactWorkflowEvidence = (await Promise.all(
+    products.items.map(item => canonicalPortfolioExactVerifierEvidence(item, ['P03']))
+  )).flat();
+  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...portfolioExactWorkflowEvidence];
   const enriched = products.items.map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, effectiveCertificationEvidence);

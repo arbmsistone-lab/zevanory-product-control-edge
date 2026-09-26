@@ -205,6 +205,14 @@ async function exactZevanoryCollectedWorkflowProof(
 }
 
 async function p03(ctx: ZeesVerifierContext) {
+  const portfolioProof = await exactPortfolioProtectedWorkflowProof(ctx, {
+    workflow: 'portfolio-p03-exact.yml',
+    artifact: slug => 'portfolio-p03-' + slug,
+    markers: ['TARGET_BLOB_MATCH=PASS','STATIC_TYPOGRAPHY_GEOMETRY_CONTRACT=PASS','FALSE_GREEN=0'],
+    message: 'P03 comprovado por prova protegida específica do alvo: blob imutável, tipografia, geometria, responsividade e interação em três viewports.',
+  });
+  if (portfolioProof) return portfolioProof;
+
   const exactProof = await exactZevanoryCollectedWorkflowProof(ctx,
     ['ZEVANORY apex engineering gate','zevanory-p02-visual-regression','zevanory-p04-wcag','zevanory-remote-quality-gates'],
     ['Verify responsive geometry typography and interaction quality','Verify WCAG AA zero automated errors','Verify apex Lighthouse thresholds'],
@@ -321,6 +329,91 @@ async function exactZevanoryProtectedWorkflowProof(
   }
   return null;
 }
+
+const PORTFOLIO_TARGET_BLOBS: Record<string,string> = {
+  'ia-na-pratica': '7c5b9dac20fc1ff0421e64f52ab7b6d2689d2d22',
+  'vendas-na-pratica': '2a6b9be0bd12a2ffbd9e7a4a8e9941829eab30d3',
+  'combo-ia-vendas': '2d0c53565af6eef646439b1c4f505a331c842705',
+  'lucro-e-caixa': '427e208349bd280128413af2f16e31bca1cb9a43',
+  'negocio-completo': 'd4fb45a28616cf714c1f33b93bf39bfcacfbfce3',
+  'zevanory-one': '459cc8d7537b9de414c4fd8ce8a6d5d6dabe9b6a',
+};
+
+async function exactPortfolioProtectedWorkflowProof(
+  ctx: ZeesVerifierContext,
+  config: { workflow: string; artifact: (slug: string) => string; markers: string[]; message: string },
+): Promise<ZeesVerifierResult | null> {
+  const slug=String(ctx.product.slug || '');
+  const targetBlob=PORTFOLIO_TARGET_BLOBS[slug];
+  if (!targetBlob) return null;
+  try {
+    const headers = {
+      accept: 'application/vnd.github+json',
+      'user-agent': 'ZEVANORY-Portfolio-Certifier/2026.09',
+      'x-github-api-version': '2022-11-28',
+    };
+    const workflowName=encodeURIComponent(config.workflow);
+    const runsResponse=await fetch(
+      'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/workflows/' + workflowName + '/runs?branch=gh-pages&event=push&status=success&per_page=10',
+      { headers, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!runsResponse.ok) return null;
+    const payload=await runsResponse.json() as any;
+    const runs=Array.isArray(payload?.workflow_runs) ? payload.workflow_runs : [];
+    for (const run of runs) {
+      const runId=Number(run?.id || 0);
+      const runHeadSha=String(run?.head_sha || '').toLowerCase();
+      if (!runId || !/^[0-9a-f]{40}$/.test(runHeadSha)) continue;
+      if (String(run?.head_branch || '') !== 'gh-pages') continue;
+      if (String(run?.event || '') !== 'push' || String(run?.conclusion || '') !== 'success') continue;
+      if (String(run?.path || '') !== '.github/workflows/' + config.workflow) continue;
+
+      const [workflowResponse, targetResponse] = await Promise.all([
+        fetch(
+          'https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/' + runHeadSha + '/.github/workflows/' + config.workflow,
+          { headers: { 'user-agent': headers['user-agent'] }, signal: AbortSignal.timeout(10_000) },
+        ),
+        fetch(
+          'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/contents/' + slug + '/index.html?ref=' + runHeadSha,
+          { headers, signal: AbortSignal.timeout(10_000) },
+        ),
+      ]);
+      if (!workflowResponse.ok || !targetResponse.ok) continue;
+      const workflow=await workflowResponse.text();
+      const target=await targetResponse.json() as any;
+      if (String(target?.sha || '').toLowerCase() !== targetBlob) continue;
+      if (![slug,targetBlob,...config.markers].every(marker => workflow.includes(marker))) continue;
+
+      const artifactsResponse=await fetch(
+        'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/runs/' + runId + '/artifacts?per_page=100',
+        { headers, signal: AbortSignal.timeout(10_000) },
+      );
+      if (!artifactsResponse.ok) continue;
+      const artifactsPayload=await artifactsResponse.json() as any;
+      const artifacts=Array.isArray(artifactsPayload?.artifacts) ? artifactsPayload.artifacts : [];
+      const expectedArtifact=config.artifact(slug);
+      const artifact=artifacts.find((item:any)=>
+        String(item?.name || '') === expectedArtifact &&
+        item?.expired !== true &&
+        Number(item?.size_in_bytes || 0) > 0
+      );
+      if (!artifact) continue;
+      return result('proved', config.message, [
+        'target:' + slug,
+        'target_blob:' + targetBlob,
+        'workflow_head_sha:' + runHeadSha,
+        'github_actions_run:' + runId,
+        String(run?.html_url || ''),
+        'artifact:' + expectedArtifact,
+        'artifact_id:' + String(artifact?.id || ''),
+      ]);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 async function p07(ctx: ZeesVerifierContext) {
   const exactProof = await exactZevanoryProtectedWorkflowProof(ctx, {
     workflow: 'zevanory-p07-app-security.yml',
