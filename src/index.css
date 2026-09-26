@@ -2787,7 +2787,7 @@ textarea:focus-visible {
 }
 
 .robotBadge small {
-  margin-top: 4px;
+  margin-top: 8px;
   color: var(--text-secondary);
   font-size: 12px;
   line-height: 16px;
