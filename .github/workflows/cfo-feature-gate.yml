@@ -1,0 +1,69 @@
+name: ZEVANORY CFO Feature Gate
+
+on:
+  push:
+    branches:
+      - feature/zevanory-cfo-v1
+    paths:
+      - 'src/**'
+      - 'backend/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'ZEVANORY_CFO.md'
+      - '.github/workflows/cfo-feature-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zevanory-cfo-feature-gate
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact feature SHA
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc --noEmit --noUnusedLocals false --noUnusedParameters false
+
+      - name: CFO contract
+        run: npm run test:cfo-contract
+
+      - name: CFO structural audit
+        run: npm run audit:cfo
+
+      - name: Preserve existing commercial contract
+        run: |
+          npm run audit:commercial
+          npm run test:commercial-contract
+
+      - name: Full build
+        env:
+          ZPC_BASE_PATH: /
+        run: npm run build
+
+      - name: Regression guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "ZEVANORY CFO" src/App.tsx
+          grep -q "zevanory-cfo" backend/index.ts
+          grep -q "FAIL_CLOSED" backend/cfo.ts
+          grep -q "READY_FOR_APPROVAL" backend/cfo.ts
+          grep -q "VENDA SEM GATE: BLOQUEADA" src/App.tsx
+          grep -q "zeesSealGrid" src/App.tsx
+          grep -q "ARBM ONE" CANONICAL_DEPLOYMENT.md
+          grep -q "ZEVANORY ONE" CANONICAL_DEPLOYMENT.md
