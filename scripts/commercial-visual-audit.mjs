@@ -110,7 +110,8 @@ for (const size of sizes) {
     body:JSON.stringify(bootstrap.globalTrust),
   }));
 
-  await page.goto(baseUrl, { waitUntil:'networkidle', timeout:60_000 });
+  await page.goto(baseUrl, { waitUntil:'domcontentloaded', timeout:30_000 });
+  await page.getByRole('button', { name:'Comercial', exact:true }).waitFor({ state:'visible', timeout:20_000 });
   await page.getByRole('button', { name:'Comercial', exact:true }).click();
   await page.getByText('ROBÔ COMERCIAL: ATIVO', { exact:true }).waitFor({ state:'visible', timeout:15_000 });
 
