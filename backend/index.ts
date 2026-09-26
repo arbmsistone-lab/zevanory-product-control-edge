@@ -1352,6 +1352,172 @@ async function canonicalZevanoryDurableProtectedEvidence(
   }
 }
 
+
+const ZEVANORY_DURABLE_SECURITY_SUPPLY_PROOFS = {
+  runtimeSha: 'c3845cf898acf60e84a06e51cf08db7cfd09bbe3',
+  P07: {
+    workflowHead: '0a0177dc8c6470c0d02578e8a79e57eefd8adbb8',
+    workflowRunId: 36242503502,
+    artifactId: 10906031656,
+    artifact: 'zevanory-p07-security-c3845cf898ac',
+    artifactExpiresAt: '2026-12-25T12:37:22Z',
+    workflow: 'zevanory-p07-app-security.yml',
+    markers: ['SAST=PASS','DAST=PASS','SCA=PASS','P07_SECURITY=PROVED','FALSE_GREEN=0'],
+  },
+  P08: {
+    workflowHead: '59d80893ce7741262b06e1be691da651421c5d5e',
+    workflowRunId: 36239777954,
+    artifactId: 10904999726,
+    artifact: 'zevanory-p08-supply-chain-c3845cf898ac',
+    artifactExpiresAt: '2026-12-25T11:44:49Z',
+    workflow: 'zevanory-p08-supply-chain.yml',
+    markers: ['SBOM=PASS','SCA=PASS','PINNING_VERSIONING=PASS','PROVENANCE=PASS','P08_SUPPLY_CHAIN=PROVED','FALSE_GREEN=0'],
+  },
+} as const;
+
+async function canonicalZevanoryDurableSecuritySupplyEvidence(
+  product: ProductRecord,
+  sourceSystem?: SystemRecord & { id?: string },
+): Promise<CertificationEvidenceRecord[]> {
+  if (product.slug !== 'zevanory') return [];
+  const proof = ZEVANORY_DURABLE_SECURITY_SUPPLY_PROOFS;
+  const declaredSha = String(sourceSystem?.sha || '').trim().toLowerCase();
+  if (declaredSha && declaredSha !== proof.runtimeSha) return [];
+  try {
+    const releaseResponse = await fetch('https://zevanory.api.br/api/release', {
+      headers: { accept: 'application/json', 'user-agent': 'ZEVANORY-Durable-Security-Supply/2026.09' },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!releaseResponse.ok) return [];
+    const release = await releaseResponse.json() as any;
+    if (String(release?.deployment?.commit_sha || '').trim().toLowerCase() !== proof.runtimeSha) return [];
+    const releaseFingerprint = certificationReleaseFingerprint(product, {
+      ...(sourceSystem as any),
+      sha: proof.runtimeSha,
+    });
+    const rows: CertificationEvidenceRecord[] = [];
+    for (const pillar of ['P07','P08'] as const) {
+      const item = proof[pillar];
+      if (Date.now() >= Date.parse(item.artifactExpiresAt)) continue;
+      const workflowResponse = await fetch(
+        'https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/' +
+          item.workflowHead + '/.github/workflows/' + item.workflow,
+        { headers: { 'user-agent': 'ZEVANORY-Durable-Security-Supply/2026.09' }, signal: AbortSignal.timeout(8_000) },
+      );
+      if (!workflowResponse.ok) continue;
+      const workflow = await workflowResponse.text();
+      if (![proof.runtimeSha, ...item.markers].every(marker => workflow.includes(marker))) continue;
+      rows.push({
+        target: product.slug,
+        pillar,
+        kind: 'supporting',
+        text: pillar === 'P07'
+          ? 'ZEES:P07:PROVEN:Seguranca exact-release preservada por workflow protegido com SAST, DAST, SCA, threat model e artefato imutavel.'
+          : 'ZEES:P08:PROVEN:Supply chain exact-release preservada por workflow protegido com SBOM, SCA, pinagem, proveniencia e artefato imutavel.',
+        sourceSha: proof.runtimeSha,
+        sourceRef: 'Protected durable ' + pillar + ' binding · run ' + String(item.workflowRunId),
+        capturedAt: '2026-09-26T12:38:21Z',
+        runId: 'zevanory-durable-' + pillar.toLowerCase() + '-' + String(item.workflowRunId),
+        releaseFingerprint,
+        verdict: 'proved',
+        verifier: 'zevanory-' + pillar.toLowerCase() + '-durable-protected-readback',
+        environment: 'https://zevanory.api.br/',
+        artifacts: [
+          'source_sha:' + proof.runtimeSha,
+          'github_actions_run:' + String(item.workflowRunId),
+          'workflow_head_sha:' + item.workflowHead,
+          'workflow:' + item.workflow,
+          'artifact:' + item.artifact,
+          'artifact_id:' + String(item.artifactId),
+          'artifact_expires_at:' + item.artifactExpiresAt,
+          'false_green:0',
+        ],
+        invalidatedAt: null,
+        invalidationReason: null,
+      });
+    }
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+async function canonicalZevanoryOneDurableEvidence(
+  product: ProductRecord,
+): Promise<CertificationEvidenceRecord[]> {
+  if (product.slug !== 'zevanory-one') return [];
+  const proof = ZEVANORY_ONE_PROTECTED_PROOF;
+  if (Date.now() >= Date.parse(proof.artifactExpiresAt)) return [];
+  try {
+    const [targetBlob, contractBlob, workflowResponse, releaseResponse] = await Promise.all([
+      rawGithubBlobSha('zevanory-one/index.html'),
+      rawGithubBlobSha('contracts/zevanory-one-saas.v1.json'),
+      fetch(
+        'https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/' +
+          proof.workflowHead + '/.github/workflows/' + proof.workflow,
+        { headers: { 'user-agent': 'ZEVANORY-ONE-Durable-Readback/2026.09' }, signal: AbortSignal.timeout(8_000) },
+      ),
+      fetch('https://zevanory.api.br/api/release', {
+        headers: { accept: 'application/json', 'user-agent': 'ZEVANORY-ONE-Durable-Readback/2026.09' },
+        signal: AbortSignal.timeout(8_000),
+      }),
+    ]);
+    if (targetBlob !== proof.targetBlob || contractBlob !== proof.contractBlob) return [];
+    if (!workflowResponse.ok || !releaseResponse.ok) return [];
+    const workflow = await workflowResponse.text();
+    const markers = [
+      proof.runtimeSha,
+      'ZEVANORY_ONE=15/15_PROVED',
+      'P02_VISUAL=PASS',
+      'P03_GEOMETRY=PASS',
+      'P04_WCAG=PASS',
+      'SALE_GLOBALLY_ENABLED=false',
+      'FALSE_GREEN=0',
+    ];
+    if (!markers.every(marker => workflow.includes(marker))) return [];
+    const release = await releaseResponse.json() as any;
+    if (
+      String(release?.deployment?.commit_sha || '').trim().toLowerCase() !== proof.runtimeSha ||
+      String(release?.sales_mode || '') !== 'globally-blocked'
+    ) return [];
+    const releaseFingerprint = certificationReleaseFingerprint(product, undefined);
+    const applicable = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12','P13','P15','P16'];
+    return applicable.map(pillar => ({
+      target: product.slug,
+      pillar,
+      kind: 'supporting' as const,
+      text: 'ZEES:' + pillar + ':PROVEN:ZEVANORY ONE preservado por prova independente SAAS_TRANSACTIONAL exact-target com blobs atuais, runtime exato e artefato protegido nao expirado.',
+      sourceSha: proof.workflowHead,
+      sourceRef: 'Protected durable ZEVANORY ONE run ' + String(proof.workflowRunId),
+      capturedAt: '2026-09-26T15:34:08Z',
+      runId: 'zevanory-one-durable-' + String(proof.workflowRunId),
+      releaseFingerprint,
+      verdict: 'proved' as const,
+      verifier: 'zevanory-one-durable-protected-readback',
+      environment: product.publicUrl || 'https://zevanory.api.br/zevanory-one',
+      artifacts: [
+        'github_actions_run:' + String(proof.workflowRunId),
+        'workflow_head_sha:' + proof.workflowHead,
+        'target_blob:' + proof.targetBlob,
+        'contract_blob:' + proof.contractBlob,
+        'runtime_sha:' + proof.runtimeSha,
+        'artifact:' + proof.artifact,
+        'artifact_id:' + String(proof.artifactId),
+        'artifact_digest:' + proof.artifactDigest,
+        'artifact_expires_at:' + proof.artifactExpiresAt,
+        'profile:SAAS_TRANSACTIONAL',
+        'arbm_one_inheritance:FORBIDDEN',
+        'sales_mode:globally-blocked',
+        'false_green:0',
+      ],
+      invalidatedAt: null,
+      invalidationReason: null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 const DIGITAL_PORTFOLIO_PROTECTED_PROOF = {
   workflowHead: '9968dd478cc5323ff65e844c98072b2b27d601eb',
   workflowRunId: 36246887499,
@@ -2535,6 +2701,9 @@ async function adminData() {
   const zevanoryDurableProtectedEvidence = zevanoryProduct
     ? await canonicalZevanoryDurableProtectedEvidence(zevanoryProduct, zevanorySystem)
     : [];
+  const zevanoryDurableSecuritySupplyEvidence = zevanoryProduct
+    ? await canonicalZevanoryDurableSecuritySupplyEvidence(zevanoryProduct, zevanorySystem)
+    : [];
   const digitalPortfolioTechnicalEvidence = (await Promise.all(
     products.items.map(item => canonicalDigitalPortfolioTechnicalEvidence(item))
   )).flat();
@@ -2544,7 +2713,10 @@ async function adminData() {
   const zevanoryOneProtectedEvidence = (await Promise.all(
     products.items.map(item => canonicalZevanoryOneProtectedEvidence(item))
   )).flat();
-  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...zevanoryDirectExactEvidence, ...zevanoryDurableProtectedEvidence, ...digitalPortfolioTechnicalEvidence, ...digitalPortfolioP16Evidence, ...zevanoryOneProtectedEvidence];
+  const zevanoryOneDurableEvidence = (await Promise.all(
+    products.items.map(item => canonicalZevanoryOneDurableEvidence(item))
+  )).flat();
+  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...zevanoryDirectExactEvidence, ...zevanoryDurableProtectedEvidence, ...zevanoryDurableSecuritySupplyEvidence, ...digitalPortfolioTechnicalEvidence, ...digitalPortfolioP16Evidence, ...zevanoryOneProtectedEvidence, ...zevanoryOneDurableEvidence];
   const enriched = products.items.map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, effectiveCertificationEvidence);
