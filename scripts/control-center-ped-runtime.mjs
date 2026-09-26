@@ -92,15 +92,17 @@ for(const size of sizes){
           const r=el.getBoundingClientRect(),s=getComputedStyle(el);
           return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';
         });
-        const horizontal=visible.map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),left:r.left,right:r.right};})
+        const horizontal=visible.map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),left:r.left,right:r.right,top:r.top,bottom:r.bottom};})
           .filter(x=>x.left<-1||x.right>innerWidth+1).slice(0,20);
+        const vertical=visible.map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),top:r.top,bottom:r.bottom,height:r.height};})
+          .filter(x=>x.top<-1||x.bottom>innerHeight+1).slice(0,20);
         const textDebt=visible.filter(el=>(el.textContent||'').trim() && el.children.length===0).map(el=>({tag:el.tagName,cls:String(el.className),font:parseFloat(getComputedStyle(el).fontSize)}))
           .filter(x=>!allowedFonts.includes(x.font)).slice(0,30);
         const direct=main?[...main.children].filter(el=>getComputedStyle(el).display!=='none').map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),top:r.top,bottom:r.bottom,left:r.left,right:r.right};}):[];
         return {
           docScrollX:Math.max(de.scrollWidth,body.scrollWidth)-innerWidth,
           docScrollY:Math.max(de.scrollHeight,body.scrollHeight)-innerHeight,
-          horizontal,textDebt,direct,
+          horizontal,vertical,textDebt,direct,
           theme:de.dataset.theme||'',
           bg:rootStyle.getPropertyValue('--bg-primary').trim(),
           mainClass:String(main?.className||''),
@@ -110,6 +112,7 @@ for(const size of sizes){
       if(dom.docScrollX>1) fail('GLOBAL_HORIZONTAL_SCROLL',String(dom.docScrollX));
       if(dom.docScrollY>1) fail('GLOBAL_VERTICAL_SCROLL',String(dom.docScrollY));
       if(dom.horizontal.length) fail('HORIZONTAL_CLIP',JSON.stringify(dom.horizontal));
+      if(dom.vertical.length) fail('VERTICAL_CLIP',JSON.stringify(dom.vertical));
       if(dom.textDebt.length) fail('RUNTIME_FONT_SCALE',JSON.stringify(dom.textDebt));
       if(dom.theme!==theme) fail('THEME_RUNTIME',dom.theme);
       if(!dom.mainClass.includes('shell-'+key)) fail('VIEW_CLASS',dom.mainClass);
