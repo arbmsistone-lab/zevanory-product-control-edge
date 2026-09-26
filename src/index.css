@@ -153,7 +153,7 @@ a {
   text-decoration: none;
 }
 
-.primary: disabled,
+.primary:disabled,
 .secondary:disabled,
 .ghost:disabled {
   cursor: not-allowed;
@@ -178,7 +178,7 @@ a {
   white-space: nowrap;
 }
 
-.providerChip: hover,
+.providerChip:hover,
 .providerChip:focus-visible {
   border-color: var(--palette-3c6088);
   background: var(--palette-0d2138);
@@ -345,7 +345,7 @@ a {
   font-weight: 800;
 }
 
-.pagination .filter: disabled {
+.pagination .filter:disabled {
   cursor: not-allowed;
   opacity: .35;
 }
@@ -610,7 +610,7 @@ a {
   gap: 12px;
 }
 
-.opsGrid .panel: first-child {
+.opsGrid .panel:first-child {
   grid-column: 1 / -1;
 }
 
@@ -679,7 +679,7 @@ a {
   margin: 12px 0 8px;
 }
 
-.scoreline > div: first-child {
+.scoreline > div:first-child {
   display: flex;
   justify-content: space-between;
   color: var(--palette-8fa2ba);
@@ -847,7 +847,7 @@ a {
   padding: 8px 12px;
 }
 
-.formGrid input: focus,
+.formGrid input:focus,
 .formGrid textarea:focus,
 .formGrid select:focus {
   border-color: var(--palette-6e9bd0);
@@ -1022,7 +1022,7 @@ a {
   outline: none;
 }
 
-.pinInput: focus {
+.pinInput:focus {
   border-color: var(--palette-8db8ec);
   box-shadow: 0 0 0 3px var(--palette-alpha-04);
 }
@@ -1249,7 +1249,7 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .opsGrid .panel: first-child,
+  .opsGrid .panel:first-child,
   .span2 {
     grid-column: auto;
   }
@@ -1552,7 +1552,7 @@ a {
   outline: 2px solid var(--palette-9cc8ff);
   outline-offset: 4px;
 }
-button: disabled { cursor: not-allowed; opacity: .58; }
+button:disabled { cursor: not-allowed; opacity: .58; }
 .modalBackdrop { overscroll-behavior: contain; }
 
 .filter,
@@ -1944,7 +1944,7 @@ button: disabled { cursor: not-allowed; opacity: .58; }
     overflow: hidden;
     padding: 8px 12px;
   }
-  .shell-operations .opsGrid .panel: first-child {
+  .shell-operations .opsGrid .panel:first-child {
     padding: 8px 12px;
   }
   .shell-operations .panelhead { margin-bottom: 4px; }
@@ -2123,7 +2123,7 @@ button: disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .sourcePanel .scoreline {
     margin: 4px 0;
   }
-  .shell-governance .sourcePanel .scoreline > div: first-child {
+  .shell-governance .sourcePanel .scoreline > div:first-child {
     font-size: 12px;
   }
   .shell-governance .sourcePanel .bar {
@@ -2196,7 +2196,7 @@ button: disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .sourcePanel .systems{height: calc(100% - 72px);grid-template-columns: repeat(2,minmax(0,1fr))!important;gap: 8px!important}
   .shell-governance .sourcePanel .system{min-height: 0!important;overflow: hidden!important;padding: 8px!important}
   .shell-governance .sourcePanel .systemtop h3{font-size: 12px!important}.shell-governance .sourcePanel .system p{font-size: 12px!important}
-  .shell-governance .sourcePanel .systemmeta,.shell-governance .sourcePanel .evidence span,.shell-governance .sourcePanel .scoreline>div: first-child{font-size: 12px!important}
+  .shell-governance .sourcePanel .systemmeta,.shell-governance .sourcePanel .evidence span,.shell-governance .sourcePanel .scoreline>div:first-child{font-size: 12px!important}
 }
 
 /* ZPC READABILITY FLOOR - no desktop operational text below 10px */
@@ -2240,7 +2240,7 @@ button: disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .sourcePanel .system p,
   .shell-governance .sourcePanel .systemmeta,
   .shell-governance .sourcePanel .evidence span,
-  .shell-governance .sourcePanel .scoreline>div: first-child {font-size: 12px!important}
+  .shell-governance .sourcePanel .scoreline>div:first-child {font-size: 12px!important}
   .shell-overview .channelHead,
   .shell-products .productFacts small,
   .shell-products .auditHeader small,
@@ -2396,7 +2396,7 @@ button: disabled { cursor: not-allowed; opacity: .58; }
   .shell-operations .tab{min-height: 32px!important;padding: 4px 8px!important}
   .shell-operations .opsGrid{gap: 4px!important}
   .shell-operations .opsGrid>.panel{padding: 8px 8px!important}
-  .shell-operations .opsGrid .panel: first-child{padding: 4px 8px!important}
+  .shell-operations .opsGrid .panel:first-child{padding: 4px 8px!important}
   .shell-operations .panelhead{margin-bottom: 4px!important}
   .shell-operations .operationSummary span{padding: 4px 8px!important}
   .shell-operations .feed{gap: 4px!important}
@@ -2764,7 +2764,7 @@ body {
   background: radial-gradient(circle at 16% 0%, var(--palette-e9f2fc) 0, var(--bg-primary) 40%, var(--palette-f8fafd) 100%);
 }
 
-button: focus-visible,
+button:focus-visible,
 a:focus-visible,
 select:focus-visible,
 input:focus-visible,
@@ -2804,7 +2804,7 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.controlCenterTabs .tab: hover {
+.controlCenterTabs .tab:hover {
   background: var(--surface-elevated);
   color: var(--text-primary);
 }
@@ -2941,7 +2941,7 @@ textarea:focus-visible {
   letter-spacing: -0.02em;
 }
 
-.commercialHeader > div > p: last-child {
+.commercialHeader > div > p:last-child {
   margin: 8px 0 0;
   color: var(--text-secondary);
   font-size: 16px;
@@ -3304,7 +3304,7 @@ textarea:focus-visible {
   color: var(--status-error);
 }
 
-.approvalActions button: disabled {
+.approvalActions button:disabled {
   cursor: not-allowed;
   opacity: 0.56;
 }
@@ -3451,7 +3451,7 @@ textarea:focus-visible {
     line-height: 24px;
   }
 
-  .commercialHeader > div > p: last-child {
+  .commercialHeader > div > p:last-child {
     font-size: 14px;
     line-height: 24px;
   }
@@ -3489,7 +3489,7 @@ textarea:focus-visible {
     line-height: 24px;
   }
 
-  .shell-commercial .commercialHeader > div: first-child > p:last-child {
+  .shell-commercial .commercialHeader > div:first-child > p:last-child {
     display: none;
   }
 
@@ -3687,7 +3687,7 @@ textarea:focus-visible {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.cfoReceivableRow > span: first-child,
+.cfoReceivableRow > span:first-child,
 .cfoReceivableRow > span:nth-child(2) {
   display: grid;
   gap: 8px;
@@ -3729,4 +3729,68 @@ input:focus-visible,
 textarea:focus-visible {
   outline: 4px solid var(--focus-ring);
   outline-offset: 4px;
+}
+
+
+/* PED-Versal complete Light Mode bridge for legacy Control Center surfaces */
+:root[data-theme='light'] .overviewCard,
+:root[data-theme='light'] .channelRow:not(.channelHead),
+:root[data-theme='light'] .executiveList > div,
+:root[data-theme='light'] .operationSummary span,
+:root[data-theme='light'] .system,
+:root[data-theme='light'] .auditPanel,
+:root[data-theme='light'] .certPanel,
+:root[data-theme='light'] .auditGrid span,
+:root[data-theme='light'] .gateBox,
+:root[data-theme='light'] .auditEditor,
+:root[data-theme='light'] .certMiniGrid span,
+:root[data-theme='light'] .standardStrip span,
+:root[data-theme='light'] .authDiagnostic,
+:root[data-theme='light'] .commercialRow,
+:root[data-theme='light'] .approvalCard,
+:root[data-theme='light'] .cfoAdapter,
+:root[data-theme='light'] .cfoAction,
+:root[data-theme='light'] .cfoReceivableRow:not(.head) {
+  background: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] .overviewCard span,
+:root[data-theme='light'] .overviewCard small,
+:root[data-theme='light'] .channelRow span,
+:root[data-theme='light'] .executiveList span,
+:root[data-theme='light'] .operationSummary span,
+:root[data-theme='light'] .system p,
+:root[data-theme='light'] .auditPanel p,
+:root[data-theme='light'] .certPanel p,
+:root[data-theme='light'] .auditGrid small,
+:root[data-theme='light'] .standardStrip span,
+:root[data-theme='light'] .authDiagnostic,
+:root[data-theme='light'] .commercialRow p,
+:root[data-theme='light'] .commercialMeta,
+:root[data-theme='light'] .approvalCard p,
+:root[data-theme='light'] .approvalCard small,
+:root[data-theme='light'] .cfoAdapter small,
+:root[data-theme='light'] .cfoAdapter p,
+:root[data-theme='light'] .cfoAction small,
+:root[data-theme='light'] .cfoAction p,
+:root[data-theme='light'] .cfoReceivableRow small {
+  color: var(--text-secondary);
+}
+
+:root[data-theme='light'] .overviewCard strong,
+:root[data-theme='light'] .channelRow b,
+:root[data-theme='light'] .executiveList b,
+:root[data-theme='light'] .operationSummary b,
+:root[data-theme='light'] .system h3,
+:root[data-theme='light'] .auditGrid b,
+:root[data-theme='light'] .standardStrip b,
+:root[data-theme='light'] .commercialRow strong,
+:root[data-theme='light'] .approvalCard h3,
+:root[data-theme='light'] .cfoAdapter b,
+:root[data-theme='light'] .cfoAction b,
+:root[data-theme='light'] .cfoReceivableRow b,
+:root[data-theme='light'] .cfoReceivableRow strong {
+  color: var(--text-primary);
 }
