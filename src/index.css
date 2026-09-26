@@ -4097,3 +4097,13 @@ main.shell > .evidenceStack > * {
   main.shell .overviewGrid .channelRow { grid-template-columns: repeat(2,minmax(0,1fr)); }
   main.shell .overviewGrid .channelRow > :nth-child(n+3) { display: block; }
 }
+
+/* Reserve intrinsic header, KPI and proof heights; only the activity grid flexes. */
+main.shell-commercial > .commercialWorkspace > .commercialHeader,
+main.shell-commercial > .commercialWorkspace > .commercialMetrics,
+main.shell-commercial > .commercialWorkspace > .commercialProofStrip {
+  flex: 0 0 auto;
+}
+main.shell-commercial > .commercialWorkspace > .commercialDashboardGrid {
+  flex: 1 1 0;
+}
