@@ -423,11 +423,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('zpc_theme', theme);
-  }, [theme]);
-
-  useEffect(() => {
     if (authState !== 'ready') return;
     const timer = window.setInterval(() => { void loadGlobalTrustLive(); }, 30000);
     return () => window.clearInterval(timer);
