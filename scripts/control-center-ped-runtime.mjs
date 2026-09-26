@@ -143,8 +143,13 @@ for(const size of sizes){
         };
         const ratio=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
         const tokenBase=()=>{
-          const raw=getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim();
-          return parseColor(raw)||{rgb:[255,255,255],a:1};
+          const root=getComputedStyle(document.documentElement);
+          const raw=root.getPropertyValue('--bg-primary').trim();
+          const probe=document.createElement('span');
+          probe.style.position='fixed'; probe.style.pointerEvents='none';
+          probe.style.backgroundColor=raw; document.body.appendChild(probe);
+          const resolved=getComputedStyle(probe).backgroundColor; probe.remove();
+          return parseColor(resolved)||parseColor(raw)||{rgb:[255,255,255],a:1};
         };
         const gradientStops=el=>{
           const image=getComputedStyle(el).backgroundImage;
