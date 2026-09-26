@@ -748,9 +748,9 @@ function App() {
         <>
           <section className='metrics'>
             <div className='metric'><span>Produtos cadastrados</span><strong>{summary.total}</strong></div>
-            <div className='metric'><span>Certificados integralmente</span><strong>{summary.certified}</strong></div>
+            <div className='metric'><span>Produtos certificados</span><strong>{summary.certified}</strong></div>
             <div className='metric'><span>Em certificação</span><strong>{summary.inCertification}</strong></div>
-            <div className='metric'><span>Bloqueados ZEES</span><strong>{summary.zeesBlocked}</strong></div>
+            <div className='metric'><span>Pendências ZEES próprias</span><strong>{summary.zeesBlocked}</strong></div>
           </section>
 
           <section className='toolbar'>
@@ -791,7 +791,7 @@ function App() {
                 </div>
                 <div className='certPanel'>
                   <div className='auditHeader'>
-                    <div><small>ZEES-16 · CERTIFICAÇÃO DE ENGENHARIA</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
+                    <div><small>ZEES-16 · CERTIFICAÇÃO ESPECÍFICA DO ALVO</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
                     <b className={product.certification.ready ? 'certRatio ready' : 'certRatio'}>{product.certification.summary.proved}/{product.certification.summary.applicable}</b>
                   </div>
                   <div className='zeesSealGrid' aria-label='16 selos ZEES'>
