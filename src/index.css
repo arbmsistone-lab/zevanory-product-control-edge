@@ -2544,3 +2544,786 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .pillarCard > p,
   .shell-governance .pillarBlocker { font-size: 9px; }
 }
+
+
+/* ==========================================================================
+   PED-VERSAL V1.0 MATRIZ — COMMERCIAL CONTROL CENTER
+   8pt grid, semantic tokens, AAA-oriented contrast, page-scroll-free shells.
+   ========================================================================== */
+
+:root,
+:root[data-theme='dark'] {
+  --bg-primary: #050912;
+  --bg-secondary: #0B1220;
+  --surface: #111C2D;
+  --surface-elevated: #162338;
+  --text-primary: #F7FAFF;
+  --text-secondary: #C5D1E1;
+  --border: #39506D;
+  --action-primary: #8EC5FF;
+  --action-primary-text: #06111F;
+  --status-success: #78E3B5;
+  --status-error: #FF9B9B;
+  --status-warning: #FFD37A;
+  --status-info: #9CC9FF;
+  --focus-ring: #B9DAFF;
+}
+
+:root[data-theme='light'] {
+  --bg-primary: #F8FAFD;
+  --bg-secondary: #EEF3F9;
+  --surface: #FFFFFF;
+  --surface-elevated: #E8EEF6;
+  --text-primary: #0A1423;
+  --text-secondary: #263850;
+  --border: #526984;
+  --action-primary: #0A4A85;
+  --action-primary-text: #FFFFFF;
+  --status-success: #0B6444;
+  --status-error: #9F1D1D;
+  --status-warning: #6E4A00;
+  --status-info: #0B4D8C;
+  --focus-ring: #064F91;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+:root[data-theme='dark'] body {
+  background:
+    radial-gradient(circle at 16% 0%, #10233d 0, var(--bg-primary) 36%, #03070D 100%);
+}
+
+:root[data-theme='light'] body {
+  background:
+    radial-gradient(circle at 16% 0%, #E9F2FC 0, var(--bg-primary) 40%, #F8FAFD 100%);
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.themeToggle {
+  min-height: 40px;
+}
+
+.areaSelectWrap {
+  display: none;
+}
+
+.controlCenterTabs {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 0;
+  margin: 8px 0 16px;
+}
+
+.controlCenterTabs .tab {
+  min-width: 0;
+  min-height: 48px;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  padding: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.controlCenterTabs .tab:hover {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.controlCenterTabs .tab.active {
+  border: 2px solid var(--action-primary);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.shell-commercial,
+.shell-creatives,
+.shell-approvals,
+.shell-publications,
+.shell-prospecting,
+.shell-crm,
+.shell-support,
+.shell-finance,
+.shell-evidence {
+  display: flex;
+  flex-direction: column;
+  width: min(1440px, 100%);
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: 16px 24px;
+}
+
+.shell-commercial > .topbar,
+.shell-creatives > .topbar,
+.shell-approvals > .topbar,
+.shell-publications > .topbar,
+.shell-prospecting > .topbar,
+.shell-crm > .topbar,
+.shell-support > .topbar,
+.shell-finance > .topbar,
+.shell-evidence > .topbar,
+.shell-commercial > .policybar,
+.shell-creatives > .policybar,
+.shell-approvals > .policybar,
+.shell-publications > .policybar,
+.shell-prospecting > .policybar,
+.shell-crm > .policybar,
+.shell-support > .policybar,
+.shell-finance > .policybar,
+.shell-evidence > .policybar,
+.shell-commercial > .trustStrip,
+.shell-creatives > .trustStrip,
+.shell-approvals > .trustStrip,
+.shell-publications > .trustStrip,
+.shell-prospecting > .trustStrip,
+.shell-crm > .trustStrip,
+.shell-support > .trustStrip,
+.shell-finance > .trustStrip,
+.shell-evidence > .trustStrip,
+.shell-commercial > .controlCenterTabs,
+.shell-creatives > .controlCenterTabs,
+.shell-approvals > .controlCenterTabs,
+.shell-publications > .controlCenterTabs,
+.shell-prospecting > .controlCenterTabs,
+.shell-crm > .controlCenterTabs,
+.shell-support > .controlCenterTabs,
+.shell-finance > .controlCenterTabs,
+.shell-evidence > .controlCenterTabs,
+.shell-commercial > .globalError,
+.shell-creatives > .globalError,
+.shell-approvals > .globalError,
+.shell-publications > .globalError,
+.shell-prospecting > .globalError,
+.shell-crm > .globalError,
+.shell-support > .globalError,
+.shell-finance > .globalError,
+.shell-evidence > .globalError {
+  flex: 0 0 auto;
+}
+
+.commercialWorkspace {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.commercialHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
+  gap: 16px;
+  align-items: center;
+}
+
+.commercialHeader h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: -0.02em;
+}
+
+.commercialHeader > div > p:last-child {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.robotBadge {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 64px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: 16px;
+}
+
+.robotBadge.active {
+  border-color: var(--status-success);
+}
+
+.robotBadge.standby {
+  border-color: var(--status-warning);
+}
+
+.robotBadge.blocked {
+  border-color: var(--status-error);
+}
+
+.robotBadge b,
+.robotBadge small {
+  display: block;
+}
+
+.robotBadge b {
+  font-size: 16px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.robotBadge small {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.commercialMetrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.commercialMetrics article {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  min-height: 104px;
+  align-content: start;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 16px;
+}
+
+.commercialMetrics article > svg {
+  color: var(--status-info);
+}
+
+.commercialMetrics span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}
+
+.commercialMetrics strong {
+  grid-column: 1 / -1;
+  color: var(--text-primary);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.commercialDashboardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 16px;
+}
+
+.commercialPanel {
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 16px;
+}
+
+.commercialDashboardGrid .commercialPanel {
+  display: flex;
+  flex-direction: column;
+}
+
+.commercialPanelTitle {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.commercialPanelTitle b,
+.commercialPanelTitle small {
+  display: block;
+}
+
+.commercialPanelTitle b {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.commercialPanelTitle small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.commercialList {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 8px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.commercialDashboardGrid .commercialList {
+  flex: 1 1 auto;
+}
+
+.commercialListTall {
+  max-height: calc(100dvh - 368px);
+}
+
+.commercialRow {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  padding: 16px;
+}
+
+.commercialRowMain {
+  min-width: 0;
+}
+
+.commercialTitleLine {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.commercialTitleLine strong {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.commercialRow p {
+  margin: 8px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.commercialMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.commercialMeta span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.commercialState {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+}
+
+.commercialState.ok {
+  border-color: var(--status-success);
+  color: var(--status-success);
+}
+
+.commercialState.bad {
+  border-color: var(--status-error);
+  color: var(--status-error);
+}
+
+.commercialState.warn {
+  border-color: var(--status-warning);
+  color: var(--status-warning);
+}
+
+.commercialState.neutral {
+  border-color: var(--status-info);
+  color: var(--status-info);
+}
+
+.commercialValue {
+  flex: 0 0 auto;
+  color: var(--status-success);
+  font-size: 16px;
+  line-height: 24px;
+  white-space: nowrap;
+}
+
+.commercialProofStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.commercialProofStrip span {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 64px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.commercialProofStrip b {
+  grid-column: 2;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.commercialEmpty {
+  display: grid;
+  place-items: center;
+  min-height: 96px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  padding: 16px;
+  font-size: 14px;
+  line-height: 24px;
+  text-align: center;
+}
+
+.approvalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  max-height: calc(100dvh - 368px);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.approvalCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  padding: 16px;
+}
+
+.approvalCard small {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.approvalCard h3 {
+  margin: 16px 0 8px;
+  color: var(--text-primary);
+  font-size: 21px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.approvalCard p {
+  margin: 0 0 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.approvalActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
+}
+
+.approvalActions button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.approveBtn {
+  border: 1px solid var(--status-success);
+  color: var(--status-success);
+}
+
+.changeBtn {
+  border: 1px solid var(--status-warning);
+  color: var(--status-warning);
+}
+
+.rejectBtn {
+  border: 1px solid var(--status-error);
+  color: var(--status-error);
+}
+
+.approvalActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.overviewHeroActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Light theme integration for existing shared components. */
+:root[data-theme='light'] .metric,
+:root[data-theme='light'] .panel,
+:root[data-theme='light'] .productCard,
+:root[data-theme='light'] .system,
+:root[data-theme='light'] .policybar span,
+:root[data-theme='light'] .trustStrip,
+:root[data-theme='light'] .adminChip,
+:root[data-theme='light'] .secondary,
+:root[data-theme='light'] .filter,
+:root[data-theme='light'] .overviewCard,
+:root[data-theme='light'] .feeditem,
+:root[data-theme='light'] .commercialPanel {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] .subtitle,
+:root[data-theme='light'] .metric span,
+:root[data-theme='light'] .policybar span,
+:root[data-theme='light'] .trustStrip small,
+:root[data-theme='light'] .adminChip,
+:root[data-theme='light'] .secondary,
+:root[data-theme='light'] .productDescription,
+:root[data-theme='light'] .feeditem p,
+:root[data-theme='light'] .empty {
+  color: var(--text-secondary);
+}
+
+:root[data-theme='light'] .trustStrip b,
+:root[data-theme='light'] .trustStrip strong,
+:root[data-theme='light'] .topbar h1,
+:root[data-theme='light'] .panel h2,
+:root[data-theme='light'] .productCard h2 {
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] .primary {
+  background: var(--action-primary);
+  color: var(--action-primary-text);
+}
+
+/* Tablet — replace the 11-tab rail with one compact selector. */
+@media (max-width: 960px) {
+  .controlCenterTabs {
+    display: none;
+  }
+
+  .areaSelectWrap {
+    display: grid;
+    gap: 8px;
+    margin: 8px 0 16px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .areaSelectWrap select {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    padding: 8px 16px;
+  }
+
+  .commercialHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .commercialMetrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .commercialDashboardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .commercialProofStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approvalGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile 375px — one-dimensional scan, no horizontal overflow. */
+@media (max-width: 560px) {
+  .shell-commercial,
+  .shell-creatives,
+  .shell-approvals,
+  .shell-publications,
+  .shell-prospecting,
+  .shell-crm,
+  .shell-support,
+  .shell-finance,
+  .shell-evidence {
+    padding: 8px;
+  }
+
+  .topbar {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .topbar h1 {
+    font-size: 28px;
+    line-height: 32px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    line-height: 24px;
+  }
+
+  .commercialWorkspace {
+    gap: 8px;
+  }
+
+  .commercialHeader {
+    gap: 8px;
+  }
+
+  .commercialHeader h2 {
+    font-size: 21px;
+    line-height: 24px;
+  }
+
+  .commercialHeader > div > p:last-child {
+    font-size: 14px;
+    line-height: 24px;
+  }
+
+  .robotBadge {
+    min-height: 56px;
+    padding: 8px;
+  }
+
+  .commercialMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .commercialMetrics article {
+    min-height: 88px;
+    padding: 8px;
+  }
+
+  .commercialMetrics strong {
+    font-size: 21px;
+    line-height: 24px;
+  }
+
+  .commercialDashboardGrid,
+  .commercialProofStrip,
+  .approvalGrid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .commercialPanel {
+    padding: 8px;
+  }
+
+  .commercialPanelTitle {
+    margin-bottom: 8px;
+  }
+
+  .commercialRow {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .commercialValue {
+    white-space: normal;
+  }
+
+  .approvalCard {
+    padding: 8px;
+  }
+
+  .approvalActions {
+    grid-template-columns: 1fr;
+  }
+
+  .commercialListTall,
+  .approvalGrid {
+    max-height: calc(100dvh - 336px);
+  }
+
+  .policybar,
+  .trustStrip {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
