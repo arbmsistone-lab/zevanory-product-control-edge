@@ -211,7 +211,79 @@ async function p07(ctx: ZeesVerifierContext) {
   return result('blocked', 'Segurança de aplicação não possui prova técnica suficiente.', [...liveArtifacts(probe), `security_headers:${probe.securityHeaders.length}`]);
 }
 
+async function exactZevanoryP08SupplyChainProof(ctx: ZeesVerifierContext): Promise<ZeesVerifierResult | null> {
+  if (ctx.product.slug !== 'zevanory') return null;
+  const sourceSha = String(ctx.sourceSha || ctx.sourceSystem?.sha || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) return null;
+  try {
+    const headers = {
+      accept: 'application/vnd.github+json',
+      'user-agent': 'ZEVANORY-P08-Certifier/2026.09',
+      'x-github-api-version': '2022-11-28',
+    };
+    const runsUrl = 'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/workflows/zevanory-p08-supply-chain.yml/runs?branch=gh-pages&event=push&status=success&per_page=10';
+    const runsResponse = await fetch(runsUrl, { headers, signal: AbortSignal.timeout(10_000) });
+    if (!runsResponse.ok) return null;
+    const runsPayload = await runsResponse.json() as any;
+    const runs = Array.isArray(runsPayload?.workflow_runs) ? runsPayload.workflow_runs : [];
+    for (const run of runs) {
+      const runId = Number(run?.id || 0);
+      const runHeadSha = String(run?.head_sha || '').toLowerCase();
+      if (!runId || !/^[0-9a-f]{40}$/.test(runHeadSha)) continue;
+      if (String(run?.head_branch || '') !== 'gh-pages') continue;
+      if (String(run?.event || '') !== 'push' || String(run?.conclusion || '') !== 'success') continue;
+      if (String(run?.path || '') !== '.github/workflows/zevanory-p08-supply-chain.yml') continue;
+
+      const workflowUrl = `https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/${runHeadSha}/.github/workflows/zevanory-p08-supply-chain.yml`;
+      const workflowResponse = await fetch(workflowUrl, {
+        headers: { 'user-agent': headers['user-agent'] },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!workflowResponse.ok) continue;
+      const workflow = await workflowResponse.text();
+      const workflowContract = [
+        sourceSha,
+        'CycloneDX',
+        'fail_closed_manifest_requires_ecosystem_sca',
+        'PINNING_VERSIONING',
+        'PROVENANCE',
+        'FALSE_GREEN=0',
+      ];
+      if (!workflowContract.every(marker => workflow.includes(marker))) continue;
+
+      const artifactsResponse = await fetch(
+        `https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/runs/${runId}/artifacts?per_page=100`,
+        { headers, signal: AbortSignal.timeout(10_000) },
+      );
+      if (!artifactsResponse.ok) continue;
+      const artifactsPayload = await artifactsResponse.json() as any;
+      const artifacts = Array.isArray(artifactsPayload?.artifacts) ? artifactsPayload.artifacts : [];
+      const expectedArtifact = `zevanory-p08-supply-chain-${sourceSha.slice(0, 12)}`;
+      const artifact = artifacts.find((item: any) =>
+        String(item?.name || '') === expectedArtifact &&
+        item?.expired !== true &&
+        Number(item?.size_in_bytes || 0) > 0
+      );
+      if (!artifact) continue;
+
+      return result('proved', 'P08 comprovado por execução pós-merge no gh-pages protegido, com SBOM CycloneDX, SCA fail-closed, pinagem e proveniência vinculados ao SHA exato da release.', [
+        `source_sha:${sourceSha}`,
+        `github_actions_run:${runId}`,
+        String(run?.html_url || ''),
+        `workflow_head_sha:${runHeadSha}`,
+        `artifact:${expectedArtifact}`,
+        `artifact_id:${String(artifact?.id || '')}`,
+      ]);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 async function p08(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryP08SupplyChainProof(ctx);
+  if (exactProof) return exactProof;
   const sbom = evidence(ctx, /SBOM|cyclonedx|spdx/i);
   const sca = evidence(ctx, /SCA|dependabot|dependency scan|supply chain/i);
   const provenance = evidence(ctx, /provenance|proveniencia|proveniência|pinning|pinagem|signed artifact|attestation/i);
