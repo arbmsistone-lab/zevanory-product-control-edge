@@ -836,6 +836,55 @@ async function invalidatePriorRunEvidence(targetSlug: string, releaseFingerprint
   return updates.length;
 }
 
+async function canonicalZevanoryEvidence(
+  product: ProductRecord,
+  sourceSystem?: SystemRecord & { id?: string },
+): Promise<CertificationEvidenceRecord[]> {
+  if (product.slug !== 'zevanory' || !sourceSystem?.sha) return [];
+  try {
+    const response = await fetch('https://zevanory.api.br/api/core/v1/snapshot', {
+      headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Product-Certification/2026.09' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) return [];
+    const snapshot = await response.json() as any;
+    const releaseSha = String(snapshot?.release_sha || '');
+    if (!releaseSha || releaseSha !== sourceSystem.sha) return [];
+    const counts = snapshot?.zees16?.counts || {};
+    if (Number(counts.proven || 0) !== 16 || Number(counts.partial || 0) !== 0 || Number(counts.blocked || 0) !== 0) return [];
+    const pillars = Array.isArray(snapshot?.zees16?.pillars) ? snapshot.zees16.pillars : [];
+    const releaseFingerprint = certificationReleaseFingerprint(product, sourceSystem);
+    const capturedAt = String(snapshot?.generated_at || new Date().toISOString());
+    const decisionHash = String(snapshot?.zees16?.decision_hash || '');
+    return ZEES_PILLARS.flatMap(definition => {
+      const item = pillars.find((entry: any) => String(entry?.id || '') === definition.id);
+      if (!item || String(item?.state || '').toUpperCase() !== 'PROVADO') return [];
+      const artifacts = Array.isArray(item?.evidence)
+        ? item.evidence.filter((entry: any) => entry?.ok === true).map((entry: any) => String(entry?.url || entry?.key || '')).filter(Boolean)
+        : [];
+      return [{
+        target: product.slug,
+        pillar: definition.id,
+        kind: 'supporting' as const,
+        text: `ZEES:${definition.id}:PROVEN:Control Core canônico comprovou o pilar na mesma release do produto.`,
+        sourceSha: releaseSha,
+        sourceRef: decisionHash ? `ZEVANORY Control Core · decision ${decisionHash}` : 'ZEVANORY Control Core',
+        capturedAt,
+        runId: null,
+        releaseFingerprint,
+        verdict: 'proved' as const,
+        verifier: 'control-core-exact-release',
+        environment: sourceSystem.domain || product.publicUrl || 'internal',
+        artifacts,
+        invalidatedAt: null,
+        invalidationReason: null,
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
+
 function verifierArtifacts(pillar: CertificationPillar, product: ProductRecord, sourceSystem?: SystemRecord & { id?: string }) {
   return Array.from(new Set([
     product.publicUrl,
@@ -1572,9 +1621,15 @@ async function adminData() {
     loadOperationalSnapshot(),
   ]);
   const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
+  const zevanoryProduct = products.items.find(item => item.slug === 'zevanory');
+  const zevanorySystem = zevanoryProduct ? certificationSystem(zevanoryProduct, visibleSystems) : undefined;
+  const zevanoryCanonicalEvidence = zevanoryProduct
+    ? await canonicalZevanoryEvidence(zevanoryProduct, zevanorySystem)
+    : [];
+  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence];
   const enriched = products.items.map(product => {
     const base = enrichProduct(product);
-    const certification = buildProductCertification(product, visibleSystems, certificationEvidence.items);
+    const certification = buildProductCertification(product, visibleSystems, effectiveCertificationEvidence);
     return { ...base, certification, commercialReady: base.commercialReady && certification.ready, blockers: [...base.blockers, ...(certification.ready ? [] : ['certificacao ZEES-16 incompleta'])] };
   }).sort((x, y) => {
     if (x.status === 'archived' && y.status !== 'archived') return 1;
@@ -1606,7 +1661,7 @@ async function adminData() {
       name: 'ARBM ONE',
       kind: 'SISTEMA PRIVADO',
       publicUrl: arbmOneSystemRecord.publicUrl,
-      certification: buildProductCertification(arbmOneSystemRecord, visibleSystems, certificationEvidence.items),
+      certification: buildProductCertification(arbmOneSystemRecord, visibleSystems, effectiveCertificationEvidence),
     },
     ...enriched.filter(item => item.status !== 'archived').map(item => ({
       id: `product:${item.id}`,
