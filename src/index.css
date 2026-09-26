@@ -3830,3 +3830,20 @@ html {
   border-color: var(--border);
   color: var(--text-primary);
 }
+
+/* Lighthouse accessibility closure for unauthenticated login surface. */
+:root[data-theme='light'] .loginCard {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+:root[data-theme='light'] .loginCard .eyebrow,
+:root[data-theme='light'] .loginCard p {
+  color: var(--text-secondary);
+}
+:root[data-theme='light'] .loginCard h1 { color: var(--text-primary); }
+:root[data-theme='light'] .authDiagnostic {
+  background: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
