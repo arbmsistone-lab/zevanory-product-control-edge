@@ -1,0 +1,85 @@
+{
+  "schema": "zevanory.control-center.ped-versal.v1",
+  "product": "ZEVANORY CONTROL CENTER",
+  "profile": "UI_ENTERPRISE",
+  "css": "src/index.css",
+  "viewports": [
+    {
+      "name": "large",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "name": "mobile",
+      "width": 375,
+      "height": 812
+    }
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "typographyPx": [
+    12,
+    14,
+    16,
+    21,
+    28,
+    37
+  ],
+  "macroGridPx": 8,
+  "microGridPx": 4,
+  "minimumVisibleFontPx": 12,
+  "requiredTokens": [
+    "bg-primary",
+    "bg-secondary",
+    "surface",
+    "surface-elevated",
+    "text-primary",
+    "text-secondary",
+    "border",
+    "action-primary",
+    "action-primary-text",
+    "status-success",
+    "status-error",
+    "status-warning",
+    "status-info",
+    "focus-ring"
+  ],
+  "requiredAreas": [
+    "overview",
+    "products",
+    "commercial",
+    "creatives",
+    "approvals",
+    "publications",
+    "prospecting",
+    "crm",
+    "support",
+    "finance",
+    "cfo",
+    "evidence",
+    "operations",
+    "governance"
+  ],
+  "proof": {
+    "exactSha": true,
+    "typecheck": true,
+    "build": true,
+    "browserMatrix": true,
+    "lighthouse": true,
+    "contentIntegrity": true,
+    "falseGreen": 0,
+    "regressionBudget": 0
+  }
+}
