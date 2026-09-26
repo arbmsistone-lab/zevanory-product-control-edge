@@ -672,8 +672,8 @@ small {
 }
 
 .executiveList > div {
-  min-height: 40px;
-  padding: 8px 0;
+  min-height: 32px;
+  padding: 4px 0;
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(0, 1.4fr);
   gap: 16px;
@@ -865,7 +865,11 @@ small {
   gap: 4px;
 }
 
-.auditHeader,
+.auditHeader {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
 .certCompactSummary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -1772,7 +1776,56 @@ small {
   }
 
   .certSummaryGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .certCompactSummary,
+  .certBlockerLine {
+    display: none;
+  }
+
+  .commercialRow {
+    min-height: 48px;
+    padding: 4px 0;
+  }
+
+  .commercialRow p,
+  .commercialMeta {
+    display: none;
+  }
+
+  .certActions .secondary {
+    display: none;
+  }
+
+  .pillarCard > p,
+  .pillarMeta,
+  .pillarEvidence,
+  .pillarBlocker {
+    display: none;
+  }
+}
+
+@media (max-height: 920px) and (min-width: 1121px) {
+  .overviewHero,
+  .governanceHero,
+  .cfoHero,
+  .commercialHeader {
+    min-height: 64px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .certCompactSummary,
+  .certBlockerLine {
+    display: none;
+  }
+
+  .pillarCard > p,
+  .pillarMeta,
+  .pillarEvidence,
+  .pillarBlocker {
+    display: none;
   }
 }
 
