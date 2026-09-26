@@ -3306,7 +3306,7 @@ textarea:focus-visible {
   .commercialMetrics article {
     grid-template-columns: 16px minmax(0, 1fr);
     min-height: 72px;
-    gap: 4px;
+    gap: 8px;
     padding: 8px;
   }
 
@@ -3317,7 +3317,7 @@ textarea:focus-visible {
 
   .commercialMetrics span {
     font-size: 10px;
-    line-height: 12px;
+    line-height: 16px;
   }
 
   .commercialMetrics strong {
