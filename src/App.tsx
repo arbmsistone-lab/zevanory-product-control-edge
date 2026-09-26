@@ -19,6 +19,8 @@ import {
   X,
 } from 'lucide-react';
 import { api } from './api';
+import CommercialWorkspace from './CommercialWorkspace';
+import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 
 type SystemItem = {
   id: string;
@@ -353,10 +355,11 @@ function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
   const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
+  const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
-  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance'>('overview');
+  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
@@ -396,6 +399,7 @@ function App() {
       setDashboard(response.data.dashboard);
       setGlobalTrust(response.data.globalTrust ?? null);
       setOperations(response.data.operations ?? null);
+      setCommercial(response.data.commercial ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setSummary(response.data.summary);
@@ -466,6 +470,7 @@ function App() {
     setAuthState('signedout');
     setDashboard(null);
     setGlobalTrust(null);
+    setCommercial(null);
   };
 
   const handleLogin = (token: string) => {
@@ -709,14 +714,30 @@ function App() {
         <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
       </section>
 
-      <nav className='tabs' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
+      <nav className='tabs controlCenterTabs' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
         <button className={view === 'overview' ? 'tab active' : 'tab'} aria-pressed={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
         <button className={view === 'products' ? 'tab active' : 'tab'} aria-pressed={view === 'products'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
-        <button className={view === 'operations' ? 'tab active' : 'tab'} aria-pressed={view === 'operations'} onClick={() => setView('operations')}><Activity size={16} />Operações</button>
-        <button className={view === 'governance' ? 'tab active' : 'tab'} aria-pressed={view === 'governance'} onClick={() => setView('governance')}><SlidersHorizontal size={16} />ZEES-16 / Governança</button>
+        <button className={view === 'commercial' ? 'tab active' : 'tab'} aria-pressed={view === 'commercial'} onClick={() => setView('commercial')}>Comercial</button>
+        <button className={view === 'creatives' ? 'tab active' : 'tab'} aria-pressed={view === 'creatives'} onClick={() => setView('creatives')}>Criativos</button>
+        <button className={view === 'approvals' ? 'tab active' : 'tab'} aria-pressed={view === 'approvals'} onClick={() => setView('approvals')}>Aprovações</button>
+        <button className={view === 'publications' ? 'tab active' : 'tab'} aria-pressed={view === 'publications'} onClick={() => setView('publications')}>Publicações</button>
+        <button className={view === 'prospecting' ? 'tab active' : 'tab'} aria-pressed={view === 'prospecting'} onClick={() => setView('prospecting')}>Prospecção</button>
+        <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM/Vendas</button>
+        <button className={view === 'support' ? 'tab active' : 'tab'} aria-pressed={view === 'support'} onClick={() => setView('support')}>Atendimento</button>
+        <button className={view === 'finance' ? 'tab active' : 'tab'} aria-pressed={view === 'finance'} onClick={() => setView('finance')}>Financeiro</button>
+        <button className={view === 'evidence' ? 'tab active' : 'tab'} aria-pressed={view === 'evidence'} onClick={() => setView('evidence')}>Evidências</button>
       </nav>
 
       {error && <div className='errorbox globalError'>{error}</div>}
+
+      {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
+        <CommercialWorkspace
+          section={view as CommercialSection}
+          data={commercial}
+          sessionToken={sessionToken}
+          onRefresh={() => load()}
+        />
+      )}
 
       {view === 'overview' && (
         <section className='overviewStack'>
