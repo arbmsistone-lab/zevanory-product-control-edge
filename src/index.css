@@ -3367,7 +3367,7 @@ textarea:focus-visible {
 /* ZEVANORY CFO v1 — compact executive workspace */
 .cfoWorkspace {
   display: grid;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
 }
 .cfoHero {
@@ -3380,10 +3380,10 @@ textarea:focus-visible {
 .cfoPanel h3 { margin: 0; }
 .cfoEngineState {
   display: grid;
-  gap: 6px;
-  padding: 12px;
+  gap: 8px;
+  padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--bg-secondary);
 }
 .cfoEngineState p,
@@ -3394,7 +3394,7 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  gap: 6px;
+  gap: 8px;
   font-weight: 800;
   font-size: .75rem;
   letter-spacing: .035em;
@@ -3412,15 +3412,15 @@ textarea:focus-visible {
 .cfoMetrics {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 .cfoMetrics article {
   min-width: 0;
   display: grid;
-  gap: 5px;
-  padding: 12px;
+  gap: 8px;
+  padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--surface);
 }
 .cfoMetrics article > svg { color: var(--status-info); }
@@ -3432,7 +3432,7 @@ textarea:focus-visible {
 .cfoGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 16px;
 }
 .cfoPanel {
   min-width: 0;
@@ -3447,17 +3447,17 @@ textarea:focus-visible {
 .cfoAction {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 10px;
+  gap: 8px 10px;
   align-items: start;
-  padding: 9px 10px;
+  padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 11px;
+  border-radius: 8px;
   background: var(--bg-secondary);
 }
 .cfoAdapter div,
 .cfoAction div {
   display: grid;
-  gap: 2px;
+  gap: 8px;
   min-width: 0;
 }
 .cfoAdapter small,
@@ -3480,10 +3480,10 @@ textarea:focus-visible {
 .cfoReceivableRow {
   display: grid;
   grid-template-columns: 1.45fr 1fr .85fr .65fr .8fr;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   min-width: 0;
-  padding: 8px 4px;
+  padding: 8px;
   border-top: 1px solid var(--border);
   font-size: .82rem;
 }
@@ -3502,7 +3502,7 @@ textarea:focus-visible {
 .cfoReceivableRow > span:first-child,
 .cfoReceivableRow > span:nth-child(2) {
   display: grid;
-  gap: 2px;
+  gap: 8px;
 }
 .cfoReceivableRow small { color: var(--text-secondary); }
 
