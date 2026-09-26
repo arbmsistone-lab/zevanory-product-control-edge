@@ -1,6 +1,7 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
 import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialWorkspace } from './commercial.ts';
+import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
 import type { CommercialRecordKind } from '../src/commercial-model.ts';
 
 type SystemStatus = 'healthy' | 'attention' | 'integration';
@@ -583,6 +584,14 @@ const productCatalog = [
     description: 'Plataforma comercial universal da ZEVANORY, com provisionamento isolado por cliente, onboarding e configuracao propria.',
     publicUrl: 'https://zevanory.api.br/zevanory-one',
     deliveryModel: 'Licenca e instalacao global por cliente',
+  },
+  {
+    name: 'ZEVANORY CFO',
+    slug: 'zevanory-cfo',
+    category: 'Software financeiro com IA',
+    description: 'Camada de inteligencia financeira para caixa, recebiveis, cobranca, conciliacao, previsao e monitoramento.',
+    publicUrl: 'https://zevanory.api.br/zevanory-cfo',
+    deliveryModel: 'SaaS financeiro / integracao por adaptadores',
   },
 ];
 
@@ -2270,11 +2279,13 @@ async function adminData() {
   ];
 
   const commercial = await commercialWorkspace(operations);
+  const cfo = await cfoWorkspace();
 
   return {
     globalTrust,
     operations,
     commercial,
+    cfo,
     certificationTargets,
     dashboard: {
       systems: visibleSystems,
@@ -2443,6 +2454,15 @@ export const handler = router({
     const [updated] = await db.update(productTable(), [{ id: body.id, record: archived }]);
     if (!updated) return error('Nao foi possivel arquivar o produto.', 500);
     return json(enrichProduct({ ...archived, id: body.id }));
+  }],
+  'POST /api/cfo/ingest': [async ctx => {
+    const body = ctx.body as { sessionToken?: string } & Record<string, unknown>;
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    try {
+      return json(await cfoAdminIngest(body as any), 201);
+    } catch (err) {
+      return error(`Registro CFO invalido: ${String(err)}`, 400);
+    }
   }],
   'POST /api/commercial/create': [async ctx => {
     const body = ctx.body as { sessionToken?: string } & Record<string, unknown>;
