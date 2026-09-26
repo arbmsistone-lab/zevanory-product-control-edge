@@ -1,0 +1,299 @@
+name: Commercial Control Center 3D Audit
+
+on:
+  push:
+    branches: [audit/commercial-3d]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPECTED_SHA: df429b33a62a3425e750137070e6ccabbbb96077
+      CANONICAL_URL: https://controle.zevanory.api.br
+    steps:
+      - name: Checkout exact audit lineage
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install project
+        run: npm install --no-audit --no-fund
+
+      - name: Dimension 1 - typecheck and production dependency audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck
+          npm audit --omit=dev --audit-level=high
+
+      - name: Dimension 2 - commercial domain invariants
+        shell: bash
+        run: |
+          cat > commercial-domain-audit.ts <<'EOF'
+          import assert from 'node:assert/strict';
+          import {
+            COMMERCIAL_SECTIONS,
+            computeCommercialMetrics,
+            deriveCommercialRobotState,
+            isCommercialSection,
+          } from './src/commercial-model.ts';
+
+          const now = new Date('2026-09-26T14:05:00Z');
+          const base = {
+            id: 'x',
+            title: 'x',
+            detail: '',
+            channel: 'instagram',
+            product: 'ZEVANORY',
+            productId: 'z',
+            source: 'audit',
+            sourceKey: null,
+            evidence: [],
+            valueCents: null,
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
+            publishedAt: null,
+          } as const;
+
+          const metrics = computeCommercialMetrics({
+            leads: [
+              { ...base, id:'l1', kind:'lead', status:'new' },
+              { ...base, id:'l2', kind:'lead', status:'qualified' },
+            ],
+            creatives: [
+              { ...base, id:'c1', kind:'creative', status:'testing' },
+              { ...base, id:'c2', kind:'creative', status:'approval' },
+            ],
+            publications: [
+              { ...base, id:'p1', kind:'publication', status:'published', publishedAt: now.toISOString() },
+            ],
+            events: [
+              { ...base, id:'e1', kind:'event', status:'contact' },
+            ],
+            finance: [
+              { ...base, id:'f1', kind:'finance', status:'confirmed', valueCents: 12500 },
+            ],
+          }, now);
+
+          assert.equal(metrics.leadsToday, 2);
+          assert.equal(metrics.contactsToday, 2);
+          assert.equal(metrics.creativesInProduction, 2);
+          assert.equal(metrics.pendingApproval, 1);
+          assert.equal(metrics.publishedToday, 1);
+          assert.equal(metrics.salesCentsToday, 12500);
+
+          const readyOps = {
+            available: true,
+            health: { ready: true },
+            runtime: { sales: 'active' },
+            continuity: { quorumOk: true },
+            channels: [{ name:'instagram', releaseGate:'pass', commercialExecution:'active' }],
+          };
+          const active = deriveCommercialRobotState(readyOps, new Date().toISOString());
+          assert.equal(active.state, 'ACTIVE');
+          assert.equal(active.externalProspecting, true);
+
+          const standby = deriveCommercialRobotState(readyOps, '2026-01-01T00:00:00Z');
+          assert.equal(standby.state, 'STANDBY');
+
+          const blocked = deriveCommercialRobotState({ ...readyOps, health: { ready:false } }, new Date().toISOString());
+          assert.equal(blocked.state, 'BLOCKED');
+
+          assert.equal(COMMERCIAL_SECTIONS.length, 9);
+          for (const section of COMMERCIAL_SECTIONS) assert.equal(isCommercialSection(section), true);
+          console.log('COMMERCIAL_DOMAIN_AUDIT=PASS', metrics, active.state, standby.state, blocked.state);
+          EOF
+          npx tsx commercial-domain-audit.ts
+          rm commercial-domain-audit.ts
+
+      - name: Dimension 2 - canonical domain lineage and fail-closed endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 18); do
+            if curl -fsS --max-time 20 "$CANONICAL_URL/zpc-build.json" -o /tmp/zpc-build.json; then
+              sha=$(jq -r '.sha // empty' /tmp/zpc-build.json)
+              if [ "$sha" = "$EXPECTED_SHA" ]; then break; fi
+            fi
+            sleep 5
+          done
+          test "$(jq -r '.sha' /tmp/zpc-build.json)" = "$EXPECTED_SHA"
+          curl -fsS --max-time 20 "$CANONICAL_URL/api/_healthcheck" -o /tmp/health.json
+          jq -e '.ok == true' /tmp/health.json >/dev/null
+          root=$(curl -fsS --max-time 20 "$CANONICAL_URL/")
+          printf '%s' "$root" | grep -q 'ZEVANORY CONTROL CENTER'
+
+          code=$(curl -sS --max-time 20 -o /tmp/create-denied.json -w '%{http_code}'             -H 'content-type: application/json'             -d '{"kind":"lead","title":"unauthorized-audit"}'             "$CANONICAL_URL/api/commercial/create")
+          test "$code" = "401"
+
+          code=$(curl -sS --max-time 20 -o /tmp/adapter-denied.json -w '%{http_code}'             -H 'content-type: application/json'             -d '{"records":[]}'             "$CANONICAL_URL/api/commercial/adapter/ingest")
+          test "$code" = "401"
+          echo "CANONICAL_LINEAGE_AND_AUTH=PASS sha=$(jq -r '.sha' /tmp/zpc-build.json)"
+
+      - name: Build exact frontend
+        env:
+          ZPC_BASE_PATH: /
+        run: npm run build
+
+      - name: Install remote visual auditor
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start preview
+        shell: bash
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 >/tmp/zpc-vite.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/zpc-vite.log
+          exit 1
+
+      - name: Dimension 3 - responsive visual and interaction audit
+        shell: bash
+        run: |
+          mkdir -p audit-screens
+          cat > visual-audit.mjs <<'EOF'
+          import assert from 'node:assert/strict';
+          import { chromium } from 'playwright';
+
+          const now = new Date().toISOString();
+          const trust = {
+            state:'GREEN', sha:'audit-sha', evidenceRoot:'root', policyVersion:'ZEA-10',
+            quorum:{passed:3,total:3,required:3,conflicts:0,independentKeys:3},
+            zea10:{proven:10,partial:0,blocked:0},
+            engines:[{id:'zees16-core',state:'GREEN'},{id:'zea10-evaluator',state:'GREEN'},{id:'control-core',state:'GREEN'}],
+            checkedAt:now,
+          };
+          const operations = {
+            available:true, generatedAt:now, releaseSha:'audit-sha',
+            health:{ready:true,live:true,databaseReachable:true,schemaReady:true,requiredTables:10,requiredMigrations:10,missingTables:0,missingMigrations:0},
+            runtime:{sales:'active',checkout:'ready',financial:'ready',whatsapp:'active'},
+            control:{globalState:'GREEN',rootBlocker:'none',decision:'ALLOW'},
+            continuity:{quorumOk:true,mode:'multi-provider',channels:['instagram','facebook'],whatsappDependencyRequired:false},
+            channels:[
+              {name:'Instagram',scopeStatus:'ready',releaseGate:'pass',commercialExecution:'active'},
+              {name:'Facebook',scopeStatus:'ready',releaseGate:'pass',commercialExecution:'active'},
+            ],
+            zees16:{proven:16,partial:0,blocked:0},
+            zea10:{proven:10,partial:0,blocked:0,unknown:0},
+          };
+          const rec=(id,kind,status,title,extra={})=>({
+            id,kind,title,detail:'Registro de auditoria visual com conteúdo representativo e rastreável.',
+            status,channel:'Instagram',product:'ZEVANORY',productId:'z',valueCents:null,source:'audit-fixture',sourceKey:id,
+            evidence:['visual-audit'],createdAt:now,updatedAt:now,publishedAt:null,...extra
+          });
+          const commercial = {
+            generatedAt:now,
+            metrics:{leadsToday:17,contactsToday:9,creativesInProduction:4,pendingApproval:3,publishedToday:6,salesCentsToday:123456},
+            robot:{state:'ACTIVE',label:'ROBÔ COMERCIAL: ATIVO',reason:'Heartbeat recente e canais comerciais comprovados.',lastHeartbeatAt:now,externalProspecting:true,publishAdapterReady:true,activeChannels:['Instagram','Facebook']},
+            leads:[rec('l1','lead','qualified','Lead qualificado')],
+            creatives:[rec('c1','creative','approval','Criativo institucional para aprovação')],
+            publications:[rec('p1','publication','published','Publicação institucional',{publishedAt:now})],
+            events:[rec('e1','event','heartbeat','Heartbeat do robô comercial')],
+            support:[rec('s1','support','open','Atendimento em andamento')],
+            finance:[rec('f1','finance','confirmed','Venda confirmada',{valueCents:123456})],
+            evidence:[rec('ev1','evidence','confirmed','Evidência de publicação')],
+            counts:{leads:1,creatives:1,publications:1,events:1,support:1,finance:1,evidence:1},
+          };
+          const bootstrap = {
+            dashboard:{systems:[],audits:[],improvements:[],incidents:[],policy:{zeroSpend:true,failClosed:true,destructiveActions:false,greenRule:'Somente com evidência reproduzível'},lastEngineRun:now,certificationRuns:[]},
+            globalTrust:trust,operations,commercial,products:[],certificationTargets:[],
+            summary:{total:0,salesEnabled:0,commercialReady:0,blocked:0,certified:0,inCertification:0,zeesBlocked:0},
+          };
+
+          const browser = await chromium.launch({headless:true});
+          const cases = [
+            {name:'desktop',width:1440,height:900,desktop:true},
+            {name:'tablet',width:768,height:1024,desktop:false},
+            {name:'mobile',width:375,height:812,desktop:false},
+          ];
+
+          for (const c of cases) {
+            const context = await browser.newContext({viewport:{width:c.width,height:c.height}});
+            const page = await context.newPage();
+            await page.addInitScript(() => {
+              localStorage.setItem('arbm_admin_session','audit-token');
+              localStorage.setItem('zpc_theme','dark');
+            });
+            await page.route('**/api/admin/bootstrap', route => route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap)}));
+            await page.route('**/global-trust.json**', route => route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(trust)}));
+
+            const consoleErrors=[];
+            page.on('console', msg => { if (msg.type()==='error') consoleErrors.push(msg.text()); });
+            page.on('pageerror', err => consoleErrors.push(String(err)));
+
+            await page.goto('http://127.0.0.1:4173/', {waitUntil:'networkidle'});
+            if (c.desktop) {
+              assert.equal(await page.locator('.controlCenterTabs .tab').count(), 11);
+              await page.getByRole('button',{name:'Comercial',exact:true}).click();
+            } else {
+              await page.locator('.areaSelectWrap select').selectOption('commercial');
+            }
+
+            await page.getByText('ROBÔ COMERCIAL: ATIVO',{exact:true}).waitFor();
+            assert.equal(await page.locator('.commercialMetrics article').count(),6);
+            for (const label of ['Leads encontrados hoje','Contatos hoje','Criativos em produção','Aguardando aprovação','Publicados hoje','Vendas hoje']) {
+              assert.equal(await page.getByText(label,{exact:true}).count(),1);
+            }
+
+            const geometry=await page.evaluate(() => {
+              const metrics=document.querySelector('.commercialMetrics')?.getBoundingClientRect();
+              return {
+                docW:document.documentElement.scrollWidth,docH:document.documentElement.scrollHeight,
+                innerW:window.innerWidth,innerH:window.innerHeight,
+                metricsBottom:metrics?.bottom ?? 0,metricsRight:metrics?.right ?? 0,
+                theme:document.documentElement.dataset.theme,
+              };
+            });
+            assert.ok(geometry.docW <= geometry.innerW + 1, JSON.stringify(geometry));
+            assert.ok(geometry.docH <= geometry.innerH + 1, JSON.stringify(geometry));
+            assert.ok(geometry.metricsRight <= geometry.innerW + 1, JSON.stringify(geometry));
+            assert.ok(geometry.metricsBottom <= geometry.innerH + 1, JSON.stringify(geometry));
+            assert.equal(geometry.theme,'dark');
+            assert.equal(consoleErrors.length,0,consoleErrors.join('\n'));
+
+            const darkTokens=await page.evaluate(() => {
+              const s=getComputedStyle(document.documentElement);
+              return [s.getPropertyValue('--bg-primary').trim(),s.getPropertyValue('--text-primary').trim(),s.getPropertyValue('--action-primary').trim()];
+            });
+            assert.deepEqual(darkTokens,['#050912','#F7FAFF','#8EC5FF']);
+            await page.screenshot({path:'audit-screens/'+c.name+'-dark.png',fullPage:true});
+
+            if (c.name==='desktop') {
+              await page.locator('.themeToggle').click();
+              assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');
+              const lightTokens=await page.evaluate(() => {
+                const s=getComputedStyle(document.documentElement);
+                return [s.getPropertyValue('--bg-primary').trim(),s.getPropertyValue('--text-primary').trim(),s.getPropertyValue('--action-primary').trim()];
+              });
+              assert.deepEqual(lightTokens,['#F8FAFD','#0A1423','#0A4A85']);
+              await page.screenshot({path:'audit-screens/desktop-light.png',fullPage:true});
+            }
+
+            await context.close();
+          }
+          await browser.close();
+          console.log('COMMERCIAL_VISUAL_AUDIT=PASS 1440x900 768x1024 375x812 DARK/LIGHT');
+          EOF
+          node visual-audit.mjs
+          rm visual-audit.mjs
+
+      - name: Upload 3D audit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commercial-control-center-3d-audit
+          path: audit-screens
+          if-no-files-found: warn
+          retention-days: 7
