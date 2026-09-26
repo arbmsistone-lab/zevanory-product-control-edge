@@ -1,0 +1,65 @@
+name: Commercial Visual Regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/commercial-visual-audit.mjs'
+      - '.github/workflows/commercial-visual-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commercial-visual-regression
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install application
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Typecheck and build
+        run: |
+          npm run typecheck
+          npm run build
+
+      - name: Start production preview
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/zpc-vite-preview.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173 >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/zpc-vite-preview.log
+          exit 1
+
+      - name: Audit commercial viewports
+        run: node scripts/commercial-visual-audit.mjs
+
+      - name: Upload screenshots and report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: commercial-visual-regression
+          path: visual-audit/
+          retention-days: 30
+          if-no-files-found: error
