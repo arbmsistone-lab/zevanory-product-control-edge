@@ -15,17 +15,28 @@ function env(name: string) {
   return process.env[name] || '';
 }
 
+function hardenedDatabaseUrl(raw: string) {
+  try {
+    const url = new URL(raw);
+    const local = ['localhost', '127.0.0.1', '::1'].includes(url.hostname);
+    if (!local) url.searchParams.set('sslmode', 'verify-full');
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 let pool: PoolType | null = null;
 function primaryPool() {
   const url = env('DATABASE_URL_PRIMARY');
   if (!url) throw new Error('primary_database_unconfigured');
   if (!pool) {
     pool = new Pool({
-      connectionString: url,
+      connectionString: hardenedDatabaseUrl(url),
       max: 4,
       idleTimeoutMillis: 20_000,
       connectionTimeoutMillis: 5_000,
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: true },
     });
   }
   return pool;
