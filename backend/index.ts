@@ -1696,7 +1696,13 @@ async function adminData() {
     loadGlobalTrust(),
     loadOperationalSnapshot(),
   ]);
-  const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
+  let visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
+  const canonicalSystem = await canonicalZevanoryTelemetryFallback();
+  if (canonicalSystem) {
+    visibleSystems = visibleSystems.map(item => item.name === 'ZEVANORY'
+      ? { ...item, ...canonicalSystem, domain: item.domain || 'https://zevanory.api.br/' }
+      : item);
+  }
   const zevanoryProduct = products.items.find(item => item.slug === 'zevanory');
   const zevanorySystem = zevanoryProduct ? certificationSystem(zevanoryProduct, visibleSystems) : undefined;
   const zevanoryCanonicalEvidence = zevanoryProduct
@@ -1819,6 +1825,9 @@ export const handler = router({
                 ready:item.certification?.ready,
                 summary:item.certification?.summary,
                 rootBlocker:item.certification?.rootBlocker,
+                pillars:Array.isArray(item.certification?.pillars)
+                  ? item.certification.pillars.map((pillar:any)=>({id:pillar.id,status:pillar.status,blocker:pillar.blocker}))
+                  : [],
               }))
             : [];
           const systems = Array.isArray(diagnosticData?.dashboard?.systems)
