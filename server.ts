@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { handler } from './backend/index';
 import { portableHealth } from './backend/platform';
+import { commercialRobotTick } from './backend/commercial';
 
 const port = Number(process.env.PORT || 3000);
 
@@ -36,4 +37,15 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, '0.0.0.0', () => console.log('portable backend listening', port));
+server.listen(port, '0.0.0.0', () => {
+  console.log('portable backend listening', port);
+
+  const runCommercialRobot = () => {
+    void commercialRobotTick()
+      .then(result => console.info('commercial_robot_tick', JSON.stringify(result)))
+      .catch(error => console.error('commercial_robot_tick_failed', error instanceof Error ? error.message : String(error)));
+  };
+
+  setTimeout(runCommercialRobot, 8_000).unref();
+  setInterval(runCommercialRobot, 15 * 60 * 1000).unref();
+});

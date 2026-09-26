@@ -112,9 +112,7 @@ export function deriveCommercialRobotState(
     .filter(item => isOperationallyActive(item.commercialExecution) && !isOperationallyBlocked(item.releaseGate))
     .map(item => String(item.name || '').trim())
     .filter(Boolean);
-  const salesActive = isOperationallyActive(operations?.runtime?.sales);
   const infraReady = Boolean(operations?.available && operations?.health?.ready && operations?.continuity?.quorumOk);
-  const externalProspecting = activeChannels.length > 0 && salesActive && infraReady;
   const publishAdapterReady = channels.some(item =>
     isOperationallyActive(item.commercialExecution) &&
     !isOperationallyBlocked(item.releaseGate) &&
@@ -137,11 +135,13 @@ export function deriveCommercialRobotState(
     };
   }
 
-  if (externalProspecting && heartbeatFresh) {
+  if (heartbeatFresh) {
     return {
       state: 'ACTIVE',
       label: 'ROBÔ COMERCIAL: ATIVO',
-      reason: 'Orquestrador com heartbeat recente e canal comercial liberado pelo Control Core.',
+      reason: publishAdapterReady
+        ? 'Prospecção ativa com heartbeat recente; canais externos continuam condicionados aos gates e aprovações.'
+        : 'Prospecção ativa com heartbeat recente; contato e publicação externos permanecem bloqueados até liberação dos respectivos gates.',
       lastHeartbeatAt,
       externalProspecting: true,
       publishAdapterReady,
@@ -152,11 +152,9 @@ export function deriveCommercialRobotState(
   return {
     state: 'STANDBY',
     label: 'ROBÔ COMERCIAL: STANDBY',
-    reason: externalProspecting
-      ? 'Canais aptos encontrados, mas ainda não há heartbeat comercial recente.'
-      : 'Painel operacional pronto, porém nenhum canal está comprovado para execução comercial externa.',
+    reason: 'Infraestrutura pronta, mas o worker comercial ainda não emitiu heartbeat recente.',
     lastHeartbeatAt,
-    externalProspecting,
+    externalProspecting: false,
     publishAdapterReady,
     activeChannels,
   };
