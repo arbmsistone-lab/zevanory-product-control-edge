@@ -1748,7 +1748,7 @@ small {
     min-width: 40px;
     width: 40px;
     padding: 0;
-    font-size: 0;
+    font-size: 12px;
   }
 
   .themeToggle svg {
