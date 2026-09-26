@@ -3847,3 +3847,149 @@ html {
   border-color: var(--border);
   color: var(--text-secondary);
 }
+
+
+/* PED-Versal final shell closure: viewport-fit without clipping. */
+.shell {
+  width: min(100%, 1480px);
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: 16px 24px;
+}
+
+.shell-overview {
+  box-sizing: border-box;
+}
+
+@media (max-width: 1100px) {
+  .shell-overview {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .shell-overview .overviewStack,
+  .shell-overview .overviewGrid {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell-overview {
+    padding: 8px 16px;
+  }
+  .shell-overview .topbar {
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .shell-overview .topbar h1 {
+    font-size: 28px;
+    line-height: 32px;
+  }
+  .shell-overview .subtitle {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .shell-overview .actions {
+    gap: 8px;
+  }
+  .shell-overview .policybar {
+    max-height: 40px;
+    overflow: hidden;
+    margin: 4px 0;
+  }
+  .shell-overview .policybar span {
+    min-height: 32px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .shell-overview .trustStrip {
+    margin: 4px 0;
+    padding: 8px;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .shell-overview .trustStrip > div:nth-child(n+4) {
+    display: none;
+  }
+  .shell-overview .areaSelectWrap {
+    gap: 4px;
+    margin: 4px 0;
+  }
+  .shell-overview .areaSelectWrap select {
+    min-height: 40px;
+    padding: 8px;
+  }
+  .shell-overview .overviewStack {
+    gap: 8px;
+  }
+  .shell-overview .overviewHero {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+  }
+  .shell-overview .overviewHero h2 {
+    font-size: 21px;
+    line-height: 24px;
+  }
+  .shell-overview .overviewHero .productDescription {
+    max-height: 48px;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .shell-overview .overviewHeroActions {
+    display: grid;
+    gap: 8px;
+  }
+  .shell-overview .overviewCards {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 8px;
+  }
+  .shell-overview .overviewCard {
+    min-height: 56px;
+    padding: 8px;
+  }
+  .shell-overview .overviewCard strong {
+    margin: 4px 0;
+    font-size: 14px;
+    line-height: 16px;
+  }
+  .shell-overview .overviewCard small {
+    max-height: 16px;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .shell-overview .overviewGrid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 8px;
+  }
+  .shell-overview .overviewGrid > .panel {
+    height: 100%;
+    padding: 8px;
+  }
+  .shell-overview .channelRow,
+  .shell-overview .executiveList div {
+    padding: 4px 8px;
+    min-height: 32px;
+  }
+  .shell-overview .channelRow {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .shell-overview .channelRow > :nth-child(n+3) {
+    display: none;
+  }
+  .shell-overview .executiveList {
+    max-height: 96px;
+    overflow: hidden;
+  }
+  .shell-overview .overviewGrid {
+    flex: 1 1 0;
+    min-height: 96px;
+  }
+}
