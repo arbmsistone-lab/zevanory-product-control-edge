@@ -1056,6 +1056,109 @@ async function canonicalZevanoryExactVerifierEvidence(
   return rows;
 }
 
+
+async function canonicalDigitalPortfolioTechnicalEvidence(
+  product: ProductRecord,
+): Promise<CertificationEvidenceRecord[]> {
+  const eligible = new Set(['ia-na-pratica','vendas-na-pratica','combo-ia-vendas','lucro-e-caixa','negocio-completo']);
+  if (!eligible.has(product.slug)) return [];
+  try {
+    const headers = {
+      accept: 'application/vnd.github+json',
+      'user-agent': 'ZEVANORY-Portfolio-Technical-Certifier/2026.09',
+      'x-github-api-version': '2022-11-28',
+    };
+    const branchResponse = await fetch(
+      'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/branches/gh-pages',
+      { headers, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!branchResponse.ok) return [];
+    const branchPayload = await branchResponse.json() as any;
+    const protectedHead = String(branchPayload?.commit?.sha || '').trim().toLowerCase();
+    if (!/^[0-9a-f]{40}$/.test(protectedHead)) return [];
+
+    const workflow = 'portfolio-six-target-exact-cert.yml';
+    const runsResponse = await fetch(
+      'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/workflows/' +
+        encodeURIComponent(workflow) +
+        '/runs?branch=gh-pages&event=push&status=success&per_page=10',
+      { headers, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!runsResponse.ok) return [];
+    const runsPayload = await runsResponse.json() as any;
+    const runs = Array.isArray(runsPayload?.workflow_runs) ? runsPayload.workflow_runs : [];
+    const run = runs.find((item: any) =>
+      String(item?.head_sha || '').toLowerCase() === protectedHead &&
+      String(item?.head_branch || '') === 'gh-pages' &&
+      String(item?.event || '') === 'push' &&
+      String(item?.conclusion || '') === 'success' &&
+      String(item?.path || '') === '.github/workflows/' + workflow
+    );
+    if (!run?.id) return [];
+
+    const workflowResponse = await fetch(
+      'https://raw.githubusercontent.com/arbmsistone-lab/zevanory-public-mirror/' +
+        protectedHead + '/.github/workflows/' + workflow,
+      { headers: { 'user-agent': headers['user-agent'] }, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!workflowResponse.ok) return [];
+    const workflowText = await workflowResponse.text();
+    const markers = [
+      product.slug,
+      'P10 clean remote restore rehearsal',
+      'P12 bind protected shared-runtime observability proof',
+      'PROVED_TECHNICAL_14',
+      'FALSE_GREEN=0',
+      'P16":"NOT_CERTIFIED_HERE',
+    ];
+    if (!markers.every(marker => workflowText.includes(marker))) return [];
+
+    const artifactsResponse = await fetch(
+      'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/runs/' +
+        String(run.id) + '/artifacts?per_page=100',
+      { headers, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!artifactsResponse.ok) return [];
+    const artifactsPayload = await artifactsResponse.json() as any;
+    const artifacts = Array.isArray(artifactsPayload?.artifacts) ? artifactsPayload.artifacts : [];
+    const artifactName = 'portfolio-cert-' + product.slug + '-' + protectedHead;
+    const artifact = artifacts.find((item: any) =>
+      String(item?.name || '') === artifactName &&
+      item?.expired !== true &&
+      Number(item?.size_in_bytes || 0) > 0
+    );
+    if (!artifact) return [];
+
+    const releaseFingerprint = certificationReleaseFingerprint(product, undefined);
+    const capturedAt = String(run?.updated_at || run?.created_at || new Date().toISOString());
+    const applicable = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12','P13','P15'];
+    return applicable.map(pillar => ({
+      target: product.slug,
+      pillar,
+      kind: 'supporting' as const,
+      text: 'ZEES:' + pillar + ':PROVEN:Prova tecnica especifica do alvo em push protegido no HEAD atual de gh-pages.',
+      sourceSha: protectedHead,
+      sourceRef: 'Protected portfolio exact-cert run ' + String(run.id),
+      capturedAt,
+      runId: 'portfolio-protected-' + String(run.id),
+      releaseFingerprint,
+      verdict: 'proved' as const,
+      verifier: 'portfolio-target-protected-readback',
+      environment: product.publicUrl || 'internal',
+      artifacts: [
+        String(run?.html_url || ''),
+        'workflow_head_sha:' + protectedHead,
+        'artifact:' + artifactName,
+        'artifact_id:' + String(artifact?.id || ''),
+      ],
+      invalidatedAt: null,
+      invalidationReason: null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 async function runCertificationExecutor(targetId: string) {
   await ensureSeed();
   await ensureProducts();
@@ -1877,7 +1980,10 @@ async function adminData() {
   const zevanoryExactWorkflowEvidence = zevanoryProduct
     ? await canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P07','P11','P12','P16'])
     : [];
-  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence];
+  const digitalPortfolioTechnicalEvidence = (await Promise.all(
+    products.items.map(item => canonicalDigitalPortfolioTechnicalEvidence(item))
+  )).flat();
+  const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...digitalPortfolioTechnicalEvidence];
   const enriched = products.items.map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, effectiveCertificationEvidence);
