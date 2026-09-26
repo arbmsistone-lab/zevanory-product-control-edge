@@ -2727,6 +2727,41 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
+.shell-commercial .topbar h1,
+.shell-creatives .topbar h1,
+.shell-approvals .topbar h1,
+.shell-publications .topbar h1,
+.shell-prospecting .topbar h1,
+.shell-crm .topbar h1,
+.shell-support .topbar h1,
+.shell-finance .topbar h1,
+.shell-evidence .topbar h1 {
+  margin: 8px 0;
+  font-size: 37px;
+  line-height: 48px;
+  letter-spacing: -0.02em;
+}
+
+.shell-commercial .topbar .subtitle,
+.shell-creatives .topbar .subtitle,
+.shell-approvals .topbar .subtitle,
+.shell-publications .topbar .subtitle,
+.shell-prospecting .topbar .subtitle,
+.shell-crm .topbar .subtitle,
+.shell-support .topbar .subtitle,
+.shell-finance .topbar .subtitle,
+.shell-evidence .topbar .subtitle {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.commercialRow p,
+.approvalCard p {
+  font-size: 16px;
+  line-height: 24px;
+}
+
 .commercialHeader {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
