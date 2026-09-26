@@ -4054,3 +4054,46 @@ main.shell > .evidenceStack > * {
     padding: 8px;
   }
 }
+
+
+/* Compact navigation keeps all actions reachable without spending the viewport
+   on repeated headings. Overview details remain available through page buttons. */
+.overviewPager { display: none; }
+@media (max-width: 760px) {
+  main.shell .topbar { gap: 8px; margin-bottom: 4px; }
+  main.shell .topbar h1 { font-size: 21px; line-height: 24px; margin: 4px 0; }
+  main.shell .subtitle { font-size: 12px; line-height: 16px; }
+  main.shell .actions { display: flex; flex-wrap: wrap; gap: 4px; }
+  main.shell .actions > * { flex: 1 1 auto; min-height: 40px; padding: 4px 8px; font-size: 12px; }
+  main.shell .areaSelectWrap { margin: 4px 0; gap: 4px; }
+  main.shell .areaSelectWrap select { min-height: 40px; padding: 8px; }
+  main.shell .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  main.shell .filters { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; }
+  main.shell .toolbar { gap: 8px; }
+  main.shell .standardStrip { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; }
+  main.shell .governanceHero { flex: 0 0 auto; padding: 8px; }
+  main.shell .governanceHero .productDescription { font-size: 12px; line-height: 16px; margin: 4px 0; }
+  main.shell .approvalActions { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  main.shell .approvalActions button { font-size: 12px; min-width: 0; }
+  main.shell .commercialHeader { gap: 8px; }
+  main.shell .commercialHeader > div > p:last-child { font-size: 12px; line-height: 16px; margin-top: 4px; }
+  main.shell .commercialRow p { margin: 4px 0; font-size: 12px; line-height: 16px; }
+  main.shell .commercialMeta { gap: 4px 8px; }
+  main.shell .overviewPager { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; flex: 0 0 auto; }
+  main.shell .overviewPager .filter { min-width: 0; padding: 4px; min-height: 40px; font-size: 12px; }
+  main.shell .overviewHero { flex: 0 0 auto; }
+  main.shell .overviewCards { flex: 0 0 auto; }
+  main.shell .overviewStack[data-page='0'] .overviewCard:nth-child(n+5),
+  main.shell .overviewStack[data-page='1'] .overviewCard:nth-child(-n+4),
+  main.shell .overviewStack[data-page='2'] .overviewCards,
+  main.shell .overviewStack[data-page='3'] .overviewCards,
+  main.shell .overviewStack[data-page='0'] .overviewGrid,
+  main.shell .overviewStack[data-page='1'] .overviewGrid,
+  main.shell .overviewStack[data-page='2'] .overviewGrid > .panel:last-child,
+  main.shell .overviewStack[data-page='3'] .overviewGrid > .panel:first-child { display: none; }
+  main.shell .overviewGrid { display: block; flex: 0 0 auto; }
+  main.shell .overviewGrid > .panel { height: auto; }
+  main.shell .executiveList { max-height: none; overflow: visible; }
+  main.shell .overviewGrid .channelRow { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  main.shell .overviewGrid .channelRow > :nth-child(n+3) { display: block; }
+}
