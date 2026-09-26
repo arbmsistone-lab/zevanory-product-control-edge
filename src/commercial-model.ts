@@ -183,10 +183,17 @@ export function computeCommercialMetrics(input: {
   const approvalStates = new Set(['approval', 'pending-approval', 'awaiting-approval']);
   const confirmedFinanceStates = new Set(['confirmed', 'paid', 'received', 'settled', 'done']);
 
+  const contactEventsToday = input.events.filter(item =>
+    isToday(item.createdAt, now) && normalizeCommercialState(item.status) === 'contact'
+  );
+  const contactLeadsToday = input.leads.filter(item =>
+    isToday(item.updatedAt, now) && contactStates.has(normalizeCommercialState(item.status))
+  );
+  const saleSources = new Set(['sale', 'payment', 'checkout', 'order', 'asaas']);
+
   return {
     leadsToday: input.leads.filter(item => isToday(item.createdAt, now)).length,
-    contactsToday: input.leads.filter(item => isToday(item.updatedAt, now) && contactStates.has(normalizeCommercialState(item.status))).length
-      + input.events.filter(item => isToday(item.createdAt, now) && normalizeCommercialState(item.status) === 'contact').length,
+    contactsToday: contactEventsToday.length > 0 ? contactEventsToday.length : contactLeadsToday.length,
     creativesInProduction: input.creatives.filter(item => creativeProductionStates.has(normalizeCommercialState(item.status))).length,
     pendingApproval: [
       ...input.creatives,
@@ -198,8 +205,9 @@ export function computeCommercialMetrics(input: {
     salesCentsToday: input.finance
       .filter(item => isToday(item.updatedAt || item.createdAt, now)
         && confirmedFinanceStates.has(normalizeCommercialState(item.status))
-        && (normalizeCommercialState(item.source) === 'sale' || item.kind === 'finance'))
-      .reduce((sum, item) => sum + Math.max(0, Number(item.valueCents || 0)), 0),
+        && saleSources.has(normalizeCommercialState(item.source))
+        && Number(item.valueCents || 0) > 0)
+      .reduce((sum, item) => sum + Number(item.valueCents || 0), 0),
   };
 }
 
