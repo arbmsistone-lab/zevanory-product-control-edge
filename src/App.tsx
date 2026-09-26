@@ -361,6 +361,7 @@ function App() {
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
+  const [overviewPage, setOverviewPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
   const [auditPage, setAuditPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
@@ -783,7 +784,7 @@ function App() {
       {view === 'cfo' && <CfoWorkspace data={cfo} />}
 
       {view === 'overview' && (
-        <section className='overviewStack'>
+        <section className='overviewStack' data-page={overviewPage}>
           <section className='overviewHero panel'>
             <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2><p className='productDescription'>O Control Plane e o gerenciamento de produtos agora ficam no mesmo painel, com leitura executiva antes dos detalhes.</p></div>
             <div className='overviewHeroActions'>
@@ -792,6 +793,9 @@ function App() {
               <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
             </div>
           </section>
+          <nav className='overviewPager' aria-label='Páginas da visão geral'>
+            {['Operação', 'Certificação', 'Canais', 'Bloqueios'].map((label, index) => <button key={label} className={overviewPage === index ? 'filter active' : 'filter'} aria-pressed={overviewPage === index} onClick={() => setOverviewPage(index)}>{label}</button>)}
+          </nav>
           <section className='overviewCards'>
             <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
             <article className='overviewCard'><span>Vendas</span><strong>{operationalLabel(operations?.runtime.sales)}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>

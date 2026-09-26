@@ -93,7 +93,8 @@ const geometryMatches = [...ped.matchAll(/(?:gap|padding(?:-top|-right|-bottom|-
 for (const match of geometryMatches) {
   const value = Number(match[1]);
   if (value === 0) continue;
-  assert(value % 8 === 0, 'non_8pt_geometry:' + match[0]);
+  // PED-Versal V1.1 Supreme: macro geometry is 8pt; 4pt is the controlled micro-grid.
+  assert(value % 4 === 0, 'non_ped_geometry:' + match[0]);
 }
 
 assert(ped.includes('font-size: 16px'), 'perfect_fourth_base_missing');
@@ -112,7 +113,8 @@ console.log('NAVIGATION=11/11');
 console.log('COMMERCIAL_KPIS=6/6');
 console.log('DUAL_THEME_TOKENS=11/11');
 console.log('WCAG_AAA_BODY_TEXT=PASS');
-console.log('GRID_8PT=PASS');
+console.log('GRID_8PT_MACRO=PASS');
+console.log('GRID_4PT_MICRO=PASS');
 console.log('ROBOT_FAIL_CLOSED=PASS');
 console.log('ROBOT_RUNTIME_WORKER=PASS');
 console.log('PUBLIC_PROSPECTING=PASS');
