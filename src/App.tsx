@@ -16,6 +16,8 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   LayoutDashboard,
+  Moon,
+  Sun,
   X,
 } from 'lucide-react';
 import { api } from './api';
@@ -375,6 +377,11 @@ function App() {
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
   const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>('checking');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('zpc_theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
 
   const loadGlobalTrustLive = async () => {
     try {
@@ -411,6 +418,11 @@ function App() {
       setAuthState('signedout');
     }
   };
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('zpc_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     void load(sessionToken);
@@ -689,6 +701,15 @@ function App() {
           <p className='subtitle'>Operação, produtos, canais, evidência e certificação em uma única central administrativa.</p>
         </div>
         <div className='actions'>
+          <button
+            className='secondary themeToggle'
+            onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+            aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+            title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+          >
+            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+          </button>
           <span className='adminChip'><ShieldCheck size={15} />PIN ADMIN ATIVO</span>
           {view === 'products' && <button className='primary' onClick={openNew}><PackagePlus size={17} />Novo produto</button>}
           <button className='secondary' onClick={logout}><LogOut size={17} />Sair</button>
@@ -728,6 +749,25 @@ function App() {
         <button className={view === 'evidence' ? 'tab active' : 'tab'} aria-pressed={view === 'evidence'} onClick={() => setView('evidence')}>Evidências</button>
       </nav>
 
+      <label className='areaSelectWrap'>
+        <span>Área do Control Center</span>
+        <select value={view} onChange={event => setView(event.target.value as typeof view)} aria-label='Selecionar área do Control Center'>
+          <option value='overview'>Visão Geral</option>
+          <option value='products'>Produtos</option>
+          <option value='commercial'>Comercial</option>
+          <option value='creatives'>Criativos</option>
+          <option value='approvals'>Aprovações</option>
+          <option value='publications'>Publicações</option>
+          <option value='prospecting'>Prospecção</option>
+          <option value='crm'>CRM/Vendas</option>
+          <option value='support'>Atendimento</option>
+          <option value='finance'>Financeiro</option>
+          <option value='evidence'>Evidências</option>
+          <option value='operations'>Operações técnicas</option>
+          <option value='governance'>ZEES-16 / Governança</option>
+        </select>
+      </label>
+
       {error && <div className='errorbox globalError'>{error}</div>}
 
       {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
@@ -743,7 +783,11 @@ function App() {
         <section className='overviewStack'>
           <section className='overviewHero panel'>
             <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2><p className='productDescription'>O Control Plane e o gerenciamento de produtos agora ficam no mesmo painel, com leitura executiva antes dos detalhes.</p></div>
-            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
+            <div className='overviewHeroActions'>
+              <button className='secondary compact' onClick={() => setView('operations')}>Operações técnicas</button>
+              <button className='secondary compact' onClick={() => setView('governance')}>ZEES-16 / Governança</button>
+              <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
+            </div>
           </section>
           <section className='overviewCards'>
             <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
