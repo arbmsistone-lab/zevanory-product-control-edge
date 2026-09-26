@@ -409,7 +409,74 @@ async function p12(ctx: ZeesVerifierContext) {
   return result('blocked', 'Observabilidade operacional não possui evidência suficiente.', liveArtifacts(probe));
 }
 
+async function exactZevanoryP13DataGovernanceProof(ctx: ZeesVerifierContext): Promise<ZeesVerifierResult | null> {
+  if (ctx.product.slug !== 'zevanory') return null;
+  const sourceSha = String(ctx.sourceSha || ctx.sourceSystem?.sha || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) return null;
+  const base = String(ctx.product.publicUrl || 'https://zevanory.api.br').replace(/\/$/, '');
+  try {
+    const urls = {
+      health: base + '/api/health',
+      control: base + '/api/control-plane',
+      decision: base + '/api/core/v1/decision',
+      privacy: base + '/privacidade',
+    };
+    const [healthResponse, controlResponse, decisionResponse, privacyResponse] = await Promise.all([
+      fetch(urls.health, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8_000) }),
+      fetch(urls.control, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8_000) }),
+      fetch(urls.decision, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8_000) }),
+      fetch(urls.privacy, { signal: AbortSignal.timeout(8_000) }),
+    ]);
+    if (![healthResponse, controlResponse, decisionResponse, privacyResponse].every(response => response.ok)) return null;
+    const [health, control, decision, privacyText] = await Promise.all([
+      healthResponse.json() as Promise<any>,
+      controlResponse.json() as Promise<any>,
+      decisionResponse.json() as Promise<any>,
+      privacyResponse.text(),
+    ]);
+    const privacy = privacyText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const controlSha = String(control?.release?.deployment?.commit_sha || '').toLowerCase();
+    const proofSha = String(control?.proof_chain?.sha || '').toLowerCase();
+    const decisionSha = String(decision?.release_sha || '').toLowerCase();
+    if (![controlSha, proofSha, decisionSha].every(value => value === sourceSha)) return null;
+
+    const schemaOk = health?.live === true && health?.ready === true &&
+      health?.checks?.database_reachable === true &&
+      health?.checks?.schema_ready === true &&
+      health?.schema?.ready === true &&
+      Number(health?.schema?.missing_tables_count ?? -1) === 0 &&
+      Number(health?.schema?.missing_migrations_count ?? -1) === 0 &&
+      Number(health?.schema?.required_tables || 0) > 0 &&
+      Number(health?.schema?.required_migrations || 0) > 0;
+    const lineageOk = Boolean(control?.proof_chain?.release) &&
+      String(control?.proof_chain?.branch || '') === 'gh-pages' &&
+      String(control?.release?.deployment?.environment || '') === 'production';
+    const integrityOk = decision?.decision === 'ALLOW' &&
+      decision?.checks?.exact_release_bound === true &&
+      decision?.checks?.evidence_integrity_ok === true &&
+      Array.isArray(decision?.blockers) && decision.blockers.length === 0;
+    const retentionOk = /retencao e seguranca/.test(privacy) &&
+      /tempo necessario/.test(privacy) &&
+      /integridade e rastreabilidade/.test(privacy);
+    if (![schemaOk, lineageOk, integrityOk, retentionOk].every(Boolean)) return null;
+
+    return result('proved', 'Governança de dados comprovada por schema live íntegro, migrations completas, linhagem exata de release, integridade fail-closed e política de retenção/rastreabilidade.', [
+      urls.health,
+      urls.control,
+      urls.decision,
+      urls.privacy,
+      `source_sha:${sourceSha}`,
+      `schema_tables:${String(health?.schema?.required_tables)}`,
+      `schema_migrations:${String(health?.schema?.required_migrations)}`,
+    ]);
+  } catch {
+    return null;
+  }
+}
+
 async function p13(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryP13DataGovernanceProof(ctx);
+  if (exactProof) return exactProof;
   const schema = evidence(ctx, /schema|migration|database contract/i);
   const lineage = evidence(ctx, /lineage|linhagem/i);
   const retention = evidence(ctx, /retention|retencao|retenção/i);
