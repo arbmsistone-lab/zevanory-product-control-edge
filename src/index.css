@@ -2756,13 +2756,8 @@ body {
   color: var(--text-primary);
 }
 
-:root[data-theme='dark'] body {
-  background: radial-gradient(circle at 16% 0%, var(--palette-10233d) 0, var(--bg-primary) 36%, var(--palette-03070d) 100%);
-}
-
-:root[data-theme='light'] body {
-  background: radial-gradient(circle at 16% 0%, var(--palette-e9f2fc) 0, var(--bg-primary) 40%, var(--palette-f8fafd) 100%);
-}
+:root[data-theme='dark'] body { background: var(--bg-primary); color: var(--text-primary); }
+:root[data-theme='light'] body { background: var(--bg-primary); color: var(--text-primary); }
 
 button:focus-visible,
 a:focus-visible,
