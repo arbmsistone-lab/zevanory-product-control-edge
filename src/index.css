@@ -759,7 +759,6 @@ small {
   text-transform: uppercase;
 }
 
-.saleBadge,
 .certSeal.ready,
 .zeesSealChip.proved,
 .pillarStatus.proved,
@@ -775,6 +774,7 @@ small {
   color: var(--status-success);
 }
 
+.saleBadge.off,
 .certSeal.blocked,
 .pillarStatus.blocked,
 .commercialState.bad,
@@ -787,6 +787,16 @@ small {
   color: var(--status-error);
 }
 
+.saleBadge.on,
+.gate.ok,
+.pill.ok,
+.certRatio.ready {
+  border-color: var(--status-success);
+  background: var(--status-success-bg);
+  color: var(--status-success);
+}
+
+.pill.warn,
 .partial,
 .warn,
 .attention,
@@ -798,6 +808,12 @@ small {
   color: var(--status-warning);
 }
 
+.pill.neutral,
+.zeesSealChip.na,
+.zeesSealChip.external,
+.pillarStatus.na,
+.pillarStatus.external,
+.proposed,
 .integration,
 .info,
 .commercialState.neutral {
@@ -1000,7 +1016,7 @@ small {
   overflow: hidden;
 }
 
-.bar > span {
+.bar > i {
   display: block;
   height: 100%;
   background: var(--status-info);
@@ -1260,6 +1276,47 @@ small {
 
 .certProductButton small {
   color: var(--text-secondary);
+}
+
+.certProductButton.active {
+  border-color: var(--action-primary);
+  background: var(--status-info-bg);
+}
+
+.certActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.certRatio {
+  min-width: 48px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: inline-grid;
+  place-items: center;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.zeesSealGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.commercialRowMain {
+  min-width: 0;
+}
+
+.productCard.archived {
+  opacity: 0.72;
 }
 
 .certSummaryPanel {
