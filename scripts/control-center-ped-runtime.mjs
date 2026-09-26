@@ -114,6 +114,41 @@ for(const size of sizes){
       if(dom.theme!==theme) fail('THEME_RUNTIME',dom.theme);
       if(!dom.mainClass.includes('shell-'+key)) fail('VIEW_CLASS',dom.mainClass);
 
+      const contrast=await page.evaluate(()=>{
+        const parse=c=>{
+          const m=String(c).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i); return m?[+m[1],+m[2],+m[3]]:null;
+        };
+        const L=rgb=>{
+          const v=rgb.map(x=>x/255).map(x=>x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4));
+          return .2126*v[0]+.7152*v[1]+.0722*v[2];
+        };
+        const ratio=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+        const bgOf=el=>{
+          let n=el;
+          while(n){
+            const s=getComputedStyle(n), bg=parse(s.backgroundColor);
+            if(bg && s.backgroundColor!=='rgba(0, 0, 0, 0)' && s.backgroundColor!=='transparent') return bg;
+            n=n.parentElement;
+          }
+          return parse(getComputedStyle(document.body).backgroundColor)||[255,255,255];
+        };
+        const bad=[];
+        for(const el of document.querySelectorAll('main *')){
+          if(el.children.length || !(el.textContent||'').trim()) continue;
+          const r=el.getBoundingClientRect(),s=getComputedStyle(el);
+          if(r.width<=0||r.height<=0||s.display==='none'||s.visibility==='hidden') continue;
+          const fg=parse(s.color),bg=bgOf(el); if(!fg||!bg) continue;
+          const tag=el.tagName.toLowerCase();
+          const floor=/^h[1-6]$/.test(tag)?4.5:7.0;
+          const cr=ratio(fg,bg);
+          if(cr+1e-6<floor) bad.push({tag,cls:String(el.className),text:(el.textContent||'').trim().slice(0,80),ratio:+cr.toFixed(2),floor,color:s.color,background:getComputedStyle(el).backgroundColor});
+          if(bad.length>=40) break;
+        }
+        return bad;
+      });
+      row.contrast=contrast;
+      if(contrast.length) fail('AAA_CONTRAST',JSON.stringify(contrast));
+
       const axe=await page.evaluate(async()=>await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}}));
       const violations=axe.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,html:n.html,summary:n.failureSummary}))}));
       row.axe=violations;
