@@ -1,0 +1,17 @@
+name: Temporary Certification Diagnostic Trigger
+on:
+  push:
+    paths:
+      - '.github/workflows/temp-cert-diagnostic.yml'
+permissions:
+  contents: read
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger safe internal certification diagnostic
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 90 --retry 3 --retry-delay 5 \
+            https://zevanory-product-control-edge.onrender.com/api/_auth_diagnostic
