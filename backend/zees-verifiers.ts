@@ -292,7 +292,81 @@ async function p08(ctx: ZeesVerifierContext) {
   return result('blocked', 'Supply-chain não possui SBOM/SCA/proveniência reproduzíveis.', []);
 }
 
+async function exactZevanoryP09PrivacyProof(ctx: ZeesVerifierContext): Promise<ZeesVerifierResult | null> {
+  if (ctx.product.slug !== 'zevanory') return null;
+  const sourceSha = String(ctx.sourceSha || ctx.sourceSystem?.sha || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) return null;
+  const base = String(ctx.product.publicUrl || 'https://zevanory.api.br').replace(/\/$/, '');
+  try {
+    const urls = {
+      privacy: base + '/privacidade',
+      terms: base + '/termos',
+      refund: base + '/reembolso',
+      control: base + '/api/control-plane',
+    };
+    const [privacyResponse, termsResponse, refundResponse, controlResponse] = await Promise.all([
+      fetch(urls.privacy, { signal: AbortSignal.timeout(8_000) }),
+      fetch(urls.terms, { signal: AbortSignal.timeout(8_000) }),
+      fetch(urls.refund, { signal: AbortSignal.timeout(8_000) }),
+      fetch(urls.control, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8_000) }),
+    ]);
+    if (![privacyResponse, termsResponse, refundResponse, controlResponse].every(response => response.ok)) return null;
+    const [privacy, terms, refund, control] = await Promise.all([
+      privacyResponse.text(),
+      termsResponse.text(),
+      refundResponse.text(),
+      controlResponse.json() as Promise<any>,
+    ]);
+    const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const p = normalize(privacy);
+    const t = normalize(terms);
+    const r = normalize(refund);
+    const deploymentSha = String(control?.release?.deployment?.commit_sha || '').toLowerCase();
+    if (deploymentSha !== sourceSha) return null;
+    if (String(control?.global_state || '') !== 'operational_commercial_blocked') return null;
+    if (String(control?.root_blocker || '') !== 'global_sale_disabled') return null;
+
+    const privacyChecks = [
+      /controlador/.test(p),
+      /69\.077\.233\/0001-99/.test(p),
+      /contato@zevanory\.api\.br/.test(p),
+      /lgpd/.test(p),
+      /retencao/.test(p),
+      /direitos do titular/.test(p),
+      /compartilhamento/.test(p),
+      /finalidades/.test(p),
+    ];
+    const termsChecks = [
+      /identificacao juridica/.test(t),
+      /69\.077\.233\/0001-99/.test(t),
+      /suporte@zevanory\.api\.br/.test(t),
+      /consumidor/.test(t),
+      /vendas gerais permanecem bloqueadas/.test(t),
+    ];
+    const refundChecks = [
+      /cancelamento e reembolso/.test(r),
+      /direito de arrependimento/.test(r),
+      /rastreabilidade/.test(r),
+      /confirmacao autenticada do provedor de pagamento/.test(r),
+    ];
+    if (![...privacyChecks, ...termsChecks, ...refundChecks].every(Boolean)) return null;
+
+    return result('proved', 'Privacidade e compliance comprovados por superfícies públicas live, identidade do controlador, canal de direitos, LGPD, retenção, consumidor e reembolso, vinculados ao SHA exato com vendas fail-closed.', [
+      urls.privacy,
+      urls.terms,
+      urls.refund,
+      urls.control,
+      `source_sha:${sourceSha}`,
+      'SALE_GLOBALLY_ENABLED=false',
+    ]);
+  } catch {
+    return null;
+  }
+}
+
 async function p09(ctx: ZeesVerifierContext) {
+  const exactProof = await exactZevanoryP09PrivacyProof(ctx);
+  if (exactProof) return exactProof;
   const privacy = evidence(ctx, /LGPD|privacy|privacidade|DPA|retencao|retenção|consent/i);
   if (ctx.product.gates.legal && privacy.length >= 2) return result('proved', 'Gate legal e evidências de privacidade/LGPD estão vinculados à release.', privacy);
   if (ctx.product.gates.legal || privacy.length) return result('partial', 'Existe evidência legal/privacidade, mas o pacote LGPD/privacy-by-design está incompleto.', privacy);
