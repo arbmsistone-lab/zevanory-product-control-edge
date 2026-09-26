@@ -23,6 +23,11 @@ const base = (overrides: Partial<CommercialRecord>): CommercialRecord => ({
 const blocked = deriveCommercialRobotState(null, null);
 assert.equal(blocked.state, 'BLOCKED');
 
+const heartbeatOnly = deriveCommercialRobotState(null, new Date().toISOString());
+assert.equal(heartbeatOnly.state, 'ACTIVE');
+assert.equal(heartbeatOnly.externalProspecting, true);
+assert.equal(heartbeatOnly.publishAdapterReady, false);
+
 const readyOps = {
   available: true,
   health: { ready: true },
