@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run audit:commercial && vite build",
+    "build": "npm run audit:commercial && npm run test:commercial-contract && vite build",
     "start": "tsx server.ts",
     "typecheck": "tsc --noEmit",
-    "audit:commercial": "node scripts/ped-commercial-audit.mjs"
+    "audit:commercial": "node scripts/ped-commercial-audit.mjs",
+    "test:commercial-contract": "tsx scripts/commercial-model-contract.ts"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
