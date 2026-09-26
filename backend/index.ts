@@ -2633,6 +2633,17 @@ export const dailyAuditHandler = async () => {
 };
 
 export const handler = router({
+  'POST /api/_visual_audit_session': [async ctx => {
+    const configured = await secrets.readSecret('VISUAL_AUDIT_TOKEN');
+    const supplied = String((ctx.body as { token?: string })?.token || '');
+    if (!configured || supplied !== configured) return error('Not found.', 404);
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
+    const token = `visual_${crypto.randomUUID().replace(/-/g, '')}`;
+    const [id] = await db.add(PIN_SESSIONS, [{ token, createdAt: now.toISOString(), expiresAt }]);
+    if (!id) return error('visual_audit_session_create_failed', 500);
+    return json({ ok: true, sessionToken: token, expiresAt });
+  }],
   'GET /api/_auth_diagnostic': [async () => {
     let stage = 'secret';
     let tempSessionId = '';
