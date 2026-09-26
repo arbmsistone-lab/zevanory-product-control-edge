@@ -3362,3 +3362,162 @@ textarea:focus-visible {
     transition-duration: 0.001ms !important;
   }
 }
+
+
+/* ZEVANORY CFO v1 — compact executive workspace */
+.cfoWorkspace {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.cfoHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr);
+  gap: 16px;
+  align-items: center;
+}
+.cfoHero h2,
+.cfoPanel h3 { margin: 0; }
+.cfoEngineState {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-secondary);
+}
+.cfoEngineState p,
+.cfoEngineState small { margin: 0; color: var(--text-secondary); }
+.cfoState,
+.cfoAdapterState,
+.cfoRisk {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  gap: 8px;
+  font-weight: 800;
+  font-size: .75rem;
+  letter-spacing: .035em;
+}
+.cfoState.active,
+.cfoAdapterState.ready,
+.cfoRisk.low { color: var(--status-success); }
+.cfoState.standby,
+.cfoAdapterState.degraded,
+.cfoRisk.medium { color: var(--status-warning); }
+.cfoState.blocked,
+.cfoAdapterState.unconfigured,
+.cfoRisk.high { color: var(--status-error); }
+
+.cfoMetrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.cfoMetrics article {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.cfoMetrics article > svg { color: var(--status-info); }
+.cfoMetrics article.attention > svg { color: var(--status-warning); }
+.cfoMetrics span,
+.cfoMetrics small { color: var(--text-secondary); font-size: .75rem; }
+.cfoMetrics strong { font-size: clamp(.95rem, 1.35vw, 1.18rem); overflow-wrap: anywhere; }
+
+.cfoGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.cfoPanel {
+  min-width: 0;
+  overflow: hidden;
+}
+.cfoAdapterList,
+.cfoActionList {
+  display: grid;
+  gap: 8px;
+}
+.cfoAdapter,
+.cfoAction {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+.cfoAdapter div,
+.cfoAction div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.cfoAdapter small,
+.cfoAction small { color: var(--text-secondary); }
+.cfoAdapter p,
+.cfoAction p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .78rem;
+  overflow-wrap: anywhere;
+}
+.cfoMiniMetric { color: var(--text-secondary); }
+
+.cfoReceivableTable {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+.cfoReceivableRow {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr .85fr .65fr .8fr;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+  font-size: .82rem;
+}
+.cfoReceivableRow.head {
+  border-top: 0;
+  color: var(--text-secondary);
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .035em;
+}
+.cfoReceivableRow > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cfoReceivableRow > span:first-child,
+.cfoReceivableRow > span:nth-child(2) {
+  display: grid;
+  gap: 8px;
+}
+.cfoReceivableRow small { color: var(--text-secondary); }
+
+@media (max-width: 1180px) {
+  .cfoMetrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 960px) {
+  .cfoHero,
+  .cfoGrid { grid-template-columns: 1fr; }
+  .cfoReceivableRow { grid-template-columns: 1.35fr .9fr .8fr .6fr; }
+  .cfoReceivableRow > :last-child { display: none; }
+}
+@media (max-width: 560px) {
+  .cfoMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cfoReceivableRow { grid-template-columns: 1.5fr 1fr .75fr; }
+  .cfoReceivableRow > :nth-child(4),
+  .cfoReceivableRow > :last-child { display: none; }
+}

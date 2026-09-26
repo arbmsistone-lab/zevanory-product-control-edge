@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import { api } from './api';
 import CommercialWorkspace from './CommercialWorkspace';
+import CfoWorkspace from './CfoWorkspace';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
+import type { CfoWorkspaceData } from './cfo-model';
 
 type SystemItem = {
   id: string;
@@ -352,10 +354,11 @@ function App() {
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
   const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
+  const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
-  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | CommercialSection>('overview');
+  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
@@ -401,6 +404,7 @@ function App() {
       setGlobalTrust(response.data.globalTrust ?? null);
       setOperations(response.data.operations ?? null);
       setCommercial(response.data.commercial ?? null);
+      setCfo(response.data.cfo ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setSummary(response.data.summary);
@@ -477,6 +481,7 @@ function App() {
     setDashboard(null);
     setGlobalTrust(null);
     setCommercial(null);
+    setCfo(null);
   };
 
   const handleLogin = (token: string) => {
@@ -740,6 +745,7 @@ function App() {
         <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM/Vendas</button>
         <button className={view === 'support' ? 'tab active' : 'tab'} aria-pressed={view === 'support'} onClick={() => setView('support')}>Atendimento</button>
         <button className={view === 'finance' ? 'tab active' : 'tab'} aria-pressed={view === 'finance'} onClick={() => setView('finance')}>Financeiro</button>
+        <button className={view === 'cfo' ? 'tab active' : 'tab'} aria-pressed={view === 'cfo'} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
         <button className={view === 'evidence' ? 'tab active' : 'tab'} aria-pressed={view === 'evidence'} onClick={() => setView('evidence')}>Evidências</button>
       </nav>
 
@@ -756,6 +762,7 @@ function App() {
           <option value='crm'>CRM/Vendas</option>
           <option value='support'>Atendimento</option>
           <option value='finance'>Financeiro</option>
+          <option value='cfo'>ZEVANORY CFO</option>
           <option value='evidence'>Evidências</option>
           <option value='operations'>Operações técnicas</option>
           <option value='governance'>ZEES-16 / Governança</option>
@@ -772,6 +779,8 @@ function App() {
           onRefresh={() => load()}
         />
       )}
+
+      {view === 'cfo' && <CfoWorkspace data={cfo} />}
 
       {view === 'overview' && (
         <section className='overviewStack'>
