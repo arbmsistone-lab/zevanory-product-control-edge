@@ -13,6 +13,25 @@ const server = http.createServer(async (req, res) => {
     const host = req.headers.host || 'localhost';
     const url = new URL(req.url || '/', `http://${host}`);
 
+    if (url.pathname === '/api/commercial/stream') {
+      res.statusCode = 200;
+      res.setHeader('content-type', 'text/event-stream; charset=utf-8');
+      res.setHeader('cache-control', 'no-cache, no-transform');
+      res.setHeader('connection', 'keep-alive');
+      res.setHeader('x-accel-buffering', 'no');
+      res.flushHeaders?.();
+      let seq = 0;
+      const emit = () => {
+        seq += 1;
+        res.write(`id: ${Date.now()}-${seq}\nevent: commercial-update\ndata: {"seq":${seq},"at":"${new Date().toISOString()}"}\n\n`);
+      };
+      emit();
+      const timer = setInterval(emit, 5000);
+      const heartbeat = setInterval(() => res.write(`: heartbeat ${Date.now()}\n\n`), 15000);
+      req.on('close', () => { clearInterval(timer); clearInterval(heartbeat); });
+      return;
+    }
+
     if (url.pathname === '/portable-health') {
       const stores = await portableHealth();
       res.statusCode = stores.ok ? 200 : 503;
