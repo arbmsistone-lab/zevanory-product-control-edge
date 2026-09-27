@@ -4111,7 +4111,7 @@ main.shell-commercial > .commercialWorkspace > .commercialDashboardGrid {
 
 /* EXTRAORDINARY LIVE OPERATIONS MASTER */
 .liveTelemetry{display:inline-flex;align-items:center;gap:8px;margin-top:8px;min-height:32px;border:1px solid var(--border);border-radius:24px;background:var(--bg-secondary);padding:4px 12px;color:var(--text-secondary);font-size:12px}
-.liveTelemetry b{color:var(--text-primary);letter-spacing:.08em}.liveTelemetry small{color:var(--text-secondary)}
+.liveTelemetry b{color:var(--text-primary);letter-spacing:.08em}.liveTelemetry small{color:var(--text-secondary);font-size:12px}
 .liveDot{width:8px;height:8px;border-radius:50%;background:var(--status-warning);box-shadow:0 0 0 4px color-mix(in srgb,var(--status-warning) 14%,transparent)}
 .liveTelemetry.live .liveDot{background:var(--status-success);box-shadow:0 0 0 4px color-mix(in srgb,var(--status-success) 14%,transparent)}
 .liveTelemetry.stale .liveDot{background:var(--status-error);box-shadow:0 0 0 4px color-mix(in srgb,var(--status-error) 14%,transparent)}
@@ -4124,3 +4124,5 @@ main.shell-commercial > .commercialWorkspace > .commercialDashboardGrid {
 .creativeEvidence{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}.creativeEvidence span{max-width:100%;border:1px solid var(--border);border-radius:24px;padding:4px 8px;color:var(--text-secondary);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:1100px){.creativeLiveGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.liveTelemetry small{display:none}.creativeLiveGrid{grid-template-columns:1fr}.creativeLiveCard{grid-template-columns:112px minmax(0,1fr);grid-template-rows:1fr;min-height:144px}.creativePreview{min-height:144px}.creativeLiveBody{padding:8px}}
+
+@media (min-width:1200px) and (max-height:900px){.shell-commercial .commercialRow{min-height:0;padding:8px 12px}.shell-commercial .commercialRowMain{min-height:0}.shell-commercial .commercialRow p{margin:4px 0;line-height:16px}.shell-commercial .commercialMeta{margin-top:4px}.shell-commercial .commercialList{gap:4px}}
