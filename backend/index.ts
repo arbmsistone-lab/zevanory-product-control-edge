@@ -3005,6 +3005,7 @@ export const handler = router({
     if (!await requirePinSession((ctx.body as { sessionToken?: string })?.sessionToken)) return error('Sessao invalida ou expirada.', 401);
     return json(await refreshTelemetry());
   }],
+  'GET /api/_release': [async () => json({ ok: true, service: 'ZEVANORY PRODUCT CONTROL', commitSha: process.env.VERCEL_GIT_COMMIT_SHA || process.env.COMMIT_REF || process.env.GITHUB_SHA || null, environment: process.env.VERCEL_ENV || process.env.CONTEXT || 'unknown', provider: process.env.VERCEL ? 'vercel' : (process.env.NETLIFY ? 'netlify' : 'unknown') })],
   'GET /api/_healthcheck': [async () => json({ ok: true, name: 'ZEVANORY PRODUCT CONTROL', mode: 'four-digit-pin-admin-control' })],
   'GET /api/_portable_health': [async () => json(await portableHealth())],
 });
