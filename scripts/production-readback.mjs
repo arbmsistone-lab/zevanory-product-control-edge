@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const base='https://controle.zevanory.api.br';
 const render='https://zevanory-product-control-edge.onrender.com';
 const expected=process.env.EXPECTED_DEPLOY_SHA || '';
-const evidence={at:new Date().toISOString(),observer:'github-actions',expectedDeploySha:expected,checks:[]};
+const evidence={schema:'zevanory.production-readback.v1',at:new Date().toISOString(),observer:'github-actions',expectedDeploySha:expected,checks:[]};
 const record=(name,ok,detail={})=>{evidence.checks.push({name,ok,...detail}); if(!ok) process.exitCode=1;};
 
 async function fetchTimed(url,opts={}){
