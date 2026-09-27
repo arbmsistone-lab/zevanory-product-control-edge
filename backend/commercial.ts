@@ -321,15 +321,15 @@ export async function commercialRobotTick() {
         const results = await searchProspects(query);
         for (const result of results) {
           await upsertBySourceKey({
-            kind: 'lead',
+            kind: 'evidence',
             title: result.title,
-            detail: result.description || 'Lead público descoberto por pesquisa web.',
-            status: 'new',
+            detail: result.description || 'Descoberta pública ainda não qualificada.',
+            status: 'raw-discovery',
             channel: 'web',
             product: 'ZEVANORY',
             source: 'public-search',
             sourceKey: ('bing:' + result.url).slice(0, 220),
-            evidence: [result.url, 'query:' + query, 'discovered-at:' + startedAt],
+            evidence: [result.url, 'query:' + query, 'stage:raw-discovery', 'discovered-at:' + startedAt],
           });
           discovered += 1;
         }
