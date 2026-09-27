@@ -1,7 +1,7 @@
 name: Native Cloudflare credential readonly probe
 on:
   push:
-    branches: [probe/cloudflare-native-account-20260927]
+    branches: [main]
     paths: [".github/workflows/cloudflare-native-readonly-probe.yml"]
 permissions:
   contents: read
