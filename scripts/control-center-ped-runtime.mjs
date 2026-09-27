@@ -75,7 +75,7 @@ for(const size of sizes){
     const pageErrors=[]; page.on('pageerror',e=>pageErrors.push(String(e)));
     const consoleErrors=[]; page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
     await page.route('**/api/admin/bootstrap',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap)}));
-    await page.route('**/api/commercial/stream',r=>r.fulfill({status:200,contentType:'text/event-stream; charset=utf-8',headers:{'cache-control':'no-cache','connection':'keep-alive'},body:'event: commercial-update\ndata: {"seq":1,"at":"2026-09-26T16:00:00.000Z"}\n\n'}));
+    await page.route(/\/(control\/)?api\/commercial\/stream$/,r=>r.fulfill({status:200,contentType:'text/event-stream; charset=utf-8',headers:{'cache-control':'no-cache','connection':'keep-alive'},body:'event: commercial-update\ndata: {"seq":1,"at":"2026-09-26T16:00:00.000Z"}\n\n'}));
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
     await page.getByText('ZEVANORY CONTROL CENTER',{exact:true}).waitFor({state:'visible',timeout:15000});
