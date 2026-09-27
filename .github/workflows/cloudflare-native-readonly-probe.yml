@@ -24,3 +24,5 @@ jobs:
           curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/zones?name=zevanory.api.br" -o /tmp/z.json
           node -e 'const d=require("/tmp/z.json"); if(!d.success||d.result.length!==1) process.exit(2); const z=d.result[0]; console.log("ZONE_FOUND="+z.name); console.log("ACCOUNT_ID="+z.account.id); console.log("ZONE_ID="+z.id)'
           echo "MUTATION=0"
+
+# trusted-probe-trigger: 2026-09-27
