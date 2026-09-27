@@ -60,7 +60,9 @@ export default {
       const canonical = new URL(`https://controle.zevanory.api.br${suffix}${url.search}`);
       return Response.redirect(canonical.toString(), 308);
     }
-    const normalizedPath = url.pathname;
+    const normalizedPath = url.hostname === 'controle.zevanory.api.br' && url.pathname.startsWith('/control/')
+      ? url.pathname.slice('/control'.length)
+      : url.pathname;
     const normalizedUrl = new URL(request.url);
     normalizedUrl.pathname = normalizedPath;
     const normalizedRequest = new Request(normalizedUrl.toString(), request);
