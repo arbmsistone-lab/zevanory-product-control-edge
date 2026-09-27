@@ -124,6 +124,12 @@ jobs:
                source: "https://zevanory.api.br/api/core/v1/snapshot + /api/core/v1/decision"
              }' > dist/global-trust.json
 
+          echo "=== ADVERSARIAL_BOARD_SANITIZED_CORE_DIAGNOSTIC ==="
+          jq '{release_sha, continuity:{quorum_ok:.continuity.quorum_ok,min_quorum:.continuity.min_quorum}, zees16:{counts:.zees16.counts,persistence:.zees16.persistence,decision_hash:.zees16.decision_hash}, zea10:{counts:.zea10.counts,evaluator:.zea10.evaluator}}' /tmp/core-snapshot.json
+          jq '{release_sha,decision,eligible_for_critical_promotion,evidence_integrity_ok,zees16_complete,zea10_complete,blockers,zees16_decision_hash}' /tmp/core-decision.json
+          echo "=== ADVERSARIAL_BOARD_DERIVED_TRUST ==="
+          jq '{state,sha,evidenceRoot,quorum,zea10,engines}' dist/global-trust.json
+
           jq -e '.state and .quorum and .zea10 and .engines' dist/global-trust.json >/dev/null
           jq -e '.state == "GREEN"' dist/global-trust.json >/dev/null
           jq -e '.evidenceRoot != null and .evidenceRoot != ""' dist/global-trust.json >/dev/null
