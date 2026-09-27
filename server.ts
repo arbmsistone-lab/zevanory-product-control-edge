@@ -13,7 +13,7 @@ const server = http.createServer(async (req, res) => {
     const host = req.headers.host || 'localhost';
     const url = new URL(req.url || '/', `http://${host}`);
 
-    if (url.pathname === '/api/commercial/stream') {
+    if (url.pathname === '/api/commercial/stream' || url.pathname === '/control/api/commercial/stream') {
       res.statusCode = 200;
       res.setHeader('content-type', 'text/event-stream; charset=utf-8');
       res.setHeader('cache-control', 'no-cache, no-transform');
