@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, BadgeDollarSign, Bot, Check, CircleDollarSign, FileCheck2, Headphones,
   Megaphone, MessageSquareText, Search, Send, ShieldCheck, Sparkles, X, RotateCcw,
@@ -72,7 +72,32 @@ function RecordRow({ item }: { item: CommercialRecord }) {
 export default function CommercialWorkspace({ section, data, sessionToken, onRefresh }: Props) {
   const [busyId, setBusyId] = useState('');
   const [actionError, setActionError] = useState('');
+  const [liveState, setLiveState] = useState<'LIVE'|'SYNCING'|'STALE'>('SYNCING');
+  const [lastSyncAt, setLastSyncAt] = useState<number>(Date.now());
+  const refreshRef = useRef(onRefresh);
+  refreshRef.current = onRefresh;
   const meta = SECTION_META[section];
+
+  useEffect(() => {
+    let active = true;
+    let running = false;
+    const sync = async () => {
+      if (running || document.visibilityState === 'hidden') return;
+      running = true;
+      setLiveState('SYNCING');
+      try {
+        await refreshRef.current();
+        if (active) { setLastSyncAt(Date.now()); setLiveState('LIVE'); }
+      } catch {
+        if (active) setLiveState('STALE');
+      } finally { running = false; }
+    };
+    void sync();
+    const timer = window.setInterval(() => { void sync(); }, 5000);
+    const onVisibility = () => { if (document.visibilityState === 'visible') void sync(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisibility); };
+  }, [section]);
 
   const approvalItems = useMemo(() => {
     if (!data) return [];
@@ -122,6 +147,9 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <p className='kicker'>GROWTH / REVENUE OPERATIONS</p>
           <h2>{meta.title}</h2>
           <p>{meta.subtitle}</p>
+          <div className={'liveTelemetry ' + liveState.toLowerCase()} aria-live='polite'>
+            <span className='liveDot' /><b>{liveState}</b><small>sincronização operacional · {Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000))}s</small>
+          </div>
         </div>
         <div className={'robotBadge ' + data.robot.state.toLowerCase()}>
           <Bot size={18} />
@@ -188,7 +216,27 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
         </article>
       )}
 
-      {!['commercial','approvals'].includes(section) && (
+      {section === 'creatives' && (
+        <article className='commercialPanel creativeLivePanel'>
+          <div className='commercialPanelTitle'><Sparkles size={17}/><div><b>Creative Live Studio</b><small>{data.creatives.length} peça(s) · atualização automática</small></div></div>
+          <div className='creativeLiveGrid' aria-label='Criativos em tempo real'>
+            {data.creatives.map(item => (
+              <article className='creativeLiveCard' key={item.id}>
+                <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>{item.channel || 'canal pendente'}</small></div>
+                <div className='creativeLiveBody'>
+                  <div className='commercialTitleLine'><strong>{item.title}</strong><span className={'commercialState ' + statusClass(item.status)}>{commercialStatusLabel(item.status)}</span></div>
+                  <p>{item.detail || 'Sem detalhe adicional.'}</p>
+                  <div className='commercialMeta'><span>Fonte: {item.source}</span><span>{time(item.updatedAt)}</span></div>
+                  <div className='creativeEvidence'>{item.evidence.length ? item.evidence.slice(0,2).map(e => <span key={e}>{e}</span>) : <span>sem asset visual anexado</span>}</div>
+                </div>
+              </article>
+            ))}
+            {!data.creatives.length && <div className='commercialEmpty'>Nenhum criativo comprovado no stream operacional.</div>}
+          </div>
+        </article>
+      )}
+
+      {!['commercial','approvals','creatives'].includes(section) && (
         <article className='commercialPanel'>
           <div className='commercialPanelTitle'>
             {section === 'creatives' && <Sparkles size={17}/>}
