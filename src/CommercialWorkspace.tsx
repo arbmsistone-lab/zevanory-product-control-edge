@@ -80,23 +80,46 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
 
   useEffect(() => {
     let active = true;
-    let running = false;
+    let source: EventSource | null = null;
+    let fallback: number | null = null;
+    let reconnect: number | null = null;
     const sync = async () => {
-      if (running || document.visibilityState === 'hidden') return;
-      running = true;
-      setLiveState('SYNCING');
+      if (document.visibilityState === 'hidden') return;
       try {
         await refreshRef.current();
         if (active) { setLastSyncAt(Date.now()); setLiveState('LIVE'); }
-      } catch {
-        if (active) setLiveState('STALE');
-      } finally { running = false; }
+      } catch { if (active) setLiveState('STALE'); }
+    };
+    const connect = () => {
+      if (!active || document.visibilityState === 'hidden') return;
+      setLiveState('SYNCING');
+      source = new EventSource('/api/commercial/stream');
+      source.addEventListener('commercial-update', () => { void sync(); });
+      source.onopen = () => { if (active) { setLastSyncAt(Date.now()); setLiveState('LIVE'); } };
+      source.onerror = () => {
+        source?.close();
+        source = null;
+        if (active) {
+          setLiveState('STALE');
+          if (fallback === null) fallback = window.setInterval(() => { void sync(); }, 30000);
+          reconnect = window.setTimeout(connect, 5000);
+        }
+      };
     };
     void sync();
-    const timer = window.setInterval(() => { void sync(); }, 5000);
-    const onVisibility = () => { if (document.visibilityState === 'visible') void sync(); };
+    connect();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && !source) connect();
+      if (document.visibilityState === 'visible') void sync();
+    };
     document.addEventListener('visibilitychange', onVisibility);
-    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisibility); };
+    return () => {
+      active = false;
+      source?.close();
+      if (fallback !== null) window.clearInterval(fallback);
+      if (reconnect !== null) window.clearTimeout(reconnect);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [section]);
 
   const approvalItems = useMemo(() => {
@@ -138,7 +161,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
     evidence: [...data.evidence, ...data.events],
   };
   let items = genericMap[section] || [];
-  if (section === 'crm') items = [...data.leads].sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+  if (section === 'crm') items = data.leads.filter(item => ['qualified','contacted','opportunity','proposal','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
 
   return (
     <section className='commercialWorkspace'>
@@ -222,7 +245,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <div className='creativeLiveGrid' aria-label='Criativos em tempo real'>
             {data.creatives.map(item => (
               <article className='creativeLiveCard' key={item.id}>
-                <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>{item.channel || 'canal pendente'}</small></div>
+                <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}>{item.evidence.find(e => /^https?:\\/\\/.+\\.(png|jpe?g|webp|gif)(\\?|$)/i.test(e)) ? <img src={item.evidence.find(e => /^https?:\\/\\/.+\\.(png|jpe?g|webp|gif)(\\?|$)/i.test(e))} alt={'Asset de ' + item.title} loading='lazy' /> : <><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>ASSET PENDENTE · NÃO COMPROVADO</small></>}</div>
                 <div className='creativeLiveBody'>
                   <div className='commercialTitleLine'><strong>{item.title}</strong><span className={'commercialState ' + statusClass(item.status)}>{commercialStatusLabel(item.status)}</span></div>
                   <p>{item.detail || 'Sem detalhe adicional.'}</p>
