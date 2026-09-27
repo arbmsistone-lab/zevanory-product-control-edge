@@ -91,6 +91,9 @@ jobs:
               (($s.zea10.counts.partial // 0) == 0) and
               (($s.zea10.counts.blocked // 0) == 0) and
               (($s.zea10.counts.unknown // 0) == 0) and
+              ($d.evidence_integrity_ok == true) and
+              ($d.zees16_complete == true) and
+              ($d.zea10_complete == true) and
               ($d.decision == "ALLOW") and
               ($d.eligible_for_critical_promotion == true) and
               (($d.blockers // []) | length == 0)) as $green |
@@ -122,6 +125,11 @@ jobs:
              }' > dist/global-trust.json
 
           jq -e '.state and .quorum and .zea10 and .engines' dist/global-trust.json >/dev/null
+          jq -e '.state == "GREEN"' dist/global-trust.json >/dev/null
+          jq -e '.evidenceRoot != null and .evidenceRoot != ""' dist/global-trust.json >/dev/null
+          jq -e '.zea10.proven == 10 and .zea10.partial == 0 and .zea10.blocked == 0' dist/global-trust.json >/dev/null
+          jq -e '[.engines[].state] | all(. == "GREEN")' dist/global-trust.json >/dev/null
+          echo "GLOBAL_TRUST_FAIL_CLOSED=GREEN"
 
       - name: Stamp exact lineage
         shell: bash
