@@ -93,7 +93,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
     const connect = () => {
       if (!active || document.visibilityState === 'hidden') return;
       setLiveState('SYNCING');
-      source = new EventSource('/api/commercial/stream');
+      source = new EventSource((window.location.pathname === '/control' || window.location.pathname.startsWith('/control/')) ? '/control/api/commercial/stream' : '/api/commercial/stream');
       source.addEventListener('commercial-update', () => { void sync(); });
       source.onopen = () => { if (active) { setLastSyncAt(Date.now()); setLiveState('LIVE'); } };
       source.onerror = () => {
