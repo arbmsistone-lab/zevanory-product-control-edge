@@ -1,0 +1,26 @@
+name: ZEVANORY Production Readback
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/production-readback.yml'
+      - 'scripts/production-readback.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  production-readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independent production readback
+        env:
+          EXPECTED_DEPLOY_SHA: 93da99d6b5ad526c06297a17602c7f84db442d85
+        run: node scripts/production-readback.mjs
+      - name: Upload immutable readback evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-readback-${{ github.run_id }}
+          path: production-readback.json
+          if-no-files-found: error
