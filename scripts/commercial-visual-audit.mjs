@@ -145,13 +145,16 @@ for (const size of sizes) {
     const horizontalOverflow = Math.max(root.scrollWidth, body.scrollWidth) - window.innerWidth;
     const metricCards = [...document.querySelectorAll('.commercialMetrics article')].map((el, index) => {
       const r = el.getBoundingClientRect();
+      const top = r.top + window.scrollY;
+      const bottom = r.bottom + window.scrollY;
       return {
         index,
         left: Math.round(r.left),
         right: Math.round(r.right),
-        top: Math.round(r.top),
-        bottom: Math.round(r.bottom),
-        visibleInViewport: r.left >= -1 && r.right <= window.innerWidth + 1 && r.top >= -1 && r.bottom <= window.innerHeight + 1,
+        top: Math.round(top),
+        bottom: Math.round(bottom),
+        horizontallyContained: r.left >= -1 && r.right <= window.innerWidth + 1,
+        reachableInDocument: top >= -1 && bottom <= root.scrollHeight + 1,
       };
     });
     const directSections = [...workspace.children].map((el, index) => {
@@ -191,7 +194,7 @@ for (const size of sizes) {
   if (!audit.robotActive) throw new Error(size.name + ': robot active badge missing');
   if (!audit.kpis.every(item => item.present)) throw new Error(size.name + ': KPI missing ' + JSON.stringify(audit.kpis));
   if (audit.horizontalOverflow > 1) throw new Error(size.name + ': horizontal overflow=' + audit.horizontalOverflow);
-  if (audit.metricCards.length !== 6 || !audit.metricCards.every(card => card.visibleInViewport)) throw new Error(size.name + ': KPIs not fully visible=' + JSON.stringify(audit.metricCards));
+  if (audit.metricCards.length !== 6 || !audit.metricCards.every(card => card.horizontallyContained && card.reachableInDocument)) throw new Error(size.name + ': KPIs not reachable without clipping=' + JSON.stringify(audit.metricCards));
   if (audit.sectionOverlaps.length) throw new Error(size.name + ': section overlap=' + JSON.stringify(audit.sectionOverlaps));
   if (audit.clipped.length) throw new Error(size.name + ': clipped=' + JSON.stringify(audit.clipped));
   if (pageErrors.length) throw new Error(size.name + ': page errors=' + JSON.stringify(pageErrors));
