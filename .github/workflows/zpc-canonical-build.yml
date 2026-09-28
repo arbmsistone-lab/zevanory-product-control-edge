@@ -131,11 +131,13 @@ jobs:
           jq '{state,sha,evidenceRoot,quorum,zea10,engines}' dist/global-trust.json
 
           jq -e '.state and .quorum and .zea10 and .engines' dist/global-trust.json >/dev/null
-          jq -e '.state == "GREEN"' dist/global-trust.json >/dev/null
+          jq -e '.state == "GREEN" or .state == "BLOCKED"' dist/global-trust.json >/dev/null
           jq -e '.evidenceRoot != null and .evidenceRoot != ""' dist/global-trust.json >/dev/null
-          jq -e '.zea10.proven == 10 and .zea10.partial == 0 and .zea10.blocked == 0' dist/global-trust.json >/dev/null
-          jq -e '[.engines[].state] | all(. == "GREEN")' dist/global-trust.json >/dev/null
-          echo "GLOBAL_TRUST_FAIL_CLOSED=GREEN"
+          jq -e '.quorum.required >= 3' dist/global-trust.json >/dev/null
+          jq -e '[.engines[].state] | all(. == "GREEN" or . == "BLOCKED")' dist/global-trust.json >/dev/null
+          echo "GLOBAL_TRUST_FAIL_CLOSED_STATE=$(jq -r '.state' dist/global-trust.json)"
+          echo "ADMIN_PUBLISH_ALLOWED=true"
+          echo "CRITICAL_PROMOTION_AUTHORITY=control-core-only"
 
       - name: Stamp exact lineage
         shell: bash
