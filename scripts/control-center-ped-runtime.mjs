@@ -98,6 +98,7 @@ for(const size of sizes){
         const textClips=[];
         const clipsAxis=value=>value==='hidden'||value==='clip';
         for(const el of visible){
+          if(el instanceof SVGElement) continue;
           const r=el.getBoundingClientRect();
           const s=getComputedStyle(el);
           const selfX=clipsAxis(s.overflowX)&&el.scrollWidth>el.clientWidth+1;
