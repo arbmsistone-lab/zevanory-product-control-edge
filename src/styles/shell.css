@@ -248,3 +248,105 @@ body {
     width: 100%;
   }
 }
+
+
+/* V2 content contract: natural document flow, no inherited viewport compression. */
+.zpcWorkspace.shell-overview .overviewStack,
+.zpcWorkspace.shell-overview .overviewGrid,
+.zpcWorkspace.shell-overview .overviewGrid > .panel,
+.zpcWorkspace.shell-governance .governanceStack,
+.zpcWorkspace.shell-governance .certWorkspace,
+.zpcWorkspace.shell-governance .certSidebar,
+.zpcWorkspace.shell-governance .certDetail,
+.zpcWorkspace.shell-governance .pillarGrid,
+.zpcWorkspace.shell-governance .pillarCard,
+.zpcWorkspace.shell-governance .sourcePanel,
+.zpcWorkspace.shell-governance .sourcePanel .systems,
+.zpcWorkspace.shell-governance .sourcePanel .system {
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+}
+
+.zpcWorkspace.shell-overview .overviewStack,
+.zpcWorkspace.shell-governance .governanceStack {
+  flex: none;
+}
+
+.zpcWorkspace.shell-overview .overviewGrid {
+  flex: none;
+  align-items: start;
+}
+
+.zpcWorkspace.shell-overview .overviewGrid > .panel {
+  align-self: start;
+}
+
+.zpcWorkspace.shell-overview .overviewHero .productDescription,
+.zpcWorkspace.shell-overview .productDescription,
+.zpcWorkspace.shell-overview .overviewCard small,
+.zpcWorkspace.shell-overview .overviewCard strong,
+.zpcWorkspace.shell-overview .executiveList b,
+.zpcWorkspace.shell-overview .channelRow b {
+  max-height: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace.shell-governance .certWorkspace {
+  align-items: start;
+}
+
+.zpcWorkspace.shell-governance .certSidebar,
+.zpcWorkspace.shell-governance .certDetail {
+  align-self: start;
+}
+
+.zpcWorkspace.shell-governance .pillarGrid {
+  grid-template-rows: none;
+  align-items: stretch;
+}
+
+.zpcWorkspace.shell-governance .pillarCard,
+.zpcWorkspace.shell-governance .pillarCard > p,
+.zpcWorkspace.shell-governance .pillarEvidence,
+.zpcWorkspace.shell-governance .pillarBlocker {
+  max-height: none;
+  overflow: visible;
+}
+
+@media (max-width: 900px) {
+  .zpcWorkspace.shell-overview .overviewCards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace.shell-overview .overviewHero,
+  .zpcWorkspace.shell-overview .overviewGrid,
+  .zpcWorkspace.shell-governance .certWorkspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace.shell-overview .overviewCard,
+  .zpcWorkspace.shell-overview .overviewCard small,
+  .zpcWorkspace.shell-overview .overviewCard strong,
+  .zpcWorkspace.shell-overview .productDescription {
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  .zpcWorkspace.shell-governance .standardStrip,
+  .zpcWorkspace.shell-governance .certSummaryGrid,
+  .zpcWorkspace.shell-governance .certRunStrip,
+  .zpcWorkspace.shell-governance .pillarGrid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+}
