@@ -693,14 +693,15 @@ function App() {
   }
 
   return (
-    <main className={`shell shell-${view}`}>
+    <div className='zpcAppShell'>
       <header className='topbar'>
-        <div>
+        <div className='zpcBrandBlock'>
           <p className='eyebrow'>ZEVANORY · ADMINISTRATIVO GERAL</p>
           <h1>ZEVANORY CONTROL CENTER</h1>
-          <p className='subtitle'>Operação, produtos, canais, evidência e certificação em uma única central administrativa.</p>
+          <p className='subtitle'>Centro único de operação, produtos, canais, finanças, evidências e governança.</p>
         </div>
-        <div className='actions'>
+
+        <div className='actions zpcHeaderActions'>
           <a
             className='secondary linkButton'
             href='https://zevanory.api.br/solucoes'
@@ -727,11 +728,11 @@ function App() {
         </div>
       </header>
 
-      <section className='policybar'>
-        <span><ShieldCheck size={16} /> ADMIN RESTRITO</span>
-        <span><Gauge size={16} /> ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
-        <span><ShieldCheck size={16} /> FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
-        <span><AlertTriangle size={16} /> VENDA SEM GATE: BLOQUEADA</span>
+      <section className='policybar' aria-label='Políticas administrativas'>
+        <span><ShieldCheck size={16} />ADMIN RESTRITO</span>
+        <span><Gauge size={16} />ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
+        <span><ShieldCheck size={16} />FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
+        <span><AlertTriangle size={16} />VENDA SEM GATE: BLOQUEADA</span>
       </section>
 
       <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
@@ -746,19 +747,36 @@ function App() {
         <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
       </section>
 
-      <nav className='tabs controlCenterTabs' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
-        <button className={view === 'overview' ? 'tab active' : 'tab'} aria-pressed={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
-        <button className={view === 'products' ? 'tab active' : 'tab'} aria-pressed={view === 'products'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
-        <button className={view === 'commercial' ? 'tab active' : 'tab'} aria-pressed={view === 'commercial'} onClick={() => setView('commercial')}>Comercial</button>
-        <button className={view === 'creatives' ? 'tab active' : 'tab'} aria-pressed={view === 'creatives'} onClick={() => setView('creatives')}>Criativos</button>
-        <button className={view === 'approvals' ? 'tab active' : 'tab'} aria-pressed={view === 'approvals'} onClick={() => setView('approvals')}>Aprovações</button>
-        <button className={view === 'publications' ? 'tab active' : 'tab'} aria-pressed={view === 'publications'} onClick={() => setView('publications')}>Publicações</button>
-        <button className={view === 'prospecting' ? 'tab active' : 'tab'} aria-pressed={view === 'prospecting'} onClick={() => setView('prospecting')}>Prospecção</button>
-        <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM/Vendas</button>
-        <button className={view === 'support' ? 'tab active' : 'tab'} aria-pressed={view === 'support'} onClick={() => setView('support')}>Atendimento</button>
-        <button className={view === 'finance' ? 'tab active' : 'tab'} aria-pressed={view === 'finance'} onClick={() => setView('finance')}>Financeiro</button>
-        <button className={view === 'cfo' ? 'tab active' : 'tab'} aria-pressed={view === 'cfo'} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
-        <button className={view === 'evidence' ? 'tab active' : 'tab'} aria-pressed={view === 'evidence'} onClick={() => setView('evidence')}>Evidências</button>
+      <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
+        <div className='zpcNavGroup'>
+          <p className='zpcNavLabel'>Comando</p>
+          <button className={view === 'overview' ? 'tab active' : 'tab'} aria-pressed={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
+          <button className={view === 'products' ? 'tab active' : 'tab'} aria-pressed={view === 'products'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
+        </div>
+
+        <div className='zpcNavGroup'>
+          <p className='zpcNavLabel'>Crescimento</p>
+          <button className={view === 'commercial' ? 'tab active' : 'tab'} aria-pressed={view === 'commercial'} onClick={() => setView('commercial')}>Comercial</button>
+          <button className={view === 'creatives' ? 'tab active' : 'tab'} aria-pressed={view === 'creatives'} onClick={() => setView('creatives')}>Criativos</button>
+          <button className={view === 'approvals' ? 'tab active' : 'tab'} aria-pressed={view === 'approvals'} onClick={() => setView('approvals')}>Aprovações</button>
+          <button className={view === 'publications' ? 'tab active' : 'tab'} aria-pressed={view === 'publications'} onClick={() => setView('publications')}>Publicações</button>
+          <button className={view === 'prospecting' ? 'tab active' : 'tab'} aria-pressed={view === 'prospecting'} onClick={() => setView('prospecting')}>Prospecção</button>
+          <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM / Vendas</button>
+          <button className={view === 'support' ? 'tab active' : 'tab'} aria-pressed={view === 'support'} onClick={() => setView('support')}>Atendimento</button>
+        </div>
+
+        <div className='zpcNavGroup'>
+          <p className='zpcNavLabel'>Gestão</p>
+          <button className={view === 'finance' ? 'tab active' : 'tab'} aria-pressed={view === 'finance'} onClick={() => setView('finance')}>Financeiro</button>
+          <button className={view === 'cfo' ? 'tab active' : 'tab'} aria-pressed={view === 'cfo'} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
+          <button className={view === 'evidence' ? 'tab active' : 'tab'} aria-pressed={view === 'evidence'} onClick={() => setView('evidence')}>Evidências</button>
+        </div>
+
+        <div className='zpcNavGroup'>
+          <p className='zpcNavLabel'>Sistema</p>
+          <button className={view === 'operations' ? 'tab active' : 'tab'} aria-pressed={view === 'operations'} onClick={() => setView('operations')}>Operações técnicas</button>
+          <button className={view === 'governance' ? 'tab active' : 'tab'} aria-pressed={view === 'governance'} onClick={() => setView('governance')}>ZEES-16 / Governança</button>
+        </div>
       </nav>
 
       <label className='areaSelectWrap'>
@@ -781,6 +799,7 @@ function App() {
         </select>
       </label>
 
+      <main className={`zpcWorkspace shell shell-${view}`}>
       {error && <div className='errorbox globalError'>{error}</div>}
 
       {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
@@ -1135,7 +1154,8 @@ function App() {
           </section>
         </div>
       )}
-    </main>
+      </main>
+    </div>
   );
 }
 
