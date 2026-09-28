@@ -1,0 +1,25 @@
+:root {
+  --zpc-space-1: 4px;
+  --zpc-space-2: 8px;
+  --zpc-space-3: 12px;
+  --zpc-space-4: 16px;
+  --zpc-space-5: 20px;
+  --zpc-space-6: 24px;
+  --zpc-space-8: 32px;
+
+  --zpc-radius-sm: 8px;
+  --zpc-radius-md: 12px;
+  --zpc-radius-lg: 16px;
+
+  --zpc-shell-max: 1720px;
+  --zpc-nav-width: 228px;
+
+  --zpc-bg: var(--palette-07111f);
+  --zpc-surface: var(--palette-0a1727);
+  --zpc-surface-subtle: var(--palette-091624);
+  --zpc-border: var(--palette-1b3049);
+  --zpc-text: var(--palette-e8eef8);
+  --zpc-text-secondary: var(--palette-9fb0c6);
+  --zpc-text-muted: var(--palette-7f93ab);
+  --zpc-focus: var(--palette-9cc8ff);
+}
