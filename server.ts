@@ -5,8 +5,27 @@ import { commercialRobotTick } from './backend/commercial';
 
 const port = Number(process.env.PORT || 3000);
 
+const allowedCorsOrigins = new Set(['https://controle.zevanory.api.br']);
+
+function applyCors(req: http.IncomingMessage, res: http.ServerResponse) {
+  const origin = String(req.headers.origin || '');
+  if (!allowedCorsOrigins.has(origin)) return;
+  res.setHeader('access-control-allow-origin', origin);
+  res.setHeader('vary', 'Origin');
+  res.setHeader('access-control-allow-methods', 'GET,POST,OPTIONS');
+  res.setHeader('access-control-allow-headers', 'content-type');
+  res.setHeader('access-control-max-age', '600');
+}
+
+
 const server = http.createServer(async (req, res) => {
   try {
+    applyCors(req, res);
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const rawBody = Buffer.concat(chunks);
