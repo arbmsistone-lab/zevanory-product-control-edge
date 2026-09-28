@@ -2151,7 +2151,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 /* ZPC HUMAN-READABILITY / ZERO-SCROLL CONTRACT 2026-09-25 */
 @media (min-width: 1100px){
-  .shell-overview,.shell-products,.shell-operations,.shell-governance{height: 100dvh!important;max-height: 100dvh!important;overflow: hidden!important}
+  .shell-overview,.shell-products,.shell-operations,.shell-governance{height: auto;max-height: none;overflow: visible}
   .eyebrow,.kicker{font-size: 12px!important;line-height: 1.2!important}
   .subtitle{font-size: 12px!important;line-height: 1.25!important}
   .policybar span,.adminChip,.providerChip{font-size: 12px!important;line-height: 1.15!important}
@@ -2172,9 +2172,9 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .standardStrip span{font-size: 12px!important}.shell-governance .standardStrip b{font-size: 12px!important}
 }
 @media (min-width: 1100px){
-  .shell-governance .governanceStack{flex: 1 1 0!important;min-height: 0!important;overflow: hidden!important;gap: 4px!important}
-  .shell-governance .certWorkspace{flex: 1 1 0!important;min-height: 0!important;height: 100%!important;grid-template-columns: 220px minmax(0,1fr)!important;gap: 8px!important;overflow: hidden!important}
-  .shell-governance .certSidebar,.shell-governance .certDetail{height: 100%!important;min-height: 0!important;overflow: hidden!important}
+  .shell-governance .governanceStack{flex: none;min-height: 0;overflow: visible;gap: 8px}
+  .shell-governance .certWorkspace{flex: none;min-height: 0;height: auto;grid-template-columns: 220px minmax(0,1fr);gap: 8px;overflow: visible}
+  .shell-governance .certSidebar,.shell-governance .certDetail{height: auto;min-height: 0;overflow: visible}
   .shell-governance .certSidebar h2{font-size: 14px!important}.shell-governance .certProductButton{padding: 4px 8px!important}
   .shell-governance .certProductButton b{font-size: 12px!important}.shell-governance .certProductButton small{font-size: 12px!important}.shell-governance .certProductButton strong{font-size: 12px!important}
   .shell-governance .certSummaryPanel{margin-bottom: 4px!important;padding: 8px 8px!important}

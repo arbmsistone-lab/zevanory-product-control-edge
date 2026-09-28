@@ -56,12 +56,8 @@ async function navigate(page,width,key,label){
     await sel.selectOption(key);
     return;
   }
-  if(key==='operations'||key==='governance'){
-    await page.getByRole('button',{name:'Visão Geral',exact:true}).click();
-    await page.getByRole('button',{name:label,exact:true}).click();
-    return;
-  }
-  await page.getByRole('button',{name:label,exact:true}).click();
+  const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'});
+  await nav.getByRole('button',{name:label,exact:true}).click();
 }
 
 for(const size of sizes){
@@ -98,15 +94,47 @@ for(const size of sizes){
         });
         const horizontal=visible.map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),left:r.left,right:r.right,top:r.top,bottom:r.bottom};})
           .filter(x=>x.left<-1||x.right>innerWidth+1).slice(0,20);
-        const vertical=visible.map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),top:r.top,bottom:r.bottom,height:r.height};})
-          .filter(x=>x.top<-1||x.bottom>innerHeight+1).slice(0,20);
+        const clips=[];
+        const textClips=[];
+        const clipsAxis=value=>value==='hidden'||value==='clip';
+        for(const el of visible){
+          if(el instanceof SVGElement) continue;
+          const r=el.getBoundingClientRect();
+          const s=getComputedStyle(el);
+          const selfX=clipsAxis(s.overflowX)&&el.scrollWidth>el.clientWidth+1;
+          const selfY=clipsAxis(s.overflowY)&&el.scrollHeight>el.clientHeight+1;
+          if(selfX||selfY){
+            clips.push({tag:el.tagName,cls:String(el.className),kind:'self',x:selfX,y:selfY,client:[el.clientWidth,el.clientHeight],scroll:[el.scrollWidth,el.scrollHeight]});
+          }
+          if((el.textContent||'').trim()&&el.children.length===0){
+            const truncatedX=el.scrollWidth>el.clientWidth+1;
+            const truncatedY=el.scrollHeight>el.clientHeight+1;
+            const ellipsis=s.textOverflow==='ellipsis';
+            if((truncatedX||truncatedY)&&(ellipsis||clipsAxis(s.overflowX)||clipsAxis(s.overflowY))){
+              textClips.push({tag:el.tagName,cls:String(el.className),text:(el.textContent||'').trim().slice(0,100),x:truncatedX,y:truncatedY,textOverflow:s.textOverflow,overflowX:s.overflowX,overflowY:s.overflowY});
+            }
+          }
+          let parent=el.parentElement;
+          while(parent&&parent!==body&&parent!==de){
+            const ps=getComputedStyle(parent);
+            const pr=parent.getBoundingClientRect();
+            const clipX=clipsAxis(ps.overflowX)&&(r.left<pr.left-1||r.right>pr.right+1);
+            const clipY=clipsAxis(ps.overflowY)&&(r.top<pr.top-1||r.bottom>pr.bottom+1);
+            if(clipX||clipY){
+              clips.push({tag:el.tagName,cls:String(el.className),kind:'ancestor',ancestor:parent.tagName+'.'+String(parent.className),x:clipX,y:clipY});
+              break;
+            }
+            parent=parent.parentElement;
+          }
+          if(clips.length>=30&&textClips.length>=30) break;
+        }
         const textDebt=visible.filter(el=>(el.textContent||'').trim() && el.children.length===0).map(el=>({tag:el.tagName,cls:String(el.className),font:parseFloat(getComputedStyle(el).fontSize)}))
           .filter(x=>!allowedFonts.includes(x.font)).slice(0,30);
         const direct=main?[...main.children].filter(el=>getComputedStyle(el).display!=='none').map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),top:r.top,bottom:r.bottom,left:r.left,right:r.right};}):[];
         return {
           docScrollX:Math.max(de.scrollWidth,body.scrollWidth)-innerWidth,
           docScrollY:Math.max(de.scrollHeight,body.scrollHeight)-innerHeight,
-          horizontal,vertical,textDebt,direct,
+          horizontal,clips:clips.slice(0,30),textClips:textClips.slice(0,30),textDebt,direct,
           theme:de.dataset.theme||'',
           bg:rootStyle.getPropertyValue('--bg-primary').trim(),
           mainClass:String(main?.className||''),
@@ -114,9 +142,9 @@ for(const size of sizes){
       },{allowedFonts:[...allowedFonts]});
       row.dom=dom;
       if(dom.docScrollX>1) fail('GLOBAL_HORIZONTAL_SCROLL',String(dom.docScrollX));
-      if(dom.docScrollY>1) fail('GLOBAL_VERTICAL_SCROLL',String(dom.docScrollY));
-      if(dom.horizontal.length) fail('HORIZONTAL_CLIP',JSON.stringify(dom.horizontal));
-      if(dom.vertical.length) fail('VERTICAL_CLIP',JSON.stringify(dom.vertical));
+      if(dom.horizontal.length) fail('HORIZONTAL_OUTSIDE_VIEWPORT',JSON.stringify(dom.horizontal));
+      if(dom.clips.length) fail('CONTENT_CLIPPED',JSON.stringify(dom.clips));
+      if(dom.textClips.length) fail('TEXT_CLIPPED',JSON.stringify(dom.textClips));
       if(dom.textDebt.length) fail('RUNTIME_FONT_SCALE',JSON.stringify(dom.textDebt));
       if(dom.theme!==theme) fail('THEME_RUNTIME',dom.theme);
       if(!dom.mainClass.includes('shell-'+key)) fail('VIEW_CLASS',dom.mainClass);

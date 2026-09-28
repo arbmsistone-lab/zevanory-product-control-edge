@@ -1,0 +1,352 @@
+html,
+body,
+#root {
+  min-height: 100%;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  min-width: 320px;
+}
+
+.zpcAppShell {
+  width: min(100%, var(--zpc-shell-max));
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: var(--zpc-space-5) clamp(16px, 2vw, 32px) var(--zpc-space-8);
+  display: grid;
+  grid-template-columns: var(--zpc-nav-width) minmax(0, 1fr);
+  grid-template-areas:
+    "header header"
+    "policy policy"
+    "trust trust"
+    "nav workspace";
+  gap: var(--zpc-space-3) var(--zpc-space-5);
+  align-items: start;
+}
+
+.zpcAppShell > .topbar {
+  grid-area: header;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.zpcAppShell > .policybar {
+  grid-area: policy;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.zpcAppShell > .trustStrip {
+  grid-area: trust;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.zpcNavigation {
+  grid-area: nav;
+  position: sticky;
+  top: var(--zpc-space-4);
+  display: grid;
+  gap: var(--zpc-space-3);
+  min-inline-size: 0;
+  padding: var(--zpc-space-3);
+  border: 1px solid var(--zpc-border);
+  border-radius: var(--zpc-radius-lg);
+  background: var(--zpc-surface);
+}
+
+.zpcNavGroup {
+  display: grid;
+  gap: var(--zpc-space-1);
+  min-inline-size: 0;
+}
+
+.zpcNavLabel {
+  margin: var(--zpc-space-2) var(--zpc-space-2) var(--zpc-space-1);
+  color: var(--zpc-text-muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.zpcNavigation .tab {
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  justify-content: flex-start;
+  border: 1px solid transparent;
+  border-radius: var(--zpc-radius-sm);
+  padding: var(--zpc-space-2) var(--zpc-space-3);
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.zpcNavigation .tab:hover,
+.zpcNavigation .tab:focus-visible {
+  border-color: var(--zpc-border);
+}
+
+.zpcNavigation .tab.active {
+  border-color: var(--palette-3c6088);
+  background: var(--palette-112944);
+}
+
+.zpcWorkspace {
+  grid-area: workspace;
+  width: 100%;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+
+.zpcWorkspace.shell-overview,
+.zpcWorkspace.shell-products,
+.zpcWorkspace.shell-operations,
+.zpcWorkspace.shell-governance {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+.zpcAppShell .topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--zpc-space-5);
+}
+
+.zpcAppShell .topbar > div:first-child {
+  min-inline-size: 0;
+}
+
+.zpcAppShell .topbar h1 {
+  overflow-wrap: anywhere;
+}
+
+.zpcAppShell .actions {
+  justify-content: flex-end;
+  min-inline-size: 0;
+}
+
+.zpcAppShell .policybar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--zpc-space-2);
+}
+
+.zpcAppShell .policybar span {
+  min-inline-size: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.zpcAppShell .trustStrip {
+  grid-template-columns: minmax(180px, 1.1fr) repeat(4, minmax(0, 1fr));
+}
+
+.zpcAppShell .trustStrip b,
+.zpcAppShell .trustStrip strong {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+.zpcAppShell > .areaSelectWrap {
+  display: none;
+}
+
+.zpcWorkspace > .globalError:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 1180px) {
+  .zpcAppShell {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: var(--zpc-space-3) var(--zpc-space-4);
+  }
+
+  .zpcAppShell .policybar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zpcAppShell .trustStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zpcAppShell .trustState {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .zpcAppShell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "header"
+      "policy"
+      "trust"
+      "selector"
+      "workspace";
+    padding: var(--zpc-space-4);
+  }
+
+  .zpcNavigation {
+    display: none;
+  }
+
+  .zpcAppShell > .areaSelectWrap {
+    grid-area: selector;
+    display: grid;
+    gap: var(--zpc-space-2);
+    margin: 0;
+  }
+
+  .zpcAppShell > .areaSelectWrap select {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .zpcAppShell .topbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcAppShell .actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) {
+  .zpcAppShell {
+    padding: var(--zpc-space-3);
+  }
+
+  .zpcAppShell .policybar,
+  .zpcAppShell .trustStrip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcAppShell .trustState {
+    grid-column: auto;
+  }
+
+  .zpcAppShell .actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .zpcAppShell .actions > * {
+    width: 100%;
+  }
+}
+
+
+/* V2 content contract: natural document flow, no inherited viewport compression. */
+.zpcWorkspace.shell-overview .overviewStack,
+.zpcWorkspace.shell-overview .overviewGrid,
+.zpcWorkspace.shell-overview .overviewGrid > .panel,
+.zpcWorkspace.shell-governance .governanceStack,
+.zpcWorkspace.shell-governance .certWorkspace,
+.zpcWorkspace.shell-governance .certSidebar,
+.zpcWorkspace.shell-governance .certDetail,
+.zpcWorkspace.shell-governance .pillarGrid,
+.zpcWorkspace.shell-governance .pillarCard,
+.zpcWorkspace.shell-governance .sourcePanel,
+.zpcWorkspace.shell-governance .sourcePanel .systems,
+.zpcWorkspace.shell-governance .sourcePanel .system {
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+}
+
+.zpcWorkspace.shell-overview .overviewStack,
+.zpcWorkspace.shell-governance .governanceStack {
+  flex: none;
+}
+
+.zpcWorkspace.shell-overview .overviewGrid {
+  flex: none;
+  align-items: start;
+}
+
+.zpcWorkspace.shell-overview .overviewGrid > .panel {
+  align-self: start;
+}
+
+.zpcWorkspace.shell-overview .overviewHero .productDescription,
+.zpcWorkspace.shell-overview .productDescription,
+.zpcWorkspace.shell-overview .overviewCard small,
+.zpcWorkspace.shell-overview .overviewCard strong,
+.zpcWorkspace.shell-overview .executiveList b,
+.zpcWorkspace.shell-overview .channelRow b {
+  max-height: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace.shell-governance .certWorkspace {
+  align-items: start;
+}
+
+.zpcWorkspace.shell-governance .certSidebar,
+.zpcWorkspace.shell-governance .certDetail {
+  align-self: start;
+}
+
+.zpcWorkspace.shell-governance .pillarGrid {
+  grid-template-rows: none;
+  align-items: stretch;
+}
+
+.zpcWorkspace.shell-governance .pillarCard,
+.zpcWorkspace.shell-governance .pillarCard > p,
+.zpcWorkspace.shell-governance .pillarEvidence,
+.zpcWorkspace.shell-governance .pillarBlocker {
+  max-height: none;
+  overflow: visible;
+}
+
+@media (max-width: 900px) {
+  .zpcWorkspace.shell-overview .overviewCards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace.shell-overview .overviewHero,
+  .zpcWorkspace.shell-overview .overviewGrid,
+  .zpcWorkspace.shell-governance .certWorkspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace.shell-overview .overviewCard,
+  .zpcWorkspace.shell-overview .overviewCard small,
+  .zpcWorkspace.shell-overview .overviewCard strong,
+  .zpcWorkspace.shell-overview .productDescription {
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  .zpcWorkspace.shell-governance .standardStrip,
+  .zpcWorkspace.shell-governance .certSummaryGrid,
+  .zpcWorkspace.shell-governance .certRunStrip,
+  .zpcWorkspace.shell-governance .pillarGrid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+}
