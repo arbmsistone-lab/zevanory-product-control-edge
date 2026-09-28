@@ -761,7 +761,7 @@ function App() {
           <button className={view === 'approvals' ? 'tab active' : 'tab'} aria-pressed={view === 'approvals'} onClick={() => setView('approvals')}>Aprovações</button>
           <button className={view === 'publications' ? 'tab active' : 'tab'} aria-pressed={view === 'publications'} onClick={() => setView('publications')}>Publicações</button>
           <button className={view === 'prospecting' ? 'tab active' : 'tab'} aria-pressed={view === 'prospecting'} onClick={() => setView('prospecting')}>Prospecção</button>
-          <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM / Vendas</button>
+          <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM/Vendas</button>
           <button className={view === 'support' ? 'tab active' : 'tab'} aria-pressed={view === 'support'} onClick={() => setView('support')}>Atendimento</button>
         </div>
 
