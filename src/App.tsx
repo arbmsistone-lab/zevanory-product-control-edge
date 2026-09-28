@@ -701,6 +701,17 @@ function App() {
           <p className='subtitle'>Operação, produtos, canais, evidência e certificação em uma única central administrativa.</p>
         </div>
         <div className='actions'>
+          <a
+            className='secondary linkButton'
+            href='https://zevanory.api.br/solucoes'
+            target='_blank'
+            rel='noreferrer'
+            aria-label='Abrir página pública de vendas ZEVANORY'
+            title='Abrir página pública de vendas ZEVANORY'
+          >
+            <ExternalLink size={17} />
+            Página de vendas
+          </a>
           <button
             className='secondary themeToggle'
             onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
