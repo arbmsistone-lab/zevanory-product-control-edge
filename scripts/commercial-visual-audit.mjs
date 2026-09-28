@@ -83,6 +83,8 @@ const bootstrap = {
 await fs.mkdir(outDir, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const sizes = [
+  { name:'master-1920x1080', width:1920, height:1080 },
+  { name:'master-1366x768', width:1366, height:768 },
   { name:'desktop-1440', width:1440, height:1000 },
   { name:'tablet-768', width:768, height:1024 },
   { name:'mobile-375', width:375, height:812 },
