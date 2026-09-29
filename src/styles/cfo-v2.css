@@ -1,0 +1,125 @@
+/* ZEVANORY Control Center V2 — CFO */
+
+.zpcWorkspace .cfoWorkspace {
+  width: 100%;
+  min-inline-size: 0;
+  display: grid;
+  gap: var(--zpc-space-4);
+  overflow: visible;
+}
+
+.zpcWorkspace .cfoHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+  gap: var(--zpc-space-4);
+  align-items: start;
+}
+
+.zpcWorkspace .cfoHero > *,
+.zpcWorkspace .cfoEngineState,
+.zpcWorkspace .cfoPanel,
+.zpcWorkspace .cfoAdapter,
+.zpcWorkspace .cfoAction {
+  min-inline-size: 0;
+}
+
+.zpcWorkspace .cfoHero h2,
+.zpcWorkspace .cfoHero p,
+.zpcWorkspace .cfoEngineState p,
+.zpcWorkspace .cfoAdapter *,
+.zpcWorkspace .cfoAction * {
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace .cfoMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--zpc-space-3);
+}
+
+.zpcWorkspace .cfoMetrics article {
+  min-width: 0;
+  min-height: 112px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: var(--zpc-space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--zpc-radius-md);
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: var(--zpc-space-4);
+}
+
+.zpcWorkspace .cfoMetrics article strong {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace .cfoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--zpc-space-4);
+  align-items: start;
+}
+
+.zpcWorkspace .cfoPanel {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.zpcWorkspace .cfoAdapterList,
+.zpcWorkspace .cfoActionList {
+  display: grid;
+  gap: var(--zpc-space-2);
+}
+
+.zpcWorkspace .cfoAdapter,
+.zpcWorkspace .cfoAction {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.zpcWorkspace .cfoReceivableTable {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-gutter: stable;
+}
+
+.zpcWorkspace .cfoReceivableRow {
+  min-width: 760px;
+}
+
+.zpcWorkspace .cfoReceivableRow span,
+.zpcWorkspace .cfoReceivableRow b,
+.zpcWorkspace .cfoMiniMetric {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .zpcWorkspace .cfoHero,
+  .zpcWorkspace .cfoGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace .cfoMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .zpcWorkspace .cfoMetrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace .cfoReceivableTable {
+    border: 1px solid var(--border);
+    border-radius: var(--zpc-radius-sm);
+  }
+}
