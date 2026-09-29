@@ -645,3 +645,152 @@ body {
     display: grid;
   }
 }
+
+
+/* Strict NO-SCROLL responsive chrome: preserve controls, reduce non-workspace height. */
+@media (max-width: 900px) {
+  .zpcAppShell {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .zpcAppShell .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .zpcAppShell .zpcBrandBlock .eyebrow,
+  .zpcAppShell .zpcBrandBlock .subtitle {
+    display: none;
+  }
+
+  .zpcAppShell .topbar h1 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .zpcAppShell .actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: auto;
+  }
+
+  .zpcAppShell .actions > * {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    font-size: 0;
+  }
+
+  .zpcAppShell .actions svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .zpcAppShell .policybar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .zpcAppShell .policybar span {
+    min-height: 40px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 12px;
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  .zpcAppShell .policybar svg {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+  }
+
+  .zpcAppShell .trustStrip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .zpcAppShell .trustState {
+    grid-column: auto;
+    display: grid;
+    justify-items: center;
+    gap: 0;
+  }
+
+  .zpcAppShell .trustStrip > div {
+    min-width: 0;
+    text-align: center;
+  }
+
+  .zpcAppShell .trustStrip small,
+  .zpcAppShell .trustStrip b,
+  .zpcAppShell .trustStrip strong,
+  .zpcAppShell .trustState span {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .zpcAppShell .trustState svg {
+    display: none;
+  }
+
+  .zpcAppShell > .areaSelectWrap {
+    gap: 0;
+  }
+
+  .zpcAppShell > .areaSelectWrap > span {
+    display: none;
+  }
+
+  .zpcAppShell > .areaSelectWrap select {
+    min-height: 40px;
+    height: 40px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 620px) {
+  .zpcAppShell .topbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .zpcAppShell .actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .zpcAppShell .policybar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zpcAppShell .policybar span {
+    min-height: 32px;
+  }
+
+  .zpcAppShell .trustStrip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .zpcAppShell .trustState {
+    grid-column: 1 / -1;
+    grid-template-columns: auto auto;
+    justify-content: center;
+    gap: 4px;
+  }
+}
