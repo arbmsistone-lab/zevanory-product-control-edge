@@ -462,3 +462,58 @@ body {
 .zpcWorkspace.shell-governance .pillarEvidence span {
   color: var(--text-primary);
 }
+
+
+/* V2 mobile header refinement: expose the workspace sooner without hiding controls. */
+@media (max-width: 620px) {
+  .zpcAppShell {
+    gap: var(--zpc-space-2);
+    padding: var(--zpc-space-3);
+  }
+
+  .zpcAppShell .topbar {
+    gap: var(--zpc-space-3);
+  }
+
+  .zpcAppShell .topbar h1 {
+    margin-block: var(--zpc-space-1);
+    font-size: 21px;
+    line-height: 1.15;
+  }
+
+  .zpcAppShell .subtitle {
+    line-height: 1.4;
+  }
+
+  .zpcAppShell .actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--zpc-space-2);
+    width: 100%;
+  }
+
+  .zpcAppShell .actions > * {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .zpcAppShell .actions > .primary {
+    grid-column: 1 / -1;
+  }
+
+  .zpcAppShell .policybar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--zpc-space-2);
+  }
+
+  .zpcAppShell .policybar span {
+    min-height: 44px;
+    padding: var(--zpc-space-2);
+    line-height: 1.25;
+  }
+
+  .zpcAppShell > .areaSelectWrap {
+    gap: var(--zpc-space-1);
+  }
+}
