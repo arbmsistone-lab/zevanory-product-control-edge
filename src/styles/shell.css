@@ -66,7 +66,7 @@ body {
 
 .zpcNavGroup {
   display: grid;
-  gap: 2px;
+  gap: 4px;
   min-inline-size: 0;
 }
 
@@ -81,14 +81,14 @@ body {
 
 .zpcNavigation .tab {
   width: 100%;
-  min-height: 30px;
+  min-height: 32px;
   margin: 0;
   justify-content: flex-start;
   border: 1px solid transparent;
   border-radius: var(--zpc-radius-sm);
   background: transparent;
   color: var(--text-secondary);
-  padding: 5px var(--zpc-space-2);
+  padding: 4px var(--zpc-space-2);
   text-align: start;
   white-space: normal;
   overflow-wrap: anywhere;
