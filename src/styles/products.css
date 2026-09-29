@@ -553,3 +553,32 @@
     text-align: center;
   }
 }
+
+
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-products .productHead h3 {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .zpcWorkspace.shell-products .productActions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-products .productActions > * {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    height: 44px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    font-size: 0;
+  }
+
+  .zpcWorkspace.shell-products .productActions svg {
+    width: 16px;
+    height: 16px;
+  }
+}
