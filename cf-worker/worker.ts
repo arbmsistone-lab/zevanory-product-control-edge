@@ -3,7 +3,7 @@ import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
 const CANONICAL_PUBLIC_ORIGIN = 'https://controle.zevanory.api.br';
-const LEGACY_PUBLIC_ORIGIN = 'https://zevanory.api.br';
+const PUBLIC_MIRROR_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-public-mirror';
 
 const CERTIFIER_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -84,23 +84,75 @@ export default {
       });
     }
 
-    if (normalizedPath === '/solucoes' || normalizedPath.startsWith('/solucoes/')) {
-      const legacySales = new URL(LEGACY_PUBLIC_ORIGIN + normalizedPath + url.search);
-      const salesResponse = await fetch(legacySales.toString(), {
-        headers: { 'cache-control': 'no-cache', accept: 'text/html,*/*' },
+    const publicProductMap: Record<string,string> = {
+      '/produtos/zevanory-one':'/zevanory-one',
+      '/produtos/arbm-contador-saloes':'/arbm-contador-saloes',
+      '/produtos/arbm-sist':'/arbm-sist',
+      '/produtos/ia-na-pratica':'/ia-na-pratica',
+      '/produtos/vendas-na-pratica':'/vendas-na-pratica',
+      '/produtos/lucro-e-caixa':'/lucro-e-caixa',
+      '/produtos/combo-ia-vendas':'/combo-ia-vendas',
+      '/produtos/negocio-completo':'/negocio-completo',
+    };
+
+    const publicStaticMap: Record<string,string> = {
+      '/solucoes':'/solucoes',
+      '/termos':'/termos',
+      '/privacidade':'/privacidade',
+      '/reembolso':'/reembolso',
+      '/assets/product.css':'/product.css',
+    };
+
+    const mirrorPath = publicProductMap[normalizedPath]
+      || publicStaticMap[normalizedPath]
+      || (normalizedPath.startsWith('/brand/') ? normalizedPath : null);
+
+    if (mirrorPath) {
+      const upstream = new URL(PUBLIC_MIRROR_ORIGIN + mirrorPath + url.search);
+      const response = await fetch(upstream.toString(), {
+        headers: { 'cache-control': 'no-cache', accept: '*/*' },
         signal: AbortSignal.timeout(10000),
       });
-      if (!salesResponse.ok) {
-        return Response.json({ ok:false, error:'sales_surface_unavailable' }, {
-          status: salesResponse.status,
+      if (!response.ok) {
+        return Response.json({ ok:false, error:'public_surface_unavailable', path:normalizedPath }, {
+          status: response.status,
           headers: { 'cache-control':'no-store' },
         });
       }
-      const headers = new Headers(salesResponse.headers);
-      headers.set('cache-control', 'public, max-age=60');
+
+      const headers = new Headers(response.headers);
       headers.set('x-zpc-canonical-origin', CANONICAL_PUBLIC_ORIGIN);
-      headers.set('x-zpc-upstream-role', 'internal-sales-origin');
-      return new Response(salesResponse.body, { status:salesResponse.status, headers });
+      headers.set('x-zpc-upstream-role', 'internal-public-mirror');
+
+      const contentType = String(headers.get('content-type') || '');
+      if (contentType.includes('text/html')) {
+        let html = await response.text();
+        const rewrites: Array<[string,string]> = [
+          ['https://zevanory.api.br', CANONICAL_PUBLIC_ORIGIN],
+          ['/zevanory-public-mirror/solucoes', '/solucoes'],
+          ['/zevanory-public-mirror/termos', '/termos'],
+          ['/zevanory-public-mirror/privacidade', '/privacidade'],
+          ['/zevanory-public-mirror/reembolso', '/reembolso'],
+          ['/zevanory-public-mirror/zevanory-one', '/produtos/zevanory-one'],
+          ['/zevanory-public-mirror/arbm-contador-saloes', '/produtos/arbm-contador-saloes'],
+          ['/zevanory-public-mirror/arbm-sist', '/produtos/arbm-sist'],
+          ['/zevanory-public-mirror/ia-na-pratica', '/produtos/ia-na-pratica'],
+          ['/zevanory-public-mirror/vendas-na-pratica', '/produtos/vendas-na-pratica'],
+          ['/zevanory-public-mirror/lucro-e-caixa', '/produtos/lucro-e-caixa'],
+          ['/zevanory-public-mirror/combo-ia-vendas', '/produtos/combo-ia-vendas'],
+          ['/zevanory-public-mirror/negocio-completo', '/produtos/negocio-completo'],
+          ['/zevanory-public-mirror/brand/', '/brand/'],
+          ['/zevanory-public-mirror/product.css', '/assets/product.css'],
+          ['/zevanory-public-mirror/', '/solucoes'],
+        ];
+        for (const [from,to] of rewrites) html = html.split(from).join(to);
+        headers.set('content-type','text/html; charset=utf-8');
+        headers.set('cache-control','public, max-age=60');
+        return new Response(html,{status:response.status,headers});
+      }
+
+      headers.set('cache-control','public, max-age=3600');
+      return new Response(response.body,{status:response.status,headers});
     }
 
     if (normalizedPath === '/portable-health') {
