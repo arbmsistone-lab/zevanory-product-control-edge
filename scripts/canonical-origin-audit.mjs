@@ -46,3 +46,22 @@ console.log('ZERO_SCROLL_ROOT=PASS');
 if(worker.includes("const LEGACY_PUBLIC_ORIGIN")) fail('legacy public origin remains in worker');
 console.log('PUBLIC_PRODUCTS_PREFIX=/produtos/');
 console.log('LEGAL_ROUTES=/termos,/privacidade,/reembolso');
+
+
+const publicRoutes=[
+  'solucoes','zevanory-one','arbm-contador-saloes','arbm-sist',
+  'ia-na-pratica','vendas-na-pratica','lucro-e-caixa','combo-ia-vendas',
+  'negocio-completo','privacidade','termos','reembolso'
+];
+for(const slug of publicRoutes){
+  const path='public/'+slug+'/index.html';
+  if(!fs.existsSync(path)) fail('missing public route '+slug);
+  const html=fs.readFileSync(path,'utf8');
+  if(html.includes('https://zevanory.api.br')) fail('legacy canonical URL in '+slug);
+  if(html.includes('/zevanory-public-mirror')) fail('legacy mirror prefix in '+slug);
+  if(!html.includes('https://controle.zevanory.api.br')) fail('canonical public origin missing in '+slug);
+}
+if(!fs.existsSync('public/product.css')) fail('shared public stylesheet missing');
+if(!fs.existsSync('public/brand/zevanory-logo-dark.svg')) fail('canonical brand asset missing');
+console.log('PUBLIC_ROUTE_COUNT='+publicRoutes.length);
+console.log('PUBLIC_SURFACE_GATE=PASS');
