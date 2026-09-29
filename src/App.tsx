@@ -382,6 +382,13 @@ function App() {
     if (saved === 'light' || saved === 'dark') return saved;
     return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const loadGlobalTrustLive = async () => {
     try {
@@ -668,7 +675,7 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [products, filter]);
-  const productPageSize = 3;
+  const productPageSize = viewportWidth <= 900 ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
@@ -686,11 +693,11 @@ function App() {
     () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
     [certificationTargets, selectedTargetId],
   );
-  const certTargetPageSize = 6;
+  const certTargetPageSize = viewportWidth <= 900 ? 1 : 6;
   const certTargetPageCount = Math.max(1, Math.ceil(certificationTargets.length / certTargetPageSize));
   const safeCertTargetPage = Math.min(certTargetPage, certTargetPageCount - 1);
   const pagedCertificationTargets = certificationTargets.slice(safeCertTargetPage * certTargetPageSize, (safeCertTargetPage + 1) * certTargetPageSize);
-  const governancePageSize = 4;
+  const governancePageSize = viewportWidth <= 900 ? 1 : 2;
   const governancePageCount = selectedCertificationTarget ? Math.max(1, Math.ceil(selectedCertificationTarget.certification.pillars.length / governancePageSize)) : 1;
   const safeGovernancePage = Math.min(governancePage, governancePageCount - 1);
   const governancePillars = selectedCertificationTarget?.certification.pillars.slice(
