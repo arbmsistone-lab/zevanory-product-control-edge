@@ -1,5 +1,5 @@
 name: Core Pillar Readback
-# post-core-policy-merge: 678bd1a3369e114613f8d605ff9180120df972fa
+# post-pr269-final-deploy-attempt: 51ad5e5a656be65d7ce54ddf84ef8f33887f11d1
 
 on:
   pull_request:
