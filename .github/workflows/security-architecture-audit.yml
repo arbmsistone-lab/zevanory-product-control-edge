@@ -21,7 +21,8 @@ jobs:
       - name: Exact source
         run: |
           set -euo pipefail
-          test "$(git merge-base HEAD a628145bb088ad4bf07841d4f9f4b1e90e20266e)" = "a628145bb088ad4bf07841d4f9f4b1e90e20266e"
+          git fetch --no-tags --depth=8 origin a628145bb088ad4bf07841d4f9f4b1e90e20266e
+          git merge-base --is-ancestor a628145bb088ad4bf07841d4f9f4b1e90e20266e HEAD
           echo "BASE_SOURCE_SHA=a628145bb088ad4bf07841d4f9f4b1e90e20266e"
       - name: Install clean dependency graph
         run: npm install --ignore-scripts --no-fund
