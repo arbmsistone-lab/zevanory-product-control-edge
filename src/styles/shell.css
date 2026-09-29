@@ -616,7 +616,7 @@ body {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .zpcWorkspace.shell-governance .pillarCard {
     padding: var(--zpc-space-3);
   }
