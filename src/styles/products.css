@@ -346,3 +346,16 @@
     width: 100%;
   }
 }
+
+
+/* Gate chips inherit the active theme instead of legacy dark-only fills. */
+.zpcWorkspace.shell-products .gate,
+.zpcWorkspace.shell-products .gate.ok {
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.zpcWorkspace.shell-products .gate.ok {
+  border-color: var(--status-success);
+}
