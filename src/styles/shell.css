@@ -1094,3 +1094,14 @@ body {
     margin-top: 4px;
   }
 }
+
+
+.zpcWorkspace.shell-governance .governanceAbout .productDescription {
+  color: var(--text-primary);
+}
+
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-governance .rootBlockerDetails {
+    margin-top: 0;
+  }
+}
