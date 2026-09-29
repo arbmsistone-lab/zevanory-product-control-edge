@@ -1,31 +1,17 @@
 /* ZEVANORY Control Center V2 — Products
    Content defines geometry. No administrative information is hidden to fit a viewport. */
 
-:root,
-:root[data-theme='dark'] {
-  --zpc-product-card-bg: #081320;
-  --zpc-product-card-border: #24405f;
-  --zpc-product-surface: #0b1929;
-  --zpc-product-surface-border: #294968;
-  --zpc-product-text: #f5f9ff;
-  --zpc-product-text-secondary: #c4d5e8;
-  --zpc-product-text-muted: #b7cadf;
-  --zpc-product-success: #a9f0d2;
-  --zpc-product-warning: #ffe0a3;
-  --zpc-product-danger: #ffc2c8;
-}
-
-:root[data-theme='light'] {
-  --zpc-product-card-bg: #ffffff;
-  --zpc-product-card-border: #a9bfd4;
-  --zpc-product-surface: #eef3f9;
-  --zpc-product-surface-border: #a4bbd1;
-  --zpc-product-text: #17212e;
-  --zpc-product-text-secondary: #30455d;
-  --zpc-product-text-muted: #425a73;
-  --zpc-product-success: #0a5a42;
-  --zpc-product-warning: #664400;
-  --zpc-product-danger: #842231;
+.zpcWorkspace.shell-products {
+  --zpc-product-card-bg: var(--surface);
+  --zpc-product-card-border: var(--border);
+  --zpc-product-surface: var(--surface-elevated);
+  --zpc-product-surface-border: var(--border);
+  --zpc-product-text: var(--text-primary);
+  --zpc-product-text-secondary: var(--text-secondary);
+  --zpc-product-text-muted: var(--text-secondary);
+  --zpc-product-success: var(--text-primary);
+  --zpc-product-warning: var(--text-primary);
+  --zpc-product-danger: var(--text-primary);
 }
 
 .zpcWorkspace.shell-products {
@@ -296,23 +282,19 @@
 }
 
 :root[data-theme='light'] .zpcWorkspace.shell-products .secondary {
-  background: #ffffff;
-  border-color: #8ca7c0;
-  color: #23384f;
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-primary);
 }
 
 :root[data-theme='light'] .zpcWorkspace.shell-products .ghost {
-  color: #304a64;
+  color: var(--text-primary);
 }
 
-:root[data-theme='light'] .zpcWorkspace.shell-products .saleBadge.on {
-  background: #d7f1e7;
-  color: #064c37;
-}
-
+:root[data-theme='light'] .zpcWorkspace.shell-products .saleBadge.on,
 :root[data-theme='light'] .zpcWorkspace.shell-products .saleBadge.off {
-  background: #f6ead0;
-  color: #5d4000;
+  background: var(--surface-elevated);
+  color: var(--text-primary);
 }
 
 @media (max-width: 1180px) {
