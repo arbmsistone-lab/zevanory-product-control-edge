@@ -794,3 +794,54 @@ body {
     gap: 4px;
   }
 }
+
+
+/* Strict NO-SCROLL overview paging: use horizontal density instead of vertical scroll. */
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-overview .overviewHero {
+    padding: 8px;
+  }
+
+  .zpcWorkspace.shell-overview .overviewHeroActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+  }
+
+  .zpcWorkspace.shell-overview .overviewHeroActions > * {
+    min-width: 0;
+    min-height: 40px;
+    padding: 4px;
+    font-size: 12px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .zpcWorkspace.shell-overview .overviewCards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .zpcWorkspace.shell-overview .overviewCard {
+    min-height: 0;
+    padding: 8px;
+  }
+
+  .zpcWorkspace.shell-overview .overviewCard strong,
+  .zpcWorkspace.shell-overview .overviewCard small {
+    line-height: 1.2;
+  }
+
+  .zpcWorkspace.shell-overview .overviewGrid > .panel {
+    padding: 8px;
+  }
+
+  .zpcWorkspace.shell-overview .executiveList {
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-overview .executiveList > div {
+    padding: 4px 8px;
+  }
+}
