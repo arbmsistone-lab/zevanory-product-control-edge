@@ -368,6 +368,7 @@ function App() {
   const [auditPage, setAuditPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
   const [certTargetPage, setCertTargetPage] = useState(0);
+  const [governanceSectionPage, setGovernanceSectionPage] = useState<'summary' | 'pillars'>('summary');
   const [governanceMode, setGovernanceMode] = useState<'certification' | 'sources'>('certification');
   const [selectedTargetId, setSelectedTargetId] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
@@ -704,6 +705,7 @@ function App() {
     safeGovernancePage * governancePageSize,
     (safeGovernancePage + 1) * governancePageSize,
   ) ?? [];
+  const compactGovernance = viewportWidth <= 900;
   const openCertification = (product: Product) => {
     setSelectedTargetId(`product:${product.id}`);
     setGovernanceMode('certification');
@@ -1044,6 +1046,18 @@ function App() {
             <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span><b>{certificationTargets.length}</b>Alvos certificados</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
           </section>
           {governanceMode === 'certification' && <section className='certWorkspace'>
+            {compactGovernance && (
+              <label className='certTargetSelectWrap'>
+                <span>Alvo ZEES-16</span>
+                <select
+                  value={selectedCertificationTarget?.id ?? ''}
+                  onChange={event => { setSelectedTargetId(event.target.value); setGovernancePage(0); setGovernanceSectionPage('summary'); }}
+                  aria-label='Selecionar alvo ZEES-16'
+                >
+                  {certificationTargets.map(target => <option key={target.id} value={target.id}>{target.name}</option>)}
+                </select>
+              </label>
+            )}
             <aside className='panel certSidebar'>
               <p className='kicker'>ESCOPO ZEES-16</p><h2>Sistemas e produtos</h2>
               <div className='certProductList'>
@@ -1059,7 +1073,13 @@ function App() {
                 <button className='secondary compact' onClick={() => setCertTargetPage(Math.min(certTargetPageCount - 1, safeCertTargetPage + 1))} disabled={safeCertTargetPage >= certTargetPageCount - 1}>›</button>
               </div>
             </aside>
-            <div className='certDetail'>
+            <div className='certDetail' data-page={compactGovernance ? governanceSectionPage : 'all'}>
+              {compactGovernance && (
+                <nav className='governanceSectionPager' aria-label='Páginas da certificação'>
+                  <button className={governanceSectionPage === 'summary' ? 'filter active' : 'filter'} aria-pressed={governanceSectionPage === 'summary'} onClick={() => setGovernanceSectionPage('summary')}>Resumo</button>
+                  <button className={governanceSectionPage === 'pillars' ? 'filter active' : 'filter'} aria-pressed={governanceSectionPage === 'pillars'} onClick={() => setGovernanceSectionPage('pillars')}>Pilares</button>
+                </nav>
+              )}
               {selectedCertificationTarget && governanceMode === 'certification' && <>
                 <section className='panel certSummaryPanel'>
                   <div className='certTitleRow'>
