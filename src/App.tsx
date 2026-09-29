@@ -361,6 +361,7 @@ function App() {
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
+  const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(() => new Set());
   const [overviewPage, setOverviewPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
   const [auditPage, setAuditPage] = useState(0);
@@ -529,6 +530,15 @@ function App() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const toggleProductDetails = (productId: string) => {
+    setExpandedProductIds(current => {
+      const next = new Set(current);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
   };
 
   const openNew = () => {
@@ -904,30 +914,44 @@ function App() {
                   <span><b>{statusLabel(product.status)}</b><small>Status</small></span>
                   <span><b>{product.deliveryModel || 'N/D'}</b><small>Entrega</small></span>
                 </div>
-                <div className='certPanel'>
-                  <div className='auditHeader'>
-                    <div><small>ZEES-16 · CERTIFICAÇÃO ESPECÍFICA DO ALVO</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
-                    <b className={product.certification.ready ? 'certRatio ready' : 'certRatio'}>{product.certification.summary.proved}/{product.certification.summary.applicable}</b>
+                <button
+                  className='productDisclosureToggle secondary compact'
+                  type='button'
+                  aria-expanded={expandedProductIds.has(product.id)}
+                  onClick={() => toggleProductDetails(product.id)}
+                >
+                  <span>ZEES {product.certification.summary.proved}/{product.certification.summary.applicable} · {product.certification.summary.blocked} bloqueados</span>
+                  <strong>{expandedProductIds.has(product.id) ? 'Ocultar detalhes' : 'Ver detalhes'}</strong>
+                </button>
+                <div className={expandedProductIds.has(product.id) ? 'productDisclosureBody expanded' : 'productDisclosureBody'}>
+                  <div className='certPanel'>
+                    <div className='auditHeader'>
+                      <div><small>ZEES-16 · CERTIFICAÇÃO ESPECÍFICA DO ALVO</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
+                      <b className={product.certification.ready ? 'certRatio ready' : 'certRatio'}>{product.certification.summary.proved}/{product.certification.summary.applicable}</b>
+                    </div>
+                    <div className='zeesSealGrid' aria-label='16 selos ZEES'>
+                      {product.certification.pillars.map(pillar => (
+                        <span
+                          key={pillar.id}
+                          className={`zeesSealChip ${pillar.status}`}
+                          title={`${pillar.id} · ${pillar.name} · ${certificationStatusLabel(pillar.status)}`}
+                          aria-label={`${pillar.id} ${pillar.name}: ${certificationStatusLabel(pillar.status)}`}
+                        >
+                          <b>{pillar.id}</b>
+                        </span>
+                      ))}
+                    </div>
+                    <div className='certCompactSummary'>
+                      <span className='proved'>{product.certification.summary.proved} provados</span>
+                      <span className='partial'>{product.certification.summary.partial} parciais</span>
+                      <span className='blocked'>{product.certification.summary.blocked} bloqueados</span>
+                      <span>{product.certification.summary.na} N/A</span>
+                    </div>
+                    <p className='certBlockerLine'>{product.certification.ready ? 'CERTIFICADO INTEGRALMENTE' : `Bloqueador: ${product.certification.rootBlocker ?? 'evidência obrigatória pendente'}`}</p>
                   </div>
-                  <div className='zeesSealGrid' aria-label='16 selos ZEES'>
-                    {product.certification.pillars.map(pillar => (
-                      <span
-                        key={pillar.id}
-                        className={`zeesSealChip ${pillar.status}`}
-                        title={`${pillar.id} · ${pillar.name} · ${certificationStatusLabel(pillar.status)}`}
-                        aria-label={`${pillar.id} ${pillar.name}: ${certificationStatusLabel(pillar.status)}`}
-                      >
-                        <b>{pillar.id}</b>
-                      </span>
-                    ))}
-                  </div>
-                  <div className='certCompactSummary'>
-                    <span className='proved'>{product.certification.summary.proved} provados</span>
-                    <span className='partial'>{product.certification.summary.partial} parciais</span>
-                    <span className='blocked'>{product.certification.summary.blocked} bloqueados</span>
-                    <span>{product.certification.summary.na} N/A</span>
-                  </div>
-                  <p className='certBlockerLine'>{product.certification.ready ? 'CERTIFICADO INTEGRALMENTE' : `Bloqueador: ${product.certification.rootBlocker ?? 'evidência obrigatória pendente'}`}</p>
+                  {!product.commercialReady && product.status !== 'archived' && (
+                    <p className='blockers'>{product.blockers.slice(0, 2).join(' · ')}{product.blockers.length > 2 ? ` +${product.blockers.length - 2}` : ''}</p>
+                  )}
                 </div>
                 <div className='gateRow'>
                   <span className={product.gates.legal ? 'gate ok' : 'gate'}>Legal</span>
@@ -935,9 +959,6 @@ function App() {
                   <span className={product.gates.fulfillment ? 'gate ok' : 'gate'}>Entrega</span>
                   <span className={product.gates.support ? 'gate ok' : 'gate'}>Suporte</span>
                 </div>
-                {!product.commercialReady && product.status !== 'archived' && (
-                  <p className='blockers'>{product.blockers.slice(0, 2).join(' · ')}{product.blockers.length > 2 ? ` +${product.blockers.length - 2}` : ''}</p>
-                )}
                 <div className='productActions'>
                   <button className='secondary compact' onClick={() => openCertification(product)}><ShieldCheck size={14} />Certificação</button>
                   <button className='secondary compact' onClick={() => openEdit(product)}><Pencil size={14} />Editar</button>
