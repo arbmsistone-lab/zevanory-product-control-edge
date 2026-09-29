@@ -517,3 +517,91 @@ body {
     gap: var(--zpc-space-1);
   }
 }
+
+
+/* V2 Governance disclosure contract: full detail on desktop, progressive disclosure on small screens. */
+.zpcWorkspace.shell-governance .pillarDisclosureToggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--zpc-space-3);
+  align-items: start;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.zpcWorkspace.shell-governance .pillarDisclosureIdentity,
+.zpcWorkspace.shell-governance .pillarDisclosureState {
+  min-width: 0;
+}
+
+.zpcWorkspace.shell-governance .pillarDisclosureIdentity {
+  display: grid;
+  gap: var(--zpc-space-1);
+}
+
+.zpcWorkspace.shell-governance .pillarDisclosureIdentity strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.zpcWorkspace.shell-governance .pillarDisclosureState {
+  display: grid;
+  justify-items: end;
+  gap: var(--zpc-space-1);
+}
+
+.zpcWorkspace.shell-governance .pillarDisclosureState small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace.shell-governance .pillarDisclosureBody {
+  display: grid;
+  gap: var(--zpc-space-2);
+  margin-top: var(--zpc-space-2);
+}
+
+.zpcWorkspace.shell-governance .pillarDisclosureBody > p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .zpcWorkspace.shell-governance .pillarCard {
+    padding: var(--zpc-space-3);
+  }
+
+  .zpcWorkspace.shell-governance .pillarDisclosureToggle {
+    min-height: 44px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--zpc-space-2);
+  }
+
+  .zpcWorkspace.shell-governance .pillarDisclosureState {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    align-items: center;
+  }
+
+  .zpcWorkspace.shell-governance .pillarDisclosureState small {
+    text-align: left;
+  }
+
+  .zpcWorkspace.shell-governance .pillarDisclosureBody {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-governance .pillarDisclosureBody.expanded {
+    display: grid;
+  }
+}

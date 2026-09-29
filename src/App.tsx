@@ -362,6 +362,7 @@ function App() {
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(() => new Set());
+  const [expandedPillarIds, setExpandedPillarIds] = useState<Set<string>>(() => new Set());
   const [overviewPage, setOverviewPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
   const [auditPage, setAuditPage] = useState(0);
@@ -537,6 +538,15 @@ function App() {
       const next = new Set(current);
       if (next.has(productId)) next.delete(productId);
       else next.add(productId);
+      return next;
+    });
+  };
+
+  const togglePillarDetails = (pillarId: string) => {
+    setExpandedPillarIds(current => {
+      const next = new Set(current);
+      if (next.has(pillarId)) next.delete(pillarId);
+      else next.add(pillarId);
       return next;
     });
   };
@@ -1076,15 +1086,31 @@ function App() {
                 <section className='pillarGrid'>
                   {governancePillars.map(pillar => (
                     <article className={`pillarCard ${pillar.status}`} key={pillar.id}>
-                      <div className='pillarHead'><span className='pillarIndex'>{pillar.id}</span><span className={`pillarStatus ${pillar.status}`}>{certificationStatusLabel(pillar.status)}</span></div>
-                      <h3>{pillar.name}</h3><p>{pillar.rationale}</p>
-                      <div className='pillarMeta'><span>{pillar.controls} controles</span><span>{pillar.evidence.length} evidencias</span></div>
-                      {pillar.blocker && pillar.status !== 'proved' && pillar.status !== 'na' && <div className='pillarBlocker'>{pillar.blocker}</div>}
-                      {pillar.evidence.length > 0 && (
-                        <div className='pillarEvidence'>
-                          {pillar.evidence.slice(0, 3).map((item, index) => <span key={index}><CheckCircle2 size={11} />{item}</span>)}
-                        </div>
-                      )}
+                      <button
+                        type='button'
+                        className='pillarDisclosureToggle'
+                        aria-expanded={expandedPillarIds.has(pillar.id)}
+                        onClick={() => togglePillarDetails(pillar.id)}
+                      >
+                        <span className='pillarDisclosureIdentity'>
+                          <span className='pillarIndex'>{pillar.id}</span>
+                          <strong>{pillar.name}</strong>
+                        </span>
+                        <span className='pillarDisclosureState'>
+                          <span className={`pillarStatus ${pillar.status}`}>{certificationStatusLabel(pillar.status)}</span>
+                          <small>{pillar.controls} controles · {pillar.evidence.length} evidências</small>
+                        </span>
+                      </button>
+                      <div className={expandedPillarIds.has(pillar.id) ? 'pillarDisclosureBody expanded' : 'pillarDisclosureBody'}>
+                        <p>{pillar.rationale}</p>
+                        <div className='pillarMeta'><span>{pillar.controls} controles</span><span>{pillar.evidence.length} evidencias</span></div>
+                        {pillar.blocker && pillar.status !== 'proved' && pillar.status !== 'na' && <div className='pillarBlocker'>{pillar.blocker}</div>}
+                        {pillar.evidence.length > 0 && (
+                          <div className='pillarEvidence'>
+                            {pillar.evidence.slice(0, 3).map((item, index) => <span key={index}><CheckCircle2 size={11} />{item}</span>)}
+                          </div>
+                        )}
+                      </div>
                     </article>
                   ))}
                 </section>
