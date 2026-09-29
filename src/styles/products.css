@@ -589,3 +589,66 @@
     gap: 4px;
   }
 }
+
+
+.productFilterSelect {
+  display: none;
+}
+
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-products .toolbarControls {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .zpcWorkspace.shell-products .filters {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-products .productFilterSelect {
+    display: grid;
+    min-width: 0;
+  }
+
+  .zpcWorkspace.shell-products .productFilterSelect > span {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .zpcWorkspace.shell-products .productFilterSelect select {
+    width: 100%;
+    min-height: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--zpc-radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+
+  .zpcWorkspace.shell-products .pagination {
+    display: grid;
+    grid-template-columns: 40px auto 40px;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-products .pagination .filter {
+    min-width: 40px;
+    width: 40px;
+    min-height: 40px;
+    height: 40px;
+    padding: 0;
+  }
+
+  .zpcWorkspace.shell-products .pagination > span {
+    min-width: 36px;
+    text-align: center;
+    font-size: 12px;
+  }
+}
