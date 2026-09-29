@@ -1,0 +1,262 @@
+/* Canonical V2 workspace geometry: legacy viewport compression is explicitly superseded. */
+.zpcWorkspace.shell-commercial,
+.zpcWorkspace.shell-creatives,
+.zpcWorkspace.shell-approvals,
+.zpcWorkspace.shell-publications,
+.zpcWorkspace.shell-prospecting,
+.zpcWorkspace.shell-crm,
+.zpcWorkspace.shell-support,
+.zpcWorkspace.shell-finance,
+.zpcWorkspace.shell-evidence {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+/* ZEVANORY Control Center V2 — Commercial / Growth Operations */
+
+.zpcWorkspace .commercialWorkspace {
+  width: 100%;
+  min-inline-size: 0;
+  display: grid;
+  gap: var(--zpc-space-4);
+  overflow: visible;
+}
+
+.zpcWorkspace .commercialHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr);
+  gap: var(--zpc-space-4);
+  align-items: start;
+}
+
+.zpcWorkspace .commercialHeader > div,
+.zpcWorkspace .robotBadge,
+.zpcWorkspace .commercialPanel,
+.zpcWorkspace .commercialRow,
+.zpcWorkspace .approvalCard,
+.zpcWorkspace .creativeLiveCard {
+  min-inline-size: 0;
+}
+
+.zpcWorkspace .commercialHeader h2,
+.zpcWorkspace .commercialHeader p,
+.zpcWorkspace .robotBadge b,
+.zpcWorkspace .robotBadge small {
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace .commercialMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--zpc-space-3);
+}
+
+.zpcWorkspace .commercialMetrics article {
+  min-width: 0;
+  min-height: 112px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: var(--zpc-space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--zpc-radius-md);
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: var(--zpc-space-4);
+}
+
+.zpcWorkspace .commercialMetrics article > strong {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace .commercialDashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--zpc-space-4);
+  min-height: 0;
+}
+
+.zpcWorkspace .commercialPanel {
+  min-width: 0;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.zpcWorkspace .commercialDashboardGrid .commercialPanel {
+  display: grid;
+  align-content: start;
+}
+
+.zpcWorkspace .commercialList,
+.zpcWorkspace .commercialListTall {
+  display: grid;
+  gap: var(--zpc-space-2);
+  max-height: none;
+  overflow: visible;
+  scrollbar-gutter: auto;
+}
+
+.zpcWorkspace .commercialRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--zpc-space-3);
+  align-items: start;
+  background: var(--bg-secondary);
+}
+
+.zpcWorkspace .commercialRowMain,
+.zpcWorkspace .commercialTitleLine,
+.zpcWorkspace .commercialMeta {
+  min-inline-size: 0;
+}
+
+.zpcWorkspace .commercialRow p,
+.zpcWorkspace .commercialMeta span,
+.zpcWorkspace .commercialValue,
+.zpcWorkspace .commercialTitleLine strong,
+.zpcWorkspace .commercialState {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.zpcWorkspace .commercialValue {
+  white-space: normal;
+  text-align: end;
+}
+
+.zpcWorkspace .commercialProofStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--zpc-space-2);
+}
+
+.zpcWorkspace .commercialProofStrip span {
+  min-width: 0;
+  height: auto;
+}
+
+.zpcWorkspace .approvalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--zpc-space-4);
+  max-height: none;
+  overflow: visible;
+}
+
+.zpcWorkspace .approvalCard {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.zpcWorkspace .approvalCard h3,
+.zpcWorkspace .approvalCard p,
+.zpcWorkspace .approvalCard small {
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace .approvalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--zpc-space-2);
+}
+
+.zpcWorkspace .creativeLiveGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--zpc-space-4);
+  min-inline-size: 0;
+}
+
+.zpcWorkspace .creativeLiveCard {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.zpcWorkspace .creativeLiveBody,
+.zpcWorkspace .creativeEvidence {
+  min-inline-size: 0;
+}
+
+.zpcWorkspace .creativeLiveBody p,
+.zpcWorkspace .creativeEvidence span {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 1180px) {
+  .zpcWorkspace .commercialHeader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace .commercialMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zpcWorkspace .commercialDashboardGrid,
+  .zpcWorkspace .creativeLiveGrid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace .commercialProofStrip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zpcWorkspace .approvalGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .zpcWorkspace .commercialMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--zpc-space-2);
+  }
+
+  .zpcWorkspace .commercialMetrics article {
+    min-height: 96px;
+    padding: var(--zpc-space-3);
+  }
+
+  .zpcWorkspace .commercialMetrics article span,
+  .zpcWorkspace .commercialMetrics article strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .zpcWorkspace .commercialProofStrip,
+  .zpcWorkspace .approvalGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace .commercialRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace .commercialValue {
+    text-align: start;
+  }
+
+  .zpcWorkspace .approvalActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace .approvalActions > * {
+    width: 100%;
+    min-height: 44px;
+  }
+}
