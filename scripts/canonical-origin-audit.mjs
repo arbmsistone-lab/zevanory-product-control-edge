@@ -51,7 +51,7 @@ console.log('LEGAL_ROUTES=/termos,/privacidade,/reembolso');
 const publicRoutes=[
   'solucoes','zevanory-one','arbm-contador-saloes','arbm-sist',
   'ia-na-pratica','vendas-na-pratica','lucro-e-caixa','combo-ia-vendas',
-  'negocio-completo','privacidade','termos','reembolso'
+  'negocio-completo','privacidade','termos','reembolso','afiliados'
 ];
 for(const slug of publicRoutes){
   const path='public/'+slug+'/index.html';
@@ -62,6 +62,16 @@ for(const slug of publicRoutes){
   if(!html.includes('https://controle.zevanory.api.br')) fail('canonical public origin missing in '+slug);
 }
 if(!fs.existsSync('public/product.css')) fail('shared public stylesheet missing');
+if(!fs.existsSync('public/legal.css')) fail('shared legal stylesheet missing');
 if(!fs.existsSync('public/brand/zevanory-logo-dark.svg')) fail('canonical brand asset missing');
 console.log('PUBLIC_ROUTE_COUNT='+publicRoutes.length);
 console.log('PUBLIC_SURFACE_GATE=PASS');
+
+
+for(const slug of publicRoutes){
+  const html=fs.readFileSync('public/'+slug+'/index.html','utf8');
+  const absolute=[...html.matchAll(/(?:href|src)=["'](https?:\/\/[^"']+)["']/g)].map(m=>m[1]);
+  for(const url of absolute){
+    if(!url.startsWith('https://controle.zevanory.api.br')) fail('non-canonical absolute public URL in '+slug+': '+url);
+  }
+}
