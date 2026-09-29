@@ -239,6 +239,23 @@ for(const size of sizes){
         return {
           docScrollX:Math.max(de.scrollWidth,body.scrollWidth)-innerWidth,
           docScrollY:Math.max(de.scrollHeight,body.scrollHeight)-innerHeight,
+          localScroll:visible.filter(el=>{
+            if(el===body||el===de) return false;
+            const s=getComputedStyle(el);
+            const scrollableY=el.scrollHeight>el.clientHeight+1 && ['auto','scroll'].includes(s.overflowY);
+            const scrollableX=el.scrollWidth>el.clientWidth+1 && ['auto','scroll'].includes(s.overflowX);
+            return scrollableX||scrollableY;
+          }).map(el=>{
+            const s=getComputedStyle(el);
+            return {
+              tag:el.tagName,
+              cls:String(el.className),
+              overflowX:s.overflowX,
+              overflowY:s.overflowY,
+              client:[el.clientWidth,el.clientHeight],
+              scroll:[el.scrollWidth,el.scrollHeight]
+            };
+          }).slice(0,40),
           horizontal,clips:clips.slice(0,30),textClips:textClips.slice(0,30),textDebt,direct,
           theme:de.dataset.theme||'',
           bg:rootStyle.getPropertyValue('--bg-primary').trim(),
@@ -247,6 +264,8 @@ for(const size of sizes){
       },{allowedFonts:[...allowedFonts]});
       row.dom=dom;
       if(dom.docScrollX>1) fail('GLOBAL_HORIZONTAL_SCROLL',String(dom.docScrollX));
+      if(dom.docScrollY>1) fail('GLOBAL_VERTICAL_SCROLL',String(dom.docScrollY));
+      if(dom.localScroll.length) fail('LOCAL_SCROLL_SURFACE',JSON.stringify(dom.localScroll));
       if(dom.horizontal.length) fail('HORIZONTAL_OUTSIDE_VIEWPORT',JSON.stringify(dom.horizontal));
       if(dom.clips.length) fail('CONTENT_CLIPPED',JSON.stringify(dom.clips));
       if(dom.textClips.length) fail('TEXT_CLIPPED',JSON.stringify(dom.textClips));

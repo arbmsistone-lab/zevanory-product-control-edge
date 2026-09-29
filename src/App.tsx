@@ -368,6 +368,7 @@ function App() {
   const [auditPage, setAuditPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
   const [certTargetPage, setCertTargetPage] = useState(0);
+  const [governanceSectionPage, setGovernanceSectionPage] = useState<'summary' | 'pillars'>('summary');
   const [governanceMode, setGovernanceMode] = useState<'certification' | 'sources'>('certification');
   const [selectedTargetId, setSelectedTargetId] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
@@ -382,6 +383,13 @@ function App() {
     if (saved === 'light' || saved === 'dark') return saved;
     return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const loadGlobalTrustLive = async () => {
     try {
@@ -668,7 +676,7 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [products, filter]);
-  const productPageSize = 3;
+  const productPageSize = viewportWidth <= 900 ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
@@ -686,17 +694,18 @@ function App() {
     () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
     [certificationTargets, selectedTargetId],
   );
-  const certTargetPageSize = 6;
+  const certTargetPageSize = viewportWidth <= 900 ? 1 : 6;
   const certTargetPageCount = Math.max(1, Math.ceil(certificationTargets.length / certTargetPageSize));
   const safeCertTargetPage = Math.min(certTargetPage, certTargetPageCount - 1);
   const pagedCertificationTargets = certificationTargets.slice(safeCertTargetPage * certTargetPageSize, (safeCertTargetPage + 1) * certTargetPageSize);
-  const governancePageSize = 4;
+  const governancePageSize = viewportWidth <= 900 ? 1 : 2;
   const governancePageCount = selectedCertificationTarget ? Math.max(1, Math.ceil(selectedCertificationTarget.certification.pillars.length / governancePageSize)) : 1;
   const safeGovernancePage = Math.min(governancePage, governancePageCount - 1);
   const governancePillars = selectedCertificationTarget?.certification.pillars.slice(
     safeGovernancePage * governancePageSize,
     (safeGovernancePage + 1) * governancePageSize,
   ) ?? [];
+  const compactGovernance = viewportWidth <= 900;
   const openCertification = (product: Product) => {
     setSelectedTargetId(`product:${product.id}`);
     setGovernanceMode('certification');
@@ -900,6 +909,19 @@ function App() {
                 <button className={filter === 'blocked' ? 'filter active' : 'filter'} onClick={() => { setFilter('blocked'); setProductPage(0); }}>Pendentes</button>
                 <button className={filter === 'archived' ? 'filter active' : 'filter'} onClick={() => { setFilter('archived'); setProductPage(0); }}>Arquivados</button>
               </div>
+              <label className='productFilterSelect'>
+                <span>Filtrar produtos</span>
+                <select
+                  value={filter}
+                  aria-label='Filtrar produtos'
+                  onChange={event => { setFilter(event.target.value as typeof filter); setProductPage(0); }}
+                >
+                  <option value='all'>Todos</option>
+                  <option value='selling'>Em venda</option>
+                  <option value='blocked'>Pendentes</option>
+                  <option value='archived'>Arquivados</option>
+                </select>
+              </label>
               {productPageCount > 1 && <div className='pagination' aria-label='Paginação de produtos'>
                 <button className='filter' onClick={() => setProductPage(Math.max(0, safeProductPage - 1))} disabled={safeProductPage === 0}>‹</button>
                 <span>{safeProductPage + 1}/{productPageCount}</span>
@@ -918,7 +940,7 @@ function App() {
                   </div>
                   <span className={product.salesEnabled ? 'saleBadge on' : 'saleBadge off'}>{product.salesEnabled ? 'VENDA ON' : 'VENDA OFF'}</span>
                 </div>
-                <p className='productDescription'>{product.description || 'Sem descricao administrativa.'}</p>
+                <p className='productDescription productDescriptionPrimary'>{product.description || 'Sem descricao administrativa.'}</p>
                 <div className='productFacts'>
                   <span><b>{formatMoney(product.priceCents)}</b><small>Preco</small></span>
                   <span><b>{statusLabel(product.status)}</b><small>Status</small></span>
@@ -934,6 +956,7 @@ function App() {
                   <strong>{expandedProductIds.has(product.id) ? 'Ocultar detalhes' : 'Ver detalhes'}</strong>
                 </button>
                 <div className={expandedProductIds.has(product.id) ? 'productDisclosureBody expanded' : 'productDisclosureBody'}>
+                  <p className='productDescription productDescriptionDetail'>{product.description || 'Sem descricao administrativa.'}</p>
                   <div className='certPanel'>
                     <div className='auditHeader'>
                       <div><small>ZEES-16 · CERTIFICAÇÃO ESPECÍFICA DO ALVO</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
@@ -970,10 +993,10 @@ function App() {
                   <span className={product.gates.support ? 'gate ok' : 'gate'}>Suporte</span>
                 </div>
                 <div className='productActions'>
-                  <button className='secondary compact' onClick={() => openCertification(product)}><ShieldCheck size={14} />Certificação</button>
-                  <button className='secondary compact' onClick={() => openEdit(product)}><Pencil size={14} />Editar</button>
-                  {product.publicUrl && <a className='secondary compact linkButton' href={product.publicUrl} target='_blank' rel='noreferrer'><ExternalLink size={14} />Pagina</a>}
-                  {product.status !== 'archived' && <button className='ghost compact' onClick={() => archiveProduct(product)} disabled={busy}><Archive size={14} />Arquivar</button>}
+                  <button className='secondary compact' aria-label='Abrir certificação' title='Certificação' onClick={() => openCertification(product)}><ShieldCheck size={14} />Certificação</button>
+                  <button className='secondary compact' aria-label='Editar produto' title='Editar' onClick={() => openEdit(product)}><Pencil size={14} />Editar</button>
+                  {product.publicUrl && <a className='secondary compact linkButton' aria-label='Abrir página pública do produto' title='Página pública' href={product.publicUrl} target='_blank' rel='noreferrer'><ExternalLink size={14} />Pagina</a>}
+                  {product.status !== 'archived' && <button className='ghost compact' aria-label='Arquivar produto' title='Arquivar' onClick={() => archiveProduct(product)} disabled={busy}><Archive size={14} />Arquivar</button>}
                 </div>
               </article>
             ))}
@@ -1033,10 +1056,29 @@ function App() {
               <div><p className='kicker'>ZEES-16 · ZEVANORY ENGINEERING EXCELLENCE STANDARD</p><h2>Governanca e certificacao central</h2></div>
               <ShieldCheck size={21} />
             </div>
-            <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
+            {compactGovernance ? (
+              <details className='governanceAbout'>
+                <summary>Sobre o padrão ZEES-16</summary>
+                <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
+              </details>
+            ) : (
+              <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
+            )}
             <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span><b>{certificationTargets.length}</b>Alvos certificados</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
           </section>
           {governanceMode === 'certification' && <section className='certWorkspace'>
+            {compactGovernance && (
+              <label className='certTargetSelectWrap'>
+                <span>Alvo ZEES-16</span>
+                <select
+                  value={selectedCertificationTarget?.id ?? ''}
+                  onChange={event => { setSelectedTargetId(event.target.value); setGovernancePage(0); setGovernanceSectionPage('summary'); }}
+                  aria-label='Selecionar alvo ZEES-16'
+                >
+                  {certificationTargets.map(target => <option key={target.id} value={target.id}>{target.name}</option>)}
+                </select>
+              </label>
+            )}
             <aside className='panel certSidebar'>
               <p className='kicker'>ESCOPO ZEES-16</p><h2>Sistemas e produtos</h2>
               <div className='certProductList'>
@@ -1052,11 +1094,17 @@ function App() {
                 <button className='secondary compact' onClick={() => setCertTargetPage(Math.min(certTargetPageCount - 1, safeCertTargetPage + 1))} disabled={safeCertTargetPage >= certTargetPageCount - 1}>›</button>
               </div>
             </aside>
-            <div className='certDetail'>
+            <div className='certDetail' data-page={compactGovernance ? governanceSectionPage : 'all'}>
+              {compactGovernance && (
+                <nav className='governanceSectionPager' aria-label='Páginas da certificação'>
+                  <button className={governanceSectionPage === 'summary' ? 'filter active' : 'filter'} aria-pressed={governanceSectionPage === 'summary'} onClick={() => setGovernanceSectionPage('summary')}>Resumo</button>
+                  <button className={governanceSectionPage === 'pillars' ? 'filter active' : 'filter'} aria-pressed={governanceSectionPage === 'pillars'} onClick={() => setGovernanceSectionPage('pillars')}>Pilares</button>
+                </nav>
+              )}
               {selectedCertificationTarget && governanceMode === 'certification' && <>
                 <section className='panel certSummaryPanel'>
                   <div className='certTitleRow'>
-                    <div><p className='kicker'>{selectedCertificationTarget.certification.version} · {selectedCertificationTarget.kind}</p><h2>{selectedCertificationTarget.name}</h2><p>{certificationProfileLabel(selectedCertificationTarget.certification.profile)}</p></div>
+                    <div><p className='kicker'>{selectedCertificationTarget.certification.version} · {selectedCertificationTarget.kind}</p><h2 className='certTargetName'>{selectedCertificationTarget.name}</h2><p>{certificationProfileLabel(selectedCertificationTarget.certification.profile)}</p></div>
                     <div className='certActions'>
                       <span className={selectedCertificationTarget.certification.ready ? 'certSeal ready' : 'certSeal blocked'}>{selectedCertificationTarget.certification.ready ? 'CERTIFICADO' : 'NÃO CERTIFICADO'}</span>
                       <button className='secondary compact' onClick={runCertificationBatch} disabled={busy}><RefreshCw size={14} className={busy ? 'spin' : ''} />{busy ? 'Executando lote...' : 'Certificar todos'}</button>
@@ -1075,7 +1123,9 @@ function App() {
                     const run = dashboard.certificationRuns!.find(item => item.targetId === selectedCertificationTarget.id)!;
                     return <div className='certRunStrip'><span><b>Última execução</b>{run.status.toUpperCase()}</span><span><b>Release</b>{run.releaseFingerprint}</span><span><b>SHA</b>{run.sourceSha.slice(0, 12)}</span><span><b>Pilares</b>{run.completedPillars}/16</span></div>;
                   })()}
-                  {!selectedCertificationTarget.certification.ready && <div className='rootBlocker'><AlertTriangle size={16} /><span><b>Bloqueador raiz</b>{selectedCertificationTarget.certification.rootBlocker}</span></div>}
+                  {!selectedCertificationTarget.certification.ready && (compactGovernance
+                    ? <details className='rootBlockerDetails'><summary>Bloqueador raiz</summary><div className='rootBlocker'><AlertTriangle size={16} /><span>{selectedCertificationTarget.certification.rootBlocker}</span></div></details>
+                    : <div className='rootBlocker'><AlertTriangle size={16} /><span><b>Bloqueador raiz</b>{selectedCertificationTarget.certification.rootBlocker}</span></div>)}
                 </section>
                 <div className='governancePager'>
                   <button className='secondary compact' onClick={() => setGovernancePage(Math.max(0, safeGovernancePage - 1))} disabled={safeGovernancePage === 0}>Anterior</button>
