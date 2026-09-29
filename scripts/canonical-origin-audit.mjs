@@ -20,7 +20,10 @@ for(const required of [
   "'/privacidade':'/privacidade'",
   "'/reembolso':'/reembolso'",
   "x-zpc-canonical-origin",
-  "internal-public-mirror"
+  "internal-public-mirror",
+  "const INTERNAL_CORE_ORIGIN = 'https://zevanory.api.br';",
+  "normalizedPath.startsWith('/api/core/v1/')",
+  "internal-control-core"
 ]){
   if(!worker.includes(required)) fail('worker contract missing: '+required);
 }
@@ -46,3 +49,8 @@ console.log('ZERO_SCROLL_ROOT=PASS');
 if(worker.includes("const LEGACY_PUBLIC_ORIGIN")) fail('legacy public origin remains in worker');
 console.log('PUBLIC_PRODUCTS_PREFIX=/produtos/');
 console.log('LEGAL_ROUTES=/termos,/privacidade,/reembolso');
+
+const wrangler=fs.readFileSync('cf-worker/wrangler.toml','utf8');
+if(!wrangler.includes('pattern = "controle.zevanory.api.br"')) fail('canonical Cloudflare route missing');
+if(wrangler.includes('zevanory.api.br/control')) fail('legacy public control route still configured');
+console.log('CORE_PUBLIC_PREFIX=/api/core/v1/');
