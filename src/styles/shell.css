@@ -1014,3 +1014,83 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+.zpcWorkspace.shell-governance .governanceAbout,
+.zpcWorkspace.shell-governance .rootBlockerDetails {
+  border: 1px solid var(--border);
+  border-radius: var(--zpc-radius-sm);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  padding: 8px;
+}
+
+.zpcWorkspace.shell-governance .governanceAbout summary,
+.zpcWorkspace.shell-governance .rootBlockerDetails summary {
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.zpcWorkspace.shell-governance .governanceAbout[open],
+.zpcWorkspace.shell-governance .rootBlockerDetails[open] {
+  padding-bottom: 8px;
+}
+
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-governance .governanceStack {
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .governanceHero {
+    padding: 4px 8px;
+  }
+
+  .zpcWorkspace.shell-governance .governanceHero .panelhead {
+    margin-bottom: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .governanceHero h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  .zpcWorkspace.shell-governance .governanceAbout {
+    margin-top: 4px;
+    padding: 4px 8px;
+  }
+
+  .zpcWorkspace.shell-governance .standardStrip {
+    margin-top: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .standardStrip span {
+    padding: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .certTargetName {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-governance .certTitleRow > div:first-child > p {
+    margin: 0;
+  }
+
+  .zpcWorkspace.shell-governance .certSummaryPanel {
+    padding: 4px 8px;
+  }
+
+  .zpcWorkspace.shell-governance .certSummaryGrid span {
+    padding: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .rootBlockerDetails {
+    margin-top: 4px;
+    padding: 4px 8px;
+  }
+
+  .zpcWorkspace.shell-governance .rootBlockerDetails .rootBlocker {
+    margin-top: 4px;
+  }
+}
