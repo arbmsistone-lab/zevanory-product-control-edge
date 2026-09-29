@@ -2,7 +2,7 @@
 import argparse, json, os, pathlib, re, subprocess, sys
 
 ROOT = pathlib.Path(".")
-EXCLUDED = {".git","node_modules","dist","build","coverage",".next",".turbo","vendor"}
+EXCLUDED = {".git","node_modules","dist","build","coverage",".next",".turbo","vendor","public"}
 UI_EXT = {".css",".scss",".tsx",".ts",".jsx",".js",".html",".vue",".svelte"}
 GEOM_PROPS = re.compile(r"(?:^|[;{\s])(gap|row-gap|column-gap|padding(?:-(?:top|right|bottom|left))?|margin(?:-(?:top|right|bottom|left))?|min-height|max-height|height|min-width|max-width|width|border-radius)\s*:\s*([^;}{]+)", re.I)
 PX = re.compile(r"(-?\d+(?:\.\d+)?)px\b", re.I)
