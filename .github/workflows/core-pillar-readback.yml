@@ -1,5 +1,5 @@
 name: Core Pillar Readback
-# post-zevanory-proof-merge: 9e60c8cc45aa9ac8504f64003d7aebe84b29246a
+# post-core-policy-merge: 678bd1a3369e114613f8d605ff9180120df972fa
 
 on:
   pull_request:
