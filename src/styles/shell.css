@@ -1105,3 +1105,10 @@ body {
     margin-top: 0;
   }
 }
+
+
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-governance .rootBlockerDetails {
+    padding-bottom: 0;
+  }
+}
