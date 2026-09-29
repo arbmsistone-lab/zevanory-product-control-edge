@@ -431,3 +431,34 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Governance surfaces follow the active theme; no dark-only islands in light mode. */
+.zpcWorkspace.shell-governance .certSidebar,
+.zpcWorkspace.shell-governance .certSummaryPanel,
+.zpcWorkspace.shell-governance .certProductButton,
+.zpcWorkspace.shell-governance .certSummaryGrid span,
+.zpcWorkspace.shell-governance .pillarCard {
+  border-color: var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.zpcWorkspace.shell-governance .certProductButton.active {
+  border-color: var(--action-primary);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.zpcWorkspace.shell-governance .certProductButton b,
+.zpcWorkspace.shell-governance .certProductButton strong,
+.zpcWorkspace.shell-governance .certProductButton small,
+.zpcWorkspace.shell-governance .certSummaryGrid b,
+.zpcWorkspace.shell-governance .certSummaryGrid small,
+.zpcWorkspace.shell-governance .pillarCard h3,
+.zpcWorkspace.shell-governance .pillarIndex,
+.zpcWorkspace.shell-governance .pillarCard > p,
+.zpcWorkspace.shell-governance .pillarMeta,
+.zpcWorkspace.shell-governance .pillarEvidence span {
+  color: var(--text-primary);
+}
