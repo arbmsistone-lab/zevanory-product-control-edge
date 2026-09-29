@@ -1,6 +1,12 @@
 name: Commercial Visual Regression
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/commercial-visual-audit.mjs'
+      - '.github/workflows/commercial-visual-regression.yml'
   push:
     branches: [main]
     paths:
