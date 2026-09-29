@@ -53,9 +53,9 @@ body {
   gap: var(--zpc-space-3);
   min-inline-size: 0;
   padding: var(--zpc-space-3);
-  border: 1px solid var(--zpc-border);
+  border: 1px solid var(--border);
   border-radius: var(--zpc-radius-lg);
-  background: var(--zpc-surface);
+  background: var(--surface);
 }
 
 .zpcNavGroup {
@@ -66,7 +66,7 @@ body {
 
 .zpcNavLabel {
   margin: var(--zpc-space-2) var(--zpc-space-2) var(--zpc-space-1);
-  color: var(--zpc-text-muted);
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: .08em;
@@ -80,6 +80,8 @@ body {
   justify-content: flex-start;
   border: 1px solid transparent;
   border-radius: var(--zpc-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
   padding: var(--zpc-space-2) var(--zpc-space-3);
   text-align: start;
   white-space: normal;
@@ -88,12 +90,15 @@ body {
 
 .zpcNavigation .tab:hover,
 .zpcNavigation .tab:focus-visible {
-  border-color: var(--zpc-border);
+  border-color: var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
 }
 
 .zpcNavigation .tab.active {
-  border-color: var(--palette-3c6088);
-  background: var(--palette-112944);
+  border-color: var(--action-primary);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
 }
 
 .zpcWorkspace {
