@@ -1112,3 +1112,8 @@ body {
     padding-bottom: 0;
   }
 }
+
+
+.zpcWorkspace.shell-governance .rootBlockerDetails:not([open]) .rootBlocker {
+  display: none;
+}
