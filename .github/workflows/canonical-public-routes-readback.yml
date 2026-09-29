@@ -1,0 +1,46 @@
+name: Canonical Public Routes Readback
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/canonical-public-routes-readback.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe canonical public routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://controle.zevanory.api.br"
+          routes=(
+            "/solucoes"
+            "/zevanory-one"
+            "/arbm-contador-saloes"
+            "/arbm-sist"
+            "/ia-na-pratica"
+            "/vendas-na-pratica"
+            "/lucro-e-caixa"
+            "/combo-ia-vendas"
+            "/negocio-completo"
+            "/privacidade"
+            "/termos"
+            "/reembolso"
+            "/afiliados"
+          )
+          for route in "${routes[@]}"; do
+            file="/tmp/route-${route//\//_}.html"
+            code="$(curl -L --silent --show-error --max-time 30 -o "$file" -w '%{http_code}' "$base$route")"
+            echo "ROUTE=$route HTTP=$code"
+            test "$code" = "200"
+            grep -q "controle.zevanory.api.br" "$file"
+            ! grep -q "/zevanory-public-mirror" "$file"
+            ! grep -q "https://zevanory.api.br" "$file"
+          done
+          echo "CANONICAL_PUBLIC_ROUTES=PASS count=${#routes[@]}"
