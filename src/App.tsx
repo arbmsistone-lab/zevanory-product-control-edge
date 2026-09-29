@@ -909,6 +909,19 @@ function App() {
                 <button className={filter === 'blocked' ? 'filter active' : 'filter'} onClick={() => { setFilter('blocked'); setProductPage(0); }}>Pendentes</button>
                 <button className={filter === 'archived' ? 'filter active' : 'filter'} onClick={() => { setFilter('archived'); setProductPage(0); }}>Arquivados</button>
               </div>
+              <label className='productFilterSelect'>
+                <span>Filtrar produtos</span>
+                <select
+                  value={filter}
+                  aria-label='Filtrar produtos'
+                  onChange={event => { setFilter(event.target.value as typeof filter); setProductPage(0); }}
+                >
+                  <option value='all'>Todos</option>
+                  <option value='selling'>Em venda</option>
+                  <option value='blocked'>Pendentes</option>
+                  <option value='archived'>Arquivados</option>
+                </select>
+              </label>
               {productPageCount > 1 && <div className='pagination' aria-label='Paginação de produtos'>
                 <button className='filter' onClick={() => setProductPage(Math.max(0, safeProductPage - 1))} disabled={safeProductPage === 0}>‹</button>
                 <span>{safeProductPage + 1}/{productPageCount}</span>
