@@ -135,7 +135,7 @@ for (const size of sizes) {
     await fs.writeFile(outDir + '/' + size.name + '-pre-nav-failure.txt', bodyText);
     throw error;
   }
-  await page.locator('.robotBadge.active').waitFor({ state:'visible', timeout:15_000 });
+  await page.locator('.commercialWorkspace').waitFor({ state:'visible', timeout:15_000 });
   await page.locator('.liveTelemetry').waitFor({ state:'visible', timeout:15_000 });
 
   const audit = await page.evaluate(() => {
@@ -194,11 +194,21 @@ for (const size of sizes) {
       sectionOverlaps,
       clipped,
       kpis:expected.map(label => ({label,present:visibleText.includes(label)})),
-      robotActive:visibleText.includes('ROBÔ COMERCIAL: ATIVO'),
+      robotActive:(() => {
+        const badge=document.querySelector('.robotBadge');
+        return Boolean(badge?.classList.contains('active') && (badge.textContent || '').includes('ROBÔ COMERCIAL: ATIVO'));
+      })(),
+      robotBadgeVisible:(() => {
+        const badge=document.querySelector('.robotBadge');
+        if(!badge) return false;
+        const r=badge.getBoundingClientRect(), s=getComputedStyle(badge);
+        return r.width>0 && r.height>0 && s.display!=='none' && s.visibility!=='hidden';
+      })(),
     };
   });
 
-  if (!audit.robotActive) throw new Error(size.name + ': robot active badge missing');
+  if (!audit.robotActive) throw new Error(size.name + ': robot semantic ACTIVE state missing');
+  if (size.width > 620 && !audit.robotBadgeVisible) throw new Error(size.name + ': robot active badge must be visible above mobile breakpoint');
   if (!audit.kpis.every(item => item.present)) throw new Error(size.name + ': KPI missing ' + JSON.stringify(audit.kpis));
   if (audit.horizontalOverflow > 1) throw new Error(size.name + ': horizontal overflow=' + audit.horizontalOverflow);
   if (audit.metricCards.length !== 6 || !audit.metricCards.every(card => card.horizontallyContained && card.reachableInDocument)) throw new Error(size.name + ': KPIs not reachable without clipping=' + JSON.stringify(audit.metricCards));
