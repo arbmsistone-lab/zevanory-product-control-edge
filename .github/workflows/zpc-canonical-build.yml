@@ -69,12 +69,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25 \
-            https://controle.zevanory.api.br/api/core/v1/snapshot \
-            -o /tmp/core-snapshot.json
-          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25 \
-            https://controle.zevanory.api.br/api/core/v1/decision \
-            -o /tmp/core-decision.json
+          read_core() {
+            local path="$1" out="$2"
+            if curl --fail --silent --show-error --retry 2 --retry-delay 1 --max-time 20 \
+              "https://controle.zevanory.api.br$path" -o "$out"; then
+              echo "CORE_READBACK_SOURCE=canonical path=$path"
+              return 0
+            fi
+            echo "CORE_READBACK_SOURCE=internal-origin-fallback path=$path"
+            curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25 \
+              "https://zevanory.api.br$path" -o "$out"
+          }
+          read_core /api/core/v1/snapshot /tmp/core-snapshot.json
+          read_core /api/core/v1/decision /tmp/core-decision.json
 
           jq -e 'type == "object"' /tmp/core-snapshot.json >/dev/null
           jq -e 'type == "object"' /tmp/core-decision.json >/dev/null
@@ -122,7 +129,7 @@ jobs:
                ],
                checkedAt: ($s.generated_at // $d.generated_at // null),
                snapshotAt: (now | todateiso8601),
-               source: "https://controle.zevanory.api.br/api/core/v1/snapshot + /api/core/v1/decision"
+               source: "canonical-control-core-readback"
              }' > dist/global-trust.json
 
           echo "=== ADVERSARIAL_BOARD_SANITIZED_CORE_DIAGNOSTIC ==="
