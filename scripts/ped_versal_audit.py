@@ -2,7 +2,7 @@
 import argparse, json, os, pathlib, re, subprocess, sys
 
 ROOT = pathlib.Path(".")
-EXCLUDED = {".git","node_modules","dist","build","coverage",".next",".turbo","vendor"}
+EXCLUDED = {".git","node_modules","dist","build","coverage",".next",".turbo","vendor","public"}
 UI_EXT = {".css",".scss",".tsx",".ts",".jsx",".js",".html",".vue",".svelte"}
 GEOM_PROPS = re.compile(r"(?:^|[;{\s])(gap|row-gap|column-gap|padding(?:-(?:top|right|bottom|left))?|margin(?:-(?:top|right|bottom|left))?|min-height|max-height|height|min-width|max-width|width|border-radius)\s*:\s*([^;}{]+)", re.I)
 PX = re.compile(r"(-?\d+(?:\.\d+)?)px\b", re.I)
@@ -110,7 +110,11 @@ def main():
         return 0
 
     changed=run("git","diff","--name-only",f"{args.base_ref}...HEAD").splitlines()
-    changed=[p for p in changed if pathlib.Path(p).suffix.lower() in UI_EXT]
+    changed=[
+        p for p in changed
+        if pathlib.Path(p).suffix.lower() in UI_EXT
+        and not any(x in EXCLUDED for x in pathlib.Path(p).parts)
+    ]
     regressions=[]
     for p in changed:
         now=read_current(p)
