@@ -927,7 +927,7 @@ function App() {
                   </div>
                   <span className={product.salesEnabled ? 'saleBadge on' : 'saleBadge off'}>{product.salesEnabled ? 'VENDA ON' : 'VENDA OFF'}</span>
                 </div>
-                <p className='productDescription'>{product.description || 'Sem descricao administrativa.'}</p>
+                <p className='productDescription productDescriptionPrimary'>{product.description || 'Sem descricao administrativa.'}</p>
                 <div className='productFacts'>
                   <span><b>{formatMoney(product.priceCents)}</b><small>Preco</small></span>
                   <span><b>{statusLabel(product.status)}</b><small>Status</small></span>
@@ -943,6 +943,7 @@ function App() {
                   <strong>{expandedProductIds.has(product.id) ? 'Ocultar detalhes' : 'Ver detalhes'}</strong>
                 </button>
                 <div className={expandedProductIds.has(product.id) ? 'productDisclosureBody expanded' : 'productDisclosureBody'}>
+                  <p className='productDescription productDescriptionDetail'>{product.description || 'Sem descricao administrativa.'}</p>
                   <div className='certPanel'>
                     <div className='auditHeader'>
                       <div><small>ZEES-16 · CERTIFICAÇÃO ESPECÍFICA DO ALVO</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
@@ -1042,7 +1043,14 @@ function App() {
               <div><p className='kicker'>ZEES-16 · ZEVANORY ENGINEERING EXCELLENCE STANDARD</p><h2>Governanca e certificacao central</h2></div>
               <ShieldCheck size={21} />
             </div>
-            <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
+            {compactGovernance ? (
+              <details className='governanceAbout'>
+                <summary>Sobre o padrão ZEES-16</summary>
+                <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
+              </details>
+            ) : (
+              <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
+            )}
             <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span><b>{certificationTargets.length}</b>Alvos certificados</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
           </section>
           {governanceMode === 'certification' && <section className='certWorkspace'>
@@ -1083,7 +1091,7 @@ function App() {
               {selectedCertificationTarget && governanceMode === 'certification' && <>
                 <section className='panel certSummaryPanel'>
                   <div className='certTitleRow'>
-                    <div><p className='kicker'>{selectedCertificationTarget.certification.version} · {selectedCertificationTarget.kind}</p><h2>{selectedCertificationTarget.name}</h2><p>{certificationProfileLabel(selectedCertificationTarget.certification.profile)}</p></div>
+                    <div><p className='kicker'>{selectedCertificationTarget.certification.version} · {selectedCertificationTarget.kind}</p><h2 className='certTargetName'>{selectedCertificationTarget.name}</h2><p>{certificationProfileLabel(selectedCertificationTarget.certification.profile)}</p></div>
                     <div className='certActions'>
                       <span className={selectedCertificationTarget.certification.ready ? 'certSeal ready' : 'certSeal blocked'}>{selectedCertificationTarget.certification.ready ? 'CERTIFICADO' : 'NÃO CERTIFICADO'}</span>
                       <button className='secondary compact' onClick={runCertificationBatch} disabled={busy}><RefreshCw size={14} className={busy ? 'spin' : ''} />{busy ? 'Executando lote...' : 'Certificar todos'}</button>
@@ -1102,7 +1110,9 @@ function App() {
                     const run = dashboard.certificationRuns!.find(item => item.targetId === selectedCertificationTarget.id)!;
                     return <div className='certRunStrip'><span><b>Última execução</b>{run.status.toUpperCase()}</span><span><b>Release</b>{run.releaseFingerprint}</span><span><b>SHA</b>{run.sourceSha.slice(0, 12)}</span><span><b>Pilares</b>{run.completedPillars}/16</span></div>;
                   })()}
-                  {!selectedCertificationTarget.certification.ready && <div className='rootBlocker'><AlertTriangle size={16} /><span><b>Bloqueador raiz</b>{selectedCertificationTarget.certification.rootBlocker}</span></div>}
+                  {!selectedCertificationTarget.certification.ready && (compactGovernance
+                    ? <details className='rootBlockerDetails'><summary>Bloqueador raiz</summary><div className='rootBlocker'><AlertTriangle size={16} /><span>{selectedCertificationTarget.certification.rootBlocker}</span></div></details>
+                    : <div className='rootBlocker'><AlertTriangle size={16} /><span><b>Bloqueador raiz</b>{selectedCertificationTarget.certification.rootBlocker}</span></div>)}
                 </section>
                 <div className='governancePager'>
                   <button className='secondary compact' onClick={() => setGovernancePage(Math.max(0, safeGovernancePage - 1))} disabled={safeGovernancePage === 0}>Anterior</button>
