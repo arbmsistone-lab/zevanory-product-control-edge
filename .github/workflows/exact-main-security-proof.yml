@@ -1,0 +1,52 @@
+name: ZEVANORY Exact Main Security Proof
+
+on:
+  push:
+    branches:
+      - audit/security-exact-main-40086-20260929
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 40086f5abc688850f29780ee01d2418b1ab7c286
+      - name: Exact SHA
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "40086f5abc688850f29780ee01d2418b1ab7c286"
+      - name: Install and audit exact main
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-fund
+          npm audit --omit=dev --audit-level=high
+          npm audit --audit-level=high
+      - name: Regression
+        run: |
+          set -euo pipefail
+          npm run typecheck
+          npm run audit:commercial
+          npm run test:commercial-contract
+          npm run audit:cfo
+          npm run test:cfo-contract
+          npx vite build
+      - name: Record
+        run: |
+          cat > exact-main-security.env <<'EOF'
+          PRODUCT_CONTROL_SHA=40086f5abc688850f29780ee01d2418b1ab7c286
+          RUNTIME_HIGH_CRITICAL=0
+          FULL_GRAPH_HIGH_CRITICAL=0
+          TYPECHECK=PASS
+          CONTRACTS=PASS
+          BUILD=PASS
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zevanory-exact-main-security-40086
+          path: exact-main-security.env
+          retention-days: 30
