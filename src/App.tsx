@@ -980,10 +980,10 @@ function App() {
                   <span className={product.gates.support ? 'gate ok' : 'gate'}>Suporte</span>
                 </div>
                 <div className='productActions'>
-                  <button className='secondary compact' onClick={() => openCertification(product)}><ShieldCheck size={14} />Certificação</button>
-                  <button className='secondary compact' onClick={() => openEdit(product)}><Pencil size={14} />Editar</button>
-                  {product.publicUrl && <a className='secondary compact linkButton' href={product.publicUrl} target='_blank' rel='noreferrer'><ExternalLink size={14} />Pagina</a>}
-                  {product.status !== 'archived' && <button className='ghost compact' onClick={() => archiveProduct(product)} disabled={busy}><Archive size={14} />Arquivar</button>}
+                  <button className='secondary compact' aria-label='Abrir certificação' title='Certificação' onClick={() => openCertification(product)}><ShieldCheck size={14} />Certificação</button>
+                  <button className='secondary compact' aria-label='Editar produto' title='Editar' onClick={() => openEdit(product)}><Pencil size={14} />Editar</button>
+                  {product.publicUrl && <a className='secondary compact linkButton' aria-label='Abrir página pública do produto' title='Página pública' href={product.publicUrl} target='_blank' rel='noreferrer'><ExternalLink size={14} />Pagina</a>}
+                  {product.status !== 'archived' && <button className='ghost compact' aria-label='Arquivar produto' title='Arquivar' onClick={() => archiveProduct(product)} disabled={busy}><Archive size={14} />Arquivar</button>}
                 </div>
               </article>
             ))}
