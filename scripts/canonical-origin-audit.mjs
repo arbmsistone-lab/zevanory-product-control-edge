@@ -11,9 +11,16 @@ if(!app.includes("href='/solucoes'")) fail('sales link is not relative /solucoes
 
 for(const required of [
   "const CANONICAL_PUBLIC_ORIGIN = 'https://controle.zevanory.api.br';",
+  "const PUBLIC_MIRROR_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-public-mirror';",
   "if (url.hostname === 'zevanory.api.br')",
-  "normalizedPath === '/solucoes' || normalizedPath.startsWith('/solucoes/')",
-  "x-zpc-canonical-origin"
+  "'/solucoes':'/solucoes'",
+  "'/produtos/zevanory-one':'/zevanory-one'",
+  "'/produtos/arbm-sist':'/arbm-sist'",
+  "'/termos':'/termos'",
+  "'/privacidade':'/privacidade'",
+  "'/reembolso':'/reembolso'",
+  "x-zpc-canonical-origin",
+  "internal-public-mirror"
 ]){
   if(!worker.includes(required)) fail('worker contract missing: '+required);
 }
@@ -35,3 +42,7 @@ console.log('CANONICAL_ORIGIN_GATE=PASS');
 console.log('PUBLIC_ORIGIN=https://controle.zevanory.api.br');
 console.log('SALES_ROUTE=/solucoes');
 console.log('ZERO_SCROLL_ROOT=PASS');
+
+if(worker.includes("const LEGACY_PUBLIC_ORIGIN")) fail('legacy public origin remains in worker');
+console.log('PUBLIC_PRODUCTS_PREFIX=/produtos/');
+console.log('LEGAL_ROUTES=/termos,/privacidade,/reembolso');
