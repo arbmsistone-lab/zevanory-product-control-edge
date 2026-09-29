@@ -733,7 +733,7 @@ function App() {
         <div className='actions zpcHeaderActions'>
           <a
             className='secondary linkButton'
-            href='https://zevanory.api.br/solucoes'
+            href='/solucoes'
             target='_blank'
             rel='noreferrer'
             aria-label='Abrir página pública de vendas ZEVANORY'
