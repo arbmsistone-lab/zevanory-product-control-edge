@@ -1,0 +1,33 @@
+name: Core Pillar Readback
+# post-core-policy-merge: 678bd1a3369e114613f8d605ff9180120df972fa
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/core-pillar-readback.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Capture canonical Core pillar states
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 30 \
+            https://zevanory.api.br/api/core/v1/snapshot -o /tmp/snapshot.json
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 30 \
+            https://zevanory.api.br/api/core/v1/decision -o /tmp/decision.json
+          echo "=== RELEASE ==="
+          jq '{release_sha,generated_at,zees16:{counts:.zees16.counts,decision_hash:.zees16.decision_hash},zea10:{counts:.zea10.counts,evaluator:.zea10.evaluator}}' /tmp/snapshot.json
+          echo "=== ZEES16_PILLARS ==="
+          jq '[.zees16.pillars[]? | {id,state,reason,message,evidence_count:((.evidence // [])|length)}]' /tmp/snapshot.json
+          echo "=== ZEA10_PILLARS ==="
+          jq '[.zea10.pillars[]? | {id,state,reason,message,evidence_count:((.evidence // [])|length)}]' /tmp/snapshot.json
+          echo "=== DECISION ==="
+          jq '{release_sha,decision,eligible_for_critical_promotion,checks,blockers}' /tmp/decision.json
