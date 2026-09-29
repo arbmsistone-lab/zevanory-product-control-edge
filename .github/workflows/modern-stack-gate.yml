@@ -1,0 +1,35 @@
+name: Modern Stack Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - '.github/workflows/modern-stack-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install modern toolchain
+        run: npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npx tsc --noEmit --noUnusedLocals false --noUnusedParameters false
+      - name: Full production build and audits
+        env:
+          ZPC_BASE_PATH: /
+        run: npm run build
+      - name: Verify dependency tree
+        run: |
+          npm ls react react-dom vite @vitejs/plugin-react typescript tsx
+          npm audit --omit=dev --audit-level=high
