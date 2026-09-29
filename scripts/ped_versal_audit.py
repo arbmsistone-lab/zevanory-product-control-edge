@@ -110,7 +110,11 @@ def main():
         return 0
 
     changed=run("git","diff","--name-only",f"{args.base_ref}...HEAD").splitlines()
-    changed=[p for p in changed if pathlib.Path(p).suffix.lower() in UI_EXT]
+    changed=[
+        p for p in changed
+        if pathlib.Path(p).suffix.lower() in UI_EXT
+        and not any(x in EXCLUDED for x in pathlib.Path(p).parts)
+    ]
     regressions=[]
     for p in changed:
         now=read_current(p)
