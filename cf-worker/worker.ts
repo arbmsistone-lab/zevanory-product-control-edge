@@ -2,6 +2,8 @@ import { handler } from './backend-index.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
+const CANONICAL_PUBLIC_ORIGIN = 'https://controle.zevanory.api.br';
+const LEGACY_PUBLIC_ORIGIN = 'https://zevanory.api.br';
 
 const CERTIFIER_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -55,9 +57,13 @@ export default {
   async fetch(request: Request, env: Record<string, unknown>) {
     setWorkerEnv(env);
     const url = new URL(request.url);
-    if (url.hostname === 'zevanory.api.br' && (url.pathname === '/control' || url.pathname.startsWith('/control/'))) {
-      const suffix = url.pathname === '/control' ? '/' : url.pathname.slice('/control'.length);
-      const canonical = new URL(`https://controle.zevanory.api.br${suffix}${url.search}`);
+    if (url.hostname === 'zevanory.api.br') {
+      const suffix = url.pathname === '/control'
+        ? '/'
+        : url.pathname.startsWith('/control/')
+          ? url.pathname.slice('/control'.length)
+          : url.pathname;
+      const canonical = new URL(CANONICAL_PUBLIC_ORIGIN + suffix + url.search);
       return Response.redirect(canonical.toString(), 308);
     }
     const normalizedPath = url.hostname === 'controle.zevanory.api.br' && url.pathname.startsWith('/control/')
@@ -76,6 +82,25 @@ export default {
           'content-security-policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
         },
       });
+    }
+
+    if (normalizedPath === '/solucoes' || normalizedPath.startsWith('/solucoes/')) {
+      const legacySales = new URL(LEGACY_PUBLIC_ORIGIN + normalizedPath + url.search);
+      const salesResponse = await fetch(legacySales.toString(), {
+        headers: { 'cache-control': 'no-cache', accept: 'text/html,*/*' },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!salesResponse.ok) {
+        return Response.json({ ok:false, error:'sales_surface_unavailable' }, {
+          status: salesResponse.status,
+          headers: { 'cache-control':'no-store' },
+        });
+      }
+      const headers = new Headers(salesResponse.headers);
+      headers.set('cache-control', 'public, max-age=60');
+      headers.set('x-zpc-canonical-origin', CANONICAL_PUBLIC_ORIGIN);
+      headers.set('x-zpc-upstream-role', 'internal-sales-origin');
+      return new Response(salesResponse.body, { status:salesResponse.status, headers });
     }
 
     if (normalizedPath === '/portable-health') {
