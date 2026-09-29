@@ -582,3 +582,10 @@
     height: 16px;
   }
 }
+
+
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-products .productCard {
+    gap: 4px;
+  }
+}
