@@ -508,3 +508,48 @@
     gap: 4px;
   }
 }
+
+
+.zpcWorkspace.shell-products .productDescriptionDetail {
+  display: none;
+}
+
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-products .productDescriptionPrimary {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-products .productDisclosureBody.expanded .productDescriptionDetail {
+    display: block;
+    margin: 0;
+  }
+
+  .zpcWorkspace.shell-products .productFacts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-products .productFacts span:nth-child(3) {
+    grid-column: auto;
+  }
+
+  .zpcWorkspace.shell-products .productFacts span {
+    padding: 4px;
+  }
+
+  .zpcWorkspace.shell-products .productFacts b,
+  .zpcWorkspace.shell-products .productFacts small {
+    line-height: 1.15;
+  }
+
+  .zpcWorkspace.shell-products .gateRow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .zpcWorkspace.shell-products .gate {
+    min-width: 0;
+    padding: 4px;
+    text-align: center;
+  }
+}
