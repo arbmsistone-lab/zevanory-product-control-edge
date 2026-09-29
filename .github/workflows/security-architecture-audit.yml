@@ -1,0 +1,61 @@
+name: ZEVANORY Security and Architecture Audit
+
+on:
+  push:
+    branches:
+      - audit/security-zees-products-20260929
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Exact source
+        run: |
+          set -euo pipefail
+          test "$(git merge-base HEAD a628145bb088ad4bf07841d4f9f4b1e90e20266e)" = "a628145bb088ad4bf07841d4f9f4b1e90e20266e"
+          echo "BASE_SOURCE_SHA=a628145bb088ad4bf07841d4f9f4b1e90e20266e"
+      - name: Install
+        run: npm ci --ignore-scripts
+      - name: Runtime audit JSON
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > npm-audit-runtime.json
+          echo $? > npm-audit-runtime.exit
+          set -e
+          cat npm-audit-runtime.json
+      - name: Full audit JSON
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > npm-audit-full.json
+          echo $? > npm-audit-full.exit
+          set -e
+          cat npm-audit-full.json
+      - name: Build and contracts
+        run: |
+          npm run typecheck
+          npm run audit:commercial
+          npm run test:commercial-contract
+          npm run audit:cfo
+          npm run test:cfo-contract
+          npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zevanory-security-architecture-audit
+          path: |
+            npm-audit-runtime.json
+            npm-audit-runtime.exit
+            npm-audit-full.json
+            npm-audit-full.exit
+          retention-days: 30
