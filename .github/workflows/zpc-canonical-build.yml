@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'public/**'
       - 'backend/**'
       - 'cf-worker/**'
       - 'package.json'
@@ -69,10 +70,10 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25 \
-            https://zevanory.api.br/api/core/v1/snapshot \
+            https://controle.zevanory.api.br/api/core/v1/snapshot \
             -o /tmp/core-snapshot.json
           curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 25 \
-            https://zevanory.api.br/api/core/v1/decision \
+            https://controle.zevanory.api.br/api/core/v1/decision \
             -o /tmp/core-decision.json
 
           jq -e 'type == "object"' /tmp/core-snapshot.json >/dev/null
@@ -121,7 +122,7 @@ jobs:
                ],
                checkedAt: ($s.generated_at // $d.generated_at // null),
                snapshotAt: (now | todateiso8601),
-               source: "https://zevanory.api.br/api/core/v1/snapshot + /api/core/v1/decision"
+               source: "https://controle.zevanory.api.br/api/core/v1/snapshot + /api/core/v1/decision"
              }' > dist/global-trust.json
 
           echo "=== ADVERSARIAL_BOARD_SANITIZED_CORE_DIAGNOSTIC ==="
