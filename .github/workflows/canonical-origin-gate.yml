@@ -1,0 +1,31 @@
+name: Canonical Origin Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'cf-worker/**'
+      - 'scripts/canonical-origin-audit.mjs'
+      - '.github/workflows/canonical-origin-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-origin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Canonical origin static audit
+        run: node scripts/canonical-origin-audit.mjs
+      - name: Build
+        run: npm run build
+      - name: Zero-debt static audit
+        run: python3 scripts/ped_versal_zero_debt_audit.py
