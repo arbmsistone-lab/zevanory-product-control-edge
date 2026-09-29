@@ -611,12 +611,7 @@
   }
 
   .zpcWorkspace.shell-products .productFilterSelect > span {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+    display: none;
   }
 
   .zpcWorkspace.shell-products .productFilterSelect select {
