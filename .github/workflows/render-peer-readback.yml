@@ -1,0 +1,29 @@
+name: Render Peer Readback
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/render-peer-readback.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read Render release and health
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://zevanory-product-control-edge.onrender.com"
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 30 "$base/api/release" -o /tmp/release.json
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 30 "$base/api/health" -o /tmp/health.json
+          jq -e 'type=="object"' /tmp/release.json >/dev/null
+          jq -e 'type=="object"' /tmp/health.json >/dev/null
+          echo "=== RENDER_RELEASE ==="
+          jq '{deployment,release_sha,sha,commit_sha}' /tmp/release.json
+          echo "=== RENDER_HEALTH ==="
+          jq '{live,ready,databaseReachable,schemaReady,version,release_sha,commit_sha}' /tmp/health.json
