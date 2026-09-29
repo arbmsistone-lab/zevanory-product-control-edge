@@ -149,6 +149,7 @@ body {
 }
 
 .zpcAppShell .trustStrip {
+  display: grid;
   grid-template-columns: minmax(180px, 1.1fr) repeat(4, minmax(0, 1fr));
 }
 
@@ -511,6 +512,29 @@ body {
     min-height: 44px;
     padding: var(--zpc-space-2);
     line-height: 1.25;
+  }
+
+  .zpcAppShell .trustStrip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--zpc-space-2);
+    padding: var(--zpc-space-2);
+  }
+
+  .zpcAppShell .trustState {
+    grid-column: 1 / -1;
+  }
+
+  .zpcAppShell .trustStrip > div {
+    min-width: 0;
+  }
+
+  .zpcAppShell .trustStrip small,
+  .zpcAppShell .trustStrip b,
+  .zpcAppShell .trustStrip strong,
+  .zpcAppShell .trustState span {
+    font-size: 12px;
+    line-height: 1.35;
   }
 
   .zpcAppShell > .areaSelectWrap {
