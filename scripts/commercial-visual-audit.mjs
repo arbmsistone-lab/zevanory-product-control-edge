@@ -129,7 +129,8 @@ for (const size of sizes) {
     await fs.writeFile(outDir + '/' + size.name + '-pre-nav-failure.txt', bodyText);
     throw error;
   }
-  await page.getByText('ROBÔ COMERCIAL: ATIVO', { exact:true }).waitFor({ state:'visible', timeout:15_000 });
+  await page.locator('.liveTelemetry.live').getByText('LIVE', { exact:true }).waitFor({ state:'visible', timeout:15_000 });
+  await page.locator('.robotBadge').waitFor({ state:'visible', timeout:15_000 });
 
   const audit = await page.evaluate(() => {
     const expected = [
