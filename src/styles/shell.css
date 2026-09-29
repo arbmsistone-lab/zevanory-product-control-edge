@@ -604,9 +604,13 @@ body {
 }
 
 .zpcWorkspace.shell-governance .pillarDisclosureBody {
-  display: grid;
+  display: none;
   gap: var(--zpc-space-2);
   margin-top: var(--zpc-space-2);
+}
+
+.zpcWorkspace.shell-governance .pillarDisclosureBody.expanded {
+  display: grid;
 }
 
 .zpcWorkspace.shell-governance .pillarDisclosureBody > p {
@@ -843,5 +847,174 @@ body {
 
   .zpcWorkspace.shell-overview .executiveList > div {
     padding: 4px 8px;
+  }
+}
+
+
+/* Strict NO-SCROLL governance: compact screens use target selection + internal pages. */
+.zpcWorkspace.shell-governance .certTargetSelectWrap,
+.zpcWorkspace.shell-governance .governanceSectionPager {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .zpcWorkspace.shell-governance .governanceHero {
+    padding: 8px;
+  }
+
+  .zpcWorkspace.shell-governance .governanceHero .productDescription {
+    margin: 4px 0;
+    line-height: 1.3;
+  }
+
+  .zpcWorkspace.shell-governance .standardStrip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .standardStrip span {
+    min-width: 0;
+    padding: 4px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .zpcWorkspace.shell-governance .certWorkspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .certSidebar {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-governance .certTargetSelectWrap {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .zpcWorkspace.shell-governance .certTargetSelectWrap select {
+    min-width: 0;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--zpc-radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    padding: 4px 8px;
+  }
+
+  .zpcWorkspace.shell-governance .governanceSectionPager {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .governanceSectionPager .filter {
+    min-height: 40px;
+    padding: 4px 8px;
+  }
+
+  .zpcWorkspace.shell-governance .certDetail[data-page='summary'] .governancePager,
+  .zpcWorkspace.shell-governance .certDetail[data-page='summary'] .pillarGrid {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-governance .certDetail[data-page='pillars'] .certSummaryPanel {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-governance .certSummaryPanel {
+    margin: 0;
+    padding: 8px;
+  }
+
+  .zpcWorkspace.shell-governance .certTitleRow {
+    gap: 8px;
+  }
+
+  .zpcWorkspace.shell-governance .certActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .certActions > * {
+    min-width: 0;
+    min-height: 40px;
+    padding: 4px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .zpcWorkspace.shell-governance .certSummaryGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .certSummaryGrid span {
+    min-width: 0;
+    padding: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .rootBlocker {
+    margin-top: 4px;
+    padding: 4px 8px;
+  }
+
+  .zpcWorkspace.shell-governance .governancePager {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .zpcWorkspace.shell-governance .governancePager > :last-child {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-governance .governancePager strong {
+    width: auto;
+    order: 0;
+    text-align: center;
+    color: var(--text-primary);
+  }
+
+  .zpcWorkspace.shell-governance .governancePager .compact {
+    min-height: 40px;
+    padding: 4px 8px;
+  }
+
+  .zpcWorkspace.shell-governance .pillarGrid {
+    gap: 4px;
+  }
+
+  .zpcWorkspace.shell-governance .pillarCard {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 620px) {
+  .zpcWorkspace.shell-governance .governanceHero .productDescription {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-governance .standardStrip span {
+    line-height: 1.1;
+  }
+
+  .zpcWorkspace.shell-governance .certTargetSelectWrap > span {
+    display: none;
+  }
+
+  .zpcWorkspace.shell-governance .certTargetSelectWrap {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
