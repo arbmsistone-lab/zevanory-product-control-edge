@@ -350,3 +350,115 @@ body {
     grid-template-rows: none;
   }
 }
+
+
+/* Governance V2: natural content flow and theme-safe operational text. */
+.zpcWorkspace.shell-governance .certProductButton small,
+.zpcWorkspace.shell-governance .certTitleRow p,
+.zpcWorkspace.shell-governance .certSummaryGrid small,
+.zpcWorkspace.shell-governance .governancePager strong,
+.zpcWorkspace.shell-governance .pillarIndex,
+.zpcWorkspace.shell-governance .pillarCard > p,
+.zpcWorkspace.shell-governance .pillarMeta,
+.zpcWorkspace.shell-governance .pillarEvidence span,
+.zpcWorkspace.shell-governance .pillarBlocker {
+  color: var(--text-primary);
+}
+
+.zpcWorkspace.shell-governance .pillarGrid {
+  height: auto;
+  max-height: none;
+  grid-template-rows: none;
+  align-items: stretch;
+  overflow: visible;
+}
+
+.zpcWorkspace.shell-governance .pillarCard {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.zpcWorkspace.shell-governance .pillarCard > p,
+.zpcWorkspace.shell-governance .pillarEvidence,
+.zpcWorkspace.shell-governance .pillarBlocker {
+  max-height: none;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.zpcWorkspace.shell-governance .rootBlocker {
+  min-width: 0;
+}
+
+.zpcWorkspace.shell-governance .rootBlocker span,
+.zpcWorkspace.shell-governance .rootBlocker b {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  .zpcWorkspace.shell-governance .certTitleRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--zpc-space-3);
+  }
+
+  .zpcWorkspace.shell-governance .certActions {
+    justify-content: flex-start;
+  }
+
+  .zpcWorkspace.shell-governance .certActions > * {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .zpcWorkspace.shell-governance .governancePager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .zpcWorkspace.shell-governance .governancePager strong {
+    width: 100%;
+    margin: 0;
+    order: -1;
+  }
+
+  .zpcWorkspace.shell-governance .pillarGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* Governance surfaces follow the active theme; no dark-only islands in light mode. */
+.zpcWorkspace.shell-governance .certSidebar,
+.zpcWorkspace.shell-governance .certSummaryPanel,
+.zpcWorkspace.shell-governance .certProductButton,
+.zpcWorkspace.shell-governance .certSummaryGrid span,
+.zpcWorkspace.shell-governance .pillarCard {
+  border-color: var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.zpcWorkspace.shell-governance .certProductButton.active {
+  border-color: var(--action-primary);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.zpcWorkspace.shell-governance .certProductButton b,
+.zpcWorkspace.shell-governance .certProductButton strong,
+.zpcWorkspace.shell-governance .certProductButton small,
+.zpcWorkspace.shell-governance .certSummaryGrid b,
+.zpcWorkspace.shell-governance .certSummaryGrid small,
+.zpcWorkspace.shell-governance .pillarCard h3,
+.zpcWorkspace.shell-governance .pillarIndex,
+.zpcWorkspace.shell-governance .pillarCard > p,
+.zpcWorkspace.shell-governance .pillarMeta,
+.zpcWorkspace.shell-governance .pillarEvidence span {
+  color: var(--text-primary);
+}

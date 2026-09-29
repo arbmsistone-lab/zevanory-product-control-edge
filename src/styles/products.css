@@ -1,0 +1,361 @@
+/* ZEVANORY Control Center V2 — Products
+   Content defines geometry. No administrative information is hidden to fit a viewport. */
+
+.zpcWorkspace.shell-products {
+  --zpc-product-card-bg: var(--surface);
+  --zpc-product-card-border: var(--border);
+  --zpc-product-surface: var(--surface-elevated);
+  --zpc-product-surface-border: var(--border);
+  --zpc-product-text: var(--text-primary);
+  --zpc-product-text-secondary: var(--text-secondary);
+  --zpc-product-text-muted: var(--text-secondary);
+  --zpc-product-success: var(--text-primary);
+  --zpc-product-warning: var(--text-primary);
+  --zpc-product-danger: var(--text-primary);
+}
+
+.zpcWorkspace.shell-products {
+  min-inline-size: 0;
+}
+
+.zpcWorkspace.shell-products .metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--zpc-space-2);
+  margin-block-end: var(--zpc-space-4);
+}
+
+.zpcWorkspace.shell-products .toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--zpc-space-4);
+  flex-wrap: wrap;
+  margin-block: 0 var(--zpc-space-4);
+}
+
+.zpcWorkspace.shell-products .toolbarControls,
+.zpcWorkspace.shell-products .filters,
+.zpcWorkspace.shell-products .pagination {
+  min-inline-size: 0;
+  flex-wrap: wrap;
+}
+
+.zpcWorkspace.shell-products .productGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--zpc-space-4);
+  width: 100%;
+  min-inline-size: 0;
+  align-items: start;
+}
+
+.zpcWorkspace.shell-products .productCard {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  display: grid;
+  grid-template-rows: auto;
+  gap: var(--zpc-space-3);
+  overflow: visible;
+  border: 1px solid var(--zpc-product-card-border);
+  border-radius: var(--zpc-radius-lg);
+  background: var(--zpc-product-card-bg);
+  color: var(--zpc-product-text);
+  padding: var(--zpc-space-4);
+}
+
+.zpcWorkspace.shell-products .productHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--zpc-space-3);
+  min-width: 0;
+}
+
+.zpcWorkspace.shell-products .productHead > div {
+  min-width: 0;
+}
+
+.zpcWorkspace.shell-products .productHead h3 {
+  margin: 0;
+  color: var(--zpc-product-text);
+  font-size: 16px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace.shell-products .productCategory {
+  margin: 0 0 var(--zpc-space-1);
+  color: var(--zpc-product-text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace.shell-products .saleBadge {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.zpcWorkspace.shell-products .productDescription {
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  overflow: visible;
+  color: var(--zpc-product-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace.shell-products .productFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--zpc-space-2);
+  min-width: 0;
+}
+
+.zpcWorkspace.shell-products .productFacts span {
+  min-width: 0;
+  border: 1px solid var(--zpc-product-surface-border);
+  border-radius: var(--zpc-radius-sm);
+  background: var(--zpc-product-surface);
+  padding: var(--zpc-space-3);
+}
+
+.zpcWorkspace.shell-products .productFacts b,
+.zpcWorkspace.shell-products .productFacts small {
+  display: block;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace.shell-products .productFacts b {
+  color: var(--zpc-product-text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.zpcWorkspace.shell-products .productFacts small {
+  margin-top: var(--zpc-space-1);
+  color: var(--zpc-product-text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.zpcWorkspace.shell-products .certPanel {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--zpc-product-surface-border);
+  border-radius: var(--zpc-radius-md);
+  background: var(--zpc-product-surface);
+  padding: var(--zpc-space-3);
+}
+
+.zpcWorkspace.shell-products .auditHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--zpc-space-3);
+  align-items: start;
+}
+
+.zpcWorkspace.shell-products .auditHeader small,
+.zpcWorkspace.shell-products .auditHeader strong {
+  color: var(--zpc-product-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.zpcWorkspace.shell-products .auditHeader strong {
+  color: var(--zpc-product-text);
+}
+
+.zpcWorkspace.shell-products .certRatio {
+  color: var(--zpc-product-warning);
+}
+
+.zpcWorkspace.shell-products .certRatio.ready {
+  color: var(--zpc-product-success);
+}
+
+.zpcWorkspace.shell-products .zeesSealGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--zpc-space-1);
+  margin-top: var(--zpc-space-3);
+  min-width: 0;
+}
+
+.zpcWorkspace.shell-products .zeesSealChip {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 28px;
+}
+
+.zpcWorkspace.shell-products .certCompactSummary {
+  display: flex;
+  gap: var(--zpc-space-2);
+  flex-wrap: wrap;
+  margin-top: var(--zpc-space-3);
+  color: var(--zpc-product-text-muted);
+  line-height: 1.4;
+}
+
+.zpcWorkspace.shell-products .certCompactSummary span {
+  color: var(--zpc-product-text-muted);
+}
+
+.zpcWorkspace.shell-products .certCompactSummary .proved {
+  color: var(--zpc-product-success);
+}
+
+.zpcWorkspace.shell-products .certCompactSummary .partial {
+  color: var(--zpc-product-warning);
+}
+
+.zpcWorkspace.shell-products .certCompactSummary .blocked {
+  color: var(--zpc-product-danger);
+}
+
+.zpcWorkspace.shell-products .certBlockerLine,
+.zpcWorkspace.shell-products .blockers {
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  margin: var(--zpc-space-2) 0 0;
+  overflow: visible;
+  color: var(--zpc-product-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.zpcWorkspace.shell-products .blockers {
+  color: var(--zpc-product-warning);
+  margin: 0;
+}
+
+.zpcWorkspace.shell-products .gateRow {
+  display: flex;
+  gap: var(--zpc-space-2);
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.zpcWorkspace.shell-products .gate {
+  flex: 0 1 auto;
+  color: var(--zpc-product-warning);
+}
+
+.zpcWorkspace.shell-products .gate.ok {
+  color: var(--zpc-product-success);
+}
+
+.zpcWorkspace.shell-products .productActions {
+  display: flex;
+  align-items: center;
+  gap: var(--zpc-space-2);
+  flex-wrap: wrap;
+  margin-top: 0;
+  min-width: 0;
+}
+
+.zpcWorkspace.shell-products .productActions .compact {
+  min-height: 40px;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+:root[data-theme='light'] .zpcWorkspace.shell-products .secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] .zpcWorkspace.shell-products .ghost {
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] .zpcWorkspace.shell-products .saleBadge.on,
+:root[data-theme='light'] .zpcWorkspace.shell-products .saleBadge.off {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+@media (max-width: 1180px) {
+  .zpcWorkspace.shell-products .productGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .zpcWorkspace.shell-products .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zpcWorkspace.shell-products .productCard {
+    padding: var(--zpc-space-3);
+  }
+
+  .zpcWorkspace.shell-products .productHead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace.shell-products .saleBadge {
+    justify-self: start;
+  }
+
+  .zpcWorkspace.shell-products .productFacts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace.shell-products .auditHeader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace.shell-products .certRatio {
+    justify-self: start;
+  }
+
+  .zpcWorkspace.shell-products .zeesSealGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .zpcWorkspace.shell-products .productActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zpcWorkspace.shell-products .productActions > * {
+    width: 100%;
+  }
+}
+
+
+/* Gate chips inherit the active theme instead of legacy dark-only fills. */
+.zpcWorkspace.shell-products .gate,
+.zpcWorkspace.shell-products .gate.ok {
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.zpcWorkspace.shell-products .gate.ok {
+  border-color: var(--status-success);
+}
