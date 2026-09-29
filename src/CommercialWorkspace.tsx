@@ -74,9 +74,22 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [actionError, setActionError] = useState('');
   const [liveState, setLiveState] = useState<'LIVE'|'SYNCING'|'STALE'>('SYNCING');
   const [lastSyncAt, setLastSyncAt] = useState<number>(Date.now());
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const [dashboardPage, setDashboardPage] = useState(0);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const meta = SECTION_META[section];
+  const pagedDashboard = viewportWidth <= 1180;
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    setDashboardPage(0);
+  }, [section]);
 
   useEffect(() => {
     let active = true;
@@ -182,38 +195,45 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
 
       {section === 'commercial' && (
         <>
-          <div className='commercialMetrics'>
+          {pagedDashboard && (
+            <nav className='commercialPager' aria-label='Páginas da Central Comercial'>
+              {['KPIs','Atividade','Pipeline','Provas'].map((label,index) => (
+                <button key={label} className={dashboardPage === index ? 'filter active' : 'filter'} aria-pressed={dashboardPage === index} onClick={() => setDashboardPage(index)}>{label}</button>
+              ))}
+            </nav>
+          )}
+          {(!pagedDashboard || dashboardPage === 0) && <div className='commercialMetrics'>
             <article><Search/><span>Leads encontrados hoje</span><strong>{data.metrics.leadsToday}</strong></article>
             <article><MessageSquareText/><span>Contatos hoje</span><strong>{data.metrics.contactsToday}</strong></article>
             <article><Sparkles/><span>Criativos em produção</span><strong>{data.metrics.creativesInProduction}</strong></article>
             <article><FileCheck2/><span>Aguardando aprovação</span><strong>{data.metrics.pendingApproval}</strong></article>
             <article><Send/><span>Publicados hoje</span><strong>{data.metrics.publishedToday}</strong></article>
             <article><CircleDollarSign/><span>Vendas hoje</span><strong>{brl(data.metrics.salesCentsToday)}</strong></article>
-          </div>
+          </div>}
 
-          <div className='commercialDashboardGrid'>
-            <article className='commercialPanel'>
+          {(!pagedDashboard || dashboardPage === 1 || dashboardPage === 2) && <div className='commercialDashboardGrid'>
+            {(!pagedDashboard || dashboardPage === 1) && <article className='commercialPanel'>
               <div className='commercialPanelTitle'><Activity size={17}/><div><b>Atividade recente</b><small>Eventos persistidos e autenticados</small></div></div>
               <div className='commercialList' tabIndex={0} aria-label='Atividade comercial recente'>
                 {data.events.slice(0, 5).map(item => <RecordRow key={item.id} item={item}/>)}
                 {!data.events.length && <div className='commercialEmpty'>Nenhum evento comercial comprovado ainda.</div>}
               </div>
-            </article>
-            <article className='commercialPanel'>
+            </article>}
+            {(!pagedDashboard || dashboardPage === 2) && <article className='commercialPanel'>
               <div className='commercialPanelTitle'><Megaphone size={17}/><div><b>Pipeline de conteúdo</b><small>Criativo → aprovação → publicação</small></div></div>
               <div className='commercialList' tabIndex={0} aria-label='Pipeline comercial de conteúdo'>
                 {[...data.creatives, ...data.publications].slice(0, 5).map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
                 {!data.creatives.length && !data.publications.length && <div className='commercialEmpty'>Nenhum criativo ou publicação registrado.</div>}
               </div>
-            </article>
-          </div>
+            </article>}
+          </div>}
 
-          <div className='commercialProofStrip'>
+          {(!pagedDashboard || dashboardPage === 3) && <div className='commercialProofStrip'>
             <span><ShieldCheck/>Canais ativos <b>{data.robot.activeChannels.length ? data.robot.activeChannels.join(', ') : 'nenhum comprovado'}</b></span>
             <span><Bot/>Prospecção externa <b>{data.robot.externalProspecting ? 'LIBERADA' : 'NÃO COMPROVADA'}</b></span>
             <span><Send/>Adaptador de publicação <b>{data.robot.publishAdapterReady ? 'READY' : 'STANDBY'}</b></span>
             <span><Activity/>Heartbeat <b>{time(data.robot.lastHeartbeatAt)}</b></span>
-          </div>
+          </div>}
         </>
       )}
 
