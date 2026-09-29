@@ -4,6 +4,7 @@ import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
 const CANONICAL_PUBLIC_ORIGIN = 'https://controle.zevanory.api.br';
 const PUBLIC_MIRROR_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-public-mirror';
+const INTERNAL_CORE_ORIGIN = 'https://zevanory.api.br';
 
 const CERTIFIER_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -176,6 +177,23 @@ export default {
         { ok: false, error: 'migration_closed' },
         { status: 410, headers: { 'cache-control': 'no-store, max-age=0' } },
       );
+    }
+
+    const coreApiPath = normalizedPath === '/api/control-plane'
+      || normalizedPath === '/api/status'
+      || normalizedPath === '/api/health'
+      || normalizedPath === '/api/continuity'
+      || normalizedPath === '/api/release'
+      || normalizedPath.startsWith('/api/core/v1/');
+
+    if (coreApiPath) {
+      const target = new URL(INTERNAL_CORE_ORIGIN + normalizedPath + url.search);
+      const upstream = await fetch(new Request(target.toString(), normalizedRequest));
+      const headers = new Headers(upstream.headers);
+      headers.set('cache-control','no-store');
+      headers.set('x-zpc-canonical-origin',CANONICAL_PUBLIC_ORIGIN);
+      headers.set('x-zpc-upstream-role','internal-control-core');
+      return new Response(upstream.body,{status:upstream.status,headers});
     }
 
     if (normalizedPath.startsWith('/api/')) {
