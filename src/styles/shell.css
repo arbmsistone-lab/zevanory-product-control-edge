@@ -1002,10 +1002,6 @@ body {
 }
 
 @media (max-width: 620px) {
-  .zpcWorkspace.shell-governance .governanceHero .productDescription {
-    display: none;
-  }
-
   .zpcWorkspace.shell-governance .standardStrip span {
     line-height: 1.1;
   }
