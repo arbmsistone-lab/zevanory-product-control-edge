@@ -111,6 +111,12 @@ for (const size of sizes) {
     contentType:'application/json',
     body:JSON.stringify(bootstrap.globalTrust),
   }));
+  await page.route(/\/(control\/)?api\/commercial\/stream$/, route => route.fulfill({
+    status:200,
+    contentType:'text/event-stream; charset=utf-8',
+    headers:{'cache-control':'no-cache','connection':'keep-alive'},
+    body:'event: commercial-update\\ndata: {"seq":1,"at":"2026-09-26T16:30:00.000Z"}\\n\\n',
+  }));
 
   await page.goto(baseUrl, { waitUntil:'domcontentloaded', timeout:30_000 });
   try {
