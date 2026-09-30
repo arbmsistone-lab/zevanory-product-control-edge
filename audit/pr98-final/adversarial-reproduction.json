@@ -1,0 +1,137 @@
+{
+  "testedSha": "working-tree-uncommitted",
+  "results": [
+    {
+      "theme": "dark",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "mode": "nominal-expanded",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "mode": "long-product",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "mode": "runtime",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "mode": "nominal-expanded",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "mode": "long-product",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "mode": "runtime",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "mode": "nominal-expanded",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "mode": "long-product",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "mode": "runtime",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "mode": "nominal-expanded",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "mode": "long-product",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "mode": "runtime",
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    }
+  ]
+}

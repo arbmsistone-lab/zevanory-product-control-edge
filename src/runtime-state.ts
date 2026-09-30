@@ -21,7 +21,9 @@ export function trustPresentation(input: TrustInput | null, now: number, observe
     now - generatedAt <= MAX_STATE_AGE_MS && observedAt > 0 && now - observedAt <= MAX_STATE_AGE_MS;
   if (!fresh) return { approved: false, state: 'BLOCKED', freshness: 'STALE', reason: 'A evidência expirou ou não possui data válida. Consulte novamente a autoridade.' };
   const approved = input.state === 'GREEN' && /^[a-f0-9]{40}$/i.test(input.sha ?? '') &&
-    !!input.evidenceRoot && input.quorum?.required > 0 && input.quorum?.passed >= input.quorum?.required &&
+    /^[a-f0-9]{64}$/i.test(input.evidenceRoot ?? '') &&
+    Number.isSafeInteger(input.quorum?.required) && input.quorum?.required > 0 &&
+    Number.isSafeInteger(input.quorum?.passed) && input.quorum?.passed >= input.quorum?.required &&
     input.quorum?.conflicts === 0 && input.zea10?.proven === 10 && input.zea10?.partial === 0 && input.zea10?.blocked === 0 &&
     Array.isArray(input.engines) && ['zees16-core', 'zea10-evaluator', 'control-core'].every(id => input.engines.some(engine => engine.id === id && engine.state === 'GREEN'));
   return { approved, state: approved ? 'PASS' : 'BLOCKED', freshness: 'LIVE', reason: approved ? 'A autoridade atual comprovou os gates.' : 'Gates incompletos na autoridade atual. Consulte ZEES-16 / Governança e Operações técnicas.' };

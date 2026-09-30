@@ -1,0 +1,154 @@
+{
+  "observed_at": "2026-09-30T00:29:01.921275+00:00",
+  "candidate_sha": "6b5ed2cec22d94b7c9334e4f742b8fc1d78b6b2b",
+  "release_sha": "37e695127af02c9a32c601db0353a3708fc45d82",
+  "decision": "DENY",
+  "zees": {
+    "proven": 0,
+    "partial": 8,
+    "blocked": 8,
+    "na": 0
+  },
+  "zea10": {
+    "proven": 0,
+    "partial": 2,
+    "blocked": 8,
+    "unknown": 0
+  },
+  "hashes": {
+    "snapshot": "531a668a042433d6c7324490bf253376dd8759b8fe6718dd12b9f4e68d504bff",
+    "decision": "44494b3a7840fa58cc60b1e0f03a777402ccee2062a301fd9f09538272ea8884"
+  },
+  "authority_source": "https://zevanory.api.br/api/core/v1/",
+  "first_causal_divergence": "Core release-bound workflow evidence acquisition precedes ZEES/ZEA aggregation: required workflow entries have no run_id/url/conclusion for the served release SHA.",
+  "root_cause_status": "missing_release_bound_evidence_observed; upstream repository binding/authentication vs absent runs not yet distinguished",
+  "additional_blocker": {
+    "ready": false,
+    "fail_closed": true,
+    "error": "zea10_service_binding_unavailable"
+  },
+  "release_approval": false,
+  "pillars": [
+    {
+      "id": "P01",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:ZEVANORY apex engineering gate"
+      ]
+    },
+    {
+      "id": "P02",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:zevanory-p02-visual-regression",
+        "workflow:zevanory-p04-wcag"
+      ]
+    },
+    {
+      "id": "P03",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:zevanory-p12-continuous-slo"
+      ]
+    },
+    {
+      "id": "P04",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:zevanory-p04-wcag"
+      ]
+    },
+    {
+      "id": "P05",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:zevanory-remote-quality-gates"
+      ]
+    },
+    {
+      "id": "P06",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:ZEES-16 Evidence Gate",
+        "workflow:zevanory-remote-quality-gates"
+      ]
+    },
+    {
+      "id": "P07",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:ZEES-16 Evidence Gate",
+        "workflow:zevanory-p15-provenance"
+      ]
+    },
+    {
+      "id": "P08",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:zevanory-p12-continuous-slo"
+      ]
+    },
+    {
+      "id": "P09",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:ZEVANORY portable disaster recovery",
+        "workflow:zevanory-remote-quality-gates"
+      ]
+    },
+    {
+      "id": "P10",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:ZEVANORY portable disaster recovery",
+        "workflow:ZEVANORY authenticated three-provider runtime quorum"
+      ]
+    },
+    {
+      "id": "P11",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:zevanory-p02-visual-regression",
+        "workflow:zevanory-p12-continuous-slo"
+      ]
+    },
+    {
+      "id": "P12",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:ZEVANORY central production deploy"
+      ]
+    },
+    {
+      "id": "P13",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:zevanory-p15-provenance"
+      ]
+    },
+    {
+      "id": "P14",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:ZEVANORY provider independence gate",
+        "workflow:ZEVANORY authenticated three-provider runtime quorum"
+      ]
+    },
+    {
+      "id": "P15",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:zevanory-p15-provenance",
+        "workflow:pages build and deployment",
+        "workflow:ZEVANORY central production deploy"
+      ]
+    },
+    {
+      "id": "P16",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:ZEVANORY consolidated closure gate"
+      ]
+    }
+  ]
+}

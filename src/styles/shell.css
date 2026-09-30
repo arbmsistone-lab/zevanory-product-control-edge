@@ -1539,3 +1539,20 @@ body,
 .formGrid[data-step='3'], .formGrid[data-step='4'] { display: none; }
 .modalHead h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .modalHead > div { min-width: 0; }
+
+/* Details replace the task area; the remaining height determines each text page. */
+.zpcWorkspace > .evidenceReader { height:100%; max-height:100%; min-height:0; display:grid; grid-template-rows:auto auto auto minmax(0,1fr) auto; gap:8px; }
+.evidenceReader h2,.evidenceReader h3 { margin:0; }
+.readerText { min-width:0; min-height:0; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.5; font-size:14px; }
+.readerNav { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+.readerNav button { white-space:normal; }
+.textDetailButton { padding:0; border:0; background:none; color:inherit; text-decoration:underline; font:inherit; cursor:pointer; white-space:normal; }
+.shell-runtime { display:grid; grid-template-rows:minmax(0,1fr); }
+.zpcWorkspace .runtimeEvidence { height:100%; max-height:100%; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr); gap:8px; }
+.runtimeEvidence > .evidenceReader { height:100%; max-height:100%; min-height:0; display:grid; grid-template-rows:auto auto auto minmax(0,1fr) auto; gap:8px; }
+.zpcAppShell > main.zpcWorkspace.shell-runtime { display:grid; height:100%; max-height:100%; min-height:0; grid-template-rows:minmax(0,1fr); }
+.evidenceReader.panel { padding:8px; }
+.evidenceReader button { min-height:32px; height:auto; padding:4px 8px; font-size:12px; line-height:1.2; }
+.evidenceReader .panelhead { min-height:0; }
+.evidenceReader h2 { font-size:16px; line-height:1.2; }
+.evidenceReader h3 { font-size:14px; line-height:1.2; }

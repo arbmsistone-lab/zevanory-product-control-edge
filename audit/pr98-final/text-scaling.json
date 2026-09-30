@@ -1,0 +1,86 @@
+{
+  "source": "working-tree-uncommitted",
+  "scope": "browser minimum font size; exploratory evidence, not ALL_STATES certificate",
+  "rows": [
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "issues": [
+        "svg.[object SVGAnimatedString]"
+      ]
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "issues": [
+        "svg.[object SVGAnimatedString]",
+        "path.[object SVGAnimatedString]",
+        "path.[object SVGAnimatedString]"
+      ]
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "issues": [
+        "svg.[object SVGAnimatedString]",
+        "path.[object SVGAnimatedString]",
+        "path.[object SVGAnimatedString]"
+      ]
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "issues": [
+        "MAIN.zpcWorkspace shell shell-runtime",
+        "NAV.readerNav",
+        "BUTTON.secondary",
+        "BUTTON.secondary",
+        "H3.",
+        "NAV.readerNav",
+        "BUTTON.secondary",
+        "SPAN.",
+        "BUTTON.secondary"
+      ]
+    }
+  ]
+}

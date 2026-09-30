@@ -4,7 +4,6 @@ import {
   Archive,
   CheckCircle2,
   ExternalLink,
-  Gauge,
   LogIn,
   LogOut,
   PackagePlus,
@@ -19,9 +18,10 @@ import {
   X,
 } from 'lucide-react';
 import { api } from './api';
-import { trustPresentation, shouldEndSession } from './runtime-state';
+import { trustPresentation, shouldEndSession, MAX_STATE_AGE_MS } from './runtime-state';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
+import EvidenceReader, {type EvidenceField} from './EvidenceReader';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 import type { CfoWorkspaceData } from './cfo-model';
 
@@ -293,8 +293,8 @@ function LoginScreen({ onSuccess }: { onSuccess: (token: string) => void }) {
         const parts = [
           `PIN:${d.secretValid ? 'OK' : 'FALHA'}`,
           `LOCK:${d.locked ? 'ATIVO' : 'LIVRE'}`,
-          `SESSÃO:${d.sessionRoundtrip ? 'OK' : 'FALHA'}`,
-          `BOOT:${d.bootstrapOk ? 'OK' : 'FALHA'}`,
+          `SESSÃO:${d.sessionRoundtrip == null ? 'NÃO TESTADA' : d.sessionRoundtrip ? 'OK' : 'FALHA'}`,
+          `BOOT:${d.bootstrapOk == null ? 'NÃO TESTADO' : d.bootstrapOk ? 'OK' : 'FALHA'}`,
           d.stage ? `ETAPA:${d.stage}` : '',
         ].filter(Boolean);
         setDiagnostic(`DIAGNÓSTICO: ${parts.join(' · ')}`);
@@ -362,11 +362,12 @@ function App() {
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | 'runtime' | CommercialSection>('overview');
+  const [detailFields,setDetailFields] = useState<EvidenceField[] | null>(null);
   const [runtimePage, setRuntimePage] = useState<'decision' | 'lineage' | 'policy'>('decision');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
-  const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(() => new Set());
-  const [expandedPillarIds, setExpandedPillarIds] = useState<Set<string>>(() => new Set());
+  const [expandedProductIds] = useState<Set<string>>(() => new Set());
+  const [expandedPillarIds] = useState<Set<string>>(() => new Set());
   const [overviewPage, setOverviewPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
   const [auditPage, setAuditPage] = useState(0);
@@ -450,6 +451,8 @@ function App() {
     return promise;
   };
 
+  useEffect(() => { setDetailFields(null); }, [view]);
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('zpc_theme', theme);
@@ -469,6 +472,14 @@ function App() {
     document.addEventListener('visibilitychange', onVisible);
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
   }, [authState, sessionToken]);
+
+  useEffect(() => {
+    const generated = Date.parse(globalTrust?.checkedAt ?? '');
+    if (!Number.isFinite(generated) || !observedAt) return;
+    const expires = Math.min(generated, observedAt) + MAX_STATE_AGE_MS + 1;
+    const timer = window.setTimeout(() => setClock(Date.now()), Math.max(0, expires - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [globalTrust?.checkedAt, observedAt]);
 
   useEffect(() => {
     if (!formOpen) return;
@@ -508,6 +519,7 @@ function App() {
 
 
   const logout = async () => {
+    setDetailFields(null);
     ++loadEpoch.current;
     pendingLoad.current = null;
     try {
@@ -573,24 +585,23 @@ function App() {
   };
 
   const toggleProductDetails = (productId: string) => {
-    setExpandedProductIds(current => {
-      const next = new Set(current);
-      if (next.has(productId)) next.delete(productId);
-      else next.add(productId);
-      return next;
-    });
+    const product=products.find(item=>item.id===productId);if(!product)return;
+    setDetailFields([
+      {label:'Nome',value:product.name}, {label:'Categoria',value:product.category},
+      {label:'Descrição',value:product.description}, {label:'Entrega',value:product.deliveryModel},
+      {label:'Notas',value:product.notes}, {label:'Bloqueios',value:product.blockers.join('\n')},
+      {label:'Certificação',value:JSON.stringify(product.certification,null,2)},
+    ]);
   };
 
   const togglePillarDetails = (pillarId: string) => {
-    setExpandedPillarIds(current => {
-      const next = new Set(current);
-      if (next.has(pillarId)) next.delete(pillarId);
-      else next.add(pillarId);
-      return next;
-    });
+    const target=certificationTargets.find(item=>item.id===selectedTargetId)??certificationTargets[0];
+    const pillar=target?.certification.pillars.find(item=>item.id===pillarId);if(!pillar)return;
+    setDetailFields([{label:'Pilar',value:pillar.id+' · '+pillar.name}, {label:'Fundamentação',value:pillar.rationale}, {label:'Bloqueador',value:pillar.blocker??'Sem bloqueador.'}, {label:'Evidências',value:pillar.evidence.join('\n')}]);
   };
 
   const openNew = () => {
+    setDetailFields(null);
     setEditing(null);
     setForm(emptyForm);
     setFormStep(0);
@@ -870,6 +881,7 @@ function App() {
       </label>
 
       <main className={`zpcWorkspace shell shell-${view}`}>
+      {detailFields ? <EvidenceReader fields={detailFields} onClose={()=>setDetailFields(null)} /> : <>
       {error && <div className='errorbox globalError'>{error}</div>}
 
       {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
@@ -882,21 +894,24 @@ function App() {
       )}
 
       {view === 'cfo' && <CfoWorkspace data={cfo} />}
-      {view === 'runtime' && <section className='runtimeEvidence panel' aria-label='Evidência da Trust Chain'>
-        <div className='panelhead'><div><p className='kicker'>AUTORIDADE ATUAL</p><h2>Trust Chain · {trust.state}</h2></div></div>
+      {view === 'runtime' && <section className='runtimeEvidence' aria-label='Evidência da Trust Chain'>
         <nav aria-label='Páginas da evidência' className='runtimePages'>
           {([['decision','Decisão'],['lineage','Linhagem'],['policy','Políticas']] as const).map(([key,label]) => <button key={key} className={runtimePage === key ? 'filter active' : 'filter'} aria-pressed={runtimePage === key} onClick={() => setRuntimePage(key)}>{label}</button>)}
         </nav>
-        {runtimePage === 'decision' && <div><p>{trust.reason}</p><p>Gerado em: {globalTrust?.checkedAt ?? 'indisponível'}</p><p>Impacto: {trust.approved ? 'Gates comprovados pela autoridade.' : 'Promoção crítica não aprovada por esta interface.'}</p><button className='secondary' onClick={() => setView('governance')}>Abrir Governança</button></div>}
-        {runtimePage === 'lineage' && <dl><dt>Fonte</dt><dd>{globalTrust?.source ?? 'Bootstrap administrativo / Control Core'}</dd><dt>Release Core</dt><dd>{globalTrust?.sha ?? 'indisponível'}</dd><dt>Decision hash</dt><dd>{globalTrust?.evidenceRoot ?? 'indisponível'}</dd><dt>Frescor</dt><dd>{trust.freshness}</dd></dl>}
-        {runtimePage === 'policy' && <div><section className='policybar' aria-label='Políticas administrativas'>
-        <span><ShieldCheck size={16} />ADMIN RESTRITO</span>
-        <span><Gauge size={16} />ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
-        <span><ShieldCheck size={16} />FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
-        <span><AlertTriangle size={16} />VENDA SEM GATE: BLOQUEADA</span>
-      </section><p>{dashboard.policy.greenRule}</p></div>}
+        <EvidenceReader key={runtimePage} onClose={()=>setView('overview')} fields={runtimePage==='decision' ? [
+          {label:'Decisão',value:trust.state+' · '+trust.freshness+'\n'+trust.reason},
+          {label:'Gerado em',value:globalTrust?.checkedAt??'indisponível'},
+          {label:'Bloqueios da autoridade',value:JSON.stringify(globalTrust?.blockers??[],null,2)},
+        ] : runtimePage==='lineage' ? [
+          {label:'Fonte',value:globalTrust?.source??'Bootstrap administrativo / Control Core'},
+          {label:'Release Core',value:globalTrust?.sha??'indisponível'},
+          {label:'Decision hash',value:globalTrust?.evidenceRoot??'indisponível'},
+          {label:'Frescor',value:trust.freshness},
+        ] : [
+          {label:'Políticas administrativas',value:'ADMIN RESTRITO\nZERO_SPEND '+(dashboard.policy.zeroSpend?'ATIVO':'OFF')+'\nFAIL-CLOSED '+(dashboard.policy.failClosed?'ATIVO':'OFF')+'\nVENDA SEM GATE: BLOQUEADA'},
+          {label:'Regra de aprovação',value:dashboard.policy.greenRule},
+        ]} />
       </section>}
-
 
       {view === 'overview' && (
         <section className='overviewStack' data-page={overviewPage}>
@@ -991,16 +1006,16 @@ function App() {
               <article className={product.status === 'archived' ? 'productCard archived' : 'productCard'} key={product.id}>
                 <div className='productHead'>
                   <div>
-                    <p className='productCategory'>{product.category}</p>
-                    <h3>{product.name}</h3>
+                    <p className='productCategory'>{product.category.length>90 ? <button className='textDetailButton' onClick={()=>toggleProductDetails(product.id)}>Ler categoria</button> : product.category}</p>
+                    <h3>{product.name.length>110 ? <button className='textDetailButton' onClick={()=>toggleProductDetails(product.id)}>Ler nome completo</button> : product.name}</h3>
                   </div>
                   <span className={product.salesEnabled ? 'saleBadge on' : 'saleBadge off'}>{product.salesEnabled ? 'VENDA ON' : 'VENDA OFF'}</span>
                 </div>
-                <p className='productDescription productDescriptionPrimary'>{product.description || 'Sem descricao administrativa.'}</p>
+                <p className='productDescription productDescriptionPrimary'>{product.description.length>260 ? <button className='textDetailButton' onClick={()=>toggleProductDetails(product.id)}>Ler descrição completa</button> : product.description || 'Sem descricao administrativa.'}</p>
                 <div className='productFacts'>
                   <span><b>{formatMoney(product.priceCents)}</b><small>Preco</small></span>
                   <span><b>{statusLabel(product.status)}</b><small>Status</small></span>
-                  <span><b>{product.deliveryModel || 'N/D'}</b><small>Entrega</small></span>
+                  <span><b>{product.deliveryModel.length>75 ? <button className='textDetailButton' onClick={()=>toggleProductDetails(product.id)}>Ler entrega</button> : product.deliveryModel || 'N/D'}</b><small>Entrega</small></span>
                 </div>
                 <button
                   className='productDisclosureToggle secondary compact'
@@ -1012,7 +1027,7 @@ function App() {
                   <strong>{expandedProductIds.has(product.id) ? 'Ocultar detalhes' : 'Ver detalhes'}</strong>
                 </button>
                 <div className={expandedProductIds.has(product.id) ? 'productDisclosureBody expanded' : 'productDisclosureBody'}>
-                  <p className='productDescription productDescriptionDetail'>{product.description || 'Sem descricao administrativa.'}</p>
+                  <p className='productDescription productDescriptionDetail'>{product.description.length>260 ? <button className='textDetailButton' onClick={()=>toggleProductDetails(product.id)}>Ler descrição completa</button> : product.description || 'Sem descricao administrativa.'}</p>
                   <div className='certPanel'>
                     <div className='auditHeader'>
                       <div><small>ZEES-16 · CERTIFICAÇÃO ESPECÍFICA DO ALVO</small><strong>{certificationProfileLabel(product.certification.profile)}</strong></div>
@@ -1308,6 +1323,7 @@ function App() {
           </section>
         </div>
       )}
+      </>}
       </main>
     </div>
   );

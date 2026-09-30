@@ -2522,7 +2522,7 @@ async function readControlCore(): Promise<[any, any]> {
     return await Promise.all([snapshotResponse.json(), decisionResponse.json()]);
 }
 
-async function loadGlobalTrust(readback = readControlCore()): Promise<GlobalTrust> {
+export async function loadGlobalTrust(readback = readControlCore()): Promise<GlobalTrust> {
   try {
     const [snapshot, decision] = await readback;
     const zeesCounts = snapshot?.zees16?.counts || {};
@@ -2866,57 +2866,15 @@ export const dailyAuditHandler = async () => {
 
 export const handler = router({
   'GET /api/_auth_diagnostic': [async () => {
-    let stage = 'secret';
-    let tempSessionId = '';
+    // Public login diagnostics must not mint privileged sessions, seed products,
+    // reset lockout state or execute the administrative bootstrap.
     try {
       const pinState = await adminPinState();
-      const secretValid = pinState.configured;
-      if (!secretValid) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_unconfigured' });
-
-      stage = 'security';
-      const state = await securityState(pinState.fingerprint);
-      const locked = Boolean(state.lockedUntil && Date.parse(state.lockedUntil) > Date.now());
-
-      stage = 'session';
-      const now = new Date();
-      const token = `diag_${crypto.randomUUID().replace(/-/g, '')}`;
-      const expiresAt = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
-      const [id] = await db.add(PIN_CURRENT_SESSION, [{ token, createdAt: now.toISOString(), expiresAt }]);
-      tempSessionId = id || '';
-      const sessionRoundtrip = Boolean(tempSessionId && await requirePinSession(token));
-
-      stage = 'bootstrap';
-      let bootstrapOk = false;
-      if (sessionRoundtrip) {
-        const diagnosticData = await adminData();
-        bootstrapOk = true;
-        try {
-          const targets = Array.isArray(diagnosticData?.certificationTargets)
-            ? diagnosticData.certificationTargets.map((item:any)=>({
-                id:item.id,
-                name:item.name,
-                ready:item.certification?.ready,
-                summary:item.certification?.summary,
-                rootBlocker:item.certification?.rootBlocker,
-                pillars:Array.isArray(item.certification?.pillars)
-                  ? item.certification.pillars.map((pillar:any)=>({id:pillar.id,status:pillar.status,blocker:pillar.blocker}))
-                  : [],
-              }))
-            : [];
-          const systems = Array.isArray(diagnosticData?.dashboard?.systems)
-            ? diagnosticData.dashboard.systems.map((item:any)=>({name:item.name,sha:item.sha,ci:item.ci,status:item.status}))
-            : [];
-          console.info('zpc_certification_diagnostic', JSON.stringify({targets,systems}));
-        } catch {}
-      }
-
-      if (tempSessionId) await db.delete(PIN_CURRENT_SESSION, [tempSessionId]);
-      return json({ secretValid, locked, sessionRoundtrip, bootstrapOk, stage: bootstrapOk ? 'complete' : stage });
+      const security = await db.list<PinSecurityRecord>(PIN_SECURITY, {limit:1});
+      const state = security.items[0];
+      return json({secretValid:pinState.configured,locked:Boolean(state?.lockedUntil && Date.parse(state.lockedUntil)>Date.now()),sessionRoundtrip:null,bootstrapOk:null,stage:'read_only'});
     } catch {
-      if (tempSessionId) {
-        try { await db.delete(PIN_CURRENT_SESSION, [tempSessionId]); } catch { /* best-effort diagnostic cleanup */ }
-      }
-      return json({ secretValid: stage !== 'secret', locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: `failed:${stage}` });
+      return error('Diagnóstico indisponível.',503);
     }
   }],
   'POST /api/pin/login': [async ctx => {

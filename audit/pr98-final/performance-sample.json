@@ -1,0 +1,17 @@
+{
+  "source": "working-tree-uncommitted",
+  "scope": "local synthetic navigation sample; not full production performance or lifetime leak certification",
+  "bootstrapCalls": 1,
+  "cycles": 40,
+  "before": {
+    "documents": 1,
+    "nodes": 409,
+    "jsEventListeners": 184
+  },
+  "after": {
+    "documents": 1,
+    "nodes": 449,
+    "jsEventListeners": 192
+  },
+  "longTasks": []
+}
