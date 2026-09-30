@@ -1,0 +1,9 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public Control Core policy requirement identifiers; these are not credentials"
+condition = "AND"
+paths = ['''(^|/)audit/pr98-final/core-snapshot\.json$''']
+regexTarget = "secret"
+regexes = ['''^(composable_10x5|observability_10x)$''']

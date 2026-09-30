@@ -49,8 +49,9 @@ try{
   await p.getByRole('button',{name:'Voltar',exact:true}).click();
   if(await p.getByLabel('Selecionar área do Control Center').isVisible())await p.getByLabel('Selecionar área do Control Center').selectOption('products');
   else await p.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'}).getByRole('button',{name:'Produtos',exact:true}).click();
-  await p.locator('.productDisclosureToggle').first().click();
-  for(let field=0;field<2;field++)await p.getByRole('button',{name:'Próximo campo',exact:true}).click();
+  const productDetails=p.locator('.productDisclosureToggle').first(), compactProduct=!await productDetails.isVisible();
+ if(compactProduct)await p.getByRole('button',{name:'Abrir produto integral',exact:true}).click();else await productDetails.click();
+  for(let field=0;field<(compactProduct?Object.keys(data.products[0]).indexOf('description'):2);field++)await p.getByRole('button',{name:'Próximo campo',exact:true}).click();
   await p.waitForFunction(()=>Number(document.querySelector('.readerText')?.getAttribute('data-pages'))>0);
   let reconstructed='',count=0;
   do{
@@ -61,7 +62,7 @@ try{
   }while(count<1000);
   assert.equal(reconstructed,data.products[0].description,'pagination must retain every code point');
   await p.getByRole('button',{name:'Voltar',exact:true}).click();
-  await assert.doesNotReject(()=>p.locator('.productDisclosureToggle').first().waitFor(),'Back must restore the task');
+  await assert.doesNotReject(()=>compactProduct?p.getByRole('button',{name:'Abrir produto integral',exact:true}).waitFor():p.locator('.productDisclosureToggle').first().waitFor(),'Back must restore the task');
  }
  console.log('TEXT_SCALING_ROWS='+rows.length+' FAILURES='+rows.filter(r=>r.issues.length||r.globalX>1||r.globalY>1).length);
 }finally{

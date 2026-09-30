@@ -1,0 +1,48 @@
+name: PR98 State Layout Matrix
+on:
+  pull_request:
+    branches: [main]
+    paths: ['src/**', 'scripts/pr98*layout*.mjs', 'scripts/pr98-native-surface-matrix.mjs', '.github/workflows/pr98-state-layout-matrix.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  states:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      LAYOUT_SHARD: ${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bind source and install auditors
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.1 axe-core@4.10.3
+          npx playwright install --with-deps chromium
+      - name: Typecheck and production build
+        run: npm run typecheck && npm run build && npm audit --audit-level=low
+      - name: Verify application states and every supported viewport
+        run: |
+          set -euo pipefail
+          npx vite preview --host 127.0.0.1 --port 4173 > /tmp/preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID"' EXIT
+          node scripts/pr98-state-layout-matrix.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr98-state-layout-${{ env.CANDIDATE_SHA }}-${{ matrix.shard }}
+          path: control-center-truth-audit/state-layout-matrix.json
+          retention-days: 30
+          if-no-files-found: error

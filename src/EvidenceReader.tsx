@@ -8,27 +8,37 @@ export default function EvidenceReader({fields,onClose,onChange}:{fields:Evidenc
  const [field,setField]=useState(0),[page,setPage]=useState(0),[pages,setPages]=useState<string[]>([]);
  const region=useRef<HTMLDivElement>(null), text=fields[field]?.value || (onChange ? '' : 'Sem informação.');
  useLayoutEffect(()=>{
-  const host=region.current;if(!host)return;let active=true,lastMeasurement='';
-  const paginate=()=>{
+  const host=region.current;if(!host)return;let active=true,lastMeasurement='',revision=0;
+  const waits=new Map<number,()=>void>();
+  const probes=new Set<HTMLDivElement>();
+  const paginate=async()=>{
    if(!active)return;
    const probe=document.createElement('div'),style=getComputedStyle(host);
    Object.assign(probe.style,{position:'fixed',visibility:'hidden',pointerEvents:'none',width:host.clientWidth+'px',whiteSpace:'pre-wrap',overflowWrap:'anywhere',font:style.font,lineHeight:style.lineHeight,letterSpacing:style.letterSpacing});
-   document.body.appendChild(probe);
+   document.body.appendChild(probe);probes.add(probe);
    probe.textContent='M';
    const measurement=[host.clientWidth,host.clientHeight,probe.getBoundingClientRect().height,style.font,style.lineHeight].join(':');
-   if(measurement===lastMeasurement){probe.remove();return;}
+   if(measurement===lastMeasurement){probe.remove();probes.delete(probe);return;}
    lastMeasurement=measurement;
+   const generation=++revision;
    const units=Array.from(text),next:string[]=[];let offset=0;
+   if(!onChange&&units.length>8192)setPages([]);
    while(offset<units.length){
-    let lo=1,hi=units.length-offset,best=0;
+    // Bound each DOM measurement, not the retained text. Large JSON collections
+    // must not repeatedly lay out the entire remaining document for every page.
+    let lo=1,hi=Math.min(1024,units.length-offset),best=0;
     while(lo<=hi){const mid=Math.floor((lo+hi)/2);probe.textContent=units.slice(offset,offset+mid).join('');if(probe.getBoundingClientRect().height<=host.clientHeight-2){best=mid;lo=mid+1}else hi=mid-1;}
     if(!best){probe.remove();setPages([]);return;}
     next.push(units.slice(offset,offset+best).join(''));offset+=best;
+    if(!onChange&&units.length>8192&&next.length%8===0){
+     await new Promise<void>(resolve=>{const timer=window.setTimeout(()=>{waits.delete(timer);resolve()},0);waits.set(timer,resolve)});
+     if(!active||generation!==revision){probe.remove();probes.delete(probe);return;}
+    }
    }
-   probe.remove();setPages(next.length ? next : ['']);if(!onChange)setPage(0);
+   probe.remove();probes.delete(probe);if(active&&generation===revision){setPages(next.length ? next : ['']);if(!onChange)setPage(0);}
   };
   const observer=new ResizeObserver(paginate);observer.observe(host);void document.fonts.ready.then(paginate);paginate();
-  return()=>{active=false;observer.disconnect()};
+  return()=>{active=false;observer.disconnect();for(const [timer,resume]of waits){window.clearTimeout(timer);resume()}waits.clear();for(const probe of probes)probe.remove()};
  },[text]);
  const safePage=Math.min(page,Math.max(0,pages.length-1));
  return <section className='evidenceReader panel' aria-label='Leitor de detalhes'>

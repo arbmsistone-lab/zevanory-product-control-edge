@@ -16,7 +16,7 @@ try {
   const page=await c.newPage();await page.route('**/api/admin/bootstrap',r=>r.fulfill({json:data}));await page.goto(process.env.CONTROL_CENTER_AUDIT_URL || 'http://127.0.0.1:4173');await page.getByRole('heading',{name:'ZEVANORY CONTROL CENTER',exact:true}).waitFor();
   const key=mode==='runtime'?'runtime':mode==='extreme-commercial'?'commercial':mode==='extreme-creatives'?'creatives':mode==='extreme-approvals'?'approvals':'products';
   if(await page.getByLabel('Selecionar área do Control Center').isVisible())await page.getByLabel('Selecionar área do Control Center').selectOption(key);else if(key==='runtime')await page.getByRole('button',{name:'Abrir evidência da Trust Chain'}).click();else await page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'}).getByRole('button',{name:({products:'Produtos',commercial:'Comercial',creatives:'Criativos',approvals:'Aprovações'})[key],exact:true}).click();
-  if(mode==='nominal-expanded')await page.locator('.productDisclosureToggle').first().click();
+  if(mode==='nominal-expanded'){const detail=page.locator('.productDisclosureToggle').first();if(await detail.isVisible())await detail.click();else await page.getByRole('button',{name:'Abrir produto integral',exact:true}).click();}
   if(mode.startsWith('extreme-form-')) {
    await page.getByRole('button',{name:'Editar produto',exact:true}).first().click();
    for(let step=0;step<Number(mode.slice(-1));step++) await page.getByRole('navigation',{name:'Etapas do produto'}).getByRole('button',{name:'Próxima',exact:true}).click();

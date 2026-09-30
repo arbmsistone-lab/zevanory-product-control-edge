@@ -147,6 +147,9 @@
 
 
 /* CFO pages replace one another; no table or task surface scrolls. */
+.zpcWorkspace .cfoTask { gap: var(--zpc-space-2); }
+.cfoTask h2, .cfoTask p { margin: 0; }
+.cfoTask label { display: grid; gap: var(--zpc-space-1); }
 .zpcWorkspace .cfoPaged { display: grid; align-content: start; gap: var(--zpc-space-2); }
 .cfoPaged .runtimePages { grid-template-columns: repeat(4,minmax(0,1fr)); }
 .cfoPaged .cfoMetrics[data-page='0'] > :nth-child(n+3),

@@ -61,7 +61,9 @@ try {
         await assertNoScroll(page, `${width}x${height} ${key}`);
         if (key === 'cfo') {
           for (const label of ['Resumo','Integrações','Decisões','Recebíveis']) {
-            await page.getByRole('navigation',{name:'Páginas do CFO'}).getByRole('button',{name:label,exact:true}).click();
+            const area=page.getByLabel('Área financeira');
+            if(await area.isVisible()) await area.selectOption(({Resumo:'summary',Integrações:'adapters',Decisões:'actions',Recebíveis:'receivables'})[label]);
+            else await page.getByRole('navigation',{name:'Páginas do CFO'}).getByRole('button',{name:label,exact:true}).click();
             await assertNoScroll(page, `${width}x${height} cfo ${label}`);
           }
         }

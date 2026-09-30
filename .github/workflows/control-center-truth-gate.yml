@@ -26,6 +26,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck && node scripts/commercial-stream-contract.mjs && node --import tsx scripts/runtime-state-contract.ts && npm run build
       - run: node scripts/sync-worker-backend.mjs --check && node --import tsx scripts/pr98-backend-contract.ts
+      - name: Verify source secret exposure
+        run: bash scripts/pr98-secret-audit.sh
       - name: Preview and runtime proofs
         run: |
           npx vite preview --host 127.0.0.1 --port 4173 > /tmp/preview.log 2>&1 &

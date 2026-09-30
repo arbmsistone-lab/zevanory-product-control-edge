@@ -1579,3 +1579,15 @@ body,
 .commercialTask { display:flex; flex-direction:column; align-items:stretch; gap:8px; min-height:0; }
 .commercialTask h2 { margin:0; }
 .zpcWorkspace .commercialTask .commercialPager { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+/* Bounded control tasks retain full records in the measured reader. */
+.controlTask { display: grid; gap: var(--zpc-space-2); align-content: start; }
+.controlTask h2, .controlTask p { margin: 0; }
+.controlTask label { display: grid; gap: var(--zpc-space-1); }
+.controlTaskActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--zpc-space-1); }
+.zpcWorkspace > .controlTask { min-inline-size: 0; width: 100%; }
+.controlTask > *, .controlTask select { min-inline-size: 0; max-inline-size: 100%; }
+.controlTask select, .cfoTask select { width: 100%; background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--zpc-radius-sm); padding: var(--zpc-space-1); font: inherit; }
+@media (max-width:700px) {
+ .modal .auditEditor { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .modal .auditEditor > div { grid-column: 1 / -1; }
+}

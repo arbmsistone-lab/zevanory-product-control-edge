@@ -1,0 +1,83 @@
+name: PR98 Native Surface Matrix
+on:
+  pull_request:
+    branches: [main]
+    paths: ['src/**', 'scripts/pr98*.mjs', 'scripts/native-zoom-extension/**', '.github/workflows/pr98-native-surface-matrix.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [zoom, fonts]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NATIVE_MATRIX_MODE: ${{ matrix.mode }}
+      NATIVE_PREFLIGHT: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.1
+          npx playwright install --with-deps chromium
+          npm run build
+      - run: |
+          set -euo pipefail
+          npx vite preview --host 127.0.0.1 --port 4173 > /tmp/preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID"' EXIT
+          node scripts/pr98-native-surface-matrix.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr98-native-preflight-${{ env.CANDIDATE_SHA }}-${{ matrix.mode }}
+          path: control-center-truth-audit/native-surfaces-*.json
+          retention-days: 30
+  full:
+    needs: preflight
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [zoom, fonts]
+        shard: [0, 1, 2]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NATIVE_MATRIX_MODE: ${{ matrix.mode }}
+      LAYOUT_SHARD: ${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.1
+          npx playwright install --with-deps chromium
+          npm run build
+      - run: |
+          set -euo pipefail
+          npx vite preview --host 127.0.0.1 --port 4173 > /tmp/preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID"' EXIT
+          node scripts/pr98-native-surface-matrix.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr98-native-full-${{ env.CANDIDATE_SHA }}-${{ matrix.mode }}-${{ matrix.shard }}
+          path: control-center-truth-audit/native-surfaces-*.json
+          retention-days: 30

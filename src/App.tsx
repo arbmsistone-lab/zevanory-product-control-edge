@@ -21,6 +21,7 @@ import { api } from './api';
 import { trustPresentation, shouldEndSession, MAX_STATE_AGE_MS } from './runtime-state';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
+import type { CfoPage } from './CfoWorkspace';
 import EvidenceReader, {type EvidenceField} from './EvidenceReader';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 import type { CfoWorkspaceData } from './cfo-model';
@@ -360,6 +361,8 @@ function App() {
   const [commercialTaskGroup,setCommercialTaskGroup]=useState('events');
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
+  const [cfoPage,setCfoPage]=useState<CfoPage>('summary');
+  const [cfoItemPage,setCfoItemPage]=useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
@@ -393,9 +396,10 @@ function App() {
     return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const [viewportHeight,setViewportHeight]=useState(()=>window.innerHeight);
 
   useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
+    const onResize = () => {setViewportWidth(window.innerWidth);setViewportHeight(window.innerHeight);};
     window.addEventListener('resize', onResize, { passive: true });
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -723,7 +727,8 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [products, filter]);
-  const productPageSize = viewportWidth <= 900 ? 1 : 2;
+  const lowTaskSurface=viewportHeight<=850;
+  const productPageSize = viewportWidth <= 900 || lowTaskSurface ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
@@ -753,6 +758,11 @@ function App() {
     (safeGovernancePage + 1) * governancePageSize,
   ) ?? [];
   const compactGovernance = viewportWidth <= 900;
+  const readObject=(record:object)=>setDetailFields(Object.entries(record).map(([label,value])=>({label,value:typeof value==='string'?value:JSON.stringify(value,null,2)??''})));
+  const longControlText=(value:unknown):boolean=>typeof value==='string'?Array.from(value).length>260:Array.isArray(value)?value.some(longControlText):value!==null&&typeof value==='object'?Object.values(value).some(longControlText):false;
+  const overviewTask=lowTaskSurface||(operations?.channels.length??0)>5||longControlText(operations?.control);
+  const operationsTask=lowTaskSurface||operationIncidents.length>4||operationAudits.length>4||longControlText({incidents:operationIncidents,audits:operationAudits});
+  const governanceTask=lowTaskSurface||longControlText(certificationTargets);
   const openCertification = (product: Product) => {
     setSelectedTargetId(`product:${product.id}`);
     setGovernanceMode('certification');
@@ -901,7 +911,7 @@ function App() {
         />
       )}
 
-      {view === 'cfo' && <CfoWorkspace data={cfo} />}
+      {view === 'cfo' && <CfoWorkspace data={cfo} onRead={setDetailFields} page={cfoPage} setPage={setCfoPage} itemPage={cfoItemPage} setItemPage={setCfoItemPage} />}
       {view === 'runtime' && <section className='runtimeEvidence' aria-label='Evidência da Trust Chain'>
         <nav aria-label='Páginas da evidência' className='runtimePages'>
           {([['decision','Decisão'],['lineage','Linhagem'],['policy','Políticas']] as const).map(([key,label]) => <button key={key} className={runtimePage === key ? 'filter active' : 'filter'} aria-pressed={runtimePage === key} onClick={() => setRuntimePage(key)}>{label}</button>)}
@@ -921,7 +931,12 @@ function App() {
         ]} />
       </section>}
 
-      {view === 'overview' && (
+      {view === 'overview' && (overviewTask ? <section className='controlTask panel'>
+        <h2>Visão operacional executiva</h2>
+        <button className='primary' onClick={()=>readObject({operations,summary,policy:dashboard.policy,incidents:dashboard.incidents})}>Estado executivo integral</button>
+        <button className='secondary' onClick={()=>setView('operations')}>Operações técnicas</button>
+        <button className='secondary' onClick={()=>setView('governance')}>ZEES-16 / Governança</button>
+      </section> : (
         <section className='overviewStack' data-page={overviewPage}>
           <section className='overviewHero panel'>
             <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2><p className='productDescription'>O Control Plane e o gerenciamento de produtos agora ficam no mesmo painel, com leitura executiva antes dos detalhes.</p></div>
@@ -965,9 +980,19 @@ function App() {
             </article>
           </section>
         </section>
-      )}
+      ))}
 
-      {view === 'products' && (
+      {view === 'products' && (lowTaskSurface ? <section className='controlTask panel'>
+        <h2>Produtos e programas</h2>
+        <label>Filtrar produtos<select value={filter} aria-label='Filtrar produtos' onChange={event=>{setFilter(event.target.value as typeof filter);setProductPage(0)}}><option value='all'>Todos</option><option value='selling'>Em venda</option><option value='blocked'>Pendentes</option><option value='archived'>Arquivados</option></select></label>
+        <nav className='commercialPager' aria-label='Paginação de produtos'><button className='secondary' disabled={safeProductPage===0} onClick={()=>setProductPage(safeProductPage-1)}>Anterior</button><span>{visibleProducts.length?safeProductPage+1:0}/{visibleProducts.length}</span><button className='secondary' disabled={safeProductPage===productPageCount-1} onClick={()=>setProductPage(safeProductPage+1)}>Próximo</button></nav>
+        {pagedProducts[0]?<><button className='primary' onClick={()=>readObject(pagedProducts[0])}>Abrir produto integral</button><div className='controlTaskActions'>
+          <button className='secondary' aria-label='Abrir certificação' onClick={()=>openCertification(pagedProducts[0])}>Certificação</button>
+          <button className='secondary' aria-label='Editar produto' onClick={()=>openEdit(pagedProducts[0])}>Editar</button>
+          {pagedProducts[0].publicUrl&&<a className='secondary linkButton' aria-label='Abrir página pública do produto' href={pagedProducts[0].publicUrl} target='_blank' rel='noreferrer'>Página pública</a>}
+          {pagedProducts[0].status!=='archived'&&<button className='secondary' aria-label='Arquivar produto' disabled={busy} onClick={()=>archiveProduct(pagedProducts[0])}>Arquivar</button>}
+        </div></>:<p>Nenhum produto neste filtro.</p>}
+      </section> : (
         <>
           <section className='metrics'>
             <div className='metric'><span>Produtos cadastrados</span><strong>{summary.total}</strong></div>
@@ -1081,9 +1106,13 @@ function App() {
             ))}
           </section>
         </>
-      )}
+      ))}
 
-      {view === 'operations' && (
+      {view === 'operations' && (operationsTask ? <section className='controlTask panel'>
+        <h2>Motor operacional</h2>
+        <button className='primary' onClick={()=>readObject({incidents:dashboard.incidents,audits:dashboard.audits,improvements:dashboard.improvements,systems:dashboard.systems,lastEngineRun:dashboard.lastEngineRun})}>Estado técnico integral</button>
+        <div className='controlTaskActions'><button className='secondary' disabled={busy} onClick={()=>runGovernance('/api/telemetry/refresh')}>Telemetria</button><button className='secondary' disabled={busy} onClick={()=>runGovernance('/api/audit/run')}>Auditoria</button></div>
+      </section> : (
         <section className='opsGrid'>
           <div className='panel'>
             <div className='panelhead'>
@@ -1126,9 +1155,15 @@ function App() {
             </div>
           </div>
         </section>
-      )}
+      ))}
 
-      {view === 'governance' && (
+      {view === 'governance' && (governanceTask ? <section className='controlTask panel'>
+        <h2>Governança ZEES-16</h2>
+        <button className='secondary' onClick={()=>readObject({targets:certificationTargets,runs:dashboard.certificationRuns,systems:dashboard.systems})}>Governança integral</button>
+        <label>Alvo ZEES-16<select aria-label='Selecionar alvo ZEES-16' value={selectedCertificationTarget?.id??''} onChange={event=>setSelectedTargetId(event.target.value)}>{certificationTargets.map(target=><option key={target.id} value={target.id}>{target.name}</option>)}</select></label>
+        {selectedCertificationTarget?<button className='primary' onClick={()=>readObject(selectedCertificationTarget)}>Abrir certificação integral</button>:<p>Nenhum alvo disponível.</p>}
+        {selectedCertificationTarget&&<div className='controlTaskActions'><button className='secondary' onClick={runCertificationBatch} disabled={busy}>Certificar todos</button><button className='secondary' onClick={runCertification} disabled={busy}>Executar certificação</button></div>}
+      </section> : (
         <section className='governanceStack'>
           <section className='panel governanceHero'>
             <div className='panelhead'>
@@ -1271,7 +1306,7 @@ function App() {
             </div>
           </section>}
         </section>
-      )}
+      ))}
 
       {formOpen && (
         <div className='modalBackdrop' role='presentation' onMouseDown={event => { if (event.target === event.currentTarget) setFormOpen(false); }}>
