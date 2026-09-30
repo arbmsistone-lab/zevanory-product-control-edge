@@ -1607,9 +1607,9 @@ body,
 .modal > .formTask { min-height:0; height:100%; display:grid; grid-template-rows:minmax(0,1fr) auto; }
 .modal .boundedTaskBody { min-height:0; }
 .modalHead h2 { white-space:normal; overflow:visible; text-overflow:initial; }
-.formStepNav { grid-template-columns:44px minmax(0,1fr) 44px; }
-.formStepNav > span { text-align:center; }
-.formStepNav button { min-height:44px; padding:0; }
+.modal .formStepNav { grid-template-columns:44px minmax(0,1fr) 44px; }
+.modal .formStepNav > span { text-align:center; }
+.modal .formStepNav button { min-height:44px; padding:0; }
 .nativeTaskShell { grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto 44px minmax(0,1fr); grid-template-areas:'header' 'trust' 'selector' 'workspace'; gap:4px; padding:4px; }
 .nativeTaskShell .zpcNavigation, .nativeTaskShell .zpcBrandBlock .eyebrow, .nativeTaskShell .subtitle { display:none; }
 .nativeTaskShell > .areaSelectWrap { display:block; min-width:0; margin:0; height:44px; }
@@ -1623,3 +1623,5 @@ body,
 .boundedTaskBody label { min-width:0; display:grid; gap:4px; }
 .boundedTaskBody input, .boundedTaskBody select { min-width:0; max-width:100%; width:100%; box-sizing:border-box; }
 .boundedTaskBody input[type=checkbox] { width:auto; }
+.nativeTaskShell .modalHead .kicker { display:none; }
+.nativeTaskShell .modalHead h2 { font-size:16px; line-height:1.2; }
