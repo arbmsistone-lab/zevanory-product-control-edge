@@ -1620,7 +1620,7 @@ body,
 .nativeTaskShell .topbar { min-height:0; height:auto; gap:4px; }
 .nativeTaskShell .topbar h1 { font-size:16px; line-height:1.2; }
 .zpcAppShell > main.zpcWorkspace:has(> .boundedTask) { display:grid; grid-template-rows:minmax(0,1fr); height:100%; max-height:100%; min-height:0; }
-.boundedTaskBody label { min-width:0; display:grid; gap:4px; }
+.boundedTaskBody label { min-width:0; display:grid; grid-template-columns:minmax(0,1fr); gap:4px; overflow-wrap:anywhere; }
 .boundedTaskBody input, .boundedTaskBody select { min-width:0; max-width:100%; width:100%; box-sizing:border-box; }
 .boundedTaskBody input[type=checkbox] { width:auto; }
 .nativeTaskShell .modalHead .kicker { display:none; }
@@ -1629,3 +1629,5 @@ body,
 .nativeTaskShell .auditEditor > button { grid-column:1 / -1; }
 .nativeTaskShell .boundedTaskBody button, .nativeTaskShell .boundedTaskBody .linkButton { min-height:44px; padding:4px 8px; line-height:1.2; white-space:normal; overflow-wrap:anywhere; }
 .nativeTaskShell.zpcAppShell .trustStrip > div { display:none; }
+
+.boundedTaskBody label.check, .boundedTaskBody label.saleSwitch { display:flex; flex-wrap:wrap; }

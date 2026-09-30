@@ -399,7 +399,7 @@ function App() {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [viewportHeight,setViewportHeight]=useState(()=>window.innerHeight);
   const [nativeTextLarge,setNativeTextLarge]=useState(false);
-  useEffect(()=>{const probe=document.createElement('span');probe.textContent='M';probe.style.cssText='position:fixed;visibility:hidden;font:14px sans-serif;line-height:normal';document.body.append(probe);const check=()=>setNativeTextLarge(probe.getBoundingClientRect().height>22);check();const observer=new ResizeObserver(check);observer.observe(probe);return()=>{observer.disconnect();probe.remove()};},[]);
+  useEffect(()=>{const probe=document.createElement('span');probe.textContent='M';probe.style.cssText='position:fixed;visibility:hidden;font:14px sans-serif;line-height:normal';document.body.append(probe);const check=()=>setNativeTextLarge(probe.getBoundingClientRect().height>17);check();const observer=new ResizeObserver(check);observer.observe(probe);return()=>{observer.disconnect();probe.remove()};},[]);
 
   useEffect(() => {
     const onResize = () => {setViewportWidth(window.innerWidth);setViewportHeight(window.innerHeight);};
@@ -730,7 +730,7 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [products, filter]);
-  const lowTaskSurface=nativeTextLarge||viewportHeight<=850;
+  const lowTaskSurface=nativeTextLarge||viewportHeight<=850||viewportWidth<=900;
   const productPageSize = viewportWidth <= 900 || lowTaskSurface ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
@@ -906,7 +906,7 @@ function App() {
         <CommercialWorkspace
           section={view as CommercialSection}
           onRead={setDetailFields}
-          nativeTask={nativeTextLarge||viewportHeight<560}
+          nativeTask={lowTaskSurface}
           taskPage={commercialTaskPage} onTaskPageChange={setCommercialTaskPage}
           taskGroup={commercialTaskGroup} onTaskGroupChange={setCommercialTaskGroup}
           data={commercial}
@@ -915,7 +915,7 @@ function App() {
         />
       )}
 
-      {view === 'cfo' && <CfoWorkspace nativeTask={nativeTextLarge||viewportHeight<560} data={cfo} onRead={setDetailFields} page={cfoPage} setPage={setCfoPage} itemPage={cfoItemPage} setItemPage={setCfoItemPage} />}
+      {view === 'cfo' && <CfoWorkspace nativeTask={lowTaskSurface} data={cfo} onRead={setDetailFields} page={cfoPage} setPage={setCfoPage} itemPage={cfoItemPage} setItemPage={setCfoItemPage} />}
       {view === 'runtime' && <section className='runtimeEvidence' aria-label='Evidência da Trust Chain'>
         <nav aria-label='Páginas da evidência' className='runtimePages'>
           {([['decision','Decisão'],['lineage','Linhagem'],['policy','Políticas']] as const).map(([key,label]) => <button key={key} className={runtimePage === key ? 'filter active' : 'filter'} aria-pressed={runtimePage === key} onClick={() => setRuntimePage(key)}>{label}</button>)}
