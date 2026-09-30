@@ -375,7 +375,7 @@ for(const size of sizes){
       row.axe=violations;
       if(violations.length) fail('AXE',JSON.stringify(violations));
 
-      const themeToggle=page.getByRole('button',{name:/tema (claro|escuro)/i});
+      const themeToggle=page.locator('button.themeToggle');
       await page.locator('body').click({position:{x:1,y:1}});
       await page.keyboard.press('Tab');
       let active=await page.evaluate(()=>String(document.activeElement?.className||''));
