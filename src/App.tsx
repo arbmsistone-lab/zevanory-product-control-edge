@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   LayoutDashboard,
+  Settings2,
   Moon,
   Sun,
   X,
@@ -358,7 +359,7 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
-  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | CommercialSection>('overview');
+  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | 'settings' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(() => new Set());
@@ -769,24 +770,33 @@ function App() {
         </div>
       </header>
 
-      <section className='policybar' aria-label='Políticas administrativas'>
-        <span><ShieldCheck size={16} />ADMIN RESTRITO</span>
-        <span><Gauge size={16} />ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
-        <span><ShieldCheck size={16} />FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
-        <span><AlertTriangle size={16} />VENDA SEM GATE: BLOQUEADA</span>
-      </section>
+      <details className='technicalDisclosure'>
+        <summary>
+          <span className='technicalSummaryLead'><ShieldCheck size={17} />Estado técnico</span>
+          <b>{globalTrust?.state ?? 'BLOCKED'}</b>
+          <small>{globalTrust ? `ZEA-10 ${globalTrust.zea10.proven}/10 · quorum ${globalTrust.quorum.passed}/${globalTrust.quorum.total}` : 'Detalhes técnicos disponíveis'}</small>
+        </summary>
+        <div className='technicalDisclosureBody'>
+          <section className='policybar' aria-label='Políticas administrativas'>
+            <span><ShieldCheck size={16} />ADMIN RESTRITO</span>
+            <span><Gauge size={16} />ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
+            <span><ShieldCheck size={16} />FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
+            <span><AlertTriangle size={16} />VENDA SEM GATE: BLOQUEADA</span>
+          </section>
 
-      <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
-        <div className='trustState'>
-          <ShieldCheck size={16} />
-          <span>TRUST CHAIN</span>
-          <strong>{globalTrust?.state ?? 'BLOCKED'}</strong>
+          <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
+            <div className='trustState'>
+              <ShieldCheck size={16} />
+              <span>TRUST CHAIN</span>
+              <strong>{globalTrust?.state ?? 'BLOCKED'}</strong>
+            </div>
+            <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
+            <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : 'sem prova'}</b></div>
+            <div><small>SHA</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
+            <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
+          </section>
         </div>
-        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
-        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : 'sem prova'}</b></div>
-        <div><small>SHA</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
-        <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
-      </section>
+      </details>
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
         <div className='zpcNavGroup'>
@@ -815,6 +825,7 @@ function App() {
 
         <div className='zpcNavGroup'>
           <p className='zpcNavLabel'>Sistema</p>
+          <button className={view === 'settings' ? 'tab active' : 'tab'} aria-pressed={view === 'settings'} onClick={() => setView('settings')}><Settings2 size={16} />Configurações</button>
           <button className={view === 'operations' ? 'tab active' : 'tab'} aria-pressed={view === 'operations'} onClick={() => setView('operations')}>Operações técnicas</button>
           <button className={view === 'governance' ? 'tab active' : 'tab'} aria-pressed={view === 'governance'} onClick={() => setView('governance')}>ZEES-16 / Governança</button>
         </div>
@@ -835,6 +846,7 @@ function App() {
           <option value='finance'>Financeiro</option>
           <option value='cfo'>ZEVANORY CFO</option>
           <option value='evidence'>Evidências</option>
+          <option value='settings'>Configurações</option>
           <option value='operations'>Operações técnicas</option>
           <option value='governance'>ZEES-16 / Governança</option>
         </select>
@@ -853,6 +865,44 @@ function App() {
       )}
 
       {view === 'cfo' && <CfoWorkspace data={cfo} />}
+
+      {view === 'settings' && (
+        <section className='settingsWorkspace' aria-label='Configurações do ZEVANORY Control Center'>
+          <section className='settingsHero panel'>
+            <div>
+              <p className='kicker'>CONFIGURAÇÕES SEGURAS</p>
+              <h2>Preferências e estado administrativo</h2>
+              <p className='productDescription'>Ajustes locais de interface e leitura das políticas operacionais. Nenhuma proteção de produção é relaxada nesta área.</p>
+            </div>
+          </section>
+          <div className='settingsGrid'>
+            <article className='panel settingsCard'>
+              <div><p className='kicker'>INTERFACE</p><h3>Tema visual</h3></div>
+              <p>Preferência salva somente neste navegador.</p>
+              <button className='secondary' onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}>
+                {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+                {theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+              </button>
+            </article>
+            <article className='panel settingsCard'>
+              <div><p className='kicker'>SESSÃO</p><h3>Acesso administrativo</h3></div>
+              <dl className='settingsFacts'>
+                <div><dt>PIN administrativo</dt><dd>ATIVO</dd></div>
+                <div><dt>Origem canônica</dt><dd>controle.zevanory.api.br</dd></div>
+                <div><dt>Estado do painel</dt><dd>{authState === 'ready' ? 'AUTENTICADO' : 'BLOQUEADO'}</dd></div>
+              </dl>
+            </article>
+            <article className='panel settingsCard'>
+              <div><p className='kicker'>POLÍTICAS</p><h3>Proteções operacionais</h3></div>
+              <dl className='settingsFacts'>
+                <div><dt>ZERO_SPEND</dt><dd>{dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</dd></div>
+                <div><dt>FAIL-CLOSED</dt><dd>{dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</dd></div>
+                <div><dt>Ações destrutivas</dt><dd>{dashboard.policy.destructiveActions ? 'PERMITIDAS' : 'BLOQUEADAS'}</dd></div>
+              </dl>
+            </article>
+          </div>
+        </section>
+      )}
 
       {view === 'overview' && (
         <section className='overviewStack' data-page={overviewPage}>
