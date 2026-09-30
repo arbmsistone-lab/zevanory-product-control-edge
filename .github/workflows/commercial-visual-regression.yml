@@ -3,53 +3,29 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
-  pin-hotfix:
+  production-pin-readback:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: npm install --no-audit --no-fund
-      - run: npm install --no-save --no-audit --no-fund playwright@1.55.0 pngjs@7.0.0
+      - run: npm install --no-save --no-audit --no-fund playwright@1.55.0
       - run: npx playwright install --with-deps chromium
-      - run: npx tsc --noEmit --noUnusedLocals false --noUnusedParameters false
-      - run: npm run build
-      - name: Build frozen baseline and start both previews
-        run: |
-          git worktree add /tmp/pin-baseline 40086f5abc688850f29780ee01d2418b1ab7c286
-          ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/pin-baseline/node_modules
-          (cd /tmp/pin-baseline && npx vite build)
-          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/pin-hotfix-preview.log 2>&1 &
-          (cd /tmp/pin-baseline && nohup npx vite preview --host 127.0.0.1 --port 4174 > /tmp/pin-baseline-preview.log 2>&1 &)
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173 >/dev/null && curl -fsS http://127.0.0.1:4174 >/dev/null; then exit 0; fi
-            sleep 1
-          done
-          exit 1
-      - run: node scripts/pin-startup-regression.mjs
-        env:
-          REPRODUCE_BASELINE: 'false'
       - run: node scripts/pin-startup-trace.mjs
         env:
-          BASE_URL: http://127.0.0.1:4173
-          OUT: pin-candidate-trace
-      - name: Bind exact candidate sources and frozen bytes
-        run: |
-          git diff 40086f5abc688850f29780ee01d2418b1ab7c286 --name-only -- src backend cf-worker public
-          git diff --exit-code 40086f5abc688850f29780ee01d2418b1ab7c286 -- backend cf-worker public src/index.css src/styles
-          sha256sum src/App.tsx src/api.ts > pin-regression/source-hashes.txt
-          echo "$GITHUB_SHA" > pin-regression/proof-head.txt
+          OUT: pin-production-trace
+      - run: node scripts/pin-production-certification.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pin-hotfix-preflight
+          name: pin-hotfix-production-certification
           path: |
-            pin-regression/**
-            pin-candidate-trace/**
-            dist/**
+            pin-production-trace/**
+            pin-production-proof/**
           retention-days: 90
