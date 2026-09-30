@@ -1,0 +1,177 @@
+{
+  "observed_at": "2026-09-29T23:37:36.121Z",
+  "source_sha": "40086f5abc688850f29780ee01d2418b1ab7c286",
+  "control_core_release_sha": "37e695127af02c9a32c601db0353a3708fc45d82",
+  "zees_counts": {
+    "proven": 0,
+    "partial": 8,
+    "blocked": 8,
+    "na": 0
+  },
+  "zea10_counts": {
+    "proven": 0,
+    "partial": 2,
+    "blocked": 8,
+    "unknown": 0
+  },
+  "decision": {
+    "schema": "zevanory-control-core/decision-v1",
+    "authority": "ZEVANORY Control Core",
+    "decision": "DENY",
+    "fail_closed": true,
+    "eligible_for_critical_promotion": false,
+    "checks": {
+      "exact_release_bound": true,
+      "health_ready": true,
+      "quorum_ok": true,
+      "evidence_flow_unidirectional": true,
+      "evidence_integrity_ok": true,
+      "zees16_complete": false,
+      "zea10_complete": false
+    },
+    "blockers": [
+      "zees16_complete",
+      "zea10_complete"
+    ],
+    "release_sha": "37e695127af02c9a32c601db0353a3708fc45d82",
+    "zees16_decision_hash": "d8a1feca81418ca5a26863d463ca64c173ef4e1d982cee08f38485c3a30ebf7a",
+    "zea10_evaluator": "ZEA-10/2026.09-evaluator-v1",
+    "generated_at": "2026-09-29T23:37:36.946Z"
+  },
+  "pillars": [
+    {
+      "id": "P01",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:ZEVANORY apex engineering gate"
+      ]
+    },
+    {
+      "id": "P02",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:zevanory-p02-visual-regression",
+        "workflow:zevanory-p04-wcag"
+      ]
+    },
+    {
+      "id": "P03",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:zevanory-p12-continuous-slo"
+      ]
+    },
+    {
+      "id": "P04",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:zevanory-p04-wcag"
+      ]
+    },
+    {
+      "id": "P05",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:zevanory-remote-quality-gates"
+      ]
+    },
+    {
+      "id": "P06",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:ZEES-16 Evidence Gate",
+        "workflow:zevanory-remote-quality-gates"
+      ]
+    },
+    {
+      "id": "P07",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:ZEES-16 Evidence Gate",
+        "workflow:zevanory-p15-provenance"
+      ]
+    },
+    {
+      "id": "P08",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:zevanory-p12-continuous-slo"
+      ]
+    },
+    {
+      "id": "P09",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:ZEVANORY portable disaster recovery",
+        "workflow:zevanory-remote-quality-gates"
+      ]
+    },
+    {
+      "id": "P10",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:ZEVANORY portable disaster recovery",
+        "workflow:ZEVANORY authenticated three-provider runtime quorum"
+      ]
+    },
+    {
+      "id": "P11",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:zevanory-p02-visual-regression",
+        "workflow:zevanory-p12-continuous-slo"
+      ]
+    },
+    {
+      "id": "P12",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:ZEVANORY central production deploy"
+      ]
+    },
+    {
+      "id": "P13",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:zevanory-p15-provenance"
+      ]
+    },
+    {
+      "id": "P14",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:ZEVANORY provider independence gate",
+        "workflow:ZEVANORY authenticated three-provider runtime quorum"
+      ]
+    },
+    {
+      "id": "P15",
+      "state": "BLOCKED",
+      "blockers": [
+        "workflow:zevanory-p15-provenance",
+        "workflow:pages build and deployment",
+        "workflow:ZEVANORY central production deploy"
+      ]
+    },
+    {
+      "id": "P16",
+      "state": "PARTIAL",
+      "blockers": [
+        "workflow:ZEVANORY consolidated closure gate"
+      ]
+    }
+  ],
+  "raw_sha256": {
+    "zpc-core-snapshot.json": "adce55a71e8317e49eb4e9a09319560226bf39c51edfea25d69fdd940c8c8f12",
+    "zpc-core-decision.json": "5b86e3c3cc685f75a76f687c4d772f56d7032491d9c050dc3cd1bbbc1fa076c7",
+    "zpc-trust.json": "9e5a2e0dd70129bf00ff4f8c018618a77f63a7e721b238dd00e09d2c02c917c3",
+    "zpc-runtime.json": "55bc561e1e35e21d148a3d3bdb783f72d803e65f9954eea600a19911c796b7fb"
+  },
+  "public_sources": [
+    "https://zevanory.api.br/api/core/v1/snapshot",
+    "https://zevanory.api.br/api/core/v1/decision",
+    "https://controle.zevanory.api.br/global-trust.json",
+    "https://controle.zevanory.api.br/runtime-proof"
+  ],
+  "completion_certified": false
+}

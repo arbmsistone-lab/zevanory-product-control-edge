@@ -23,7 +23,7 @@ body,
 }
 
 body {
-  min-width: 320px;
+  min-width: 0;
 }
 
 .zpcAppShell {
@@ -43,10 +43,9 @@ body {
   padding: var(--zpc-space-3) clamp(12px, 1.5vw, 24px);
   display: grid;
   grid-template-columns: var(--zpc-nav-width) minmax(0, 1fr);
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   grid-template-areas:
     "header header"
-    "policy policy"
     "trust trust"
     "nav workspace";
   gap: var(--zpc-space-2) var(--zpc-space-4);
@@ -145,10 +144,10 @@ body {
 .zpcWorkspace.shell-governance {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: none;
+  height: 100%;
+  max-height: 100%;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
   padding: 0;
 }
 
@@ -224,13 +223,12 @@ body {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px), (max-height: 720px) {
   .zpcAppShell {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto auto minmax(0, 1fr);
     grid-template-areas:
       "header"
-      "policy"
       "trust"
       "selector"
       "workspace";
@@ -357,7 +355,7 @@ body {
   overflow: visible;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px), (max-height: 720px) {
   .zpcWorkspace.shell-overview .overviewCards {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -438,7 +436,7 @@ body {
   word-break: break-word;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px), (max-height: 720px) {
   .zpcWorkspace.shell-governance .certTitleRow {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -642,7 +640,7 @@ body {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px), (max-height: 720px) {
   .zpcWorkspace.shell-governance .pillarCard {
     padding: var(--zpc-space-3);
   }
@@ -674,7 +672,7 @@ body {
 
 
 /* Strict NO-SCROLL responsive chrome: preserve controls, reduce non-workspace height. */
-@media (max-width: 900px) {
+@media (max-width: 960px), (max-height: 720px) {
   .zpcAppShell {
     padding: 4px 8px;
     gap: 4px;
@@ -879,7 +877,7 @@ body {
   display: none;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px), (max-height: 720px) {
   .zpcWorkspace.shell-governance .governanceHero {
     padding: 8px;
   }
@@ -1172,21 +1170,19 @@ body,
   padding: 8px 16px;
   grid-template-columns: var(--zpc-nav-w-v3) minmax(0, 1fr);
   grid-template-rows:
-    var(--zpc-header-h)
-    var(--zpc-policy-h)
-    var(--zpc-trust-h)
+    auto
+    auto
     minmax(0, 1fr);
   grid-template-areas:
     "header header"
-    "policy policy"
     "trust trust"
     "nav workspace";
   gap: var(--zpc-chrome-gap) 12px;
 }
 
 .zpcAppShell > .topbar {
-  height: var(--zpc-header-h);
-  min-height: 0;
+  height: auto;
+  min-height: var(--zpc-header-h);
   align-items: center;
   gap: 16px;
 }
@@ -1234,8 +1230,8 @@ body,
 }
 
 .zpcAppShell .policybar {
-  height: var(--zpc-policy-h);
-  min-height: 0;
+  height: auto;
+  min-height: var(--zpc-policy-h);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
 }
@@ -1251,8 +1247,8 @@ body,
 }
 
 .zpcAppShell .trustStrip {
-  height: var(--zpc-trust-h);
-  min-height: 0;
+  height: auto;
+  min-height: var(--zpc-trust-h);
   grid-template-columns: minmax(168px, 1.15fr) repeat(4, minmax(0, 1fr));
   gap: 4px;
   padding: 4px 8px;
@@ -1262,6 +1258,7 @@ body,
 .zpcAppShell .trustState {
   min-width: 0;
   align-content: center;
+  overflow-wrap: anywhere;
 }
 
 .zpcAppShell .trustStrip small,
@@ -1315,7 +1312,7 @@ body,
   min-height: 100%;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px), (max-height: 720px) {
   :root {
     --zpc-header-h: 44px;
     --zpc-policy-h: 56px;
@@ -1327,14 +1324,12 @@ body,
     padding: 4px 8px;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows:
-      var(--zpc-header-h)
-      var(--zpc-policy-h)
-      var(--zpc-trust-h)
+      auto
+      auto
       var(--zpc-selector-h)
       minmax(0, 1fr);
     grid-template-areas:
       "header"
-      "policy"
       "trust"
       "selector"
       "workspace";
@@ -1351,7 +1346,8 @@ body,
   }
 
   .zpcAppShell .topbar {
-    height: var(--zpc-header-h);
+    height: auto;
+    min-height: var(--zpc-header-h);
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
@@ -1384,13 +1380,14 @@ body,
   }
 
   .zpcAppShell .policybar {
-    height: var(--zpc-policy-h);
+    height: auto;
+    min-height: var(--zpc-policy-h);
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px;
   }
 
   .zpcAppShell .policybar span {
-    height: 28px;
+    height: auto;
     min-height: 28px;
     padding: 4px 8px;
     font-size: 12px;
@@ -1398,7 +1395,8 @@ body,
   }
 
   .zpcAppShell .trustStrip {
-    height: var(--zpc-trust-h);
+    height: auto;
+    min-height: var(--zpc-trust-h);
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
     padding: 4px;
@@ -1466,9 +1464,10 @@ body,
   }
 
   .zpcAppShell .topbar {
-    height: var(--zpc-header-h);
+    height: auto;
+    min-height: var(--zpc-header-h);
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 28px 44px;
+    grid-template-rows: auto auto;
     gap: 4px;
   }
 
@@ -1517,3 +1516,26 @@ body,
     font-size: 12px;
   }
 }
+
+
+/* Trust details replace the active task surface; they never open a scrolling panel. */
+.zpcAppShell .trustState { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; }
+.runtimeEvidence { display: grid; align-content: start; gap: var(--zpc-space-3); }
+.runtimePages { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--zpc-space-2); }
+.runtimeEvidence dl { display: grid; grid-template-columns: auto minmax(0,1fr); gap: var(--zpc-space-2); }
+.runtimeEvidence dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width:620px) {
+  .zpcAppShell .trustStrip > .trustEngines { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 8px; text-align: left; }
+  .runtimeEvidence dl { grid-template-columns: minmax(0,1fr); }
+}
+
+/* Product editing is a five-step task, with every field retained in React state. */
+.modal [hidden] { display: none; }
+.formStepNav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 12px; }
+.formGrid[data-step='0'] > :nth-child(n+5),
+.formGrid[data-step='1'] > :nth-child(-n+4),
+.formGrid[data-step='1'] > :nth-child(n+8),
+.formGrid[data-step='2'] > :nth-child(-n+7),
+.formGrid[data-step='3'], .formGrid[data-step='4'] { display: none; }
+.modalHead h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.modalHead > div { min-width: 0; }

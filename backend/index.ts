@@ -2501,10 +2501,11 @@ type GlobalTrust = {
   zea10: { proven: number; partial: number; blocked: number };
   engines: Array<{ id: string; state: string }>;
   checkedAt: string | null;
+  blockers: string[];
+  source: string;
 };
 
-async function loadGlobalTrust(): Promise<GlobalTrust> {
-  try {
+async function readControlCore(): Promise<[any, any]> {
     const [snapshotResponse, decisionResponse] = await Promise.all([
       fetch('https://zevanory.api.br/api/core/v1/snapshot', {
         headers: { Accept: 'application/json' },
@@ -2518,8 +2519,12 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
     if (!snapshotResponse.ok) throw new Error('core_snapshot_http_' + snapshotResponse.status);
     if (!decisionResponse.ok) throw new Error('core_decision_http_' + decisionResponse.status);
 
-    const snapshot = await snapshotResponse.json() as any;
-    const decision = await decisionResponse.json() as any;
+    return await Promise.all([snapshotResponse.json(), decisionResponse.json()]);
+}
+
+async function loadGlobalTrust(readback = readControlCore()): Promise<GlobalTrust> {
+  try {
+    const [snapshot, decision] = await readback;
     const zeesCounts = snapshot?.zees16?.counts || {};
     const zeaCounts = snapshot?.zea10?.counts || {};
     const required = Number(snapshot?.continuity?.min_quorum || 3);
@@ -2538,10 +2543,22 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
       decision?.eligible_for_critical_promotion === true &&
       Array.isArray(decision?.blockers) &&
       decision.blockers.length === 0;
-    const green = quorumOk && zeesComplete && zeaComplete && coreAllow;
+    const snapshotSha = String(snapshot?.release_sha || '');
+    const decisionSha = String(decision?.release_sha || '');
+    const snapshotHash = String(snapshot?.zees16?.decision_hash || '');
+    const decisionHash = String(decision?.zees16_decision_hash || '');
+    const identityOk = /^[a-f0-9]{40}$/i.test(snapshotSha) && snapshotSha === decisionSha &&
+      !!snapshotHash && snapshotHash === decisionHash && decision?.checks?.evidence_integrity_ok === true;
+    const fresh = [snapshot?.generated_at, decision?.generated_at].every(value => {
+      const at = Date.parse(String(value || ''));
+      return Number.isFinite(at) && at <= Date.now() + 30000 && Date.now() - at <= 120000;
+    });
+    const green = quorumOk && zeesComplete && zeaComplete && coreAllow && identityOk && fresh;
 
     return {
       state: green ? 'GREEN' : 'BLOCKED',
+      source: 'control-core-live-readback',
+      blockers: [...(Array.isArray(decision?.blockers) ? decision.blockers.map(String) : ['decision_blockers_unknown']), ...(!identityOk ? ['core_identity_mismatch'] : []), ...(!fresh ? ['core_evidence_stale'] : [])],
       sha: String(snapshot?.release_sha || decision?.release_sha || '') || null,
       evidenceRoot: String(snapshot?.zees16?.decision_hash || decision?.zees16_decision_hash || '') || null,
       policyVersion: String(snapshot?.zea10?.evaluator || snapshot?.zea10?.framework || 'ZEA-10') || null,
@@ -2567,6 +2584,8 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
   } catch {
     return {
       state: 'BLOCKED',
+      source: 'control-core-live-readback',
+      blockers: ['core_readback_unavailable'],
       sha: null,
       evidenceRoot: null,
       policyVersion: null,
@@ -2595,22 +2614,9 @@ type OperationalSnapshot = {
   zea10: { proven: number; partial: number; blocked: number; unknown: number };
 };
 
-async function loadOperationalSnapshot(): Promise<OperationalSnapshot> {
+async function loadOperationalSnapshot(readback = readControlCore()): Promise<OperationalSnapshot> {
   try {
-    const [snapshotResponse, decisionResponse] = await Promise.all([
-      fetch('https://zevanory.api.br/api/core/v1/snapshot', {
-        headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Control-Center/1.0' },
-        signal: AbortSignal.timeout(8000),
-      }),
-      fetch('https://zevanory.api.br/api/core/v1/decision', {
-        headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Control-Center/1.0' },
-        signal: AbortSignal.timeout(8000),
-      }),
-    ]);
-    if (!snapshotResponse.ok) throw new Error('core_snapshot_http_' + snapshotResponse.status);
-    if (!decisionResponse.ok) throw new Error('core_decision_http_' + decisionResponse.status);
-    const core = await snapshotResponse.json() as any;
-    const coreDecision = await decisionResponse.json() as any;
+    const [core, coreDecision] = await readback;
     const status = core?.status || {};
     const health = core?.health || {};
     const control = core?.control || {};
@@ -2671,6 +2677,7 @@ async function loadOperationalSnapshot(): Promise<OperationalSnapshot> {
 async function adminData() {
   await ensureSeed();
   await ensureProducts();
+  const coreReadback = readControlCore();
   const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns, globalTrust, operations] = await Promise.all([
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
     db.list<AuditRecord>(AUDITS, { limit: 20 }),
@@ -2680,8 +2687,8 @@ async function adminData() {
     db.list<ProductRecord>(productTable(), { limit: 100 }),
     db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
     db.list<CertificationRunRecord>(CERTIFICATION_RUNS, { limit: 100 }),
-    loadGlobalTrust(),
-    loadOperationalSnapshot(),
+    loadGlobalTrust(coreReadback),
+    loadOperationalSnapshot(coreReadback),
   ]);
   let visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
   const canonicalSystem = await canonicalZevanoryTelemetryFallback();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Archive,
@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from './api';
+import { trustPresentation, shouldEndSession } from './runtime-state';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
@@ -77,6 +78,8 @@ type GlobalTrust = {
   zea10: { proven: number; partial: number; blocked: number };
   engines: Array<{ id: string; state: string }>;
   checkedAt: string | null;
+  blockers?: string[];
+  source?: string;
 };
 
 type OperationalSnapshot = {
@@ -358,7 +361,8 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
-  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | CommercialSection>('overview');
+  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | 'runtime' | CommercialSection>('overview');
+  const [runtimePage, setRuntimePage] = useState<'decision' | 'lineage' | 'policy'>('decision');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(() => new Set());
@@ -373,11 +377,12 @@ function App() {
   const [selectedTargetId, setSelectedTargetId] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [formStep, setFormStep] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
-  const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>('checking');
+  const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready' | 'unavailable'>('checking');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('zpc_theme');
     if (saved === 'light' || saved === 'dark') return saved;
@@ -391,41 +396,58 @@ function App() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const loadGlobalTrustLive = async () => {
-    try {
-      const response = await fetch(`/global-trust.json?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
-      if (!response.ok) throw new Error(`trust_http_${response.status}`);
-      const trust = await response.json() as GlobalTrust;
-      setGlobalTrust(trust);
-      return trust;
-    } catch {
-      return null;
-    }
-  };
+  const loadEpoch = useRef(0);
+  const pendingLoad = useRef<{ token: string; promise: Promise<void> } | null>(null);
+  const [observedAt, setObservedAt] = useState(0);
+  const [clock, setClock] = useState(Date.now());
 
-  const load = async (token = sessionToken) => {
+  // global-trust.json is a build snapshot, never a live authority.
+  // Bootstrap reads the authenticated backend and preserves its checkedAt.
+  const load = (token = sessionToken): Promise<void> => {
     if (!token) {
       setAuthState('signedout');
-      return;
+      return Promise.resolve();
     }
-    try {
-      setError('');
-      const response = await api.post('/api/admin/bootstrap', { sessionToken: token });
-      setDashboard(response.data.dashboard);
-      setGlobalTrust(response.data.globalTrust ?? null);
-      setOperations(response.data.operations ?? null);
-      setCommercial(response.data.commercial ?? null);
-      setCfo(response.data.cfo ?? null);
-      setProducts(response.data.products);
-      setCertificationTargets(response.data.certificationTargets ?? []);
-      setSummary(response.data.summary);
-      setAuthState('ready');
-      void loadGlobalTrustLive();
-    } catch {
-      localStorage.removeItem('arbm_admin_session');
-      setSessionToken('');
-      setAuthState('signedout');
-    }
+    if (pendingLoad.current?.token === token) return pendingLoad.current.promise;
+    const epoch = ++loadEpoch.current;
+    const promise = (async () => {
+      try {
+        const response = await api.post('/api/admin/bootstrap', { sessionToken: token });
+        if (epoch !== loadEpoch.current) return;
+        if (!response.data?.dashboard?.policy || !response.data?.summary || !Array.isArray(response.data.products)) {
+          throw new Error('Resposta administrativa inválida.');
+        }
+        setDashboard(response.data.dashboard);
+        setGlobalTrust(response.data.globalTrust ?? null);
+        setOperations(response.data.operations ?? null);
+        setCommercial(response.data.commercial ?? null);
+        setCfo(response.data.cfo ?? null);
+        setProducts(response.data.products);
+        setCertificationTargets(response.data.certificationTargets ?? []);
+        setSummary(response.data.summary);
+        setObservedAt(Date.now());
+        setClock(Date.now());
+        setError('');
+        setAuthState('ready');
+      } catch (cause) {
+        if (epoch !== loadEpoch.current) return;
+        setGlobalTrust(null);
+        setOperations(null);
+        if (shouldEndSession(cause)) {
+          localStorage.removeItem('arbm_admin_session');
+          setSessionToken('');
+          setDashboard(null);
+          setAuthState('signedout');
+        } else {
+          setError('Não foi possível consultar o estado atual. Sua sessão foi preservada. Tente novamente.');
+          setAuthState('unavailable');
+        }
+      } finally {
+        if (epoch === loadEpoch.current) pendingLoad.current = null;
+      }
+    })();
+    pendingLoad.current = { token, promise };
+    return promise;
   };
 
   useEffect(() => {
@@ -439,9 +461,14 @@ function App() {
 
   useEffect(() => {
     if (authState !== 'ready') return;
-    const timer = window.setInterval(() => { void loadGlobalTrustLive(); }, 30000);
-    return () => window.clearInterval(timer);
-  }, [authState]);
+    const timer = window.setInterval(() => {
+      setClock(Date.now());
+      if (document.visibilityState === 'visible') void load();
+    }, 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') { setClock(Date.now()); void load(); } };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+  }, [authState, sessionToken]);
 
   useEffect(() => {
     if (!formOpen) return;
@@ -481,11 +508,15 @@ function App() {
 
 
   const logout = async () => {
+    ++loadEpoch.current;
+    pendingLoad.current = null;
     try {
       if (sessionToken) await api.post('/api/pin/logout', { sessionToken });
     } catch {
       // Local session is still cleared.
     }
+    ++loadEpoch.current;
+    pendingLoad.current = null;
     localStorage.removeItem('arbm_admin_session');
     setSessionToken('');
     setAuthState('signedout');
@@ -562,6 +593,7 @@ function App() {
   const openNew = () => {
     setEditing(null);
     setForm(emptyForm);
+    setFormStep(0);
     setFormOpen(true);
     setError('');
   };
@@ -589,6 +621,7 @@ function App() {
       },
       notes: product.notes,
     });
+    setFormStep(0);
     setFormOpen(true);
     setError('');
   };
@@ -713,6 +746,18 @@ function App() {
     setView('governance');
   };
 
+  const trust = trustPresentation(globalTrust, clock, observedAt);
+
+  if (authState === 'unavailable') {
+    return <main className='loginShell'><section className='loginCard' aria-labelledby='connection-title'>
+      <AlertTriangle aria-hidden='true' />
+      <h1 id='connection-title'>Conexão indisponível</h1>
+      <p role='alert'>{error}</p>
+      <button className='primary' onClick={() => { setAuthState('checking'); void load(); }}><RefreshCw size={17} />Tentar novamente</button>
+      <button className='secondary' onClick={logout}>Sair</button>
+    </section></main>;
+  }
+
   if (authState === 'checking') {
     return <main className='loading'><div className='loader' /><p>Validando PIN administrativo...</p></main>;
   }
@@ -757,23 +802,18 @@ function App() {
         </div>
       </header>
 
-      <section className='policybar' aria-label='Políticas administrativas'>
-        <span><ShieldCheck size={16} />ADMIN RESTRITO</span>
-        <span><Gauge size={16} />ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
-        <span><ShieldCheck size={16} />FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
-        <span><AlertTriangle size={16} />VENDA SEM GATE: BLOQUEADA</span>
-      </section>
 
-      <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
-        <div className='trustState'>
+      <section className={trust.approved ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY' data-state={trust.state} data-freshness={trust.freshness} title={trust.reason}>
+        <button type='button' className='trustState' aria-label='Abrir evidência da Trust Chain' onClick={() => setView('runtime')}>
           <ShieldCheck size={16} />
           <span>TRUST CHAIN</span>
-          <strong>{globalTrust?.state ?? 'BLOCKED'}</strong>
-        </div>
+          <strong>{trust.state} · {trust.freshness}</strong>
+        </button>
         <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
         <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : 'sem prova'}</b></div>
-        <div><small>SHA</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
-        <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
+        <div title={`Release Core: ${globalTrust?.sha ?? 'indisponível'} · Decision hash: ${globalTrust?.evidenceRoot ?? 'indisponível'} · Gerado: ${globalTrust?.checkedAt ?? 'indisponível'}`}><small>Release Core</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
+        <div className='trustEngines' title={globalTrust?.engines?.map(item => `${item.id}:${item.state}`).join(' · ')}><small>Motores</small><b>{globalTrust?.engines?.length ? globalTrust.engines.map(item => `${({ 'zees16-core': 'ZEES', 'zea10-evaluator': 'ZEA-10', 'control-core': 'CORE' } as Record<string,string>)[item.id] ?? item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
+
       </section>
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
@@ -811,6 +851,7 @@ function App() {
       <label className='areaSelectWrap'>
         <span>Área do Control Center</span>
         <select value={view} onChange={event => setView(event.target.value as typeof view)} aria-label='Selecionar área do Control Center'>
+          <option value='runtime'>Trust Chain / Evidência</option>
           <option value='overview'>Visão Geral</option>
           <option value='products'>Produtos</option>
           <option value='commercial'>Comercial</option>
@@ -841,6 +882,21 @@ function App() {
       )}
 
       {view === 'cfo' && <CfoWorkspace data={cfo} />}
+      {view === 'runtime' && <section className='runtimeEvidence panel' aria-label='Evidência da Trust Chain'>
+        <div className='panelhead'><div><p className='kicker'>AUTORIDADE ATUAL</p><h2>Trust Chain · {trust.state}</h2></div></div>
+        <nav aria-label='Páginas da evidência' className='runtimePages'>
+          {([['decision','Decisão'],['lineage','Linhagem'],['policy','Políticas']] as const).map(([key,label]) => <button key={key} className={runtimePage === key ? 'filter active' : 'filter'} aria-pressed={runtimePage === key} onClick={() => setRuntimePage(key)}>{label}</button>)}
+        </nav>
+        {runtimePage === 'decision' && <div><p>{trust.reason}</p><p>Gerado em: {globalTrust?.checkedAt ?? 'indisponível'}</p><p>Impacto: {trust.approved ? 'Gates comprovados pela autoridade.' : 'Promoção crítica não aprovada por esta interface.'}</p><button className='secondary' onClick={() => setView('governance')}>Abrir Governança</button></div>}
+        {runtimePage === 'lineage' && <dl><dt>Fonte</dt><dd>{globalTrust?.source ?? 'Bootstrap administrativo / Control Core'}</dd><dt>Release Core</dt><dd>{globalTrust?.sha ?? 'indisponível'}</dd><dt>Decision hash</dt><dd>{globalTrust?.evidenceRoot ?? 'indisponível'}</dd><dt>Frescor</dt><dd>{trust.freshness}</dd></dl>}
+        {runtimePage === 'policy' && <div><section className='policybar' aria-label='Políticas administrativas'>
+        <span><ShieldCheck size={16} />ADMIN RESTRITO</span>
+        <span><Gauge size={16} />ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
+        <span><ShieldCheck size={16} />FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
+        <span><AlertTriangle size={16} />VENDA SEM GATE: BLOQUEADA</span>
+      </section><p>{dashboard.policy.greenRule}</p></div>}
+      </section>}
+
 
       {view === 'overview' && (
         <section className='overviewStack' data-page={overviewPage}>
@@ -1200,12 +1256,13 @@ function App() {
             <div className='modalHead'>
               <div>
                 <p className='kicker'>{editing ? 'EDICAO ADMINISTRATIVA' : 'NOVO PRODUTO'}</p>
-                <h2 id='product-modal-title'>{editing ? editing.name : 'Cadastrar produto'}</h2>
+                <h2 id='product-modal-title' title={editing?.name}>{editing ? editing.name : 'Cadastrar produto'}</h2>
               </div>
               <button className='iconButton' onClick={() => setFormOpen(false)} aria-label='Fechar'><X size={20} /></button>
             </div>
 
-            <div className='formGrid'>
+            <nav className='formStepNav' aria-label='Etapas do produto'><button className='secondary' onClick={() => setFormStep(Math.max(0,formStep-1))} disabled={formStep === 0}>Anterior</button><span>Etapa {formStep+1}/5</span><button className='secondary' onClick={() => setFormStep(Math.min(4,formStep+1))} disabled={formStep === 4}>Próxima</button></nav>
+            <div className='formGrid' data-step={formStep}>
               <label>Nome<input value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /></label>
               <label>Slug<input value={form.slug} onChange={event => setForm({ ...form, slug: event.target.value })} placeholder='meu-produto' /></label>
               <label>Categoria<input value={form.category} onChange={event => setForm({ ...form, category: event.target.value })} /></label>
@@ -1227,7 +1284,7 @@ function App() {
               <label className='span2'>Notas administrativas<textarea value={form.notes} onChange={event => setForm({ ...form, notes: event.target.value })} /></label>
             </div>
 
-            <div className='auditEditor'>
+            <div className='auditEditor' hidden={formStep !== 3}>
               <div><p className='kicker'>AUDITORIA ZERO-TOLERANCE</p><h3>Notas técnicas de 1 a 10</h3><p>Deixe vazio quando ainda não houver prova reproduzível. A nota geral é calculada automaticamente pela média dos quatro critérios.</p></div>
               <label>Engenharia<input type='number' min='1' max='10' step='0.1' value={form.audit.engineering} onChange={event => setForm({ ...form, audit: { ...form.audit, engineering: event.target.value } })} /></label>
               <label>Infra / Performance<input type='number' min='1' max='10' step='0.1' value={form.audit.infrastructure} onChange={event => setForm({ ...form, audit: { ...form.audit, infrastructure: event.target.value } })} /></label>
@@ -1235,7 +1292,7 @@ function App() {
               <label>Observabilidade<input type='number' min='1' max='10' step='0.1' value={form.audit.observability} onChange={event => setForm({ ...form, audit: { ...form.audit, observability: event.target.value } })} /></label>
             </div>
 
-            <div className='gateBox'>
+            <div className='gateBox' hidden={formStep !== 4}>
               <div><p className='kicker'>GATES COMERCIAIS</p><h3>Venda so pode ser ativada com todos validados</h3></div>
               <label className='check'><input type='checkbox' checked={form.gates.legal} onChange={event => setForm({ ...form, gates: { ...form.gates, legal: event.target.checked } })} />Legal</label>
               <label className='check'><input type='checkbox' checked={form.gates.payment} onChange={event => setForm({ ...form, gates: { ...form.gates, payment: event.target.checked } })} />Pagamento</label>
@@ -1246,7 +1303,7 @@ function App() {
 
             <div className='modalActions'>
               <button className='secondary' onClick={() => setFormOpen(false)}>Cancelar</button>
-              <button className='primary' onClick={saveProduct} disabled={busy}>{busy ? 'Salvando...' : 'Salvar produto'}</button>
+              <button className='primary' onClick={saveProduct} disabled={busy || formStep !== 4}>{busy ? 'Salvando...' : 'Salvar produto'}</button>
             </div>
           </section>
         </div>

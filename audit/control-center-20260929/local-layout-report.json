@@ -1,0 +1,5467 @@
+{
+  "schema": "zevanory.control-center.ped-runtime.v1",
+  "ok": true,
+  "states": 124,
+  "report": [
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 123.4375,
+            "bottom": 444.21875,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-overview.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "products",
+      "label": "Produtos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "metrics",
+            "top": 123.4375,
+            "bottom": 190.9375,
+            "left": 318,
+            "right": 1798
+          },
+          {
+            "tag": "SECTION",
+            "cls": "toolbar",
+            "top": 206.9375,
+            "bottom": 253.328125,
+            "left": 318,
+            "right": 1798
+          },
+          {
+            "tag": "SECTION",
+            "cls": "productGrid",
+            "top": 269.328125,
+            "bottom": 635.484375,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-products"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-products.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "commercial",
+      "label": "Comercial",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 770.203125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-commercial"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-commercial.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "creatives",
+      "label": "Criativos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 625.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-creatives"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-creatives.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "approvals",
+      "label": "Aprovações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 552.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-approvals"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-approvals.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "publications",
+      "label": "Publicações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-publications"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-publications.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "prospecting",
+      "label": "Prospecção",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-prospecting"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-prospecting.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "crm",
+      "label": "CRM/Vendas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 435.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-crm"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-crm.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "support",
+      "label": "Atendimento",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-support"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-support.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "finance",
+      "label": "Financeiro",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-finance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-finance.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "cfo",
+      "label": "ZEVANORY CFO",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "cfoWorkspace",
+            "top": 123.4375,
+            "bottom": 175.4375,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-cfo"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-cfo.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "evidence",
+      "label": "Evidências",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 575.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-evidence"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-evidence.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "operations",
+      "label": "Operações técnicas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "opsGrid",
+            "top": 123.4375,
+            "bottom": 1072,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-operations"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-operations.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "dark",
+      "view": "governance",
+      "label": "ZEES-16 / Governança",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "governanceStack",
+            "top": 123.4375,
+            "bottom": 294.609375,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-governance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/large-dark-governance.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 123.4375,
+            "bottom": 444.21875,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-overview.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "products",
+      "label": "Produtos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "metrics",
+            "top": 123.4375,
+            "bottom": 190.9375,
+            "left": 318,
+            "right": 1798
+          },
+          {
+            "tag": "SECTION",
+            "cls": "toolbar",
+            "top": 206.9375,
+            "bottom": 253.328125,
+            "left": 318,
+            "right": 1798
+          },
+          {
+            "tag": "SECTION",
+            "cls": "productGrid",
+            "top": 269.328125,
+            "bottom": 635.484375,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-products"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-products.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "commercial",
+      "label": "Comercial",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 770.203125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-commercial"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-commercial.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "creatives",
+      "label": "Criativos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 625.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-creatives"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-creatives.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "approvals",
+      "label": "Aprovações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 552.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-approvals"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-approvals.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "publications",
+      "label": "Publicações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-publications"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-publications.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "prospecting",
+      "label": "Prospecção",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-prospecting"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-prospecting.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "crm",
+      "label": "CRM/Vendas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 435.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-crm"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-crm.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "support",
+      "label": "Atendimento",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-support"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-support.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "finance",
+      "label": "Financeiro",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-finance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-finance.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "cfo",
+      "label": "ZEVANORY CFO",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "cfoWorkspace",
+            "top": 123.4375,
+            "bottom": 175.4375,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-cfo"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-cfo.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "evidence",
+      "label": "Evidências",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 575.828125,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-evidence"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-evidence.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "operations",
+      "label": "Operações técnicas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "opsGrid",
+            "top": 123.4375,
+            "bottom": 1072,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-operations"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-operations.png"
+    },
+    {
+      "viewport": {
+        "name": "large",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": "light",
+      "view": "governance",
+      "label": "ZEES-16 / Governança",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "governanceStack",
+            "top": 123.4375,
+            "bottom": 294.609375,
+            "left": 318,
+            "right": 1798
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-governance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/large-light-governance.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 123.4375,
+            "bottom": 460.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-overview.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "products",
+      "label": "Produtos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "metrics",
+            "top": 123.4375,
+            "bottom": 190.9375,
+            "left": 212,
+            "right": 1424
+          },
+          {
+            "tag": "SECTION",
+            "cls": "toolbar",
+            "top": 206.9375,
+            "bottom": 253.328125,
+            "left": 212,
+            "right": 1424
+          },
+          {
+            "tag": "SECTION",
+            "cls": "productGrid",
+            "top": 269.328125,
+            "bottom": 667.28125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-products"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-products.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "commercial",
+      "label": "Comercial",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 770.203125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-commercial"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-commercial.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "creatives",
+      "label": "Criativos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 625.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-creatives"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-creatives.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "approvals",
+      "label": "Aprovações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 552.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-approvals"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-approvals.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "publications",
+      "label": "Publicações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-publications"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-publications.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "prospecting",
+      "label": "Prospecção",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-prospecting"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-prospecting.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "crm",
+      "label": "CRM/Vendas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 435.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-crm"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-crm.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "support",
+      "label": "Atendimento",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-support"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-support.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "finance",
+      "label": "Financeiro",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-finance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-finance.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "cfo",
+      "label": "ZEVANORY CFO",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "cfoWorkspace",
+            "top": 123.4375,
+            "bottom": 175.4375,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-cfo"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-cfo.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "evidence",
+      "label": "Evidências",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 575.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-evidence"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-evidence.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "operations",
+      "label": "Operações técnicas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "opsGrid",
+            "top": 123.4375,
+            "bottom": 892,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-operations"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-operations.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "dark",
+      "view": "governance",
+      "label": "ZEES-16 / Governança",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "governanceStack",
+            "top": 123.4375,
+            "bottom": 294.609375,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-governance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/desktop-dark-governance.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 123.4375,
+            "bottom": 460.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-overview.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "products",
+      "label": "Produtos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "metrics",
+            "top": 123.4375,
+            "bottom": 190.9375,
+            "left": 212,
+            "right": 1424
+          },
+          {
+            "tag": "SECTION",
+            "cls": "toolbar",
+            "top": 206.9375,
+            "bottom": 253.328125,
+            "left": 212,
+            "right": 1424
+          },
+          {
+            "tag": "SECTION",
+            "cls": "productGrid",
+            "top": 269.328125,
+            "bottom": 667.28125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-products"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-products.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "commercial",
+      "label": "Comercial",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 770.203125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-commercial"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-commercial.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "creatives",
+      "label": "Criativos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 625.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-creatives"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-creatives.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "approvals",
+      "label": "Aprovações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 552.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-approvals"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-approvals.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "publications",
+      "label": "Publicações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-publications"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-publications.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "prospecting",
+      "label": "Prospecção",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-prospecting"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-prospecting.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "crm",
+      "label": "CRM/Vendas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 435.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-crm"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-crm.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "support",
+      "label": "Atendimento",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-support"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-support.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "finance",
+      "label": "Financeiro",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 453.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-finance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-finance.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "cfo",
+      "label": "ZEVANORY CFO",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "cfoWorkspace",
+            "top": 123.4375,
+            "bottom": 175.4375,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-cfo"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-cfo.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "evidence",
+      "label": "Evidências",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 123.4375,
+            "bottom": 575.828125,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-evidence"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-evidence.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "operations",
+      "label": "Operações técnicas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "opsGrid",
+            "top": 123.4375,
+            "bottom": 892,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-operations"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-operations.png"
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "theme": "light",
+      "view": "governance",
+      "label": "ZEES-16 / Governança",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "governanceStack",
+            "top": 123.4375,
+            "bottom": 294.609375,
+            "left": 212,
+            "right": 1424
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-governance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/desktop-light-governance.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 156,
+            "bottom": 680.71875,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-overview.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 1,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 156,
+            "bottom": 680.71875,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-overview-page2.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 2,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 156,
+            "bottom": 541.78125,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-overview-page3.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 3,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 156,
+            "bottom": 631.78125,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-overview-page4.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "products",
+      "label": "Produtos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "metrics",
+            "top": 156,
+            "bottom": 299,
+            "left": 8,
+            "right": 760
+          },
+          {
+            "tag": "SECTION",
+            "cls": "toolbar",
+            "top": 315,
+            "bottom": 391,
+            "left": 8,
+            "right": 760
+          },
+          {
+            "tag": "SECTION",
+            "cls": "productGrid",
+            "top": 407,
+            "bottom": 926.140625,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-products"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-products.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "commercial",
+      "label": "Comercial",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 511.59375,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-commercial"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-commercial.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "creatives",
+      "label": "Criativos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 752,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-creatives"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-creatives.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "approvals",
+      "label": "Aprovações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 677,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-approvals"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-approvals.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "publications",
+      "label": "Publicações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 564,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-publications"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-publications.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "prospecting",
+      "label": "Prospecção",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 564,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-prospecting"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-prospecting.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "crm",
+      "label": "CRM/Vendas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 562,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-crm"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-crm.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "support",
+      "label": "Atendimento",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 564,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-support"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-support.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "finance",
+      "label": "Financeiro",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 564,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-finance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-finance.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "cfo",
+      "label": "ZEVANORY CFO",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "cfoWorkspace",
+            "top": 156,
+            "bottom": 208,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-cfo"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-cfo.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "evidence",
+      "label": "Evidências",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 670,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-evidence"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-evidence.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "operations",
+      "label": "Operações técnicas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "opsGrid",
+            "top": 156,
+            "bottom": 416,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-operations"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-operations.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "dark",
+      "view": "governance",
+      "label": "ZEES-16 / Governança",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "governanceStack",
+            "top": 156,
+            "bottom": 727,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-governance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/tablet-dark-governance.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 156,
+            "bottom": 680.71875,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-overview.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 1,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 156,
+            "bottom": 680.71875,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-overview-page2.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 2,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 156,
+            "bottom": 541.78125,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-overview-page3.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 3,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 156,
+            "bottom": 631.78125,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-overview-page4.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "products",
+      "label": "Produtos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "metrics",
+            "top": 156,
+            "bottom": 299,
+            "left": 8,
+            "right": 760
+          },
+          {
+            "tag": "SECTION",
+            "cls": "toolbar",
+            "top": 315,
+            "bottom": 391,
+            "left": 8,
+            "right": 760
+          },
+          {
+            "tag": "SECTION",
+            "cls": "productGrid",
+            "top": 407,
+            "bottom": 926.140625,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-products"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-products.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "commercial",
+      "label": "Comercial",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 511.59375,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-commercial"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-commercial.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "creatives",
+      "label": "Criativos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 752,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-creatives"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-creatives.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "approvals",
+      "label": "Aprovações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 677,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-approvals"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-approvals.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "publications",
+      "label": "Publicações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 564,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-publications"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-publications.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "prospecting",
+      "label": "Prospecção",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 564,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-prospecting"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-prospecting.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "crm",
+      "label": "CRM/Vendas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 562,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-crm"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-crm.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "support",
+      "label": "Atendimento",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 564,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-support"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-support.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "finance",
+      "label": "Financeiro",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 564,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-finance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-finance.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "cfo",
+      "label": "ZEVANORY CFO",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "cfoWorkspace",
+            "top": 156,
+            "bottom": 208,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-cfo"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-cfo.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "evidence",
+      "label": "Evidências",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 156,
+            "bottom": 670,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-evidence"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-evidence.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "operations",
+      "label": "Operações técnicas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "opsGrid",
+            "top": 156,
+            "bottom": 416,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-operations"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-operations.png"
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "theme": "light",
+      "view": "governance",
+      "label": "ZEES-16 / Governança",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "governanceStack",
+            "top": 156,
+            "bottom": 727,
+            "left": 8,
+            "right": 760
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-governance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/tablet-light-governance.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 244.375,
+            "bottom": 674.328125,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-overview.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 1,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 244.375,
+            "bottom": 628.75,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-overview-page2.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 2,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 244.375,
+            "bottom": 649.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-overview-page3.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 3,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 244.375,
+            "bottom": 729.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-overview-page4.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "products",
+      "label": "Produtos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "metrics",
+            "top": 244.375,
+            "bottom": 317.9375,
+            "left": 4,
+            "right": 371
+          },
+          {
+            "tag": "SECTION",
+            "cls": "toolbar",
+            "top": 325.9375,
+            "bottom": 365.9375,
+            "left": 4,
+            "right": 371
+          },
+          {
+            "tag": "SECTION",
+            "cls": "productGrid",
+            "top": 373.9375,
+            "bottom": 748.8125,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-products"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-products.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "commercial",
+      "label": "Comercial",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 500.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-commercial"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-commercial.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "creatives",
+      "label": "Criativos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 708.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-creatives"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-creatives.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "approvals",
+      "label": "Aprovações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 729.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-approvals"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-approvals.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "publications",
+      "label": "Publicações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 632.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-publications"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-publications.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "prospecting",
+      "label": "Prospecção",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 632.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-prospecting"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-prospecting.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "crm",
+      "label": "CRM/Vendas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 626.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-crm"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-crm.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "support",
+      "label": "Atendimento",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 632.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-support"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-support.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "finance",
+      "label": "Financeiro",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 648.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-finance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-finance.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "cfo",
+      "label": "ZEVANORY CFO",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "cfoWorkspace",
+            "top": 244.375,
+            "bottom": 314.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-cfo"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-cfo.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "evidence",
+      "label": "Evidências",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 742.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-evidence"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-evidence.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "operations",
+      "label": "Operações técnicas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "opsGrid",
+            "top": 244.375,
+            "bottom": 734.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-operations"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-operations.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "dark",
+      "view": "governance",
+      "label": "ZEES-16 / Governança",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "governanceStack",
+            "top": 244.375,
+            "bottom": 755.125,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "dark",
+        "bg": "#050912",
+        "mainClass": "zpcWorkspace shell shell-governance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(185, 218, 255)"
+      },
+      "screenshot": "control-center-audit/mobile-dark-governance.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 244.375,
+            "bottom": 674.328125,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-overview.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 1,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 244.375,
+            "bottom": 628.75,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-overview-page2.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 2,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 244.375,
+            "bottom": 649.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-overview-page3.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "overview",
+      "label": "Visão Geral",
+      "overviewPage": 3,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "overviewStack",
+            "top": 244.375,
+            "bottom": 729.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-overview"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-overview-page4.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "products",
+      "label": "Produtos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "metrics",
+            "top": 244.375,
+            "bottom": 317.9375,
+            "left": 4,
+            "right": 371
+          },
+          {
+            "tag": "SECTION",
+            "cls": "toolbar",
+            "top": 325.9375,
+            "bottom": 365.9375,
+            "left": 4,
+            "right": 371
+          },
+          {
+            "tag": "SECTION",
+            "cls": "productGrid",
+            "top": 373.9375,
+            "bottom": 748.8125,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-products"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-products.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "commercial",
+      "label": "Comercial",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 500.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-commercial"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-commercial.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "creatives",
+      "label": "Criativos",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 708.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-creatives"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-creatives.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "approvals",
+      "label": "Aprovações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 729.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-approvals"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-approvals.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "publications",
+      "label": "Publicações",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 632.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-publications"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-publications.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "prospecting",
+      "label": "Prospecção",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 632.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-prospecting"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-prospecting.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "crm",
+      "label": "CRM/Vendas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 626.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-crm"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-crm.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "support",
+      "label": "Atendimento",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 632.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-support"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-support.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "finance",
+      "label": "Financeiro",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 648.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-finance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-finance.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "cfo",
+      "label": "ZEVANORY CFO",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "cfoWorkspace",
+            "top": 244.375,
+            "bottom": 314.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-cfo"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-cfo.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "evidence",
+      "label": "Evidências",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "commercialWorkspace",
+            "top": 244.375,
+            "bottom": 742.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-evidence"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-evidence.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "operations",
+      "label": "Operações técnicas",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "opsGrid",
+            "top": 244.375,
+            "bottom": 734.375,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-operations"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-operations.png"
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "theme": "light",
+      "view": "governance",
+      "label": "ZEES-16 / Governança",
+      "overviewPage": 0,
+      "failures": [],
+      "dom": {
+        "docScrollX": 0,
+        "docScrollY": 0,
+        "localScroll": [],
+        "horizontal": [],
+        "clips": [],
+        "textClips": [],
+        "textDebt": [],
+        "direct": [
+          {
+            "tag": "SECTION",
+            "cls": "governanceStack",
+            "top": 244.375,
+            "bottom": 755.125,
+            "left": 4,
+            "right": 371
+          }
+        ],
+        "theme": "light",
+        "bg": "#f8fafd",
+        "mainClass": "zpcWorkspace shell shell-governance"
+      },
+      "contrast": [],
+      "axe": [],
+      "focus": {
+        "active": "true",
+        "outlineWidth": "4px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(6, 79, 145)"
+      },
+      "screenshot": "control-center-audit/mobile-light-governance.png"
+    }
+  ]
+}

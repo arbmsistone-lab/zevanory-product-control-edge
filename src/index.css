@@ -802,8 +802,8 @@ a {
 
 .modal {
   width: min(820px, 100%);
-  max-height: 92vh;
-  overflow: auto;
+  max-height: 92dvh;
+  overflow: hidden;
   border: 1px solid var(--palette-28415f);
   border-radius: 16px;
   background: var(--palette-081522);
