@@ -275,13 +275,15 @@ function operationalLabel(value: string | null | undefined) {
   return labels[raw] || String(value || 'DESCONHECIDO').replaceAll('_', ' ').toUpperCase();
 }
 
-function LoginScreen({ onSuccess }: { onSuccess: (token: string) => void }) {
+function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (token: string) => void; restoringSession?: boolean }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [diagnostic, setDiagnostic] = useState('DIAGNÓSTICO: carregando...');
 
   useEffect(() => {
+    // Diagnostics execute a full backend bootstrap; do not duplicate session restoration.
+    if (restoringSession) return;
     let active = true;
     api.get('/api/_auth_diagnostic')
       .then(response => {
@@ -298,7 +300,7 @@ function LoginScreen({ onSuccess }: { onSuccess: (token: string) => void }) {
       })
       .catch(() => { if (active) setDiagnostic('DIAGNÓSTICO: indisponível'); });
     return () => { active = false; };
-  }, []);
+  }, [restoringSession]);
 
   const login = async () => {
     if (!/^\d{4}$/.test(pin)) {
@@ -728,7 +730,7 @@ function App() {
   };
 
   // Session restoration never blocks PIN entry; protected content still requires ready.
-  if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} />;
+  if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} restoringSession={authState === 'checking'} />;
   if (!dashboard) {
     return <main className='loading'><div className='loader' /><p>Inicializando ZEVANORY PRODUCT CONTROL...</p></main>;
   }

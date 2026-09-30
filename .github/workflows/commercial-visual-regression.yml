@@ -33,7 +33,7 @@ jobs:
           exit 1
       - run: node scripts/pin-startup-regression.mjs
         env:
-          REPRODUCE_BASELINE: 'true'
+          REPRODUCE_BASELINE: 'false'
       - run: node scripts/pin-startup-trace.mjs
         env:
           BASE_URL: http://127.0.0.1:4173
