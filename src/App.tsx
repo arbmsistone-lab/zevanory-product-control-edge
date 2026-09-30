@@ -730,7 +730,7 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [products, filter]);
-  const lowTaskSurface=nativeTextLarge||viewportHeight<=850||viewportWidth<=900;
+  const lowTaskSurface=nativeTextLarge||viewportHeight<=850;
   const productPageSize = viewportWidth <= 900 || lowTaskSurface ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
@@ -987,7 +987,7 @@ function App() {
         </section>
       ))}
 
-      {view === 'products' && (lowTaskSurface ? <BoundedTask className='controlTask panel'>
+      {view === 'products' && (lowTaskSurface||viewportWidth<=900 ? <BoundedTask className='controlTask panel'>
         <h2>Produtos e programas</h2>
         <label>Filtrar produtos<select value={filter} aria-label='Filtrar produtos' onChange={event=>{setFilter(event.target.value as typeof filter);setProductPage(0)}}><option value='all'>Todos</option><option value='selling'>Em venda</option><option value='blocked'>Pendentes</option><option value='archived'>Arquivados</option></select></label>
         <nav className='commercialPager' aria-label='Paginação de produtos'><button className='secondary' disabled={safeProductPage===0} onClick={()=>setProductPage(safeProductPage-1)}>Anterior</button><span>{visibleProducts.length?safeProductPage+1:0}/{visibleProducts.length}</span><button className='secondary' disabled={safeProductPage===productPageCount-1} onClick={()=>setProductPage(safeProductPage+1)}>Próximo</button></nav>

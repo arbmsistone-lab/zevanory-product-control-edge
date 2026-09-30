@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs/promises';
+import {walkTaskPages,reachTaskControl,measureLayout} from './pr98-layout-measure.mjs';
 
 const baseUrl = process.env.VISUAL_AUDIT_BASE_URL || 'http://127.0.0.1:4173';
 const outDir = process.env.VISUAL_AUDIT_OUT || 'visual-audit';
@@ -154,11 +155,13 @@ for (const theme of ['dark','light']) for (const size of sizes) for (const mode 
     await fs.writeFile(outDir + '/' + size.name + '-pre-nav-failure.txt', bodyText);
     throw error;
   }
-  if (mode === 'long-state' || size.height <= 700) {
+  if (await page.locator('.commercialTask').isVisible()) {
     // The unchanged long fixture must use the paginated task surface, retaining
     // the complete operational state instead of requiring compact-only DOM.
     await page.locator('.commercialTask').waitFor({state:'visible', timeout:15_000});
-    await page.getByRole('button', {name:'Estado operacional completo',exact:true}).click();
+    const stateControl=page.getByRole('button', {name:'Estado operacional completo',exact:true});
+    await reachTaskControl(page,stateControl);
+    await stateControl.click();
     const fields = [JSON.stringify(fixture.commercial.robot,null,2), JSON.stringify(fixture.commercial.metrics,null,2)];
     for (let field=0; field<fields.length; field++) {
       const actual = await reconstruct(page);
@@ -178,6 +181,7 @@ for (const theme of ['dark','light']) for (const size of sizes) for (const mode 
       return {issues,globalX:document.documentElement.scrollWidth-innerWidth,globalY:document.documentElement.scrollHeight-innerHeight};
     });
     if(geometry.issues.length || geometry.globalX>1 || geometry.globalY>1) throw new Error(size.name+': task geometry='+JSON.stringify(geometry));
+    await walkTaskPages(page,async taskPage=>{const row=await measureLayout(page);if(row.issues.length||row.globalX>1||row.globalY>1)throw new Error(size.name+': task '+taskPage+' geometry='+JSON.stringify(row));});
     if(pageErrors.length) throw new Error(size.name+': page errors='+JSON.stringify(pageErrors));
     await page.screenshot({path:`${outDir}/${size.name}-${theme}-long-state.png`,fullPage:true});
     results.push({name:size.name,theme,mode,operationalStateReconstruction:true,...geometry,pageErrors});
