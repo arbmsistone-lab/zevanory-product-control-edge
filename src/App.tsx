@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Archive,
@@ -377,7 +377,9 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
-  const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>('checking');
+  const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>(sessionToken ? 'checking' : 'signedout');
+  const loadGeneration = useRef(0);
+  const bootstrapController = useRef<AbortController | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('zpc_theme');
     if (saved === 'light' || saved === 'dark') return saved;
@@ -404,13 +406,18 @@ function App() {
   };
 
   const load = async (token = sessionToken) => {
+    const generation = ++loadGeneration.current;
+    bootstrapController.current?.abort();
+    const controller = new AbortController();
+    bootstrapController.current = controller;
     if (!token) {
       setAuthState('signedout');
       return;
     }
     try {
       setError('');
-      const response = await api.post('/api/admin/bootstrap', { sessionToken: token });
+      const response = await api.post('/api/admin/bootstrap', { sessionToken: token }, { signal: controller.signal });
+      if (controller.signal.aborted || generation !== loadGeneration.current) return;
       setDashboard(response.data.dashboard);
       setGlobalTrust(response.data.globalTrust ?? null);
       setOperations(response.data.operations ?? null);
@@ -422,6 +429,7 @@ function App() {
       setAuthState('ready');
       void loadGlobalTrustLive();
     } catch {
+      if (controller.signal.aborted || generation !== loadGeneration.current) return;
       localStorage.removeItem('arbm_admin_session');
       setSessionToken('');
       setAuthState('signedout');
@@ -435,6 +443,10 @@ function App() {
 
   useEffect(() => {
     void load(sessionToken);
+    return () => {
+      ++loadGeneration.current;
+      bootstrapController.current?.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -481,6 +493,8 @@ function App() {
 
 
   const logout = async () => {
+    ++loadGeneration.current;
+    bootstrapController.current?.abort();
     try {
       if (sessionToken) await api.post('/api/pin/logout', { sessionToken });
     } catch {
@@ -713,10 +727,8 @@ function App() {
     setView('governance');
   };
 
-  if (authState === 'checking') {
-    return <main className='loading'><div className='loader' /><p>Validando PIN administrativo...</p></main>;
-  }
-  if (authState === 'signedout') return <LoginScreen onSuccess={handleLogin} />;
+  // Session restoration never blocks PIN entry; protected content still requires ready.
+  if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} />;
   if (!dashboard) {
     return <main className='loading'><div className='loader' /><p>Inicializando ZEVANORY PRODUCT CONTROL...</p></main>;
   }

@@ -13,11 +13,12 @@ function resolveApiPath(path: string) {
   return `${base}${normalized}`;
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<ApiResponse<T>> {
+async function request<T>(method: string, path: string, body?: unknown, options?: { signal?: AbortSignal }): Promise<ApiResponse<T>> {
   const resolved = resolveApiPath(path);
   const crossOrigin = typeof window !== 'undefined' && resolved.startsWith('http');
   const response = await fetch(resolved, {
     method,
+    signal: options?.signal,
     headers: body === undefined ? undefined : { 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: crossOrigin ? 'omit' : 'same-origin',
@@ -39,7 +40,7 @@ export const api = {
   get<T = any>(path: string) {
     return request<T>('GET', path);
   },
-  post<T = any>(path: string, body?: unknown) {
-    return request<T>('POST', path, body ?? {});
+  post<T = any>(path: string, body?: unknown, options?: { signal?: AbortSignal }) {
+    return request<T>('POST', path, body ?? {}, options);
   },
 };
