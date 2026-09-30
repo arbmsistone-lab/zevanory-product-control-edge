@@ -1,0 +1,449 @@
+/* ZEVANORY integral UX contract — production evidence 2026-09-30.
+   Loaded last on purpose: visible product reality supersedes legacy viewport-fit CSS. */
+
+html,
+body,
+#root,
+.app-container {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 100% !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: auto !important;
+}
+
+body {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.zpcAppShell {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.zpcAppShell > .topbar,
+.zpcAppShell > .technicalDisclosure,
+.zpcAppShell > .zpcNavigation,
+.zpcAppShell > .areaSelectWrap,
+.zpcAppShell > .zpcWorkspace {
+  grid-area: auto !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: min(calc(100% - 32px), 1480px) !important;
+  min-width: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  margin-inline: auto !important;
+}
+
+.zpcAppShell > .topbar,
+.zpcAppShell .topbar {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.zpcNavigation {
+  display: grid !important;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 2.3fr) minmax(0, 1.25fr) minmax(0, 1.25fr) !important;
+  align-self: auto !important;
+  align-content: start !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.zpcNavGroup {
+  display: flex !important;
+  align-content: flex-start !important;
+  align-items: stretch !important;
+  flex-wrap: wrap !important;
+  min-width: 0 !important;
+}
+
+.zpcNavLabel {
+  flex: 1 0 100% !important;
+}
+
+.zpcNavigation .tab {
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  height: auto !important;
+  flex: 1 1 auto !important;
+  justify-content: center !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-align: center !important;
+}
+
+.zpcWorkspace,
+.zpcWorkspace.shell,
+.zpcWorkspace[class*="shell-"] {
+  display: block !important;
+  width: min(100%, 1480px) !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.zpcWorkspace > *,
+.zpcWorkspace .overviewStack,
+.zpcWorkspace .operationsStack,
+.zpcWorkspace .governanceStack,
+.zpcWorkspace .commercialWorkspace,
+.zpcWorkspace .cfoWorkspace,
+.zpcWorkspace .settingsWorkspace,
+.zpcWorkspace .productGrid,
+.zpcWorkspace .evidenceStack {
+  min-width: 0 !important;
+  height: auto;
+  max-height: none !important;
+  overflow: visible;
+}
+
+.productCard,
+.panel,
+.system,
+.commercialPanel,
+.cfoPanel,
+.approvalCard,
+.creativeLiveCard {
+  min-width: 0;
+  height: auto !important;
+  max-height: none !important;
+}
+
+.productDescription,
+.productDescriptionPrimary,
+.productDescriptionDetail,
+.blockers,
+.certBlockerLine,
+.rootBlocker,
+.pillarCard > p,
+.pillarEvidence,
+.pillarBlocker,
+.feeditem p,
+.executiveList b,
+.overviewCard strong,
+.overviewCard small,
+.commercialRow p,
+.commercialMeta,
+.commercialValue,
+.creativeEvidence span,
+.cfoAdapter *,
+.cfoAction *,
+.settingsFacts dd,
+.errorbox,
+.empty {
+  max-width: 100% !important;
+  max-height: none !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word;
+}
+
+.productDescriptionPrimary {
+  display: block !important;
+}
+
+.productDescriptionDetail {
+  display: none;
+}
+
+.productDisclosureBody.expanded .productDescriptionDetail {
+  display: block;
+}
+
+.productFacts,
+.auditGrid,
+.certMiniGrid,
+.standardStrip,
+.certSummaryGrid,
+.certRunStrip,
+.pillarGrid,
+.metrics,
+.overviewCards,
+.commercialMetrics,
+.commercialProofStrip,
+.cfoMetrics {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  grid-template-rows: none !important;
+}
+
+.productGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  align-items: start !important;
+}
+
+.overviewGrid,
+.opsGrid,
+.settingsGrid,
+.commercialDashboardGrid,
+.cfoGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)) !important;
+  align-items: start !important;
+}
+
+.certWorkspace {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  align-items: start !important;
+}
+
+.certSidebar,
+.certDetail,
+.sourcePanel,
+.sourcePanel .systems,
+.sourcePanel .system {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.channelRow {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.channelRow > *,
+.cfoReceivableRow > * {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.commercialList,
+.commercialListTall,
+.approvalGrid,
+.creativeLiveGrid {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.commercialHeader,
+.cfoHero {
+  align-items: start !important;
+}
+
+.commercialRow {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.cfoReceivableTable {
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.modalBackdrop {
+  align-items: start !important;
+  overflow-y: auto !important;
+}
+
+.modal {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.formGrid,
+.auditEditor,
+.gateBox {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)) !important;
+}
+
+.formGrid input,
+.formGrid textarea,
+.formGrid select,
+.auditEditor input {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.formGrid textarea {
+  min-height: 112px;
+}
+
+/* No action may lose its readable label to manufacture viewport fit. */
+.zpcAppShell .actions > *,
+.zpcWorkspace.shell-products .productActions > *,
+.zpcWorkspace .approvalActions > * {
+  font-size: 14px !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+/* Production-relevant commercial context stays visible on compact screens. */
+.zpcWorkspace.shell-commercial .commercialHeader .kicker,
+.zpcWorkspace.shell-commercial .commercialHeader > div:first-child > p:not(.kicker),
+.zpcWorkspace.shell-commercial .robotBadge {
+  display: revert !important;
+}
+
+@media (max-width: 1180px) {
+  .zpcNavigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .commercialHeader,
+  .cfoHero {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .zpcAppShell > .topbar,
+  .zpcAppShell > .technicalDisclosure,
+  .zpcAppShell > .areaSelectWrap,
+  .zpcAppShell > .zpcWorkspace {
+    width: min(calc(100% - 24px), 1480px) !important;
+  }
+
+  .zpcNavigation {
+    display: none !important;
+  }
+
+  .zpcAppShell > .areaSelectWrap {
+    display: grid !important;
+    overflow: visible !important;
+  }
+
+  .zpcAppShell > .areaSelectWrap > span,
+  .zpcAppShell .zpcBrandBlock .eyebrow,
+  .zpcAppShell .zpcBrandBlock .subtitle {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    clip: auto !important;
+    white-space: normal !important;
+    overflow: visible !important;
+  }
+
+  .zpcAppShell .topbar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .zpcAppShell .actions {
+    display: flex !important;
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+  }
+
+  .zpcAppShell .actions > * {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 44px !important;
+    padding: var(--zpc-space-2) var(--zpc-space-3) !important;
+  }
+
+  .zpcWorkspace.shell-products .productActions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  .zpcWorkspace.shell-products .productActions > * {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 44px !important;
+    padding: var(--zpc-space-2) var(--zpc-space-3) !important;
+  }
+
+  .overviewGrid,
+  .opsGrid,
+  .settingsGrid,
+  .commercialDashboardGrid,
+  .cfoGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .cfoReceivableRow {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 620px) {
+  .zpcAppShell > .topbar,
+  .zpcAppShell > .technicalDisclosure,
+  .zpcAppShell > .areaSelectWrap,
+  .zpcAppShell > .zpcWorkspace {
+    width: min(calc(100% - 16px), 1480px) !important;
+  }
+
+  .zpcAppShell .actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .zpcAppShell .actions > * {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .productGrid,
+  .approvalGrid,
+  .creativeLiveGrid,
+  .productFacts,
+  .auditGrid,
+  .certMiniGrid,
+  .standardStrip,
+  .certSummaryGrid,
+  .certRunStrip,
+  .pillarGrid,
+  .metrics,
+  .overviewCards,
+  .commercialMetrics,
+  .commercialProofStrip,
+  .cfoMetrics {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .commercialRow {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .zpcWorkspace.shell-products .productActions,
+  .zpcWorkspace .approvalActions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .zpcWorkspace.shell-products .productActions > *,
+  .zpcWorkspace .approvalActions > * {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
