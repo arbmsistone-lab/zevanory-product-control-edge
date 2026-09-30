@@ -10,3 +10,20 @@ export async function measureLayout(page){return await page.evaluate(()=>{
   for(let i=0;i<controls.length;i++)for(let j=i+1;j<controls.length;j++){const a=controls[i],b=controls[j];if(a.contains(b)||b.contains(a))continue;const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();if(Math.min(x.right,y.right)-Math.max(x.left,y.left)>2&&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2)issues.push({kind:'action-overlap',element:a.getAttribute('aria-label')||a.textContent,other:b.getAttribute('aria-label')||b.textContent});}
   return{globalX:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,globalY:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)-innerHeight,issues};
  });}
+
+export async function walkTaskPages(page,visit){
+ const dialog=page.getByRole('dialog');const root=await dialog.isVisible()?dialog:page.locator('main.zpcWorkspace');
+ const nav=root.getByRole('navigation',{name:'Páginas da tarefa'});
+ if(!await nav.isVisible()){await visit(0);return;}
+ const previous=nav.getByRole('button',{name:'Tarefa anterior',exact:true}),next=nav.getByRole('button',{name:'Próxima tarefa',exact:true});
+ for(let i=0;i<100&&await previous.isEnabled();i++)await previous.click();
+ for(let i=0;i<100;i++){await visit(i);if(!await next.isEnabled())break;await next.click();if(i===99)throw Error('NON_TERMINATING_TASK');}
+ for(let i=0;i<100&&await previous.isEnabled();i++)await previous.click();
+}
+export async function reachTaskControl(page,control){
+ if(await control.isVisible())return;
+ const root=await page.getByRole('dialog').isVisible()?page.getByRole('dialog'):page.locator('main.zpcWorkspace');
+ const next=root.getByRole('button',{name:'Próxima tarefa',exact:true});
+ for(let i=0;i<100&&await next.isVisible()&&await next.isEnabled();i++){await next.click();if(await control.isVisible())return;}
+ throw Error('UNREACHABLE_TASK_CONTROL');
+}

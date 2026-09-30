@@ -1,3 +1,4 @@
+import BoundedTask from './BoundedTask';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, BadgeDollarSign, Bot, Check, CircleDollarSign, FileCheck2, Headphones,
@@ -13,6 +14,7 @@ import {
 } from './commercial-model';
 
 type Props = {
+  nativeTask:boolean;
   section: CommercialSection;
   data: CommercialWorkspaceData | null;
   sessionToken: string;
@@ -73,7 +75,7 @@ function RecordRow({ item }: { item: CommercialRecord }) {
   );
 }
 
-export default function CommercialWorkspace({ section, data, sessionToken, onRefresh, onRead,taskPage:recordPage,onTaskPageChange:setRecordPage,taskGroup,onTaskGroupChange:setTaskGroup }: Props) {
+export default function CommercialWorkspace({ nativeTask, section, data, sessionToken, onRefresh, onRead,taskPage:recordPage,onTaskPageChange:setRecordPage,taskGroup,onTaskGroupChange:setTaskGroup }: Props) {
   const [busyId, setBusyId] = useState('');
   const [actionError, setActionError] = useState('');
   const [liveState, setLiveState] = useState<'LIVE'|'SYNCING'|'STALE'>('SYNCING');
@@ -200,13 +202,13 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   // Large collections and unbounded record text use one dedicated task at a time.
   // The full record, including every evidence entry, remains in the measured reader.
   const collections=[data.leads,data.creatives,data.publications,data.events,data.support,data.finance,data.evidence];
-  const oversized=viewportHeight<=700||[data.robot.label,data.robot.reason,...data.robot.activeChannels].some(value=>value.length>80)||collections.some(records=>records.length>5||records.some(item=>[item.title,item.detail,item.source,item.channel,item.product,...item.evidence].some(value=>(value?.length??0)>80)));
+  const oversized=nativeTask||viewportHeight<=700||[data.robot.label,data.robot.reason,...data.robot.activeChannels].some(value=>value.length>80)||collections.some(records=>records.length>5||records.some(item=>[item.title,item.detail,item.source,item.channel,item.product,...item.evidence].some(value=>(value?.length??0)>80)));
   if(oversized){
     const groups:Record<string,CommercialRecord[]>={events:data.events,pipeline:[...data.creatives,...data.publications]};
     const taskItems=section==='commercial'?(groups[taskGroup]??[]):section==='approvals'?approvalItems:items;
     const index=Math.min(recordPage,Math.max(0,taskItems.length-1)),item=taskItems[index];
     const recordFields=(record:CommercialRecord):EvidenceField[]=>Object.entries(record).map(([label,value])=>({label,value:typeof value==='string'?value:JSON.stringify(value,null,2)}));
-    return <section className='commercialTask panel' aria-label={meta.title}>
+    return <BoundedTask className='commercialTask panel' aria-label={meta.title}>
       <h2>{meta.title}</h2>
       <button className='secondary' onClick={()=>onRead([{label:'Robô comercial',value:JSON.stringify(data.robot,null,2)},{label:'Métricas',value:JSON.stringify(data.metrics,null,2)},{label:'Descrição da área',value:meta.subtitle}])}>Estado operacional completo</button>
       {section==='commercial'&&<nav className='commercialPager' aria-label='Coleções comerciais'>{[['events','Atividade'],['pipeline','Pipeline']].map(([key,label])=><button className='secondary' key={key} aria-pressed={taskGroup===key} onClick={()=>{setTaskGroup(key);setRecordPage(0)}}>{label}</button>)}</nav>}
@@ -214,7 +216,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
       {item?<button className='primary' onClick={()=>onRead(recordFields(item))}>Abrir registro integral</button>:<p>Nenhum registro comprovado.</p>}
       {section==='approvals'&&item&&<div className='approvalActions'><button disabled={Boolean(busyId)} onClick={()=>void act(item,'approve')}>Aprovar</button><button disabled={Boolean(busyId)} onClick={()=>void act(item,'request-changes')}>Alterar</button><button disabled={Boolean(busyId)} onClick={()=>void act(item,'reject')}>Rejeitar</button></div>}
       {actionError&&<button className='secondary' onClick={()=>onRead([{label:'Erro da ação',value:actionError}])}>Ler erro da ação</button>}
-    </section>;
+    </BoundedTask>;
   }
 
   return (

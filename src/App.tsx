@@ -1,3 +1,4 @@
+import BoundedTask from './BoundedTask';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
@@ -397,6 +398,8 @@ function App() {
   });
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [viewportHeight,setViewportHeight]=useState(()=>window.innerHeight);
+  const [nativeTextLarge,setNativeTextLarge]=useState(false);
+  useEffect(()=>{const probe=document.createElement('span');probe.textContent='M';probe.style.cssText='position:fixed;visibility:hidden;font:14px sans-serif;line-height:normal';document.body.append(probe);const check=()=>setNativeTextLarge(probe.getBoundingClientRect().height>22);check();const observer=new ResizeObserver(check);observer.observe(probe);return()=>{observer.disconnect();probe.remove()};},[]);
 
   useEffect(() => {
     const onResize = () => {setViewportWidth(window.innerWidth);setViewportHeight(window.innerHeight);};
@@ -727,7 +730,7 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [products, filter]);
-  const lowTaskSurface=viewportHeight<=850;
+  const lowTaskSurface=nativeTextLarge||viewportHeight<=850;
   const productPageSize = viewportWidth <= 900 || lowTaskSurface ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
@@ -791,7 +794,7 @@ function App() {
   }
 
   return (
-    <div className={`zpcAppShell${view === 'runtime' || detailFields || editingTextField ? ' readingEvidence' : ''}`}>
+    <div className={`zpcAppShell${nativeTextLarge||viewportHeight<560?' nativeTaskShell':''}${view === 'runtime' || detailFields || editingTextField ? ' readingEvidence' : ''}`}>
       {view !== 'runtime' && !detailFields && !editingTextField && <>
       <header className='topbar'>
         <div className='zpcBrandBlock'>
@@ -831,7 +834,7 @@ function App() {
       <section className={trust.approved ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY' data-state={trust.state} data-freshness={trust.freshness} title={trust.reason}>
         <button type='button' className='trustState' aria-label='Abrir evidência da Trust Chain' onClick={() => setView('runtime')}>
           <ShieldCheck size={16} />
-          <span>TRUST CHAIN</span>
+          <span>{nativeTextLarge||viewportHeight<560?'Trust Chain':'TRUST CHAIN'}</span>
           <strong>{trust.state} · {trust.freshness}</strong>
         </button>
         <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
@@ -903,6 +906,7 @@ function App() {
         <CommercialWorkspace
           section={view as CommercialSection}
           onRead={setDetailFields}
+          nativeTask={nativeTextLarge||viewportHeight<560}
           taskPage={commercialTaskPage} onTaskPageChange={setCommercialTaskPage}
           taskGroup={commercialTaskGroup} onTaskGroupChange={setCommercialTaskGroup}
           data={commercial}
@@ -911,7 +915,7 @@ function App() {
         />
       )}
 
-      {view === 'cfo' && <CfoWorkspace data={cfo} onRead={setDetailFields} page={cfoPage} setPage={setCfoPage} itemPage={cfoItemPage} setItemPage={setCfoItemPage} />}
+      {view === 'cfo' && <CfoWorkspace nativeTask={nativeTextLarge||viewportHeight<560} data={cfo} onRead={setDetailFields} page={cfoPage} setPage={setCfoPage} itemPage={cfoItemPage} setItemPage={setCfoItemPage} />}
       {view === 'runtime' && <section className='runtimeEvidence' aria-label='Evidência da Trust Chain'>
         <nav aria-label='Páginas da evidência' className='runtimePages'>
           {([['decision','Decisão'],['lineage','Linhagem'],['policy','Políticas']] as const).map(([key,label]) => <button key={key} className={runtimePage === key ? 'filter active' : 'filter'} aria-pressed={runtimePage === key} onClick={() => setRuntimePage(key)}>{label}</button>)}
@@ -920,6 +924,7 @@ function App() {
           {label:'Decisão',value:trust.state+' · '+trust.freshness+'\n'+trust.reason},
           {label:'Gerado em',value:globalTrust?.checkedAt??'indisponível'},
           {label:'Bloqueios da autoridade',value:JSON.stringify(globalTrust?.blockers??[],null,2)},
+          {label:'Estado global integral',value:JSON.stringify(globalTrust??{},null,2)},
         ] : runtimePage==='lineage' ? [
           {label:'Fonte',value:globalTrust?.source??'Bootstrap administrativo / Control Core'},
           {label:'Release Core',value:globalTrust?.sha??'indisponível'},
@@ -931,12 +936,12 @@ function App() {
         ]} />
       </section>}
 
-      {view === 'overview' && (overviewTask ? <section className='controlTask panel'>
+      {view === 'overview' && (overviewTask ? <BoundedTask className='controlTask panel'>
         <h2>Visão operacional executiva</h2>
         <button className='primary' onClick={()=>readObject({operations,summary,policy:dashboard.policy,incidents:dashboard.incidents})}>Estado executivo integral</button>
         <button className='secondary' onClick={()=>setView('operations')}>Operações técnicas</button>
         <button className='secondary' onClick={()=>setView('governance')}>ZEES-16 / Governança</button>
-      </section> : (
+      </BoundedTask> : (
         <section className='overviewStack' data-page={overviewPage}>
           <section className='overviewHero panel'>
             <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2><p className='productDescription'>O Control Plane e o gerenciamento de produtos agora ficam no mesmo painel, com leitura executiva antes dos detalhes.</p></div>
@@ -982,7 +987,7 @@ function App() {
         </section>
       ))}
 
-      {view === 'products' && (lowTaskSurface ? <section className='controlTask panel'>
+      {view === 'products' && (lowTaskSurface ? <BoundedTask className='controlTask panel'>
         <h2>Produtos e programas</h2>
         <label>Filtrar produtos<select value={filter} aria-label='Filtrar produtos' onChange={event=>{setFilter(event.target.value as typeof filter);setProductPage(0)}}><option value='all'>Todos</option><option value='selling'>Em venda</option><option value='blocked'>Pendentes</option><option value='archived'>Arquivados</option></select></label>
         <nav className='commercialPager' aria-label='Paginação de produtos'><button className='secondary' disabled={safeProductPage===0} onClick={()=>setProductPage(safeProductPage-1)}>Anterior</button><span>{visibleProducts.length?safeProductPage+1:0}/{visibleProducts.length}</span><button className='secondary' disabled={safeProductPage===productPageCount-1} onClick={()=>setProductPage(safeProductPage+1)}>Próximo</button></nav>
@@ -992,7 +997,7 @@ function App() {
           {pagedProducts[0].publicUrl&&<a className='secondary linkButton' aria-label='Abrir página pública do produto' href={pagedProducts[0].publicUrl} target='_blank' rel='noreferrer'>Página pública</a>}
           {pagedProducts[0].status!=='archived'&&<button className='secondary' aria-label='Arquivar produto' disabled={busy} onClick={()=>archiveProduct(pagedProducts[0])}>Arquivar</button>}
         </div></>:<p>Nenhum produto neste filtro.</p>}
-      </section> : (
+      </BoundedTask> : (
         <>
           <section className='metrics'>
             <div className='metric'><span>Produtos cadastrados</span><strong>{summary.total}</strong></div>
@@ -1108,11 +1113,11 @@ function App() {
         </>
       ))}
 
-      {view === 'operations' && (operationsTask ? <section className='controlTask panel'>
+      {view === 'operations' && (operationsTask ? <BoundedTask className='controlTask panel'>
         <h2>Motor operacional</h2>
         <button className='primary' onClick={()=>readObject({incidents:dashboard.incidents,audits:dashboard.audits,improvements:dashboard.improvements,systems:dashboard.systems,lastEngineRun:dashboard.lastEngineRun})}>Estado técnico integral</button>
         <div className='controlTaskActions'><button className='secondary' disabled={busy} onClick={()=>runGovernance('/api/telemetry/refresh')}>Telemetria</button><button className='secondary' disabled={busy} onClick={()=>runGovernance('/api/audit/run')}>Auditoria</button></div>
-      </section> : (
+      </BoundedTask> : (
         <section className='opsGrid'>
           <div className='panel'>
             <div className='panelhead'>
@@ -1157,13 +1162,13 @@ function App() {
         </section>
       ))}
 
-      {view === 'governance' && (governanceTask ? <section className='controlTask panel'>
+      {view === 'governance' && (governanceTask ? <BoundedTask className='controlTask panel'>
         <h2>Governança ZEES-16</h2>
         <button className='secondary' onClick={()=>readObject({targets:certificationTargets,runs:dashboard.certificationRuns,systems:dashboard.systems})}>Governança integral</button>
         <label>Alvo ZEES-16<select aria-label='Selecionar alvo ZEES-16' value={selectedCertificationTarget?.id??''} onChange={event=>setSelectedTargetId(event.target.value)}>{certificationTargets.map(target=><option key={target.id} value={target.id}>{target.name}</option>)}</select></label>
         {selectedCertificationTarget?<button className='primary' onClick={()=>readObject(selectedCertificationTarget)}>Abrir certificação integral</button>:<p>Nenhum alvo disponível.</p>}
         {selectedCertificationTarget&&<div className='controlTaskActions'><button className='secondary' onClick={runCertificationBatch} disabled={busy}>Certificar todos</button><button className='secondary' onClick={runCertification} disabled={busy}>Executar certificação</button></div>}
-      </section> : (
+      </BoundedTask> : (
         <section className='governanceStack'>
           <section className='panel governanceHero'>
             <div className='panelhead'>
@@ -1319,8 +1324,8 @@ function App() {
               <button className='iconButton' onClick={() => setFormOpen(false)} aria-label='Fechar'><X size={20} /></button>
             </div>
 
-            <nav className='formStepNav' aria-label='Etapas do produto'><button className='secondary' onClick={() => setFormStep(Math.max(0,formStep-1))} disabled={formStep === 0}>Anterior</button><span>Etapa {formStep+1}/5</span><button className='secondary' onClick={() => setFormStep(Math.min(4,formStep+1))} disabled={formStep === 4}>Próxima</button></nav>
-            <div className='formGrid' data-step={formStep}>
+            <nav className='formStepNav' aria-label='Etapas do produto'><button className='secondary' onClick={() => setFormStep(Math.max(0,formStep-1))} disabled={formStep === 0} aria-label='Anterior'>←</button><span>{formStep+1}/5</span><button className='secondary' onClick={() => setFormStep(Math.min(4,formStep+1))} disabled={formStep === 4} aria-label='Próxima'>→</button></nav>
+            <BoundedTask key={formStep} className='formTask' aria-label='Campos do produto'><div className='formGrid' data-step={formStep}>
               <label>Nome<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'name',label:'Nome'})}>Editar texto integral · {Array.from(form.name).length} caracteres</button></label>
               <label>Slug<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'slug',label:'Slug'})}>Editar texto integral · {Array.from(form.slug).length} caracteres</button></label>
               <label>Categoria<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'category',label:'Categoria'})}>Editar texto integral · {Array.from(form.category).length} caracteres</button></label>
@@ -1343,7 +1348,7 @@ function App() {
             </div>
 
             <div className='auditEditor' hidden={formStep !== 3}>
-              <div><p className='kicker'>AUDITORIA ZERO-TOLERANCE</p><h3>Notas técnicas de 1 a 10</h3><p>Deixe vazio quando ainda não houver prova reproduzível. A nota geral é calculada automaticamente pela média dos quatro critérios.</p></div>
+              <button className='secondary' onClick={()=>readObject({orientação:'AUDITORIA ZERO-TOLERANCE. Notas técnicas de 1 a 10. Deixe vazio quando ainda não houver prova reproduzível. A nota geral é calculada automaticamente pela média dos quatro critérios.'})}>Orientação da auditoria</button>
               <label>Engenharia<input type='number' min='1' max='10' step='0.1' value={form.audit.engineering} onChange={event => setForm({ ...form, audit: { ...form.audit, engineering: event.target.value } })} /></label>
               <label>Infra / Performance<input type='number' min='1' max='10' step='0.1' value={form.audit.infrastructure} onChange={event => setForm({ ...form, audit: { ...form.audit, infrastructure: event.target.value } })} /></label>
               <label>UI / UX<input type='number' min='1' max='10' step='0.1' value={form.audit.ux} onChange={event => setForm({ ...form, audit: { ...form.audit, ux: event.target.value } })} /></label>
@@ -1351,7 +1356,7 @@ function App() {
             </div>
 
             <div className='gateBox' hidden={formStep !== 4}>
-              <div><p className='kicker'>GATES COMERCIAIS</p><h3>Venda so pode ser ativada com todos validados</h3></div>
+              <button className='secondary' onClick={()=>readObject({regra:'GATES COMERCIAIS. Venda só pode ser ativada com todos validados.'})}>Regra dos gates comerciais</button>
               <label className='check'><input type='checkbox' checked={form.gates.legal} onChange={event => setForm({ ...form, gates: { ...form.gates, legal: event.target.checked } })} />Legal</label>
               <label className='check'><input type='checkbox' checked={form.gates.payment} onChange={event => setForm({ ...form, gates: { ...form.gates, payment: event.target.checked } })} />Pagamento</label>
               <label className='check'><input type='checkbox' checked={form.gates.fulfillment} onChange={event => setForm({ ...form, gates: { ...form.gates, fulfillment: event.target.checked } })} />Entrega</label>
@@ -1362,7 +1367,7 @@ function App() {
             <div className='modalActions'>
               <button className='secondary' onClick={() => setFormOpen(false)}>Cancelar</button>
               <button className='primary' onClick={saveProduct} disabled={busy || formStep !== 4}>{busy ? 'Salvando...' : 'Salvar produto'}</button>
-            </div>
+            </div></BoundedTask>
           </section>
         </div>
       )}

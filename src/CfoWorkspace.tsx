@@ -1,3 +1,4 @@
+import BoundedTask from './BoundedTask';
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Bot, CircleDollarSign, Landmark, ReceiptText, ShieldCheck, WalletCards } from 'lucide-react';
 import type { CfoWorkspaceData } from './cfo-model';
@@ -14,7 +15,7 @@ const money = (cents: number) => new Intl.NumberFormat('pt-BR', {
 const adapterLabel = (state: string) => state === 'READY' ? 'PROVADO' : state === 'DEGRADED' ? 'ATENÇÃO' : 'NÃO CONFIGURADO';
 const riskLabel = (risk: string) => risk === 'HIGH' ? 'ALTO' : risk === 'MEDIUM' ? 'MÉDIO' : 'BAIXO';
 
-export default function CfoWorkspace({ data, onRead, page, setPage, itemPage, setItemPage }: { data: CfoWorkspaceData | null; onRead:(fields:EvidenceField[])=>void; page:CfoPage; setPage:(page:CfoPage)=>void; itemPage:number; setItemPage:(page:number)=>void }) {
+export default function CfoWorkspace({ nativeTask, data, onRead, page, setPage, itemPage, setItemPage }: { nativeTask:boolean; data: CfoWorkspaceData | null; onRead:(fields:EvidenceField[])=>void; page:CfoPage; setPage:(page:CfoPage)=>void; itemPage:number; setItemPage:(page:number)=>void }) {
   const [viewportHeight,setViewportHeight]=useState(()=>window.innerHeight);
   useEffect(()=>{const resize=()=>setViewportHeight(window.innerHeight);window.addEventListener('resize',resize,{passive:true});return()=>window.removeEventListener('resize',resize)},[]);
   if (!data) {
@@ -24,11 +25,11 @@ export default function CfoWorkspace({ data, onRead, page, setPage, itemPage, se
   const { metrics } = data;
   const count = page === 'summary' ? 3 : Math.max(1, data[page].length);
   const index = Math.min(itemPage, count - 1);
-  const task = viewportHeight<=850 || hasLongText(data);
+  const task = nativeTask || viewportHeight<=850 || hasLongText(data);
   if(task) {
     const records=page==='summary'?[]:data[page];
     const record=records[Math.min(itemPage,Math.max(0,records.length-1))];
-    return <section className='cfoWorkspace cfoTask panel' aria-label='ZEVANORY CFO'>
+    return <BoundedTask className='cfoWorkspace cfoTask panel' aria-label='ZEVANORY CFO'>
       <h2>ZEVANORY CFO</h2>
       <button className='secondary' onClick={()=>onRead(fields(data))}>Estado financeiro completo</button>
       <label>Área financeira<select aria-label='Área financeira' value={page} onChange={event=>{setPage(event.target.value as CfoPage);setItemPage(0)}}><option value='summary'>Resumo</option><option value='adapters'>Integrações</option><option value='actions'>Decisões</option><option value='receivables'>Recebíveis</option></select></label>
@@ -36,7 +37,7 @@ export default function CfoWorkspace({ data, onRead, page, setPage, itemPage, se
         <nav className='commercialPager' aria-label='Registros financeiros'><button className='secondary' disabled={itemPage===0} onClick={()=>setItemPage(itemPage-1)}>Anterior</button><span>{records.length?Math.min(itemPage+1,records.length):0}/{records.length}</span><button className='secondary' disabled={itemPage>=records.length-1} onClick={()=>setItemPage(itemPage+1)}>Próximo</button></nav>
         {record?<button className='primary' onClick={()=>onRead(fields(record))}>Abrir registro financeiro integral</button>:<p>Nenhum registro financeiro disponível.</p>}
       </>}
-    </section>;
+    </BoundedTask>;
   }
   return (
     <section className='cfoWorkspace cfoPaged' aria-label='ZEVANORY CFO'>

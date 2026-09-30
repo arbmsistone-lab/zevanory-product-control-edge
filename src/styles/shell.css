@@ -1591,3 +1591,31 @@ body,
  .modal .auditEditor { grid-template-columns: repeat(2,minmax(0,1fr)); }
  .modal .auditEditor > div { grid-column: 1 / -1; }
 }
+
+/* Commands share the reader's bounded task contract under native browser scaling. */
+.zpcWorkspace > .boundedTask { height:100%; max-height:100%; min-height:0; display:grid; grid-template-rows:minmax(0,1fr) auto; align-content:stretch; }
+.boundedTaskBody { min-height:0; min-width:0; display:flex; flex-direction:column; gap:8px; }
+.boundedTaskBody > * { flex-shrink:0; min-width:0; }
+.boundedTaskNav { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; gap:4px; align-items:center; }
+.boundedTaskNav span { text-align:center; }
+.boundedTaskNav button { min-width:0; min-height:44px; padding:0; }
+.nativeTaskShell .trustStrip > div, .nativeTaskShell .trustState strong { display:none; }
+.nativeTaskShell .trustStrip { grid-template-columns:minmax(0,1fr); min-height:44px; padding:0; }
+.nativeTaskShell .trustState { grid-column:1 / -1; min-height:44px; }
+.nativeTaskShell .trustState span { line-height:1.2; }
+.modal { display:grid; grid-template-rows:auto auto minmax(0,1fr); }
+.modal > .formTask { min-height:0; height:100%; display:grid; grid-template-rows:minmax(0,1fr) auto; }
+.modal .boundedTaskBody { min-height:0; }
+.modalHead h2 { white-space:normal; overflow:visible; text-overflow:initial; }
+.formStepNav { grid-template-columns:44px minmax(0,1fr) 44px; }
+.formStepNav > span { text-align:center; }
+.formStepNav button { min-height:44px; padding:0; }
+.nativeTaskShell { grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto 44px minmax(0,1fr); grid-template-areas:'header' 'trust' 'selector' 'workspace'; gap:4px; padding:4px; }
+.nativeTaskShell .zpcNavigation, .nativeTaskShell .zpcBrandBlock .eyebrow, .nativeTaskShell .subtitle { display:none; }
+.nativeTaskShell > .areaSelectWrap { display:block; min-width:0; margin:0; height:44px; }
+.nativeTaskShell > .areaSelectWrap > span { display:none; }
+.nativeTaskShell > .areaSelectWrap select { width:100%; min-height:44px; padding:0 4px; }
+.nativeTaskShell .actions { display:flex; gap:4px; }
+.nativeTaskShell .actions > * { min-width:44px; width:44px; min-height:44px; height:44px; padding:0; font-size:0; display:grid; place-items:center; }
+.nativeTaskShell .topbar { min-height:0; height:auto; gap:4px; }
+.nativeTaskShell .topbar h1 { font-size:16px; line-height:1.2; }

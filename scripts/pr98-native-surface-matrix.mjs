@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {fixture,sizes,views} from './pr98-layout-fixtures.mjs';
-import {measureLayout} from './pr98-layout-measure.mjs';
+import {measureLayout,walkTaskPages,reachTaskControl} from './pr98-layout-measure.mjs';
 const sourceSha=process.env.CANDIDATE_SHA||'working-tree-uncommitted';
 const mode=process.env.NATIVE_MATRIX_MODE||'zoom';
 assert.ok(['zoom','fonts'].includes(mode));
@@ -20,7 +20,7 @@ const rows=[];let data=fixture('SUCCESS');
 await context.addInitScript(()=>localStorage.setItem('arbm_admin_session','fixture'));
 await page.route('**/api/admin/bootstrap',r=>r.fulfill({json:data}));
 const origin='http://127.0.0.1:4173';
-async function record(meta,surface){const row={...meta,surface,...await measureLayout(page)};rows.push(row);if((row.issues.length||row.globalX>1||row.globalY>1)&&!rows.slice(0,-1).some(r=>r.surface===surface&&r.issues.length))console.log('FIRST_FAILED_SURFACE='+JSON.stringify(row));}
+async function record(meta,surface){await walkTaskPages(page,async taskPage=>{const row={...meta,surface,taskPage,...await measureLayout(page)};rows.push(row);if((row.issues.length||row.globalX>1||row.globalY>1)&&!rows.slice(0,-1).some(r=>r.surface===surface&&r.issues.length))console.log('FIRST_FAILED_SURFACE='+JSON.stringify(row));});}
 async function area(key,label){const select=page.getByLabel('Selecionar área do Control Center');if(await select.isVisible())await select.selectOption(key);else await page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'}).getByRole('button',{name:label,exact:true}).click();}
 try{
  for(const theme of ['dark','light'])for(const [width,height]of selectedSizes)for(const level of levels)for(const state of states){
@@ -34,7 +34,7 @@ try{
   await page.getByRole('button',{name:'Abrir evidência da Trust Chain'}).click();for(const name of ['Decisão','Linhagem','Políticas']){await page.getByRole('navigation',{name:'Páginas da evidência'}).getByRole('button',{name,exact:true}).click();await record(meta,'runtime:'+name)}await page.getByRole('button',{name:'Voltar',exact:true}).click();
   for(const [key,label]of views){await area(key,label);await record(meta,key);
    if(key==='products'){await page.getByRole('button',{name:'Novo produto',exact:true}).click();for(let step=0;step<5;step++){await record(meta,'form-step-'+step);if(step<4)await page.getByRole('navigation',{name:'Etapas do produto'}).getByRole('button',{name:'Próxima',exact:true}).click()}await page.getByRole('dialog').getByRole('button',{name:'Fechar',exact:true}).click();}
-   if(key==='cfo'){const select=page.getByLabel('Área financeira');for(const [value,name]of [['summary','Resumo'],['adapters','Integrações'],['actions','Decisões'],['receivables','Recebíveis']]){if(await select.isVisible())await select.selectOption(value);else await page.getByRole('navigation',{name:'Páginas do CFO'}).getByRole('button',{name,exact:true}).click();await record(meta,'cfo:'+value)}}
+   if(key==='cfo'){const select=page.getByLabel('Área financeira');for(const [value,name]of [['summary','Resumo'],['adapters','Integrações'],['actions','Decisões'],['receivables','Recebíveis']]){if(await page.locator('.cfoTask').isVisible())await reachTaskControl(page,select);if(await select.isVisible())await select.selectOption(value);else await page.getByRole('navigation',{name:'Páginas do CFO'}).getByRole('button',{name,exact:true}).click();await record(meta,'cfo:'+value)}}
   }
   console.log(JSON.stringify({completed:meta,rows:rows.length,failedRows:rows.filter(r=>r.issues.length||r.globalX>1||r.globalY>1).length}));
  }

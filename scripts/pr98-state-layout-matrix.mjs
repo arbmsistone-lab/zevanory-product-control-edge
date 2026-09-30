@@ -1,4 +1,4 @@
-import {measureLayout} from './pr98-layout-measure.mjs';
+import {measureLayout,walkTaskPages,reachTaskControl} from './pr98-layout-measure.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {chromium} from 'playwright';
@@ -10,7 +10,7 @@ const selectedSizes=(process.env.LAYOUT_PREFLIGHT?sizes.filter(([w,h])=>h===640|
 const states=(process.env.LAYOUT_PREFLIGHT?['SUCCESS','MAX_REALISTIC_DATA','LONG_TEXT']:['EMPTY','SUCCESS','PARTIAL','MAX_REALISTIC_DATA','LONG_TEXT','UNICODE']).filter(state=>!process.env.LAYOUT_STATES||process.env.LAYOUT_STATES.split(',').includes(state));
 const rows=[];let rowContext;
 async function geometry(page,surface){
- const result=await measureLayout(page);rows.push({...rowContext,surface,...result});
+ await walkTaskPages(page,async taskPage=>{const result=await measureLayout(page);rows.push({...rowContext,surface,taskPage,...result});});
 }
 async function area(page,key,label){const select=page.getByLabel('Selecionar área do Control Center');if(await select.isVisible())await select.selectOption(key);else await page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'}).getByRole('button',{name:label,exact:true}).click();}
 async function reconstruct(page){await page.waitForFunction(()=>Number(document.querySelector('.readerText')?.dataset.pages)>0);let value='';for(let i=0;i<1500;i++){value+=await page.locator('.readerText').textContent();await geometry(page,'reader-page');const next=page.getByRole('button',{name:'Próxima',exact:true});if(!await next.isEnabled())return value;await next.click()}throw Error('NON_TERMINATING_READER');}
@@ -23,10 +23,10 @@ try{
    await area(page,key,label);await geometry(page,key);
    if(key==='overview')for(const button of await page.getByRole('navigation',{name:'Páginas da visão geral'}).getByRole('button').all()){await button.click();await geometry(page,'overview-page');}
    if(key==='cfo'){
-    const select=page.getByLabel('Área financeira');for(const [value,name]of [['summary','Resumo'],['adapters','Integrações'],['actions','Decisões'],['receivables','Recebíveis']]){if(await select.isVisible())await select.selectOption(value);else await page.getByRole('navigation',{name:'Páginas do CFO'}).getByRole('button',{name,exact:true}).click();await geometry(page,'cfo:'+value);}
+    const select=page.getByLabel('Área financeira');for(const [value,name]of [['summary','Resumo'],['adapters','Integrações'],['actions','Decisões'],['receivables','Recebíveis']]){if(await page.locator('.cfoTask').isVisible())await reachTaskControl(page,select);if(await select.isVisible())await select.selectOption(value);else await page.getByRole('navigation',{name:'Páginas do CFO'}).getByRole('button',{name,exact:true}).click();await geometry(page,'cfo:'+value);}
     // Each complete snapshot field is reconstructible, including non-rendered transactions/evidence.
     if(!process.env.LAYOUT_PREFLIGHT&&width===360&&height===640&&['SUCCESS','LONG_TEXT','UNICODE'].includes(state)){
-     await page.getByRole('button',{name:'Estado financeiro completo'}).click();for(const [i,[,value]]of Object.entries(Object.entries(data.cfo))){if(Number(i)>0)await page.getByRole('button',{name:'Próximo campo',exact:true}).click();assert.equal(await reconstruct(page),typeof value==='string'?value:JSON.stringify(value,null,2));}await page.getByRole('button',{name:'Voltar',exact:true}).click();
+     await reachTaskControl(page,page.getByRole('button',{name:'Estado financeiro completo'}));await page.getByRole('button',{name:'Estado financeiro completo'}).click();for(const [i,[,value]]of Object.entries(Object.entries(data.cfo))){if(Number(i)>0)await page.getByRole('button',{name:'Próximo campo',exact:true}).click();assert.equal(await reconstruct(page),typeof value==='string'?value:JSON.stringify(value,null,2));}await page.getByRole('button',{name:'Voltar',exact:true}).click();
     }
    }
    if(key==='products'){
