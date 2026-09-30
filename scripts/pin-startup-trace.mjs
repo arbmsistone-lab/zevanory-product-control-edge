@@ -1,0 +1,18 @@
+import {chromium} from 'playwright';import fs from 'node:fs';
+const base=process.env.BASE_URL||'https://controle.zevanory.api.br/',out=process.env.OUT||'pin-trace';fs.mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({headless:true});
+const report=[];
+for(const mode of ['cold-empty','cold-cached-session','reload']){
+ const context=await browser.newContext({viewport:{width:1365,height:900}});
+ await context.addInitScript(({cached})=>{if(cached)localStorage.setItem('arbm_admin_session','0'.repeat(64));window.__pinTrace={longTasks:[],visible:null,interactive:null};new PerformanceObserver(l=>window.__pinTrace.longTasks.push(...l.getEntries().map(e=>({start:e.startTime,duration:e.duration})))).observe({type:'longtask',buffered:true});const poll=()=>{const p=document.querySelector('input[aria-label="PIN de 4 numeros"]');if(p&&p.getBoundingClientRect().width){window.__pinTrace.visible??=performance.now();if(!p.disabled)window.__pinTrace.interactive??=performance.now();}requestAnimationFrame(poll)};requestAnimationFrame(poll);},{cached:mode==='cold-cached-session'});
+ const page=await context.newPage(),requests=[],failed=[];
+ page.on('requestfinished',r=>requests.push({url:r.url().replace(/\?.*/,''),method:r.method(),timing:r.timing()}));page.on('requestfailed',r=>failed.push({url:r.url().replace(/\?.*/,''),error:r.failure()?.errorText}));
+ const cdp=await context.newCDPSession(page);await cdp.send('Performance.enable');await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:mode!=='reload'});
+ if(mode==='reload'){await page.goto(base,{waitUntil:'domcontentloaded'});await page.getByLabel('PIN de 4 numeros').waitFor({timeout:65000});requests.length=0;await page.reload({waitUntil:'domcontentloaded'});}else await page.goto(base,{waitUntil:'domcontentloaded',timeout:65000});
+ let timeout=false;try{await page.getByLabel('PIN de 4 numeros').waitFor({timeout:65000});await page.getByLabel('PIN de 4 numeros').fill('123');if(await page.getByLabel('PIN de 4 numeros').inputValue()!=='123')throw Error('NOT_INTERACTIVE');await page.getByLabel('PIN de 4 numeros').fill('');}catch(e){timeout=true;}
+ const data=await page.evaluate(()=>({trace:window.__pinTrace,navigation:performance.getEntriesByType('navigation')[0]?.toJSON(),resources:performance.getEntriesByType('resource').map(x=>x.toJSON()),paint:performance.getEntriesByType('paint').map(x=>x.toJSON()),text:document.body.innerText,inputs:[...document.querySelectorAll('input')].map(x=>({disabled:x.disabled,type:x.type}))}));
+ const metrics=(await cdp.send('Performance.getMetrics')).metrics;await page.screenshot({path:out+'/'+mode+'.png'});
+ const row={mode,base,timeout,...data,requests,failed,metrics};fs.writeFileSync(out+'/'+mode+'.json',JSON.stringify(row,null,2));report.push({mode,timeout,pin_visible:data.trace.visible,pin_interactive:data.trace.interactive,navigation:data.navigation,requests,long_tasks:data.trace.longTasks,metrics});
+ console.log(JSON.stringify(report.at(-1)));await context.close();
+}
+fs.writeFileSync(out+'/summary.json',JSON.stringify(report,null,2));await browser.close();
