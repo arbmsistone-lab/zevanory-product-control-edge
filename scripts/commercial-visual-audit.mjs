@@ -88,15 +88,33 @@ const sizes = [
   { name:'desktop-1440', width:1440, height:1000 },
   { name:'tablet-768', width:768, height:1024 },
   { name:'mobile-375', width:375, height:812 },
+  { name:'narrow-low-360x640', width:360, height:640 },
+  { name:'desktop-low-1366x600', width:1366, height:600 },
 ];
 const results = [];
 
-for (const size of sizes) {
+async function reconstruct(page) {
+  await page.locator('.readerText[data-pages]').waitFor();
+  let text = '';
+  for (let n = 0; n < 1000; n++) {
+    await page.waitForFunction(() => Number(document.querySelector('.readerText')?.dataset.pages) > 0);
+    text += await page.locator('.readerText').textContent();
+    const next = page.getByRole('button', {name:'Próxima', exact:true});
+    if (!await next.isEnabled()) return text;
+    await next.click();
+  }
+  throw new Error('reader pagination did not terminate');
+}
+
+
+for (const theme of ['dark','light']) for (const size of sizes) for (const mode of ['compact','long-state']) {
+  const fixture = structuredClone(bootstrap);
+  if (mode === 'compact') fixture.commercial.robot.reason = 'Heartbeat recente; publicação condicionada aos gates.';
   const context = await browser.newContext({ viewport: { width:size.width, height:size.height } });
-  await context.addInitScript(() => {
+  await context.addInitScript(theme => {
     localStorage.setItem('arbm_admin_session','visual-contract-session');
-    localStorage.setItem('zpc_theme','dark');
-  });
+    localStorage.setItem('zpc_theme',theme);
+  },theme);
   const page = await context.newPage();
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(String(error)));
@@ -104,7 +122,7 @@ for (const size of sizes) {
   await page.route('**/api/admin/bootstrap', route => route.fulfill({
     status:200,
     contentType:'application/json',
-    body:JSON.stringify(bootstrap),
+    body:JSON.stringify(fixture),
   }));
   await page.route('**/global-trust.json*', route => route.fulfill({
     status:200,
@@ -120,8 +138,9 @@ for (const size of sizes) {
 
   await page.goto(baseUrl, { waitUntil:'domcontentloaded', timeout:30_000 });
   try {
-    if (size.width <= 768) {
-      const areaSelect = page.getByLabel('Selecionar área do Control Center');
+    const areaSelect = page.getByLabel('Selecionar área do Control Center');
+    await page.getByRole('heading',{name:'ZEVANORY CONTROL CENTER',exact:true}).waitFor();
+    if (await areaSelect.isVisible()) {
       await areaSelect.waitFor({ state:'visible', timeout:20_000 });
       await areaSelect.selectOption('commercial');
     } else {
@@ -134,6 +153,36 @@ for (const size of sizes) {
     await page.screenshot({ path: outDir + '/' + size.name + '-pre-nav-failure.png', fullPage:true }).catch(() => {});
     await fs.writeFile(outDir + '/' + size.name + '-pre-nav-failure.txt', bodyText);
     throw error;
+  }
+  if (mode === 'long-state' || size.height <= 700) {
+    // The unchanged long fixture must use the paginated task surface, retaining
+    // the complete operational state instead of requiring compact-only DOM.
+    await page.locator('.commercialTask').waitFor({state:'visible', timeout:15_000});
+    await page.getByRole('button', {name:'Estado operacional completo',exact:true}).click();
+    const fields = [JSON.stringify(fixture.commercial.robot,null,2), JSON.stringify(fixture.commercial.metrics,null,2)];
+    for (let field=0; field<fields.length; field++) {
+      const actual = await reconstruct(page);
+      if (actual !== fields[field]) throw new Error(size.name+': operational field lost data');
+      if (field+1<fields.length) await page.getByRole('button',{name:'Próximo campo',exact:true}).click();
+    }
+    await page.getByRole('button',{name:'Voltar',exact:true}).click();
+    const geometry = await page.evaluate(() => {
+      const issues=[];
+      for(const el of document.querySelectorAll('body *')) {
+        const r=el.getBoundingClientRect(),s=getComputedStyle(el);
+        if(!r.width||!r.height||s.visibility==='hidden') continue;
+        if(r.left < -1 || r.top < -1 || r.right > innerWidth+1 || r.bottom > innerHeight+1 ||
+          (el.scrollHeight>el.clientHeight+2 && ['hidden','clip','auto','scroll'].includes(s.overflowY)) ||
+          (el.scrollWidth>el.clientWidth+2 && ['hidden','clip','auto','scroll'].includes(s.overflowX))) issues.push(el.tagName+'.'+el.className);
+      }
+      return {issues,globalX:document.documentElement.scrollWidth-innerWidth,globalY:document.documentElement.scrollHeight-innerHeight};
+    });
+    if(geometry.issues.length || geometry.globalX>1 || geometry.globalY>1) throw new Error(size.name+': task geometry='+JSON.stringify(geometry));
+    if(pageErrors.length) throw new Error(size.name+': page errors='+JSON.stringify(pageErrors));
+    await page.screenshot({path:`${outDir}/${size.name}-${theme}-long-state.png`,fullPage:true});
+    results.push({name:size.name,theme,mode,operationalStateReconstruction:true,...geometry,pageErrors});
+    await context.close();
+    continue;
   }
   await page.locator('.commercialWorkspace').waitFor({ state:'visible', timeout:15_000 });
   await page.locator('.liveTelemetry').waitFor({ state:'visible', timeout:15_000 });
@@ -174,9 +223,9 @@ for (const size of sizes) {
         sectionOverlaps.push({ previous:directSections[i - 1], current:directSections[i] });
       }
     }
-    const clipped = [...workspace.querySelectorAll('*')].filter(el => {
+    const clipped = [workspace,...workspace.querySelectorAll('*')].filter(el => {
       const r = el.getBoundingClientRect();
-      return r.width > 1 && (r.left < -1 || r.right > window.innerWidth + 1);
+      return r.width > 1 && r.height > 1 && (r.left < -1 || r.top < -1 || r.right > window.innerWidth + 1 || r.bottom > window.innerHeight + 1);
     }).slice(0,10).map(el => ({
       tag:el.tagName,
       cls:String(el.className || ''),
@@ -216,12 +265,32 @@ for (const size of sizes) {
   if (audit.clipped.length) throw new Error(size.name + ': clipped=' + JSON.stringify(audit.clipped));
   if (pageErrors.length) throw new Error(size.name + ': page errors=' + JSON.stringify(pageErrors));
 
-  await page.screenshot({ path:`${outDir}/${size.name}.png`, fullPage:true });
-  results.push({name:size.name,...audit,pageErrors});
+  const pager=page.getByRole('navigation',{name:'Páginas da Central Comercial'});
+  if(await pager.count()) {
+    if(!await pager.isVisible()) throw new Error(size.name+': page controls hidden');
+    for(const label of ['Atividade','Pipeline','Provas']) {
+      await pager.getByRole('button',{name:label,exact:true}).click();
+      const geometry=await page.evaluate(()=>{
+        const issues=[];
+        for(const el of document.querySelectorAll('.commercialWorkspace, .commercialWorkspace *')) {
+          const r=el.getBoundingClientRect(),s=getComputedStyle(el);
+          if(!r.width||!r.height||s.visibility==='hidden') continue;
+          if(r.left< -1||r.top< -1||r.right>innerWidth+1||r.bottom>innerHeight+1||
+            (el.scrollHeight>el.clientHeight+2&&['hidden','clip','auto','scroll'].includes(s.overflowY))||
+            (el.scrollWidth>el.clientWidth+2&&['hidden','clip','auto','scroll'].includes(s.overflowX))) issues.push(el.tagName+'.'+el.className);
+        }
+        return {issues,globalX:document.documentElement.scrollWidth-innerWidth,globalY:document.documentElement.scrollHeight-innerHeight};
+      });
+      if(geometry.issues.length||geometry.globalX>1||geometry.globalY>1) throw new Error(size.name+': '+label+' page geometry='+JSON.stringify(geometry));
+      results.push({name:size.name,theme,mode,page:label,...geometry});
+    }
+  }
+  await page.screenshot({ path:`${outDir}/${size.name}-${theme}.png`, fullPage:true });
+  results.push({name:size.name,theme,mode,...audit,pageErrors});
   await context.close();
 }
 
 await browser.close();
-await fs.writeFile(`${outDir}/report.json`, JSON.stringify({ok:true,generatedAt:new Date().toISOString(),results},null,2));
+await fs.writeFile(`${outDir}/report.json`, JSON.stringify({ok:true,sourceSha:process.env.CANDIDATE_SHA || 'working-tree-uncommitted',scope:'commercial compact/task surfaces; not full application layout certification',generatedAt:new Date().toISOString(),results},null,2));
 console.log('FINAL_COMMERCIAL_VISUAL_AUDIT=GREEN');
 console.log(JSON.stringify(results));

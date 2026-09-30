@@ -455,3 +455,10 @@
     line-height: 1.2;
   }
 }
+
+/* A low-height desktop uses the same explicit page controls as a narrow window. */
+.zpcWorkspace.shell-commercial .commercialWorkspace[data-paged="true"] > .commercialPager {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}

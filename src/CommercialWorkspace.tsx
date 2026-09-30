@@ -79,14 +79,15 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [liveState, setLiveState] = useState<'LIVE'|'SYNCING'|'STALE'>('SYNCING');
   const [lastSyncAt, setLastSyncAt] = useState<number>(Date.now());
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const [dashboardPage, setDashboardPage] = useState(0);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const meta = SECTION_META[section];
-  const pagedDashboard = viewportWidth <= 1180;
+  const pagedDashboard = viewportWidth <= 1180 || viewportHeight <= 850;
 
   useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
+    const onResize = () => { setViewportWidth(window.innerWidth); setViewportHeight(window.innerHeight); };
     window.addEventListener('resize', onResize, { passive: true });
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -199,7 +200,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   // Large collections and unbounded record text use one dedicated task at a time.
   // The full record, including every evidence entry, remains in the measured reader.
   const collections=[data.leads,data.creatives,data.publications,data.events,data.support,data.finance,data.evidence];
-  const oversized=[data.robot.label,data.robot.reason,...data.robot.activeChannels].some(value=>value.length>80)||collections.some(records=>records.length>5||records.some(item=>[item.title,item.detail,item.source,item.channel,item.product,...item.evidence].some(value=>(value?.length??0)>80)));
+  const oversized=viewportHeight<=700||[data.robot.label,data.robot.reason,...data.robot.activeChannels].some(value=>value.length>80)||collections.some(records=>records.length>5||records.some(item=>[item.title,item.detail,item.source,item.channel,item.product,...item.evidence].some(value=>(value?.length??0)>80)));
   if(oversized){
     const groups:Record<string,CommercialRecord[]>={events:data.events,pipeline:[...data.creatives,...data.publications]};
     const taskItems=section==='commercial'?(groups[taskGroup]??[]):section==='approvals'?approvalItems:items;
@@ -217,7 +218,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   }
 
   return (
-    <section className='commercialWorkspace'>
+    <section className='commercialWorkspace' data-paged={pagedDashboard}>
       <header className='commercialHeader'>
         <div>
           <p className='kicker'>GROWTH / REVENUE OPERATIONS</p>
