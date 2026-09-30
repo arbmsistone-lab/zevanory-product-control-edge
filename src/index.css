@@ -4212,7 +4212,7 @@ body {
   gap: 8px 12px;
   align-items: center;
   min-height: 48px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   cursor: pointer;
   list-style: none;
 }
@@ -4225,8 +4225,8 @@ body {
   content: 'Detalhes';
   justify-self: end;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px 10px;
+  border-radius: 1000px;
+  padding: 4px 12px;
   color: var(--text-secondary);
   font-size: 0.82rem;
   font-weight: 800;
@@ -4257,7 +4257,7 @@ body {
 
 .technicalDisclosureBody {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   border-top: 1px solid var(--border);
   padding: 12px;
 }
@@ -4296,7 +4296,7 @@ body {
 .zpcNavigation {
   display: grid;
   grid-template-columns: 0.8fr 2.3fr 1.25fr 1.25fr;
-  gap: 10px;
+  gap: 12px;
   margin-block: 0 14px;
 }
 
@@ -4304,18 +4304,18 @@ body {
   display: flex;
   align-content: flex-start;
   align-items: stretch;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
-  padding: 10px;
+  padding: 12px;
 }
 
 .zpcNavLabel {
   flex: 1 0 100%;
-  margin: 0 0 2px;
+  margin: 0 0 4px;
   color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 900;
@@ -4329,8 +4329,8 @@ body {
   min-height: 40px;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: 9px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 8px 12px;
   color: var(--text-secondary);
   font-size: 0.875rem;
   line-height: 1.25;
@@ -4455,7 +4455,7 @@ main.shell,
 .cfoAdapter p,
 .cfoAction p,
 .cfoReceivableRow {
-  font-size: max(0.82rem, 13px) !important;
+  font-size: max(0.82rem, 14px) !important;
 }
 
 .productDescription,
@@ -4602,7 +4602,7 @@ main.shell,
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   align-items: start;
   min-height: 0;
-  font-size: max(0.85rem, 13px);
+  font-size: max(0.85rem, 14px);
 }
 
 .channelRow > * {
@@ -4612,7 +4612,7 @@ main.shell,
 }
 
 .feed {
-  gap: 10px;
+  gap: 12px;
 }
 
 .feeditem p {
@@ -4634,7 +4634,7 @@ main.shell,
 }
 
 .commercialWorkspace {
-  gap: 18px;
+  gap: 16px;
 }
 
 .commercialHeader {
@@ -4837,7 +4837,7 @@ main.shell,
 
   .areaSelectWrap {
     display: grid;
-    gap: 6px;
+    gap: 8px;
     margin-block: 0 14px;
     color: var(--text-secondary);
     font-size: 0.85rem;
@@ -4847,10 +4847,10 @@ main.shell,
     width: 100%;
     min-height: 48px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
     background: var(--surface);
     color: var(--text-primary);
-    padding: 10px 12px;
+    padding: 12px 12px;
     font-size: 1rem;
   }
 
