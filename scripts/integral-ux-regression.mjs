@@ -366,16 +366,14 @@ async function inspectLayout(page) {
       const hasMeaningfulOwnText = text.length > 0 && [...el.children].every(child => !(child.textContent || '').trim());
       const clipsX = el.scrollWidth > el.clientWidth + 2;
       const clipsY = el.scrollHeight > el.clientHeight + 2;
-      if (hasMeaningfulOwnText && (clipsX || clipsY) && (
-        s.textOverflow === 'ellipsis' ||
-        s.overflowX === 'hidden' || s.overflowX === 'clip' ||
-        s.overflowY === 'hidden' || s.overflowY === 'clip' ||
-        s.whiteSpace === 'nowrap'
-      )) {
+      const clipsHiddenX = clipsX && (s.overflowX === 'hidden' || s.overflowX === 'clip');
+      const clipsHiddenY = clipsY && (s.overflowY === 'hidden' || s.overflowY === 'clip');
+      const ellipsizedX = clipsX && (s.textOverflow === 'ellipsis' || s.whiteSpace === 'nowrap');
+      if (hasMeaningfulOwnText && (clipsHiddenX || clipsHiddenY || ellipsizedX)) {
         clipping.push({ tag: el.tagName, className: el.className, text: label(el), rect: [r.width, r.height], scroll: [el.scrollWidth, el.scrollHeight], overflow: [s.overflowX, s.overflowY], whiteSpace: s.whiteSpace, textOverflow: s.textOverflow });
       }
-      if ((clipsX || clipsY) && (s.overflowX === 'hidden' || s.overflowY === 'hidden') && text.length > 20) {
-        hiddenOverflow.push({ tag: el.tagName, className: el.className, text: label(el), scroll: [el.scrollWidth, el.scrollHeight], client: [el.clientWidth, el.clientHeight] });
+      if ((clipsHiddenX || clipsHiddenY) && text.length > 20) {
+        hiddenOverflow.push({ tag: el.tagName, className: el.className, text: label(el), scroll: [el.scrollWidth, el.scrollHeight], client: [el.clientWidth, el.clientHeight], hiddenAxes: [clipsHiddenX ? 'x' : null, clipsHiddenY ? 'y' : null].filter(Boolean) });
       }
     }
 
