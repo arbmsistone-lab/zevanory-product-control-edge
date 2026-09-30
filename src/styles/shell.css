@@ -1619,3 +1619,7 @@ body,
 .nativeTaskShell .actions > * { min-width:44px; width:44px; min-height:44px; height:44px; padding:0; font-size:0; display:grid; place-items:center; }
 .nativeTaskShell .topbar { min-height:0; height:auto; gap:4px; }
 .nativeTaskShell .topbar h1 { font-size:16px; line-height:1.2; }
+.zpcAppShell > main.zpcWorkspace:has(> .boundedTask) { display:grid; grid-template-rows:minmax(0,1fr); height:100%; max-height:100%; min-height:0; }
+.boundedTaskBody label { min-width:0; display:grid; gap:4px; }
+.boundedTaskBody input, .boundedTaskBody select { min-width:0; max-width:100%; width:100%; box-sizing:border-box; }
+.boundedTaskBody input[type=checkbox] { width:auto; }
