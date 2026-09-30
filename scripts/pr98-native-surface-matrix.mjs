@@ -20,7 +20,7 @@ const rows=[];let data=fixture('SUCCESS');
 await context.addInitScript(()=>localStorage.setItem('arbm_admin_session','fixture'));
 await page.route('**/api/admin/bootstrap',r=>r.fulfill({json:data}));
 const origin='http://127.0.0.1:4173';
-async function record(meta,surface){rows.push({...meta,surface,...await measureLayout(page)});}
+async function record(meta,surface){const row={...meta,surface,...await measureLayout(page)};rows.push(row);if((row.issues.length||row.globalX>1||row.globalY>1)&&!rows.slice(0,-1).some(r=>r.surface===surface&&r.issues.length))console.log('FIRST_FAILED_SURFACE='+JSON.stringify(row));}
 async function area(key,label){const select=page.getByLabel('Selecionar área do Control Center');if(await select.isVisible())await select.selectOption(key);else await page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'}).getByRole('button',{name:label,exact:true}).click();}
 try{
  for(const theme of ['dark','light'])for(const [width,height]of selectedSizes)for(const level of levels)for(const state of states){
