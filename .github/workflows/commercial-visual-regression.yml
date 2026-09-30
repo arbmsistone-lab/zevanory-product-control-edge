@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: '24'
       - run: npm install --no-audit --no-fund
-      - run: npm install --no-save --no-audit --no-fund playwright@1.55.0
+      - run: npm install --no-save --no-audit --no-fund playwright@1.55.0 pngjs@7.0.0
       - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit --noUnusedLocals false --noUnusedParameters false
       - run: npm run build
