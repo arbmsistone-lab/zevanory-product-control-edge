@@ -142,7 +142,7 @@ const views=[
   ['overview','Visão Geral'],['products','Produtos'],['commercial','Comercial'],['creatives','Criativos'],
   ['approvals','Aprovações'],['publications','Publicações'],['prospecting','Prospecção'],['crm','CRM/Vendas'],
   ['support','Atendimento'],['finance','Financeiro'],['cfo','ZEVANORY CFO'],['evidence','Evidências'],
-  ['operations','Operações técnicas'],['governance','ZEES-16 / Governança'],
+  ['settings','Configurações'],['operations','Operações técnicas'],['governance','ZEES-16 / Governança'],
 ];
 const sizes=[
   {name:'large',width:1920,height:1080},{name:'desktop',width:1440,height:900},
@@ -264,8 +264,12 @@ for(const size of sizes){
       },{allowedFonts:[...allowedFonts]});
       row.dom=dom;
       if(dom.docScrollX>1) fail('GLOBAL_HORIZONTAL_SCROLL',String(dom.docScrollX));
-      if(dom.docScrollY>1) fail('GLOBAL_VERTICAL_SCROLL',String(dom.docScrollY));
-      if(dom.localScroll.length) fail('LOCAL_SCROLL_SURFACE',JSON.stringify(dom.localScroll));
+      // Natural vertical document flow is required after real-production evidence proved
+      // that viewport-forced no-scroll was clipping business content. Local vertical
+      // scrolling is allowed when a component intentionally owns it; horizontal
+      // overflow remains a zero-tolerance failure.
+      const accidentalLocalX=dom.localScroll.filter(item=>item.scroll[0]>item.client[0]+1);
+      if(accidentalLocalX.length) fail('LOCAL_HORIZONTAL_SCROLL_SURFACE',JSON.stringify(accidentalLocalX));
       if(dom.horizontal.length) fail('HORIZONTAL_OUTSIDE_VIEWPORT',JSON.stringify(dom.horizontal));
       if(dom.clips.length) fail('CONTENT_CLIPPED',JSON.stringify(dom.clips));
       if(dom.textClips.length) fail('TEXT_CLIPPED',JSON.stringify(dom.textClips));
