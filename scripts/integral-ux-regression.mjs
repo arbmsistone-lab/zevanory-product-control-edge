@@ -407,10 +407,30 @@ async function inspectLayout(page) {
     const body = document.body;
     const horizontalOverflow = Math.max(doc.scrollWidth, body.scrollWidth) > window.innerWidth + 3;
     const bodyText = body.innerText;
+    const shellGeometry = ['html','body','#root','.zpcAppShell','.topbar','.technicalDisclosure','.zpcNavigation','.zpcWorkspace'].map(selector => {
+      const el = document.querySelector(selector);
+      if (!el) return { selector, missing: true };
+      const r = el.getBoundingClientRect();
+      const st = getComputedStyle(el);
+      return {
+        selector,
+        rect: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)],
+        client: [el.clientWidth, el.clientHeight],
+        scroll: [el.scrollWidth, el.scrollHeight],
+        display: st.display,
+        position: st.position,
+        width: st.width,
+        maxWidth: st.maxWidth,
+        overflow: [st.overflowX, st.overflowY],
+        grid: st.gridTemplateColumns,
+        zoom: st.zoom,
+      };
+    });
     return {
       horizontalOverflow,
       viewport: [window.innerWidth, window.innerHeight],
       doc: [doc.scrollWidth, doc.scrollHeight],
+      shellGeometry,
       clipping: clipping.slice(0, 20),
       hiddenOverflow: hiddenOverflow.slice(0, 20),
       unlabeled: unlabeled.slice(0, 20),
@@ -431,6 +451,7 @@ function requireClean(result, label) {
   if (result.crushed.length) failures.push('crushed=' + JSON.stringify(result.crushed.slice(0, 4)));
   if (result.overlaps.length) failures.push('overlaps=' + JSON.stringify(result.overlaps.slice(0, 4)));
   if (failures.length) {
+    failures.push('shellGeometry=' + JSON.stringify(result.shellGeometry));
     report.failures.push({ label, failures });
     throw new Error(label + ': ' + failures.join(' | '));
   }
