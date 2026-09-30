@@ -778,7 +778,8 @@ function App() {
   }
 
   return (
-    <div className='zpcAppShell'>
+    <div className={`zpcAppShell${view === 'runtime' || detailFields ? ' readingEvidence' : ''}`}>
+      {view !== 'runtime' && !detailFields && <>
       <header className='topbar'>
         <div className='zpcBrandBlock'>
           <p className='eyebrow'>ZEVANORY · ADMINISTRATIVO GERAL</p>
@@ -879,6 +880,7 @@ function App() {
           <option value='governance'>ZEES-16 / Governança</option>
         </select>
       </label>
+      </>}
 
       <main className={`zpcWorkspace shell shell-${view}`}>
       {detailFields ? <EvidenceReader fields={detailFields} onClose={()=>setDetailFields(null)} /> : <>

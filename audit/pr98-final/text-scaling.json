@@ -1,86 +1,3390 @@
 {
   "source": "working-tree-uncommitted",
-  "scope": "browser minimum font size; exploratory evidence, not ALL_STATES certificate",
+  "scope": "browser minimum font size 16/24/28; two themes, two native windows, three runtime tabs and full description reconstruction; not ALL_STATES certification",
   "rows": [
     {
       "width": 1366,
       "height": 768,
       "minimum": 16,
+      "theme": "dark",
       "settings": {
         "levelOfControl": "controlled_by_this_extension",
         "pixelSize": 16
       },
-      "issues": [
-        "svg.[object SVGAnimatedString]"
-      ]
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
     },
     {
       "width": 1366,
       "height": 768,
       "minimum": 24,
+      "theme": "dark",
       "settings": {
         "levelOfControl": "controlled_by_this_extension",
         "pixelSize": 24
       },
-      "issues": [
-        "svg.[object SVGAnimatedString]",
-        "path.[object SVGAnimatedString]",
-        "path.[object SVGAnimatedString]"
-      ]
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 10,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 11,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 12,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 13,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
     },
     {
       "width": 1366,
       "height": 768,
       "minimum": 28,
+      "theme": "dark",
       "settings": {
         "levelOfControl": "controlled_by_this_extension",
         "pixelSize": 28
       },
-      "issues": [
-        "svg.[object SVGAnimatedString]",
-        "path.[object SVGAnimatedString]",
-        "path.[object SVGAnimatedString]"
-      ]
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 10,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 11,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 12,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 13,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 14,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 15,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 16,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
     },
     {
       "width": 360,
       "height": 800,
       "minimum": 16,
+      "theme": "dark",
       "settings": {
         "levelOfControl": "controlled_by_this_extension",
         "pixelSize": 16
       },
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
       "issues": []
     },
     {
       "width": 360,
       "height": 800,
       "minimum": 24,
+      "theme": "dark",
       "settings": {
         "levelOfControl": "controlled_by_this_extension",
         "pixelSize": 24
       },
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 10,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 11,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 12,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
       "issues": []
     },
     {
       "width": 360,
       "height": 800,
       "minimum": 28,
+      "theme": "dark",
       "settings": {
         "levelOfControl": "controlled_by_this_extension",
         "pixelSize": 28
       },
-      "issues": [
-        "MAIN.zpcWorkspace shell shell-runtime",
-        "NAV.readerNav",
-        "BUTTON.secondary",
-        "BUTTON.secondary",
-        "H3.",
-        "NAV.readerNav",
-        "BUTTON.secondary",
-        "SPAN.",
-        "BUTTON.secondary"
-      ]
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 10,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 11,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 12,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 13,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "dark",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 14,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 10,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 11,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 12,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 13,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 10,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 11,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 12,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 13,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 14,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 15,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 16,
+      "viewport": {
+        "width": 1366,
+        "height": 629
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 16,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 16
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 10,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 11,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 24,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 24
+      },
+      "surface": "description",
+      "page": 12,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Decisão",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Linhagem",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "runtime:Políticas",
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 1,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 2,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 3,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 4,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 5,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 6,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 7,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 8,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 9,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 10,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 11,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 12,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 13,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "minimum": 28,
+      "theme": "light",
+      "settings": {
+        "levelOfControl": "controlled_by_this_extension",
+        "pixelSize": 28
+      },
+      "surface": "description",
+      "page": 14,
+      "viewport": {
+        "width": 360,
+        "height": 661
+      },
+      "globalX": 0,
+      "globalY": 0,
+      "issues": []
     }
   ]
 }

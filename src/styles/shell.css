@@ -1556,3 +1556,20 @@ body,
 .evidenceReader .panelhead { min-height:0; }
 .evidenceReader h2 { font-size:16px; line-height:1.2; }
 .evidenceReader h3 { font-size:14px; line-height:1.2; }
+
+/* Reading is a task state. Back restores the complete command surface. */
+.zpcAppShell.readingEvidence {
+  grid-template-columns: minmax(0,1fr);
+  grid-template-rows: minmax(0,1fr);
+  grid-template-areas: "workspace";
+}
+.readerNav { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); }
+.readerNav button { min-width:0; overflow-wrap:anywhere; }
+.runtimeEvidence .runtimePages button { min-width:0; white-space:normal; overflow-wrap:anywhere; }
+.readerNav { grid-template-columns:44px minmax(0,1fr) 44px; }
+.readerNav span { text-align:center; overflow-wrap:anywhere; }
+.readerNav button { width:44px; min-height:44px; display:grid; place-items:center; }
+@media (max-width:480px) {
+  .runtimeEvidence .runtimePages { grid-template-columns:minmax(0,1fr); gap:4px; }
+  .runtimeEvidence .runtimePages button { padding:4px 8px; line-height:1.2; }
+}

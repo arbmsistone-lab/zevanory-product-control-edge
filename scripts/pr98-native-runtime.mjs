@@ -43,6 +43,7 @@ try {
  await cdp.send('Browser.setWindowBounds',{windowId,bounds:{width:360,height:800}});
  await worker.evaluate(async()=>{const [t]=await chrome.tabs.query({url:'http://127.0.0.1:4173/*'});await chrome.tabs.setZoom(t.id,1)});
  await page.waitForFunction(()=>devicePixelRatio===1);
+ await page.getByRole('button',{name:'Voltar',exact:true}).click();
  await page.getByLabel('Selecionar área do Control Center').selectOption('products');
  await page.locator('.productDisclosureToggle').first().click();
  for(let i=0;i<2;i++)await page.getByRole('button',{name:'Próximo campo',exact:true}).click();

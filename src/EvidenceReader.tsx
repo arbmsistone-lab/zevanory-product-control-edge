@@ -1,4 +1,5 @@
 import {useLayoutEffect,useRef,useState} from 'react';
+import {ChevronLeft,ChevronRight} from 'lucide-react';
 export type EvidenceField = {label:string;value:string};
 
 // Pagination measures the actual font and remaining task surface. Every code point
@@ -7,12 +8,16 @@ export default function EvidenceReader({fields,onClose}:{fields:EvidenceField[];
  const [field,setField]=useState(0),[page,setPage]=useState(0),[pages,setPages]=useState<string[]>([]);
  const region=useRef<HTMLDivElement>(null), text=fields[field]?.value || 'Sem informação.';
  useLayoutEffect(()=>{
-  const host=region.current;if(!host)return;let active=true;
+  const host=region.current;if(!host)return;let active=true,lastMeasurement='';
   const paginate=()=>{
    if(!active)return;
    const probe=document.createElement('div'),style=getComputedStyle(host);
    Object.assign(probe.style,{position:'fixed',visibility:'hidden',pointerEvents:'none',width:host.clientWidth+'px',whiteSpace:'pre-wrap',overflowWrap:'anywhere',font:style.font,lineHeight:style.lineHeight,letterSpacing:style.letterSpacing});
    document.body.appendChild(probe);
+   probe.textContent='M';
+   const measurement=[host.clientWidth,host.clientHeight,probe.getBoundingClientRect().height,style.font,style.lineHeight].join(':');
+   if(measurement===lastMeasurement){probe.remove();return;}
+   lastMeasurement=measurement;
    const units=Array.from(text),next:string[]=[];let offset=0;
    while(offset<units.length){
     let lo=1,hi=units.length-offset,best=0;
@@ -28,9 +33,9 @@ export default function EvidenceReader({fields,onClose}:{fields:EvidenceField[];
  const safePage=Math.min(page,Math.max(0,pages.length-1));
  return <section className='evidenceReader panel' aria-label='Leitor de detalhes'>
   <div className='panelhead'><h2>Detalhes</h2><button className='secondary' onClick={onClose}>Voltar</button></div>
-  <nav className='readerNav' aria-label='Campos dos detalhes'><button className='secondary' disabled={field===0} onClick={()=>setField(field-1)}>Campo anterior</button><span>{field+1}/{fields.length}</span><button className='secondary' disabled={field===fields.length-1} onClick={()=>setField(field+1)}>Próximo campo</button></nav>
+  <nav className='readerNav' aria-label='Campos dos detalhes'><button className='secondary' aria-label='Campo anterior' title='Campo anterior' disabled={field===0} onClick={()=>setField(field-1)}><ChevronLeft aria-hidden='true' /></button><span>Campo {field+1}/{fields.length}</span><button className='secondary' aria-label='Próximo campo' title='Próximo campo' disabled={field===fields.length-1} onClick={()=>setField(field+1)}><ChevronRight aria-hidden='true' /></button></nav>
   <h3>{fields[field]?.label}</h3>
   <div ref={region} className='readerText' data-page={safePage+1} data-pages={pages.length}>{pages[safePage]??'Calculando páginas…'}</div>
-  <nav className='readerNav' aria-label='Páginas do texto'><button className='secondary' disabled={safePage===0} onClick={()=>setPage(safePage-1)}>Anterior</button><span>{safePage+1}/{Math.max(1,pages.length)}</span><button className='secondary' disabled={safePage>=pages.length-1} onClick={()=>setPage(safePage+1)}>Próxima</button></nav>
+  <nav className='readerNav' aria-label='Páginas do texto'><button className='secondary' aria-label='Anterior' title='Página anterior' disabled={safePage===0} onClick={()=>setPage(safePage-1)}><ChevronLeft aria-hidden='true' /></button><span>Página {safePage+1}/{Math.max(1,pages.length)}</span><button className='secondary' aria-label='Próxima' title='Próxima página' disabled={safePage>=pages.length-1} onClick={()=>setPage(safePage+1)}><ChevronRight aria-hidden='true' /></button></nav>
  </section>;
 }
