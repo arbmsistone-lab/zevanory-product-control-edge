@@ -1,0 +1,73 @@
+name: Integral Product UX Regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/integral-ux-regression.mjs'
+      - 'scripts/pin-startup-regression.mjs'
+      - '.github/workflows/integral-product-ux.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/integral-ux-regression.mjs'
+      - 'scripts/pin-startup-regression.mjs'
+      - '.github/workflows/integral-product-ux.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integral-product-ux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integral-ux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install application
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Typecheck and build
+        run: |
+          npm run typecheck
+          npm run build
+
+      - name: Start exact-candidate preview
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/zpc-integral-preview.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173 >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/zpc-integral-preview.log
+          exit 1
+
+      - name: Run integral UX and startup proof
+        run: node scripts/integral-ux-regression.mjs
+
+      - name: Upload integral proof
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integral-product-ux-${{ github.sha }}
+          path: integral-ux-audit/
+          retention-days: 30
+          if-no-files-found: error
