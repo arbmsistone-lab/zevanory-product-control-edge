@@ -387,6 +387,102 @@ body {
   min-height: 112px;
 }
 
+
+/* Governance is content-first: no viewport-fit rows/columns survive zoom or text scaling. */
+.zpcWorkspace.shell-governance .governanceStack,
+.zpcWorkspace.shell-governance .governanceStack > *,
+.zpcWorkspace.shell-governance .certWorkspace,
+.zpcWorkspace.shell-governance .certSidebar,
+.zpcWorkspace.shell-governance .certDetail,
+.zpcWorkspace.shell-governance .sourcePanel {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.zpcWorkspace.shell-governance .certWorkspace {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto !important;
+  gap: var(--zpc-space-3) !important;
+  align-items: start !important;
+}
+
+.zpcWorkspace.shell-governance .pillarGrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
+  grid-template-rows: auto !important;
+  grid-auto-flow: row !important;
+  grid-auto-rows: auto !important;
+  gap: var(--zpc-space-3) !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  align-items: start !important;
+}
+
+.zpcWorkspace.shell-governance .pillarCard {
+  position: static !important;
+  grid-area: auto !important;
+  transform: none !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.zpcWorkspace.shell-governance .pillarCard *,
+.zpcWorkspace.shell-governance .certProductButton *,
+.zpcWorkspace.shell-governance .rootBlocker *,
+.zpcWorkspace.shell-governance .sourcePanel * {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.zpcWorkspace.shell-governance .standardStrip,
+.zpcWorkspace.shell-governance .certSummaryGrid,
+.zpcWorkspace.shell-governance .certRunStrip,
+.zpcWorkspace.shell-governance .sourcePanel .systems {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)) !important;
+  grid-template-rows: auto !important;
+}
+
+.zpcWorkspace.shell-governance .certActions,
+.zpcWorkspace.shell-governance .governanceSectionPager {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)) !important;
+}
+
+.zpcWorkspace.shell-governance .governancePager {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: var(--zpc-space-2) !important;
+}
+
+.zpcWorkspace.shell-governance .governancePager strong {
+  flex: 1 1 160px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  text-align: center !important;
+}
+
+.zpcWorkspace.shell-governance .certTargetSelectWrap {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.zpcWorkspace.shell-governance .certTargetSelectWrap select,
+.zpcWorkspace.shell-governance button {
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
 /* No action may lose its readable label to manufacture viewport fit. */
 .zpcAppShell .actions > *,
 .zpcWorkspace.shell-products .productActions > *,
