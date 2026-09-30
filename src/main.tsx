@@ -7,6 +7,7 @@ import './styles/shell.css';
 import './styles/products.css';
 import './styles/commercial-v2.css';
 import './styles/cfo-v2.css';
+import './styles/integral-ux.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
