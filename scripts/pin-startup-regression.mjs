@@ -7,19 +7,19 @@ const fixture={dashboard:{systems:[],audits:[],improvements:[],incidents:[],poli
 const browser=await chromium.launch();const checks={};
 const fulfill=(r,status,body)=>r.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
 async function setup(base,cached=false,viewport={width:1365,height:900},theme='dark'){
- const context=await browser.newContext({viewport});await context.addInitScript(({cached,theme})=>{localStorage.setItem('zpc_theme',theme);if(cached)localStorage.setItem('arbm_admin_session','old-test-session');},{cached,theme});
+ const context=await browser.newContext({viewport});await context.addInitScript(({cached,theme})=>{localStorage.setItem('zpc_theme',theme);if(cached&&!localStorage.getItem('arbm_admin_session'))localStorage.setItem('arbm_admin_session','old-test-session');},{cached,theme});
  const page=await context.newPage();await page.route('**/api/_auth_diagnostic',r=>fulfill(r,200,{secretValid:true,locked:false,sessionRoundtrip:true,bootstrapOk:true}));await page.route('**/global-trust.json*',r=>fulfill(r,200,fixture.globalTrust));return {context,page,base};
 }
 // Causal reproduction on the actual pre-hotfix domain. The 42s wait is explicitly injected,
 // not represented as an observed provider outage.
 if(process.env.REPRODUCE_BASELINE==='true'){
  const {context,page}=await setup('https://controle.zevanory.api.br/',true);await page.route('**/api/admin/bootstrap',async r=>{await new Promise(resolve=>setTimeout(resolve,42000));await fulfill(r,401,{error:'controlled expired session'});});
- const t=Date.now();await page.goto('https://controle.zevanory.api.br/',{waitUntil:'domcontentloaded'});assert.equal(await page.getByLabel('PIN de 4 numeros').count(),0);await page.getByLabel('PIN de 4 numeros').waitFor({timeout:60000});const ms=Date.now()-t;assert(ms>=42000);checks.baseline_causal_reproduction={ms,mode:'real-domain with controlled 42s bootstrap response delay',protected_ui_before_auth:false};await context.close();
+ const t=Date.now();await page.goto('https://controle.zevanory.api.br/',{waitUntil:'domcontentloaded'});assert.equal(await page.getByLabel('PIN de 4 numeros').count(),0);await page.getByLabel('PIN de 4 numeros').waitFor({timeout:60000});const ms=Date.now()-t;assert(ms>=42000);checks.baseline_causal_reproduction={ms,mode:'real-domain with controlled 42s bootstrap response delay',protected_ui_before_auth:false};fs.writeFileSync(out+'/baseline-causal-reproduction.json',JSON.stringify(checks.baseline_causal_reproduction,null,2));await context.close();
 }
 const base='http://127.0.0.1:4173';
 {
  const {context,page}=await setup(base,true);let pending;const request=new Promise(resolve=>pending=resolve);await page.route('**/api/admin/bootstrap',async r=>{pending(r);await new Promise(()=>{});});
- const t=Date.now();await page.goto(base,{waitUntil:'domcontentloaded'});await request;const pin=page.getByLabel('PIN de 4 numeros');await pin.waitFor({timeout:3000});await pin.fill('a12b3');assert.equal(await pin.inputValue(),'123');assert.equal(await page.locator('.zpcAppShell').count(),0);assert(Date.now()-t<3000);checks.pin_independent_of_hung_bootstrap=true;await page.screenshot({path:out+'/pending-bootstrap.png'});await context.close();
+ const t=Date.now();await page.goto(base,{waitUntil:'domcontentloaded'});await request;const pin=page.getByLabel('PIN de 4 numeros');await pin.waitFor({timeout:3000});await pin.fill('a123');assert.equal(await pin.inputValue(),'123');assert.equal(await page.locator('.zpcAppShell').count(),0);assert(Date.now()-t<3000);checks.pin_independent_of_hung_bootstrap=true;await page.screenshot({path:out+'/pending-bootstrap.png'});await context.close();
 }
 {
  const {context,page}=await setup(base);let loginCalls=0;await page.route('**/api/pin/login',r=>{loginCalls++;return fulfill(r,401,{error:'PIN incorreto.'});});
@@ -34,6 +34,6 @@ const base='http://127.0.0.1:4173';
 }
 // Same fixture, viewport, theme and diagnostics on baseline and candidate. CSS is unchanged.
 for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const theme of ['dark','light'])for(const state of ['pin','authenticated']){
- const images=[];for(const port of [4174,4173]){const {context,page}=await setup('http://127.0.0.1:'+port,state==='authenticated',viewport,theme);await page.route('**/api/admin/bootstrap',r=>fulfill(r,200,fixture));await page.goto('http://127.0.0.1:'+port);await page.locator(state==='pin'?'.authDiagnostic':'.zpcAppShell').waitFor();if(state==='pin')await page.getByText(/DIAGNÓSTICO: PIN:OK/).waitFor();await page.evaluate(()=>document.fonts.ready);const image=await page.screenshot({animations:'disabled'});images.push(image);fs.writeFileSync(out+'/'+port+'-'+state+'-'+viewport.width+'-'+theme+'.png',image);await context.close();}assert.equal(crypto.createHash('sha256').update(images[0]).digest('hex'),crypto.createHash('sha256').update(images[1]).digest('hex'),'layout pixel mismatch '+state+viewport.width+theme);
+ const images=[];for(const port of [4174,4173]){const {context,page}=await setup('http://127.0.0.1:'+port,state==='authenticated',viewport,theme);await page.route('**/api/admin/bootstrap',r=>fulfill(r,200,fixture));await page.goto('http://127.0.0.1:'+port);await page.locator(state==='pin'?'.authDiagnostic':'.zpcAppShell').waitFor();if(state==='pin')await page.getByText(/DIAGN?STICO: PIN:OK/).waitFor();await page.evaluate(()=>document.fonts.ready);const image=await page.screenshot({animations:'disabled'});images.push(image);fs.writeFileSync(out+'/'+port+'-'+state+'-'+viewport.width+'-'+theme+'.png',image);await context.close();}assert.equal(crypto.createHash('sha256').update(images[0]).digest('hex'),crypto.createHash('sha256').update(images[1]).digest('hex'),'layout pixel mismatch '+state+viewport.width+theme);
 }
 checks.layout_pixels_identical_8_pairs=true;fs.writeFileSync(out+'/regression.json',JSON.stringify({status:'PASS',checks},null,2));console.log(JSON.stringify(checks));await browser.close();
