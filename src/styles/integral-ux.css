@@ -192,11 +192,65 @@ body {
 }
 
 .productGrid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)) !important;
   height: auto !important;
   max-height: none !important;
   overflow: visible !important;
   align-items: start !important;
+}
+
+.zpcWorkspace.shell-products .toolbarControls {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: var(--zpc-space-2) !important;
+}
+
+.zpcWorkspace.shell-products .productFilterSelect {
+  flex: 1 1 240px !important;
+  min-width: 0 !important;
+}
+
+.zpcWorkspace.shell-products .pagination {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+}
+
+.zpcWorkspace.shell-products .productFacts,
+.zpcWorkspace.shell-products .gateRow,
+.zpcWorkspace.shell-products .auditGrid,
+.zpcWorkspace.shell-products .certMiniGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)) !important;
+}
+
+.zpcWorkspace.shell-products .zeesSealGrid {
+  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr)) !important;
+}
+
+.zpcWorkspace.shell-products .productActions {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)) !important;
+  gap: var(--zpc-space-2) !important;
+}
+
+.zpcWorkspace.shell-products .productActions > * {
+  width: 100% !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+}
+
+.zpcWorkspace.shell-products .productHead,
+.zpcWorkspace.shell-products .auditHeader,
+.zpcWorkspace.shell-products .certTitleRow {
+  flex-wrap: wrap !important;
+  min-width: 0 !important;
+}
+
+.zpcWorkspace.shell-products .saleBadge,
+.zpcWorkspace.shell-products .certSeal {
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
 }
 
 .overviewGrid,
