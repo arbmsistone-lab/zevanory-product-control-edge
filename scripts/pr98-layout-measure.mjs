@@ -23,7 +23,8 @@ export async function walkTaskPages(page,visit){
 export async function reachTaskControl(page,control){
  if(await control.isVisible())return;
  const root=await page.getByRole('dialog').isVisible()?page.getByRole('dialog'):page.locator('main.zpcWorkspace');
- const next=root.getByRole('button',{name:'Próxima tarefa',exact:true});
+ const previous=root.getByRole('button',{name:'Tarefa anterior',exact:true}),next=root.getByRole('button',{name:'Próxima tarefa',exact:true});
+ for(let i=0;i<100&&await previous.isVisible()&&await previous.isEnabled();i++)await previous.click();
  for(let i=0;i<100&&await next.isVisible()&&await next.isEnabled();i++){await next.click();if(await control.isVisible())return;}
  throw Error('UNREACHABLE_TASK_CONTROL');
 }

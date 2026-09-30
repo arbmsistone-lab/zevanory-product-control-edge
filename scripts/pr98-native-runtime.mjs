@@ -1,3 +1,4 @@
+import {reachTaskControl} from './pr98-layout-measure.mjs';
 import {chromium} from 'playwright';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -46,7 +47,7 @@ try {
  await page.getByRole('button',{name:'Voltar',exact:true}).click();
  await page.getByLabel('Selecionar área do Control Center').selectOption('products');
  const productDetails=page.locator('.productDisclosureToggle').first(), compactProduct=!await productDetails.isVisible();
- if(compactProduct)await page.getByRole('button',{name:'Abrir produto integral',exact:true}).click();else await productDetails.click();
+ if(compactProduct){const open=page.getByRole('button',{name:'Abrir produto integral',exact:true});await reachTaskControl(page,open);await open.click()}else await productDetails.click();
  for(let i=0;i<(compactProduct?Object.keys(data.products[0]).indexOf('description'):2);i++)await page.getByRole('button',{name:'Próximo campo',exact:true}).click();
  await page.waitForFunction(()=>Number(document.querySelector('.readerText')?.getAttribute('data-pages'))>1);
  let reconstructed='';let count=0;

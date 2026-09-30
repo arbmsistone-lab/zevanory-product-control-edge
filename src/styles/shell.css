@@ -1625,3 +1625,7 @@ body,
 .boundedTaskBody input[type=checkbox] { width:auto; }
 .nativeTaskShell .modalHead .kicker { display:none; }
 .nativeTaskShell .modalHead h2 { font-size:16px; line-height:1.2; }
+.nativeTaskShell .auditEditor { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.nativeTaskShell .auditEditor > button { grid-column:1 / -1; }
+.nativeTaskShell .boundedTaskBody button, .nativeTaskShell .boundedTaskBody .linkButton { min-height:44px; padding:4px 8px; line-height:1.2; white-space:normal; overflow-wrap:anywhere; }
+.nativeTaskShell.zpcAppShell .trustStrip > div { display:none; }
