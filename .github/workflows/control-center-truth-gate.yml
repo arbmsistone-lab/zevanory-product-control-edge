@@ -16,14 +16,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - run: npm install --no-audit --no-fund
-      - run: npm install --no-save --no-audit --no-fund playwright@1.55.0 axe-core@4.10.3
+      - run: npm install --no-save --no-audit --no-fund playwright@1.55.1 axe-core@4.10.3
       - run: npx playwright install --with-deps chromium
-      - run: npm run typecheck && node --import tsx scripts/runtime-state-contract.ts && npm run build
+      - run: npm run typecheck && node scripts/commercial-stream-contract.mjs && node --import tsx scripts/runtime-state-contract.ts && npm run build
       - run: node scripts/sync-worker-backend.mjs --check && node --import tsx scripts/pr98-backend-contract.ts
       - name: Preview and runtime proofs
         run: |
@@ -35,6 +36,7 @@ jobs:
             sleep 1
           done
           node scripts/pr98-adversarial-repro.mjs
+          node scripts/pr98-integral-task-contract.mjs
           node scripts/pr98-native-runtime.mjs
           node scripts/pr98-performance-sample.mjs
           node scripts/pr98-text-scaling.mjs

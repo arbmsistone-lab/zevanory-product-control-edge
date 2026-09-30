@@ -223,7 +223,7 @@ body {
   }
 }
 
-@media (max-width: 960px), (max-height: 720px) {
+@media (max-width: 960px), (max-height: 849px) {
   .zpcAppShell {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto auto minmax(0, 1fr);
@@ -672,7 +672,7 @@ body {
 
 
 /* Strict NO-SCROLL responsive chrome: preserve controls, reduce non-workspace height. */
-@media (max-width: 960px), (max-height: 720px) {
+@media (max-width: 960px), (max-height: 849px) {
   .zpcAppShell {
     padding: 4px 8px;
     gap: 4px;
@@ -1312,7 +1312,7 @@ body,
   min-height: 100%;
 }
 
-@media (max-width: 960px), (max-height: 720px) {
+@media (max-width: 960px), (max-height: 849px) {
   :root {
     --zpc-header-h: 44px;
     --zpc-policy-h: 56px;
@@ -1573,3 +1573,9 @@ body,
   .runtimeEvidence .runtimePages { grid-template-columns:minmax(0,1fr); gap:4px; }
   .runtimeEvidence .runtimePages button { padding:4px 8px; line-height:1.2; }
 }
+
+/* Integral editing shares the same measured, paginated task surface as reading. */
+.readerEditor { width:100%; height:100%; padding:0; border:0; resize:none; background:transparent; color:inherit; font:inherit; line-height:inherit; letter-spacing:inherit; white-space:pre-wrap; overflow-wrap:anywhere; }
+.commercialTask { display:flex; flex-direction:column; align-items:stretch; gap:8px; min-height:0; }
+.commercialTask h2 { margin:0; }
+.zpcWorkspace .commercialTask .commercialPager { display:flex; align-items:center; justify-content:space-between; gap:8px; }

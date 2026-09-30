@@ -3,6 +3,7 @@ import {
   Activity, BadgeDollarSign, Bot, Check, CircleDollarSign, FileCheck2, Headphones,
   Megaphone, MessageSquareText, Search, Send, ShieldCheck, Sparkles, X, RotateCcw,
 } from 'lucide-react';
+import type {EvidenceField} from './EvidenceReader';
 import { api } from './api';
 import {
   commercialStatusLabel,
@@ -15,6 +16,9 @@ type Props = {
   section: CommercialSection;
   data: CommercialWorkspaceData | null;
   sessionToken: string;
+  onRead:(fields:EvidenceField[])=>void;
+  taskPage:number;onTaskPageChange:(page:number)=>void;
+  taskGroup:string;onTaskGroupChange:(group:string)=>void;
   onRefresh: () => Promise<void> | void;
 };
 
@@ -69,7 +73,7 @@ function RecordRow({ item }: { item: CommercialRecord }) {
   );
 }
 
-export default function CommercialWorkspace({ section, data, sessionToken, onRefresh }: Props) {
+export default function CommercialWorkspace({ section, data, sessionToken, onRefresh, onRead,taskPage:recordPage,onTaskPageChange:setRecordPage,taskGroup,onTaskGroupChange:setTaskGroup }: Props) {
   const [busyId, setBusyId] = useState('');
   const [actionError, setActionError] = useState('');
   const [liveState, setLiveState] = useState<'LIVE'|'SYNCING'|'STALE'>('SYNCING');
@@ -96,6 +100,14 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
     let source: EventSource | null = null;
     let fallback: number | null = null;
     let reconnect: number | null = null;
+    const stopFallback = () => {
+      if (fallback !== null) window.clearInterval(fallback);
+      fallback = null;
+    };
+    const stopReconnect = () => {
+      if (reconnect !== null) window.clearTimeout(reconnect);
+      reconnect = null;
+    };
     const sync = async () => {
       if (document.visibilityState === 'hidden') return;
       try {
@@ -104,17 +116,25 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
       } catch { if (active) setLiveState('STALE'); }
     };
     const connect = () => {
-      if (!active || document.visibilityState === 'hidden') return;
+      stopReconnect();
+      if (!active || source || document.visibilityState === 'hidden') return;
       setLiveState('SYNCING');
       source = new EventSource((window.location.pathname === '/control' || window.location.pathname.startsWith('/control/')) ? '/control/api/commercial/stream' : '/api/commercial/stream');
       source.addEventListener('commercial-update', () => { void sync(); });
-      source.onopen = () => { if (active) { setLastSyncAt(Date.now()); setLiveState('LIVE'); } };
+      source.onopen = () => {
+        if (!active) return;
+        stopFallback();
+        stopReconnect();
+        setLastSyncAt(Date.now());
+        setLiveState('LIVE');
+      };
       source.onerror = () => {
         source?.close();
         source = null;
         if (active) {
           setLiveState('STALE');
           if (fallback === null) fallback = window.setInterval(() => { void sync(); }, 30000);
+          stopReconnect();
           reconnect = window.setTimeout(connect, 5000);
         }
       };
@@ -129,8 +149,8 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
     return () => {
       active = false;
       source?.close();
-      if (fallback !== null) window.clearInterval(fallback);
-      if (reconnect !== null) window.clearTimeout(reconnect);
+      stopFallback();
+      stopReconnect();
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [section]);
@@ -175,6 +195,26 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['qualified','contacted','opportunity','proposal','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+
+  // Large collections and unbounded record text use one dedicated task at a time.
+  // The full record, including every evidence entry, remains in the measured reader.
+  const collections=[data.leads,data.creatives,data.publications,data.events,data.support,data.finance,data.evidence];
+  const oversized=[data.robot.label,data.robot.reason,...data.robot.activeChannels].some(value=>value.length>80)||collections.some(records=>records.length>5||records.some(item=>[item.title,item.detail,item.source,item.channel,item.product,...item.evidence].some(value=>(value?.length??0)>80)));
+  if(oversized){
+    const groups:Record<string,CommercialRecord[]>={events:data.events,pipeline:[...data.creatives,...data.publications]};
+    const taskItems=section==='commercial'?(groups[taskGroup]??[]):section==='approvals'?approvalItems:items;
+    const index=Math.min(recordPage,Math.max(0,taskItems.length-1)),item=taskItems[index];
+    const recordFields=(record:CommercialRecord):EvidenceField[]=>Object.entries(record).map(([label,value])=>({label,value:typeof value==='string'?value:JSON.stringify(value,null,2)}));
+    return <section className='commercialTask panel' aria-label={meta.title}>
+      <h2>{meta.title}</h2>
+      <button className='secondary' onClick={()=>onRead([{label:'Robô comercial',value:JSON.stringify(data.robot,null,2)},{label:'Métricas',value:JSON.stringify(data.metrics,null,2)},{label:'Descrição da área',value:meta.subtitle}])}>Estado operacional completo</button>
+      {section==='commercial'&&<nav className='commercialPager' aria-label='Coleções comerciais'>{[['events','Atividade'],['pipeline','Pipeline']].map(([key,label])=><button className='secondary' key={key} aria-pressed={taskGroup===key} onClick={()=>{setTaskGroup(key);setRecordPage(0)}}>{label}</button>)}</nav>}
+      <nav className='commercialPager' aria-label='Registros comerciais'><button className='secondary' disabled={index===0} onClick={()=>setRecordPage(index-1)}>Anterior</button><span>Registro {taskItems.length?index+1:0}/{taskItems.length}</span><button className='secondary' disabled={index>=taskItems.length-1} onClick={()=>setRecordPage(index+1)}>Próximo</button></nav>
+      {item?<button className='primary' onClick={()=>onRead(recordFields(item))}>Abrir registro integral</button>:<p>Nenhum registro comprovado.</p>}
+      {section==='approvals'&&item&&<div className='approvalActions'><button disabled={Boolean(busyId)} onClick={()=>void act(item,'approve')}>Aprovar</button><button disabled={Boolean(busyId)} onClick={()=>void act(item,'request-changes')}>Alterar</button><button disabled={Boolean(busyId)} onClick={()=>void act(item,'reject')}>Rejeitar</button></div>}
+      {actionError&&<button className='secondary' onClick={()=>onRead([{label:'Erro da ação',value:actionError}])}>Ler erro da ação</button>}
+    </section>;
+  }
 
   return (
     <section className='commercialWorkspace'>

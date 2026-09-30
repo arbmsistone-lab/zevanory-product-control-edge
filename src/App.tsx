@@ -356,6 +356,8 @@ function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
   const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
+  const [commercialTaskPage,setCommercialTaskPage]=useState(0);
+  const [commercialTaskGroup,setCommercialTaskGroup]=useState('events');
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -378,6 +380,7 @@ function App() {
   const [selectedTargetId, setSelectedTargetId] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [editingTextField,setEditingTextField] = useState<{key:'name'|'slug'|'category'|'description'|'publicUrl'|'checkoutUrl'|'deliveryModel'|'channels'|'notes';label:string}|null>(null);
   const [formStep, setFormStep] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -482,7 +485,7 @@ function App() {
   }, [globalTrust?.checkedAt, observedAt]);
 
   useEffect(() => {
-    if (!formOpen) return;
+    if (!formOpen || editingTextField) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = document.querySelector<HTMLElement>('.modal[role="dialog"]');
     const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>(
@@ -515,7 +518,7 @@ function App() {
       document.removeEventListener('keydown', onDialogKeyDown);
       previous?.focus();
     };
-  }, [formOpen]);
+  }, [formOpen,editingTextField]);
 
 
   const logout = async () => {
@@ -778,8 +781,8 @@ function App() {
   }
 
   return (
-    <div className={`zpcAppShell${view === 'runtime' || detailFields ? ' readingEvidence' : ''}`}>
-      {view !== 'runtime' && !detailFields && <>
+    <div className={`zpcAppShell${view === 'runtime' || detailFields || editingTextField ? ' readingEvidence' : ''}`}>
+      {view !== 'runtime' && !detailFields && !editingTextField && <>
       <header className='topbar'>
         <div className='zpcBrandBlock'>
           <p className='eyebrow'>ZEVANORY · ADMINISTRATIVO GERAL</p>
@@ -808,7 +811,7 @@ function App() {
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
             {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
           </button>
-          <span className='adminChip'><ShieldCheck size={15} />PIN ADMIN ATIVO</span>
+          <button className='secondary adminStatus' aria-label='PIN ADMIN ATIVO' title='PIN ADMIN ATIVO' onClick={()=>setDetailFields([{label:'Sessão administrativa',value:'PIN ADMIN ATIVO'}])}><ShieldCheck size={15} /></button>
           {view === 'products' && <button className='primary' onClick={openNew}><PackagePlus size={17} />Novo produto</button>}
           <button className='secondary' onClick={logout}><LogOut size={17} />Sair</button>
         </div>
@@ -882,13 +885,16 @@ function App() {
       </label>
       </>}
 
-      <main className={`zpcWorkspace shell shell-${view}`}>
-      {detailFields ? <EvidenceReader fields={detailFields} onClose={()=>setDetailFields(null)} /> : <>
+      <main className={`zpcWorkspace shell shell-${detailFields||editingTextField?'runtime':view}`}>
+      {editingTextField ? <EvidenceReader fields={[{label:editingTextField.label,value:form[editingTextField.key]}]} onChange={value=>setForm(current=>({...current,[editingTextField.key]:value}))} onClose={()=>setEditingTextField(null)} /> : detailFields ? <EvidenceReader fields={detailFields} onClose={()=>setDetailFields(null)} /> : <>
       {error && <div className='errorbox globalError'>{error}</div>}
 
       {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
         <CommercialWorkspace
           section={view as CommercialSection}
+          onRead={setDetailFields}
+          taskPage={commercialTaskPage} onTaskPageChange={setCommercialTaskPage}
+          taskGroup={commercialTaskGroup} onTaskGroupChange={setCommercialTaskGroup}
           data={commercial}
           sessionToken={sessionToken}
           onRefresh={() => load()}
@@ -1273,21 +1279,21 @@ function App() {
             <div className='modalHead'>
               <div>
                 <p className='kicker'>{editing ? 'EDICAO ADMINISTRATIVA' : 'NOVO PRODUTO'}</p>
-                <h2 id='product-modal-title' title={editing?.name}>{editing ? editing.name : 'Cadastrar produto'}</h2>
+                <h2 id='product-modal-title'>{editing ? 'Editar produto' : 'Cadastrar produto'}</h2>
               </div>
               <button className='iconButton' onClick={() => setFormOpen(false)} aria-label='Fechar'><X size={20} /></button>
             </div>
 
             <nav className='formStepNav' aria-label='Etapas do produto'><button className='secondary' onClick={() => setFormStep(Math.max(0,formStep-1))} disabled={formStep === 0}>Anterior</button><span>Etapa {formStep+1}/5</span><button className='secondary' onClick={() => setFormStep(Math.min(4,formStep+1))} disabled={formStep === 4}>Próxima</button></nav>
             <div className='formGrid' data-step={formStep}>
-              <label>Nome<input value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /></label>
-              <label>Slug<input value={form.slug} onChange={event => setForm({ ...form, slug: event.target.value })} placeholder='meu-produto' /></label>
-              <label>Categoria<input value={form.category} onChange={event => setForm({ ...form, category: event.target.value })} /></label>
+              <label>Nome<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'name',label:'Nome'})}>Editar texto integral · {Array.from(form.name).length} caracteres</button></label>
+              <label>Slug<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'slug',label:'Slug'})}>Editar texto integral · {Array.from(form.slug).length} caracteres</button></label>
+              <label>Categoria<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'category',label:'Categoria'})}>Editar texto integral · {Array.from(form.category).length} caracteres</button></label>
               <label>Preco (R$)<input value={form.price} onChange={event => setForm({ ...form, price: event.target.value })} placeholder='Ex.: 199,90' inputMode='decimal' /></label>
-              <label className='span2'>Descricao<textarea value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} /></label>
-              <label className='span2'>Pagina publica<input value={form.publicUrl} onChange={event => setForm({ ...form, publicUrl: event.target.value })} placeholder='https://...' /></label>
-              <label className='span2'>Checkout<input value={form.checkoutUrl} onChange={event => setForm({ ...form, checkoutUrl: event.target.value })} placeholder='https://...' /></label>
-              <label>Modelo de entrega<input value={form.deliveryModel} onChange={event => setForm({ ...form, deliveryModel: event.target.value })} /></label>
+              <label className='span2'>Descricao<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'description',label:'Descrição'})}>Editar texto integral · {Array.from(form.description).length} caracteres</button></label>
+              <label className='span2'>Pagina publica<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'publicUrl',label:'Página pública'})}>Editar texto integral · {Array.from(form.publicUrl).length} caracteres</button></label>
+              <label className='span2'>Checkout<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'checkoutUrl',label:'Checkout'})}>Editar texto integral · {Array.from(form.checkoutUrl).length} caracteres</button></label>
+              <label>Modelo de entrega<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'deliveryModel',label:'Modelo de entrega'})}>Editar texto integral · {Array.from(form.deliveryModel).length} caracteres</button></label>
               <label>Status
                 <select value={form.status} onChange={event => setForm({ ...form, status: event.target.value as ProductStatus })}>
                   <option value='draft'>Rascunho</option>
@@ -1297,8 +1303,8 @@ function App() {
                   <option value='archived'>Arquivado</option>
                 </select>
               </label>
-              <label className='span2'>Canais, separados por virgula<input value={form.channels} onChange={event => setForm({ ...form, channels: event.target.value })} placeholder='Site, Instagram, WhatsApp' /></label>
-              <label className='span2'>Notas administrativas<textarea value={form.notes} onChange={event => setForm({ ...form, notes: event.target.value })} /></label>
+              <label className='span2'>Canais, separados por virgula<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'channels',label:'Canais'})}>Editar texto integral · {Array.from(form.channels).length} caracteres</button></label>
+              <label className='span2'>Notas administrativas<button type='button' className='secondary' onClick={()=>setEditingTextField({key:'notes',label:'Notas administrativas'})}>Editar texto integral · {Array.from(form.notes).length} caracteres</button></label>
             </div>
 
             <div className='auditEditor' hidden={formStep !== 3}>
