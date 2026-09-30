@@ -4128,3 +4128,889 @@ main.shell-commercial > .commercialWorkspace > .commercialDashboardGrid {
 @media (min-width:1200px) and (max-height:900px){.shell-commercial .commercialRow{min-height:0;padding:8px 12px}.shell-commercial .commercialRowMain{min-height:0}.shell-commercial .commercialRow p{margin:4px 0;line-height:16px}.shell-commercial .commercialMeta{margin-top:4px}.shell-commercial .commercialList{gap:4px}}
 
 .creativePreview img{width:100%;height:100%;object-fit:cover;display:block}
+
+
+/* ZEVANORY INTEGRAL PRODUCT UX FINALIZER — 2026-09-30 */
+/*
+  Production evidence supersedes the old viewport-fit/no-scroll optimisation.
+  Contract: readable content wins over forced fit; technical telemetry remains
+  available through disclosure; no real value is ellipsized to manufacture a pass.
+*/
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.zpcAppShell {
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.zpcAppShell > .topbar,
+.zpcAppShell > .technicalDisclosure,
+.zpcAppShell > .zpcNavigation,
+.zpcAppShell > .areaSelectWrap,
+.zpcAppShell > .zpcWorkspace {
+  width: min(100% - 32px, 1480px);
+  margin-inline: auto;
+}
+
+.zpcAppShell > .topbar {
+  align-items: center;
+  margin-block: 16px 12px;
+  padding: 16px 0;
+}
+
+.zpcBrandBlock {
+  min-width: 0;
+}
+
+.zpcBrandBlock h1 {
+  margin: 4px 0;
+  font-size: clamp(1.65rem, 2.5vw, 2.35rem);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.zpcBrandBlock .subtitle {
+  max-width: 72ch;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.zpcHeaderActions {
+  justify-content: flex-end;
+}
+
+.zpcHeaderActions > * {
+  min-height: 44px;
+}
+
+.technicalDisclosure {
+  margin-block: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.technicalDisclosure > summary {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.technicalDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.technicalDisclosure > summary::after {
+  content: 'Detalhes';
+  justify-self: end;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.technicalDisclosure[open] > summary::after {
+  content: 'Recolher';
+}
+
+.technicalSummaryLead {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+}
+
+.technicalDisclosure > summary > b {
+  color: var(--status-info);
+  overflow-wrap: anywhere;
+}
+
+.technicalDisclosure > summary > small {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.technicalDisclosureBody {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding: 12px;
+}
+
+.technicalDisclosure .policybar {
+  margin: 0;
+}
+
+.technicalDisclosure .policybar span {
+  min-height: 40px;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.technicalDisclosure .trustStrip {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin: 0;
+  padding: 12px;
+}
+
+.technicalDisclosure .trustStrip b,
+.technicalDisclosure .trustStrip strong {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.technicalDisclosure .trustStrip small,
+.technicalDisclosure .trustState span {
+  font-size: 0.8rem;
+}
+
+.zpcNavigation {
+  display: grid;
+  grid-template-columns: 0.8fr 2.3fr 1.25fr 1.25fr;
+  gap: 10px;
+  margin-block: 0 14px;
+}
+
+.zpcNavGroup {
+  display: flex;
+  align-content: flex-start;
+  align-items: stretch;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 10px;
+}
+
+.zpcNavLabel {
+  flex: 1 0 100%;
+  margin: 0 0 2px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.zpcNavigation .tab {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 40px;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 8px 10px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.zpcNavigation .tab.active {
+  border-color: var(--action-primary);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.zpcWorkspace.shell,
+.shell,
+main.shell,
+.shell-products,
+.shell-overview,
+.shell-operations,
+.shell-governance,
+.shell-commercial,
+.shell-creatives,
+.shell-approvals,
+.shell-publications,
+.shell-prospecting,
+.shell-crm,
+.shell-support,
+.shell-finance,
+.shell-evidence,
+.shell-cfo,
+.shell-settings {
+  width: min(100%, 1480px);
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0;
+  overflow: visible !important;
+}
+
+.zpcWorkspace.shell {
+  display: block;
+  margin: 0 auto;
+  padding: 4px 0 56px;
+}
+
+.zpcWorkspace > *,
+.overviewStack,
+.operationsStack,
+.governanceStack,
+.commercialWorkspace,
+.cfoWorkspace,
+.settingsWorkspace,
+.productGrid,
+.evidenceStack {
+  min-width: 0;
+  min-height: 0;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.eyebrow,
+.kicker,
+.metric span,
+.pagination,
+.filter,
+.productCategory,
+.auditHeader small,
+.auditHeader strong,
+.auditPanel p,
+.certPanel p,
+.auditGrid b,
+.auditGrid small,
+.gate,
+.blockers,
+.operationSummary span,
+.system p,
+.systemmeta,
+.evidence span,
+.feeditem strong,
+.feeditem p,
+.feeditem time,
+.state,
+.empty,
+.formGrid label,
+.auditEditor h3,
+.auditEditor p,
+.auditEditor label,
+.certMiniGrid b,
+.certMiniGrid small,
+.standardStrip span,
+.standardStrip b,
+.certProductButton b,
+.certProductButton small,
+.certProductButton strong,
+.certTitleRow p,
+.certSeal,
+.certSummaryGrid b,
+.certSummaryGrid small,
+.certRunStrip span,
+.certRunStrip b,
+.rootBlocker,
+.pillarIndex,
+.pillarStatus,
+.pillarCard h3,
+.pillarCard > p,
+.pillarMeta,
+.pillarBlocker,
+.commercialMeta,
+.commercialState,
+.commercialPanelTitle small,
+.robotBadge small,
+.commercialMetrics span,
+.commercialProofStrip span,
+.approvalCard small,
+.liveTelemetry,
+.liveTelemetry small,
+.creativePreview small,
+.creativeLiveBody p,
+.creativeEvidence span,
+.cfoMetrics span,
+.cfoMetrics small,
+.cfoAdapter p,
+.cfoAction p,
+.cfoReceivableRow {
+  font-size: max(0.82rem, 13px) !important;
+}
+
+.productDescription,
+.subtitle,
+.commercialRow p,
+.approvalCard p,
+.settingsCard p,
+.cfoEngineState p {
+  font-size: max(0.9rem, 14px) !important;
+  line-height: 1.55 !important;
+}
+
+.primary,
+.secondary,
+.ghost,
+.filter,
+.tab,
+.iconButton,
+.approvalActions button {
+  font-size: max(0.875rem, 14px);
+}
+
+.trustStrip b,
+.trustStrip strong,
+.productFacts b,
+.overviewCard strong,
+.executiveList b,
+.certRunStrip span,
+.creativeEvidence span {
+  max-width: none !important;
+  max-height: none !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+}
+
+.productCard,
+.shell-products .productCard,
+.panel,
+.system,
+.commercialPanel,
+.cfoPanel,
+.creativeLiveCard {
+  height: auto !important;
+  min-height: 0;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.productGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: start;
+  gap: 16px;
+}
+
+.shell-products .productGrid {
+  height: auto;
+}
+
+.productCard {
+  padding: 16px;
+}
+
+.productDescription {
+  min-height: 0;
+  max-height: none !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere;
+}
+
+.productFacts {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.auditGrid,
+.certMiniGrid,
+.standardStrip,
+.certSummaryGrid,
+.certRunStrip,
+.pillarGrid,
+.metrics,
+.overviewCards {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+}
+
+.pillarCard,
+.certProductButton {
+  min-width: 0;
+}
+
+.pillarCard > p,
+.pillarBlocker,
+.pillarEvidence span,
+.certProductButton small,
+.certProductButton b,
+.certProductButton strong,
+.rootBlocker,
+.blockers {
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.overviewHero {
+  align-items: start;
+}
+
+.overviewGrid,
+.opsGrid,
+.cfoGrid,
+.settingsGrid,
+.commercialDashboardGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  align-items: start;
+}
+
+.overviewCard strong,
+.executiveList b,
+.channelRow > *,
+.systemmeta > *,
+.evidence span {
+  overflow-wrap: anywhere;
+}
+
+.executiveList div,
+.feeditem,
+.commercialRow,
+.productHead,
+.panelhead,
+.systemtop,
+.certTitleRow {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.channelTable {
+  gap: 8px;
+}
+
+.channelRow {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: start;
+  min-height: 0;
+  font-size: max(0.85rem, 13px);
+}
+
+.channelRow > * {
+  display: block !important;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.feed {
+  gap: 10px;
+}
+
+.feeditem p {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.feeditem time,
+.saleBadge,
+.pill,
+.certSeal,
+.pillarStatus,
+.commercialState,
+.cfoState,
+.cfoAdapterState,
+.cfoRisk {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.commercialWorkspace {
+  gap: 18px;
+}
+
+.commercialHeader {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+  align-items: start;
+}
+
+.commercialMetrics,
+.cfoMetrics,
+.commercialProofStrip {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.commercialMetrics article,
+.commercialProofStrip span {
+  min-height: 0;
+}
+
+.commercialDashboardGrid {
+  display: grid;
+}
+
+.commercialList,
+.commercialListTall,
+.approvalGrid,
+.creativeLiveGrid {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.commercialRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.commercialValue {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.approvalGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+}
+
+.creativeLiveGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+
+.creativeLiveCard {
+  grid-template-rows: minmax(160px, auto) auto;
+}
+
+.creativeEvidence span {
+  width: auto;
+}
+
+.cfoHero {
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, .75fr);
+}
+
+.cfoReceivableTable {
+  gap: 8px;
+}
+
+.cfoReceivableRow {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.cfoReceivableRow > * {
+  display: block !important;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.settingsWorkspace {
+  display: grid;
+  gap: 16px;
+}
+
+.settingsHero h2,
+.settingsCard h3 {
+  margin: 4px 0;
+}
+
+.settingsGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.settingsCard {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.settingsCard .secondary {
+  justify-self: start;
+}
+
+.settingsFacts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.settingsFacts > div {
+  display: grid;
+  grid-template-columns: minmax(140px, .8fr) minmax(0, 1.2fr);
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.settingsFacts dt {
+  color: var(--text-secondary);
+}
+
+.settingsFacts dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.modalBackdrop {
+  align-items: start;
+  overflow-y: auto;
+}
+
+.modal {
+  max-height: none;
+  margin-block: max(16px, 4vh);
+  overflow: visible;
+}
+
+.formGrid,
+.auditEditor,
+.gateBox {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  align-items: start;
+}
+
+.span2 {
+  grid-column: 1 / -1;
+}
+
+.formGrid input,
+.formGrid textarea,
+.formGrid select,
+.auditEditor input {
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.formGrid textarea {
+  min-height: 108px;
+}
+
+.errorbox,
+.empty,
+.commercialEmpty {
+  overflow-wrap: anywhere;
+}
+
+.areaSelectWrap {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .zpcNavigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .commercialHeader,
+  .cfoHero {
+    grid-template-columns: 1fr;
+  }
+
+  .cfoReceivableRow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .zpcAppShell > .topbar,
+  .zpcAppShell > .technicalDisclosure,
+  .zpcAppShell > .zpcNavigation,
+  .zpcAppShell > .areaSelectWrap,
+  .zpcAppShell > .zpcWorkspace {
+    width: min(100% - 24px, 1480px);
+  }
+
+  .zpcNavigation {
+    display: none;
+  }
+
+  .areaSelectWrap {
+    display: grid;
+    gap: 6px;
+    margin-block: 0 14px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .areaSelectWrap select {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-primary);
+    padding: 10px 12px;
+    font-size: 1rem;
+  }
+
+  .zpcAppShell > .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .zpcHeaderActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .technicalDisclosure > summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .technicalDisclosure > summary > small {
+    grid-column: 1 / -1;
+  }
+
+  .technicalDisclosure > summary::after {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .overviewCards,
+  .metrics,
+  .commercialMetrics,
+  .cfoMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .overviewGrid,
+  .opsGrid,
+  .cfoGrid,
+  .settingsGrid,
+  .commercialDashboardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cfoReceivableRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cfoReceivableRow.head {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .zpcAppShell > .topbar,
+  .zpcAppShell > .technicalDisclosure,
+  .zpcAppShell > .areaSelectWrap,
+  .zpcAppShell > .zpcWorkspace {
+    width: min(100% - 16px, 1480px);
+  }
+
+  .zpcHeaderActions > * {
+    flex: 1 1 calc(50% - 4px);
+    white-space: normal;
+  }
+
+  .adminChip {
+    justify-content: center;
+  }
+
+  .technicalDisclosure > summary {
+    grid-template-columns: 1fr;
+  }
+
+  .technicalDisclosure > summary::after {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+  }
+
+  .technicalDisclosure .policybar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .technicalDisclosure .trustStrip {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .technicalDisclosure .trustStrip > div {
+    display: block !important;
+  }
+
+  .overviewCards,
+  .metrics,
+  .commercialMetrics,
+  .cfoMetrics,
+  .commercialProofStrip,
+  .auditGrid,
+  .certMiniGrid,
+  .standardStrip,
+  .certSummaryGrid,
+  .certRunStrip,
+  .pillarGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .productGrid,
+  .approvalGrid,
+  .creativeLiveGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .commercialRow {
+    grid-template-columns: 1fr;
+  }
+
+  .approvalActions {
+    grid-template-columns: 1fr;
+  }
+
+  .cfoReceivableRow {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsFacts > div {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsFacts dd {
+    text-align: left;
+  }
+
+  .formGrid,
+  .auditEditor,
+  .gateBox {
+    grid-template-columns: 1fr;
+  }
+
+  .span2 {
+    grid-column: auto;
+  }
+}
+
+/* Browser zoom / text scaling safety: no forced-fit branch may reintroduce clipping. */
+@media (max-width: 1100px), (max-height: 900px) {
+  .shell-overview .policybar,
+  .shell-overview .trustStrip,
+  .shell-overview .overviewHero .productDescription,
+  .shell-overview .overviewCard small,
+  .shell-overview .executiveList,
+  .shell-governance .pillarCard > p,
+  .shell-operations .feeditem p,
+  .shell-governance .sourcePanel,
+  .shell-governance .sourcePanel .system {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .shell-overview .trustStrip > div:nth-child(n),
+  .shell-overview .channelRow > :nth-child(n),
+  .cfoReceivableRow > :nth-child(n) {
+    display: block !important;
+  }
+}
