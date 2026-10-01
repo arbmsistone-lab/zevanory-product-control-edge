@@ -2,6 +2,7 @@ import http from 'node:http';
 import { handler } from './backend/index';
 import { portableHealth } from './backend/platform';
 import { commercialRobotTick } from './backend/commercial';
+import { runDrReconcileDryRun } from './scripts/dr-reconcile-zpc';
 
 const port = Number(process.env.PORT || 3000);
 
@@ -90,5 +91,11 @@ server.listen(port, '0.0.0.0', () => {
     setInterval(runCommercialRobot, 15 * 60 * 1000).unref();
   } else {
     console.info('commercial_robot_disabled');
+  }
+
+  if (String(process.env.DR_RECONCILE_DRY_RUN || '').trim() === '1') {
+    void runDrReconcileDryRun()
+      .then(summary => console.info('dr_reconcile_dry_run', JSON.stringify(summary)))
+      .catch(error => console.error('dr_reconcile_dry_run_failed', error instanceof Error ? error.message : String(error)));
   }
 });
