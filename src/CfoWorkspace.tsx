@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AlertTriangle, Bot, CircleDollarSign, Landmark, ReceiptText, ShieldCheck, WalletCards } from 'lucide-react';
 import type { CfoWorkspaceData } from './cfo-model';
 
@@ -9,6 +10,7 @@ const adapterLabel = (state: string) => state === 'READY' ? 'PROVADO' : state ==
 const riskLabel = (risk: string) => risk === 'HIGH' ? 'ALTO' : risk === 'MEDIUM' ? 'MÉDIO' : 'BAIXO';
 
 export default function CfoWorkspace({ data }: { data: CfoWorkspaceData | null }) {
+  const [page, setPage] = useState<'overview'|'integrations'|'receivables'>('overview');
   if (!data) {
     return <section className='cfoWorkspace'><div className='panel empty'>ZEVANORY CFO indisponível no snapshot administrativo.</div></section>;
   }
@@ -29,16 +31,22 @@ export default function CfoWorkspace({ data }: { data: CfoWorkspaceData | null }
         </div>
       </section>
 
-      <section className='cfoMetrics' aria-label='Indicadores financeiros'>
+      <nav className='cfoPager' aria-label='Páginas do ZEVANORY CFO'>
+        <button className={page === 'overview' ? 'filter active' : 'filter'} onClick={() => setPage('overview')}>Resumo</button>
+        <button className={page === 'integrations' ? 'filter active' : 'filter'} onClick={() => setPage('integrations')}>Integrações</button>
+        <button className={page === 'receivables' ? 'filter active' : 'filter'} onClick={() => setPage('receivables')}>Recebíveis</button>
+      </nav>
+
+      {page === 'overview' && <section className='cfoMetrics' aria-label='Indicadores financeiros'>
         <article><WalletCards size={18}/><span>Saldo consolidado</span><strong>{money(metrics.balanceCents)}</strong></article>
         <article><ReceiptText size={18}/><span>A receber</span><strong>{money(metrics.receivableOpenCents)}</strong></article>
         <article className={metrics.overdueCents > 0 ? 'attention' : ''}><AlertTriangle size={18}/><span>Em atraso</span><strong>{money(metrics.overdueCents)}</strong></article>
         <article><CircleDollarSign size={18}/><span>Projeção 30 dias</span><strong>{money(metrics.projected30dCents)}</strong></article>
         <article><Landmark size={18}/><span>Reserva tributária indicativa</span><strong>{money(metrics.taxReserveSuggestedCents)}</strong></article>
         <article><ShieldCheck size={18}/><span>Recebíveis alto risco</span><strong>{metrics.highRiskReceivables}</strong></article>
-      </section>
+      </section>}
 
-      <section className='cfoGrid'>
+      {page === 'integrations' && <section className='cfoGrid'>
         <article className='panel cfoPanel'>
           <div className='panelhead'><div><p className='kicker'>INTEGRAÇÕES</p><h3>Adaptadores financeiros</h3></div></div>
           <div className='cfoAdapterList'>
@@ -65,9 +73,9 @@ export default function CfoWorkspace({ data }: { data: CfoWorkspaceData | null }
             {data.actions.length === 0 && <div className='empty'>Nenhuma ação financeira sugerida com os dados disponíveis.</div>}
           </div>
         </article>
-      </section>
+      </section>}
 
-      <section className='panel cfoPanel'>
+      {page === 'receivables' && <section className='panel cfoPanel'>
         <div className='panelhead'>
           <div><p className='kicker'>CONTAS A RECEBER</p><h3>Risco e cobrança</h3></div>
           <span className='cfoMiniMetric'>Hoje: <b>{money(metrics.dueTodayCents)}</b></span>
@@ -85,7 +93,7 @@ export default function CfoWorkspace({ data }: { data: CfoWorkspaceData | null }
           ))}
           {data.receivables.length === 0 && <div className='empty'>Nenhum recebível real foi ingerido. O CFO não cria dados financeiros fictícios.</div>}
         </div>
-      </section>
+      </section>}
     </section>
   );
 }

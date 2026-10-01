@@ -77,6 +77,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const [dashboardPage, setDashboardPage] = useState(0);
+  const [listPage, setListPage] = useState(0);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const meta = SECTION_META[section];
@@ -93,6 +94,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
 
   useEffect(() => {
     setDashboardPage(0);
+    setListPage(0);
   }, [section]);
 
   useEffect(() => {
@@ -179,6 +181,14 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['qualified','contacted','opportunity','proposal','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+  const genericPageSize = viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4;
+  const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
+  const safeListPage = Math.min(listPage, genericPageCount - 1);
+  const pagedItems = items.slice(safeListPage * genericPageSize, (safeListPage + 1) * genericPageSize);
+  const creativePageSize = viewportWidth <= 700 ? 1 : 2;
+  const creativePageCount = Math.max(1, Math.ceil(data.creatives.length / creativePageSize));
+  const safeCreativePage = Math.min(listPage, creativePageCount - 1);
+  const pagedCreatives = data.creatives.slice(safeCreativePage * creativePageSize, (safeCreativePage + 1) * creativePageSize);
 
   return (
     <section className='commercialWorkspace'>
@@ -265,9 +275,9 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
 
       {section === 'creatives' && (
         <article className='commercialPanel creativeLivePanel'>
-          <div className='commercialPanelTitle'><Sparkles size={17}/><div><b>Creative Live Studio</b><small>{data.creatives.length} peça(s) · atualização automática</small></div></div>
+          <div className='commercialPanelTitle'><Sparkles size={17}/><div><b>Creative Live Studio</b><small>{data.creatives.length} peça(s) · atualização automática</small></div><div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeCreativePage - 1))} disabled={safeCreativePage === 0}>‹</button><strong>{safeCreativePage + 1}/{creativePageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(creativePageCount - 1, safeCreativePage + 1))} disabled={safeCreativePage >= creativePageCount - 1}>›</button></div></div>
           <div className='creativeLiveGrid' aria-label='Criativos em tempo real'>
-            {data.creatives.map(item => (
+            {pagedCreatives.map(item => (
               <article className='creativeLiveCard' key={item.id}>
                 <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}>{item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e)) ? <img src={item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e))} alt={'Asset de ' + item.title} loading='lazy' /> : <><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>ASSET PENDENTE · NÃO COMPROVADO</small></>}</div>
                 <div className='creativeLiveBody'>
@@ -294,9 +304,10 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             {section === 'finance' && <CircleDollarSign size={17}/>}
             {section === 'evidence' && <ShieldCheck size={17}/>}
             <div><b>{meta.title}</b><small>{items.length} registro(s)</small></div>
+            <div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeListPage - 1))} disabled={safeListPage === 0}>‹</button><strong>{safeListPage + 1}/{genericPageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(genericPageCount - 1, safeListPage + 1))} disabled={safeListPage >= genericPageCount - 1}>›</button></div>
           </div>
           <div className='commercialList commercialListTall' tabIndex={0} aria-label={meta.title + ' — registros'}>
-            {items.map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
+            {pagedItems.map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
             {!items.length && <div className='commercialEmpty'>Nenhum registro comprovado nesta área. O painel não preencherá dados fictícios.</div>}
           </div>
         </article>

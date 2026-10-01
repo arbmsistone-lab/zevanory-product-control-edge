@@ -191,3 +191,74 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
   .shell-governance[data-compact-governance='true'] .certSummaryGrid span{padding:5px 6px!important}
   .shell-governance[data-compact-governance='true'] .rootBlockerDetails{padding:0 6px!important}
 }
+/* Collection pagination: real no-scroll composition */
+.zpcWorkspace .recordPager{margin-left:auto;display:flex;align-items:center;gap:6px}
+.zpcWorkspace .recordPager .compact{min-width:34px;height:34px;min-height:34px;padding:4px 8px}
+.zpcWorkspace .recordPager strong{font-size:12px;white-space:nowrap}
+.zpcWorkspace.shell-creatives .creativeLivePanel,
+.zpcWorkspace.shell-evidence .commercialPanel{height:100%;min-height:0;overflow:hidden}
+.zpcWorkspace.shell-creatives .creativeLiveGrid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr);height:calc(100% - 48px);min-height:0;overflow:hidden}
+.zpcWorkspace.shell-creatives .creativeLiveCard{height:100%;min-height:0;overflow:hidden}
+.zpcWorkspace.shell-creatives .creativePreview{min-height:0;height:44%;max-height:none}
+.zpcWorkspace.shell-creatives .creativeLiveBody{min-height:0;height:56%;overflow:hidden}
+.zpcWorkspace.shell-evidence .commercialListTall{height:calc(100% - 48px);min-height:0;overflow:hidden}
+.zpcWorkspace.shell-evidence .commercialRow{min-height:0}
+.zpcWorkspace.shell-cfo .cfoWorkspace{height:100%;min-height:0;overflow:hidden;display:grid;grid-template-rows:auto 40px minmax(0,1fr);gap:8px}
+.zpcWorkspace.shell-cfo .cfoPager{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.zpcWorkspace.shell-cfo .cfoPager .filter{min-height:36px;height:36px;padding:4px 8px;font-size:12px}
+.zpcWorkspace.shell-cfo .cfoMetrics,.zpcWorkspace.shell-cfo .cfoGrid,.zpcWorkspace.shell-cfo>.cfoWorkspace>.cfoPanel{min-height:0;height:100%;overflow:hidden}
+.zpcWorkspace.shell-cfo .cfoGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.zpcWorkspace.shell-cfo .cfoPanel{min-height:0;overflow:hidden}
+.zpcWorkspace.shell-cfo .cfoAdapterList,.zpcWorkspace.shell-cfo .cfoActionList,.zpcWorkspace.shell-cfo .cfoReceivableTable{min-height:0;max-height:100%;overflow:hidden}
+@media (max-width:700px){
+ .zpcWorkspace.shell-creatives .creativeLiveGrid{grid-template-columns:1fr}
+ .zpcWorkspace.shell-cfo .cfoGrid{grid-template-columns:1fr}
+}/* Fix collection geometry without truncating content */
+.zpcWorkspace.shell-creatives .creativeLiveCard{
+  display:grid;grid-template-rows:minmax(150px,46%) minmax(0,1fr);
+  height:100%;min-height:0;overflow:hidden;box-sizing:border-box}
+.zpcWorkspace.shell-creatives .creativePreview{height:auto!important;min-height:0!important;max-height:none!important}
+.zpcWorkspace.shell-creatives .creativeLiveBody{
+  height:auto!important;min-height:0!important;overflow:hidden!important;
+  padding:10px 12px!important;box-sizing:border-box}
+.zpcWorkspace.shell-creatives .creativeLiveBody p{margin:6px 0!important;line-height:1.25}
+.zpcWorkspace.shell-creatives .commercialMeta{margin-top:4px!important;gap:6px}
+.zpcWorkspace.shell-creatives .creativeEvidence{margin-top:6px!important;gap:4px}
+.zpcWorkspace.shell-evidence .commercialPanel{
+  height:auto!important;max-height:100%;box-sizing:border-box;overflow:hidden!important}
+.zpcWorkspace.shell-evidence .commercialListTall{
+  max-height:calc(100% - 44px);box-sizing:border-box}
+/* Final collection geometry */
+.zpcWorkspace.shell-evidence .commercialPanel{
+  display:grid!important;grid-template-rows:auto minmax(0,1fr)!important;
+  height:100%!important;max-height:100%!important;min-height:0!important;
+  padding:8px!important;box-sizing:border-box!important;overflow:hidden!important}
+.zpcWorkspace.shell-evidence .commercialListTall{
+  height:auto!important;max-height:none!important;min-height:0!important;
+  overflow:hidden!important;align-content:start}
+@media (max-width:700px){
+  .zpcWorkspace.shell-creatives .creativeLiveCard{
+    grid-template-rows:minmax(105px,34%) minmax(0,1fr)!important}
+}/* Creative workspace consumes the real remaining viewport */
+.zpcWorkspace.shell-creatives .commercialWorkspace{
+  height:100%!important;min-height:0!important;
+  display:grid!important;grid-template-rows:auto minmax(0,1fr)!important;
+  gap:8px!important;overflow:hidden!important}
+.zpcWorkspace.shell-creatives .creativeLivePanel{
+  height:100%!important;min-height:0!important;
+  display:grid!important;grid-template-rows:auto minmax(0,1fr)!important;
+  overflow:hidden!important;box-sizing:border-box}
+.zpcWorkspace.shell-creatives .creativeLiveGrid{
+  height:auto!important;min-height:0!important;max-height:100%!important;overflow:hidden!important}
+@media (max-width:700px){
+  .zpcWorkspace.shell-creatives .creativeLiveCard{
+    grid-template-rows:minmax(90px,30%) minmax(0,1fr)!important}
+}@media (max-width:700px){
+  .zpcWorkspace.shell-creatives .creativeLiveCard{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:minmax(90px,30%) minmax(0,1fr)!important}
+  .zpcWorkspace.shell-creatives .creativePreview{
+    min-width:0!important;width:100%!important;min-height:0!important}
+  .zpcWorkspace.shell-creatives .creativeLiveBody{
+    min-width:0!important;width:100%!important}
+}

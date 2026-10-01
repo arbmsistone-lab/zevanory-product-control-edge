@@ -358,7 +358,6 @@ function App() {
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
-  const [summary, setSummary] = useState<ProductSummary>({ total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 });
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
@@ -429,7 +428,6 @@ function App() {
       setCfo(response.data.cfo ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
-      setSummary(response.data.summary);
       setAuthState('ready');
       void loadGlobalTrustLive();
     } catch {
@@ -679,12 +677,22 @@ function App() {
     }
   };
 
-  const visibleProducts = useMemo(() => products.filter(product => {
+  const activeProducts = useMemo(() => products.filter(product => !['arbm-sist','zevanory-one'].includes(product.slug)), [products]);
+  const activeSummary = useMemo<ProductSummary>(() => ({
+    total: activeProducts.length,
+    salesEnabled: activeProducts.filter(product => product.salesEnabled).length,
+    commercialReady: activeProducts.filter(product => product.commercialReady).length,
+    blocked: activeProducts.filter(product => !product.commercialReady && product.status !== 'archived').length,
+    certified: activeProducts.filter(product => product.certification.ready).length,
+    inCertification: activeProducts.filter(product => !product.certification.ready && product.status !== 'archived').length,
+    zeesBlocked: activeProducts.filter(product => product.certification.summary.blocked > 0).length,
+  }), [activeProducts]);
+  const visibleProducts = useMemo(() => activeProducts.filter(product => {
     if (filter === 'selling') return product.salesEnabled;
     if (filter === 'blocked') return !product.commercialReady && product.status !== 'archived';
     if (filter === 'archived') return product.status === 'archived';
     return true;
-  }), [products, filter]);
+  }), [activeProducts, filter]);
   const productPageSize = viewportWidth <= 900 ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
@@ -699,15 +707,16 @@ function App() {
   const safeAuditPage = Math.min(auditPage, auditPageCount - 1);
   const pagedAudits = operationAudits.slice(safeAuditPage * operationsPageSize, (safeAuditPage + 1) * operationsPageSize);
 
+  const activeCertificationTargets = useMemo(() => certificationTargets.filter(target => !['ARBM SIST','ZEVANORY ONE'].includes(target.name)), [certificationTargets]);
   const selectedCertificationTarget = useMemo(
-    () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
-    [certificationTargets, selectedTargetId],
+    () => activeCertificationTargets.find(target => target.id === selectedTargetId) ?? activeCertificationTargets[0] ?? null,
+    [activeCertificationTargets, selectedTargetId],
   );
   const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 820;
   const certTargetPageSize = compactGovernance ? 1 : 6;
-  const certTargetPageCount = Math.max(1, Math.ceil(certificationTargets.length / certTargetPageSize));
+  const certTargetPageCount = Math.max(1, Math.ceil(activeCertificationTargets.length / certTargetPageSize));
   const safeCertTargetPage = Math.min(certTargetPage, certTargetPageCount - 1);
-  const pagedCertificationTargets = certificationTargets.slice(safeCertTargetPage * certTargetPageSize, (safeCertTargetPage + 1) * certTargetPageSize);
+  const pagedCertificationTargets = activeCertificationTargets.slice(safeCertTargetPage * certTargetPageSize, (safeCertTargetPage + 1) * certTargetPageSize);
   const governancePageSize = viewportWidth <= 620 ? 1 : 2;
   const governancePageCount = selectedCertificationTarget ? Math.max(1, Math.ceil(selectedCertificationTarget.certification.pillars.length / governancePageSize)) : 1;
   const safeGovernancePage = Math.min(governancePage, governancePageCount - 1);
@@ -855,7 +864,7 @@ function App() {
           {overviewPage === 0 && <section className='overviewCards'>
             <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
             <article className='overviewCard'><span>Vendas</span><strong>{operationalLabel(operations?.runtime.sales)}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>
-            <article className='overviewCard'><span>Produtos</span><strong>{summary.total}</strong><small>{summary.salesEnabled} em venda · {summary.blocked} pendentes</small></article>
+            <article className='overviewCard'><span>Produtos</span><strong>{activeSummary.total}</strong><small>{activeSummary.salesEnabled} em venda · {activeSummary.blocked} pendentes</small></article>
             <article className='overviewCard'><span>Banco</span><strong>{operations?.health.requiredTables ?? 0} tabelas</strong><small>{operations?.health.requiredMigrations ?? 0} migrations · faltas {(operations?.health.missingTables ?? 0)+(operations?.health.missingMigrations ?? 0)}</small></article>
           </section>}
 
@@ -879,7 +888,7 @@ function App() {
                 <div><span>Estado global</span><b>{operationalLabel(operations?.control.globalState)}</b></div>
                 <div><span>Bloqueador raiz</span><b>{operations?.control.rootBlocker ?? 'unknown'}</b></div>
                 <div><span>Decisão do core</span><b>{operationalLabel(operations?.control.decision)}</b></div>
-                <div><span>Produtos bloqueados</span><b>{summary.blocked}</b></div>
+                <div><span>Produtos bloqueados</span><b>{activeSummary.blocked}</b></div>
                 <div><span>Incidentes</span><b>{dashboard.incidents.length}</b></div>
               </div>
             </article>
@@ -890,10 +899,10 @@ function App() {
       {view === 'products' && (
         <>
           <section className='metrics'>
-            <div className='metric'><span>Produtos cadastrados</span><strong>{summary.total}</strong></div>
-            <div className='metric'><span>Produtos certificados</span><strong>{summary.certified}</strong></div>
-            <div className='metric'><span>Em certificação</span><strong>{summary.inCertification}</strong></div>
-            <div className='metric'><span>Pendências ZEES próprias</span><strong>{summary.zeesBlocked}</strong></div>
+            <div className='metric'><span>Produtos cadastrados</span><strong>{activeSummary.total}</strong></div>
+            <div className='metric'><span>Produtos certificados</span><strong>{activeSummary.certified}</strong></div>
+            <div className='metric'><span>Em certificação</span><strong>{activeSummary.inCertification}</strong></div>
+            <div className='metric'><span>Pendências ZEES próprias</span><strong>{activeSummary.zeesBlocked}</strong></div>
           </section>
 
           <section className='toolbar'>
@@ -1031,7 +1040,7 @@ function App() {
             ) : (
               <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
             )}
-            <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span><b>{certificationTargets.length}</b>Alvos certificados</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
+            <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span><b>{activeCertificationTargets.length}</b>Alvos ativos</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
           </section>
           {governanceMode === 'certification' && <section className='certWorkspace'>
             {compactGovernance && (
@@ -1042,7 +1051,7 @@ function App() {
                   onChange={event => { setSelectedTargetId(event.target.value); setGovernancePage(0); setGovernanceSectionPage('summary'); }}
                   aria-label='Selecionar alvo ZEES-16'
                 >
-                  {certificationTargets.map(target => <option key={target.id} value={target.id}>{target.name}</option>)}
+                  {activeCertificationTargets.map(target => <option key={target.id} value={target.id}>{target.name}</option>)}
                 </select>
               </label>
             )}
