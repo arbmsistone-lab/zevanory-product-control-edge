@@ -64,20 +64,6 @@ export async function runDrReconcileDryRun(cutoff = '2026-09-29T15:06:35Z', end 
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runDrReconcileDryRun(process.argv[2] || undefined, process.argv[3] || undefined)
-    .then(summary => {
-      console.log(JSON.stringify(summary, null, 2));
-      console.error(`DR_RECONCILE_DRY_RUN=${summary.exactMirrorSupported ? 'PASS' : 'FAIL'} changed=${summary.totalChangedSinceCutoff} current=${summary.totalCurrentRecords}`);
-      process.exitCode = summary.exactMirrorSupported ? 0 : 2;
-    })
-    .catch(error => {
-      console.error('DR_RECONCILE_DRY_RUN=FAIL', error instanceof Error ? error.message : String(error));
-      process.exitCode = 1;
-    });
-}
-
-
 type PrimaryRecord = { bucket: string; id: string; record: unknown };
 
 async function fetchPrimaryRecords(pool: Pool, bucket: string) {
@@ -161,11 +147,30 @@ export async function executeDrReconcile() {
   }
 }
 
-if (process.argv.includes('--execute')) {
-  executeDrReconcile()
-    .then(result => console.log(JSON.stringify(result, null, 2)))
-    .catch(error => {
-      console.error('DR_RECONCILE_EXECUTE=FAIL', error instanceof Error ? error.message : String(error));
-      process.exitCode = 1;
-    });
+if (import.meta.url === `file://${process.argv[1]}`) {
+  if (process.argv.includes('--execute')) {
+    executeDrReconcile()
+      .then(result => {
+        console.log(JSON.stringify(result, null, 2));
+        console.error('DR_RECONCILE_EXECUTE=PASS');
+      })
+      .catch(error => {
+        console.error('DR_RECONCILE_EXECUTE=FAIL', error instanceof Error ? error.message : String(error));
+        process.exitCode = 1;
+      });
+  } else {
+    runDrReconcileDryRun(
+      process.argv.find(arg => arg.startsWith('--cutoff='))?.slice('--cutoff='.length),
+      process.argv.find(arg => arg.startsWith('--end='))?.slice('--end='.length),
+    )
+      .then(summary => {
+        console.log(JSON.stringify(summary, null, 2));
+        console.error(`DR_RECONCILE_DRY_RUN=${summary.exactMirrorSupported ? 'PASS' : 'FAIL'} changed=${summary.totalChangedSinceCutoff} current=${summary.totalCurrentRecords}`);
+        process.exitCode = summary.exactMirrorSupported ? 0 : 2;
+      })
+      .catch(error => {
+        console.error('DR_RECONCILE_DRY_RUN=FAIL', error instanceof Error ? error.message : String(error));
+        process.exitCode = 1;
+      });
+  }
 }
