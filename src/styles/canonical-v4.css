@@ -261,4 +261,73 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
     min-width:0!important;width:100%!important;min-height:0!important}
   .zpcWorkspace.shell-creatives .creativeLiveBody{
     min-width:0!important;width:100%!important}
+}/* Shell-wide horizontal safety + compact commercial robot status */
+html,body,#root,.app-container{width:100%!important;max-width:100%!important;min-width:0!important}
+.zpcAppShell{width:100%!important;max-width:min(100%,1760px)!important;margin-inline:auto!important;box-sizing:border-box!important}
+.zpcWorkspace .commercialHeader{
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:12px!important
+}
+.zpcWorkspace .robotBadge{
+  display:grid!important;
+  grid-template-columns:22px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:8px!important;
+  width:min(420px,38vw)!important;
+  max-width:420px!important;
+  min-height:44px!important;
+  padding:7px 10px!important;
+  border-radius:10px!important;
+  box-sizing:border-box!important
+}
+.zpcWorkspace .robotBadge b{
+  font-size:13px!important;
+  line-height:1.15!important;
+  margin:0!important
+}
+.zpcWorkspace .robotBadge small{
+  margin-top:2px!important;
+  font-size:11px!important;
+  line-height:1.2!important;
+  display:-webkit-box!important;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden!important
+}
+@media (max-height:780px){
+  .zpcWorkspace .robotBadge{
+    width:min(360px,34vw)!important;
+    min-height:40px!important;
+    padding:5px 8px!important
+  }
+  .zpcWorkspace .robotBadge small{-webkit-line-clamp:1}
+}
+@media (max-width:900px){
+  .zpcWorkspace .commercialHeader{
+    grid-template-columns:minmax(0,1fr)!important
+  }
+  .zpcWorkspace .robotBadge{
+    width:100%!important;
+    max-width:none!important
+  }
+}
+/* Two-error closure: approved compact typography without nav clipping */
+@media (max-height:780px){
+  .zpcAppShell .topbar h1{font-size:21px!important;line-height:1.1!important}
+  .zpcAppShell .trustStrip small,
+  .zpcAppShell .trustStrip b,
+  .zpcAppShell .trustStrip strong,
+  .zpcAppShell .trustStrip span{font-size:12px!important;line-height:1.1!important}
+  .zpcNavigation{padding:4px!important;gap:1px!important}
+  .zpcNavigation .tab{
+    min-height:26px!important;height:26px!important;
+    padding:2px 6px!important;font-size:12px!important;line-height:1!important
+  }
+  .zpcNavLabel{
+    margin:1px 5px 0!important;
+    font-size:12px!important;line-height:1!important
+  }
+  .zpcWorkspace .robotBadge b{font-size:14px!important}
+  .zpcWorkspace .robotBadge small{font-size:12px!important}
 }
