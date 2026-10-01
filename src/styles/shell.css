@@ -43,10 +43,9 @@ body {
   padding: var(--zpc-space-3) clamp(12px, 1.5vw, 24px);
   display: grid;
   grid-template-columns: var(--zpc-nav-width) minmax(0, 1fr);
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   grid-template-areas:
     "header header"
-    "policy policy"
     "trust trust"
     "nav workspace";
   gap: var(--zpc-space-2) var(--zpc-space-4);
@@ -1516,4 +1515,60 @@ body,
   .zpcAppShell .trustState span {
     font-size: 12px;
   }
+}
+
+/* Executive overview: one purpose per page, no-scroll desktop contract. */
+.zpcWorkspace.shell-overview .overviewPager{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:4px;
+  flex:0 0 auto;
+}
+.zpcWorkspace.shell-overview .overviewPager .filter{
+  min-width:0;
+  min-height:34px;
+  padding:4px 8px;
+  font-size:12px;
+}
+.zpcWorkspace.shell-overview .overviewHero{
+  padding:8px 12px;
+  min-height:0;
+}
+.zpcWorkspace.shell-overview .overviewHero h2{
+  margin:2px 0 0;
+  font-size:21px;
+  line-height:1.2;
+}
+.zpcWorkspace.shell-overview .overviewCards{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+}
+.zpcWorkspace.shell-overview .overviewCard{
+  padding:8px 10px;
+  min-height:0;
+}
+.zpcWorkspace.shell-overview .overviewCard strong{
+  margin:2px 0 4px;
+}
+.zpcWorkspace.shell-overview .overviewGridSingle{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+}
+.zpcWorkspace.shell-overview .overviewJump{
+  width:100%;
+  height:100%;
+  min-height:54px;
+}
+@media (max-height:760px){
+  .zpcAppShell{padding-top:6px;padding-bottom:6px;gap:4px var(--zpc-space-4)}
+  .zpcAppShell .topbar{gap:8px}
+  .zpcAppShell .topbar h1{font-size:18px;line-height:1.1;margin:2px 0}
+  .zpcAppShell .subtitle,.zpcAppShell .eyebrow{font-size:11px;line-height:1.15;margin:0}
+  .zpcAppShell .zpcHeaderActions>*{min-height:34px;height:34px;padding:4px 8px;font-size:12px}
+  .zpcAppShell .trustStrip{min-height:0;padding:4px 8px}
+  .zpcAppShell .trustStrip small,.zpcAppShell .trustStrip b,.zpcAppShell .trustStrip strong,.zpcAppShell .trustState span{font-size:11px;line-height:1.15}
+  .zpcNavigation{gap:2px;padding:6px}
+  .zpcNavigation .tab{min-height:28px;padding:3px 6px;font-size:12px}
+  .zpcNavLabel{margin:2px 6px 0;font-size:10px}
+  .zpcWorkspace.shell-overview .overviewStack{gap:6px}
 }

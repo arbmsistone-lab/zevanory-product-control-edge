@@ -4,7 +4,6 @@ import {
   Archive,
   CheckCircle2,
   ExternalLink,
-  Gauge,
   LogIn,
   LogOut,
   PackagePlus,
@@ -761,13 +760,6 @@ function App() {
         </div>
       </header>
 
-      <section className='policybar' aria-label='Políticas administrativas'>
-        <span><ShieldCheck size={16} />ADMIN RESTRITO</span>
-        <span><Gauge size={16} />ZERO_SPEND {dashboard.policy.zeroSpend ? 'ATIVO' : 'OFF'}</span>
-        <span><ShieldCheck size={16} />FAIL-CLOSED {dashboard.policy.failClosed ? 'ATIVO' : 'OFF'}</span>
-        <span><AlertTriangle size={16} />VENDA SEM GATE: BLOQUEADA</span>
-      </section>
-
       <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
         <div className='trustState'>
           <ShieldCheck size={16} />
@@ -777,7 +769,7 @@ function App() {
         <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
         <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : 'sem prova'}</b></div>
         <div><small>SHA</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
-        <div><small>Motores</small><b>{globalTrust?.engines.length ? globalTrust.engines.map(item => `${item.id}:${item.state}`).join(' · ') : 'SEM MOTOR'}</b></div>
+        <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : 'SEM MOTOR'}</b></div>
       </section>
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
@@ -849,35 +841,34 @@ function App() {
       {view === 'overview' && (
         <section className='overviewStack' data-page={overviewPage}>
           <section className='overviewHero panel'>
-            <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2><p className='productDescription'>O Control Plane e o gerenciamento de produtos agora ficam no mesmo painel, com leitura executiva antes dos detalhes.</p></div>
-            <div className='overviewHeroActions'>
-              <button className='secondary compact' onClick={() => setView('operations')}>Operações técnicas</button>
-              <button className='secondary compact' onClick={() => setView('governance')}>ZEES-16 / Governança</button>
-              <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
-            </div>
+            <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2></div>
+            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
           </section>
           <nav className='overviewPager' aria-label='Páginas da visão geral'>
             {['Operação', 'Certificação', 'Canais', 'Bloqueios'].map((label, index) => <button key={label} className={overviewPage === index ? 'filter active' : 'filter'} aria-pressed={overviewPage === index} onClick={() => setOverviewPage(index)}>{label}</button>)}
           </nav>
-          <section className='overviewCards'>
+
+          {overviewPage === 0 && <section className='overviewCards'>
             <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
             <article className='overviewCard'><span>Vendas</span><strong>{operationalLabel(operations?.runtime.sales)}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>
-            <article className='overviewCard'><span>WhatsApp</span><strong>{operationalLabel(operations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {operations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></article>
+            <article className='overviewCard'><span>Produtos</span><strong>{summary.total}</strong><small>{summary.salesEnabled} em venda · {summary.blocked} pendentes</small></article>
+            <article className='overviewCard'><span>Banco</span><strong>{operations?.health.requiredTables ?? 0} tabelas</strong><small>{operations?.health.requiredMigrations ?? 0} migrations · faltas {(operations?.health.missingTables ?? 0)+(operations?.health.missingMigrations ?? 0)}</small></article>
+          </section>}
+
+          {overviewPage === 1 && <section className='overviewCards overviewCardsCertification'>
             <article className='overviewCard'><span>Quorum técnico</span><strong>{operations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{operations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></article>
             <article className='overviewCard'><span>ZEES-16</span><strong>{operations?.zees16.proven ?? 0}/16</strong><small>{operations?.zees16.partial ?? 0} parciais · {operations?.zees16.blocked ?? 0} bloqueados</small></article>
             <article className='overviewCard'><span>ZEA-10</span><strong>{operations?.zea10.proven ?? 0}/10</strong><small>{operations?.zea10.partial ?? 0} parciais · {operations?.zea10.blocked ?? 0} bloqueados</small></article>
-            <article className='overviewCard'><span>Produtos</span><strong>{summary.total}</strong><small>{summary.salesEnabled} em venda · {summary.blocked} pendentes</small></article>
-            <article className='overviewCard'><span>Banco</span><strong>{operations?.health.requiredTables ?? 0} tabelas</strong><small>{operations?.health.requiredMigrations ?? 0} migrations · faltas {(operations?.health.missingTables ?? 0)+(operations?.health.missingMigrations ?? 0)}</small></article>
-          </section>
-          <section className='overviewGrid'>
-            <article className='panel'>
-              <div className='panelhead'><div><p className='kicker'>CANAIS</p><h2>Estado comercial</h2></div></div>
-              <div className='channelTable'>
-                <div className='channelRow channelHead'><span>Canal</span><span>Escopo</span><span>Gate</span><span>Execução</span></div>
-                {(operations?.channels ?? []).map(channel => <div className='channelRow' key={channel.name}><b>{channel.name}</b><span>{operationalLabel(channel.scopeStatus)}</span><span>{operationalLabel(channel.releaseGate)}</span><span>{operationalLabel(channel.commercialExecution)}</span></div>)}
-                {(operations?.channels ?? []).length === 0 && <div className='empty'>Snapshot de canais indisponível.</div>}
-              </div>
-            </article>
+          </section>}
+
+          {overviewPage === 2 && <section className='overviewCards overviewCardsChannels'>
+            <article className='overviewCard'><span>Canais configurados</span><strong>{operations?.channels.length ?? 0}</strong><small>detalhamento disponível em Comercial</small></article>
+            <article className='overviewCard'><span>WhatsApp</span><strong>{operationalLabel(operations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {operations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></article>
+            <article className='overviewCard'><span>Execução comercial</span><strong>{operations?.channels.filter(channel => channel.commercialExecution === 'enabled').length ?? 0}</strong><small>canais com execução habilitada</small></article>
+            <article className='overviewCard'><button className='secondary compact overviewJump' onClick={() => setView('commercial')}>Abrir Comercial</button></article>
+          </section>}
+
+          {overviewPage === 3 && <section className='overviewGrid overviewGridSingle'>
             <article className='panel'>
               <div className='panelhead'><div><p className='kicker'>ATENÇÃO EXECUTIVA</p><h2>O que está bloqueando</h2></div><AlertTriangle size={20} /></div>
               <div className='executiveList'>
@@ -888,7 +879,7 @@ function App() {
                 <div><span>Incidentes</span><b>{dashboard.incidents.length}</b></div>
               </div>
             </article>
-          </section>
+          </section>}
         </section>
       )}
 
