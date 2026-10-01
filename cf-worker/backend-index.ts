@@ -516,6 +516,8 @@ const systemSeed: SystemRecord[] = [
 ];
 
 const deprecatedVisibleSystems = new Set(['ARBM CONTROL', 'ARBM CONTROL App']);
+const retiredPublicSystemNames = new Set(['ARBM SIST']);
+const retiredPublicProductSlugs = new Set(['arbm-sist', 'zevanory-one']);
 
 const productCatalog = [
   {
@@ -1410,7 +1412,7 @@ async function adminData() {
     loadGlobalTrust(),
   ]);
   const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
-  const enriched = products.items.map(product => {
+  const enriched = products.items.filter(product => !retiredPublicProductSlugs.has(product.slug)).map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, certificationEvidence.items);
     return { ...base, certification, commercialReady: base.commercialReady && certification.ready, blockers: [...base.blockers, ...(certification.ready ? [] : ['certificacao ZEES-16 incompleta'])] };
@@ -1459,7 +1461,7 @@ async function adminData() {
     globalTrust,
     certificationTargets,
     dashboard: {
-      systems: visibleSystems,
+      systems: visibleSystems.filter(item => !retiredPublicSystemNames.has(item.name)),
       audits: audits.items.filter(item => !deprecatedVisibleSystems.has(item.system)).sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
       improvements: improvements.items.filter(item => !deprecatedVisibleSystems.has(item.system)),
       incidents: incidents.items.filter(item => !deprecatedVisibleSystems.has(item.system)).sort((x, y) => y.createdAt.localeCompare(x.createdAt)),

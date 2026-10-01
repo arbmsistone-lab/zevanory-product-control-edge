@@ -519,6 +519,8 @@ const systemSeed: SystemRecord[] = [
 ];
 
 const deprecatedVisibleSystems = new Set(['ARBM CONTROL', 'ARBM CONTROL App']);
+const retiredPublicSystemNames = new Set(['ARBM SIST']);
+const retiredPublicProductSlugs = new Set(['arbm-sist', 'zevanory-one']);
 
 const productCatalog = [
   {
@@ -2770,7 +2772,7 @@ async function adminData() {
     products.items.map(item => canonicalPortfolioExactVerifierEvidence(item, ['P03']))
   )).flat();
   const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...zevanoryDirectExactEvidence, ...zevanoryDurableProtectedEvidence, ...zevanoryDurableSecuritySupplyEvidence, ...digitalPortfolioTechnicalEvidence, ...digitalPortfolioP16Evidence, ...zevanoryOneProtectedEvidence, ...zevanoryOneDurableEvidence, ...portfolioExactWorkflowEvidence];
-  const enriched = products.items.map(product => {
+  const enriched = products.items.filter(product => !retiredPublicProductSlugs.has(product.slug)).map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, effectiveCertificationEvidence);
     return { ...base, certification, commercialReady: base.commercialReady && certification.ready, blockers: [...base.blockers, ...(certification.ready ? [] : ['certificacao ZEES-16 incompleta'])] };
@@ -2825,7 +2827,7 @@ async function adminData() {
     cfo,
     certificationTargets,
     dashboard: {
-      systems: visibleSystems,
+      systems: visibleSystems.filter(item => !retiredPublicSystemNames.has(item.name)),
       audits: audits.items.filter(item => !deprecatedVisibleSystems.has(item.system)).sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
       improvements: improvements.items.filter(item => !deprecatedVisibleSystems.has(item.system)),
       incidents: incidents.items.filter(item => !deprecatedVisibleSystems.has(item.system)).sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
