@@ -1,13 +1,12 @@
 type ApiResponse<T = any> = { data: T; status: number };
 
 const CANONICAL_CONTROL_HOST = 'controle.zevanory.api.br';
-const CANONICAL_API_ORIGIN = 'https://zevanory-product-control-edge-ha.onrender.com';
 
 function resolveApiPath(path: string) {
   if (typeof window === 'undefined') return path;
   const normalized = path.startsWith('/') ? path : `/${path}`;
   if (window.location.hostname === CANONICAL_CONTROL_HOST) {
-    return `${CANONICAL_API_ORIGIN}${normalized}`;
+    return normalized;
   }
   const base = window.location.pathname === '/control' || window.location.pathname.startsWith('/control/') ? '/control' : '';
   return `${base}${normalized}`;
