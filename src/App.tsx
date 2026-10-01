@@ -677,7 +677,7 @@ function App() {
     }
   };
 
-  const activeProducts = useMemo(() => products.filter(product => !['arbm-sist','zevanory-one'].includes(product.slug)), [products]);
+  const activeProducts = useMemo(() => products.filter(product => !['arbm-sist','zevanory-one','arbm-one-system','arbm-one'].includes(product.slug)), [products]);
   const activeSummary = useMemo<ProductSummary>(() => ({
     total: activeProducts.length,
     salesEnabled: activeProducts.filter(product => product.salesEnabled).length,
@@ -707,7 +707,7 @@ function App() {
   const safeAuditPage = Math.min(auditPage, auditPageCount - 1);
   const pagedAudits = operationAudits.slice(safeAuditPage * operationsPageSize, (safeAuditPage + 1) * operationsPageSize);
 
-  const activeCertificationTargets = useMemo(() => certificationTargets.filter(target => !['ARBM SIST','ZEVANORY ONE'].includes(target.name)), [certificationTargets]);
+  const activeCertificationTargets = useMemo(() => certificationTargets.filter(target => !['ARBM SIST','ZEVANORY ONE','ARBM ONE'].includes(target.name)), [certificationTargets]);
   const selectedCertificationTarget = useMemo(
     () => activeCertificationTargets.find(target => target.id === selectedTargetId) ?? activeCertificationTargets[0] ?? null,
     [activeCertificationTargets, selectedTargetId],
