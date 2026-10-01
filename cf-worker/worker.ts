@@ -191,7 +191,8 @@ export default {
     }
 
     if (normalizedPath.startsWith('/api/')) {
-      const forceDirect = url.searchParams.get('runtime') === 'cloudflare';
+      const edgeAuthPath = normalizedPath === '/api/_auth_diagnostic' || normalizedPath === '/api/pin/login' || normalizedPath === '/api/pin/logout';
+      const forceDirect = edgeAuthPath || url.searchParams.get('runtime') === 'cloudflare';
       const renderBase = forceDirect ? '' : String(env.RENDER_BACKEND_URL || '').replace(/\/$/, '');
       if (renderBase) {
         try {

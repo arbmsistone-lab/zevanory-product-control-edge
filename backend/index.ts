@@ -2445,10 +2445,19 @@ function base64UrlBytes(bytes: Uint8Array) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
-async function signEdgeSessionPayload(payload: string, fingerprint: string) {
+async function sessionSigningKey(fallback = '') {
+  const explicit = String(await secrets.readSecret('SESSION_SIGNING_KEY') || '').trim();
+  if (explicit) return explicit;
+  const replication = String(await secrets.readSecret('ZPC_REPLICATION_SECRET') || '').trim();
+  if (replication) return replication;
+  const cluster = String(await secrets.readSecret('ZPC_CLUSTER_TOKEN') || '').trim();
+  return cluster || fallback;
+}
+
+async function signEdgeSessionPayload(payload: string, secret: string) {
   const key = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(fingerprint),
+    new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],
@@ -2457,19 +2466,21 @@ async function signEdgeSessionPayload(payload: string, fingerprint: string) {
   return base64UrlBytes(new Uint8Array(signature));
 }
 
-async function createEdgeSession(fingerprint: string) {
+async function createEdgeSession() {
+  const secret = await sessionSigningKey();
+  if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
   const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID() }));
-  const signature = await signEdgeSessionPayload(payload, fingerprint);
+  const signature = await signEdgeSessionPayload(payload, secret);
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
 
 async function verifyEdgeSession(token: string) {
   const parts = token.split('.');
   if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
-  const pinState = await adminPinState();
-  if (!pinState.configured || !/^[a-f0-9]{64}$/.test(pinState.fingerprint)) return false;
-  const expected = await signEdgeSessionPayload(parts[1], pinState.fingerprint);
+  const secret = await sessionSigningKey();
+  if (!secret) return false;
+  const expected = await signEdgeSessionPayload(parts[1], secret);
   if (expected.length !== parts[2].length) return false;
   let mismatch = 0;
   for (let i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ parts[2].charCodeAt(i);
@@ -2521,7 +2532,7 @@ async function pinLogin(pin: unknown) {
   const verification = await verifyAdminPin(candidate);
   const fingerprint = verification.fingerprint;
   if (verification.valid) {
-    return { ok: true, status: 200, ...(await createEdgeSession(fingerprint)) };
+    return { ok: true, status: 200, ...(await createEdgeSession()) };
   }
 
   const state = await securityState(fingerprint);
@@ -2954,6 +2965,10 @@ export const handler = router({
       }
       return json({ secretValid: stage !== 'secret', locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: `failed:${stage}` });
     }
+  }],
+  'POST /api/_session_verify': [async ctx => {
+    const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
+    return json({ valid: await verifyEdgeSession(token) });
   }],
   'POST /api/pin/login': [async ctx => {
     try {
