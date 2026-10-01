@@ -1172,12 +1172,10 @@ body,
   grid-template-columns: var(--zpc-nav-w-v3) minmax(0, 1fr);
   grid-template-rows:
     var(--zpc-header-h)
-    var(--zpc-policy-h)
     var(--zpc-trust-h)
     minmax(0, 1fr);
   grid-template-areas:
     "header header"
-    "policy policy"
     "trust trust"
     "nav workspace";
   gap: var(--zpc-chrome-gap) 12px;

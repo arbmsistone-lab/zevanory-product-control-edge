@@ -1994,11 +1994,11 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   .shell-governance .governanceHero { padding: 4px 8px; }
   .shell-governance .governanceHero h2 { margin: 4px 0; font-size: 12px; }
   .shell-governance .governanceHero .productDescription {
-    max-height: 16px;
+    max-height: none;
     margin: 4px 0 4px;
-    overflow: hidden;
+    overflow: visible;
     font-size: 12px;
-    line-height: 1.05;
+    line-height: 1.2;
   }
   .shell-governance .standardStrip { gap: 4px; margin-top: 4px; }
   .shell-governance .standardStrip span { padding: 4px 4px; font-size: 12px; }
