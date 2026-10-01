@@ -22,7 +22,7 @@ check(model.includes("CfoActionState"), 'missing_action_state_contract');
 check(workspace.includes('O CFO não cria dados financeiros fictícios'), 'missing_no_fake_data_empty_state');
 check(workspace.includes('EXECUÇÃO EXTERNA BLOQUEADA'), 'missing_external_execution_guard');
 check(css.includes('.cfoWorkspace'), 'missing_cfo_styles');
-check(app.includes('VENDA SEM GATE: BLOQUEADA'), 'regression_sale_gate');
+check(index.includes('if (product.salesEnabled && (blockers.length > 0 || !certification.ready))'), 'regression_sale_gate');
 check(app.includes("className='pillarGrid'") && app.includes('openCertification(product)'), 'regression_zees_governance_navigation');
 
 if (failures.length) {

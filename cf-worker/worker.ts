@@ -203,18 +203,31 @@ export default {
       return handler(normalizedRequest);
     }
 
-    try {
-      const pagesResponse = await fetchPagesOrigin(normalizedPath);
-      if (pagesResponse) return pagesResponse;
-    } catch {}
-
     if (env.ASSETS && typeof (env.ASSETS as any).fetch === 'function') {
       const assetUrl = new URL(request.url);
       assetUrl.pathname = normalizedPath === '/' ? '/' : normalizedPath;
       const assetResponse = await (env.ASSETS as any).fetch(new Request(assetUrl.toString(), request));
-      if (assetResponse.status !== 404) return assetResponse;
-      return (env.ASSETS as any).fetch(new Request(new URL('/', request.url).toString(), request));
+      if (assetResponse.status !== 404) {
+        const headers = new Headers(assetResponse.headers);
+        if (String(headers.get('content-type') || '').includes('text/html')) {
+          headers.set('cache-control', 'no-store, max-age=0');
+        }
+        headers.set('x-zpc-ui-origin', 'cloudflare-assets');
+        return new Response(assetResponse.body, { status: assetResponse.status, headers });
+      }
+      const spaResponse = await (env.ASSETS as any).fetch(new Request(new URL('/', request.url).toString(), request));
+      if (spaResponse.status !== 404) {
+        const headers = new Headers(spaResponse.headers);
+        headers.set('cache-control', 'no-store, max-age=0');
+        headers.set('x-zpc-ui-origin', 'cloudflare-assets');
+        return new Response(spaResponse.body, { status: spaResponse.status, headers });
+      }
     }
+
+    try {
+      const pagesResponse = await fetchPagesOrigin(normalizedPath);
+      if (pagesResponse) return pagesResponse;
+    } catch {}
 
     return handler(normalizedRequest);
   },
