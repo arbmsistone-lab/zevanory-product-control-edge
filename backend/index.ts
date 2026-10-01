@@ -2432,6 +2432,58 @@ const SESSION_HOURS = 12;
 const MAX_PIN_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
+function base64UrlEncode(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlBytes(bytes: Uint8Array) {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+async function signEdgeSessionPayload(payload: string, fingerprint: string) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(fingerprint),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  return base64UrlBytes(new Uint8Array(signature));
+}
+
+async function createEdgeSession(fingerprint: string) {
+  const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
+  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID() }));
+  const signature = await signEdgeSessionPayload(payload, fingerprint);
+  return { token: `zpc1.${payload}.${signature}`, expiresAt };
+}
+
+async function verifyEdgeSession(token: string) {
+  const parts = token.split('.');
+  if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
+  const pinState = await adminPinState();
+  if (!pinState.configured || !/^[a-f0-9]{64}$/.test(pinState.fingerprint)) return false;
+  const expected = await signEdgeSessionPayload(parts[1], pinState.fingerprint);
+  if (expected.length !== parts[2].length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ parts[2].charCodeAt(i);
+  if (mismatch !== 0) return false;
+  try {
+    const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((parts[1].length + 3) % 4);
+    const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
+    const payload = JSON.parse(json) as { exp?: number };
+    return Number(payload.exp || 0) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 async function securityState(fingerprint: string) {
   const state = await db.list<PinSecurityRecord>(PIN_SECURITY, { limit: 1 });
   if (state.items[0]) {
@@ -2452,18 +2504,10 @@ async function updateSecurity(id: string, record: PinSecurityRecord) {
   if (id) await db.update(PIN_SECURITY, [{ id, record }]);
 }
 
-async function createPinSession() {
-  const now = new Date();
-  const expires = new Date(now.getTime() + SESSION_HOURS * 60 * 60 * 1000);
-  const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
-  const [id] = await db.add(PIN_CURRENT_SESSION, [{ token, createdAt: now.toISOString(), expiresAt: expires.toISOString() }]);
-  if (!id) throw new Error('pin_session_create_failed');
-  return { token, expiresAt: expires.toISOString() };
-}
-
 async function requirePinSession(token: unknown) {
   const value = String(token || '').trim();
   if (!value) return false;
+  if (await verifyEdgeSession(value)) return true;
   const now = Date.now();
   const current = await db.list<PinSessionRecord>(PIN_CURRENT_SESSION, { limit: 10 });
   if (current.items.some(item => item.token === value && Date.parse(item.expiresAt) > now)) return true;
@@ -2476,20 +2520,20 @@ async function pinLogin(pin: unknown) {
   if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
   const verification = await verifyAdminPin(candidate);
   const fingerprint = verification.fingerprint;
+  if (verification.valid) {
+    return { ok: true, status: 200, ...(await createEdgeSession(fingerprint)) };
+  }
+
   const state = await securityState(fingerprint);
   if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
     return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
   }
-  if (!verification.valid) {
-    const failedAttempts = state.failedAttempts + 1;
-    const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
-      ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
-      : null;
-    await updateSecurity(state.id, { failedAttempts: lockedUntil ? 0 : failedAttempts, lockedUntil, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
-    return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
-  }
-  await updateSecurity(state.id, { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
-  return { ok: true, status: 200, ...(await createPinSession()) };
+  const failedAttempts = state.failedAttempts + 1;
+  const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
+    ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
+    : null;
+  await updateSecurity(state.id, { failedAttempts: lockedUntil ? 0 : failedAttempts, lockedUntil, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
+  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
 }
 
 type GlobalTrust = {

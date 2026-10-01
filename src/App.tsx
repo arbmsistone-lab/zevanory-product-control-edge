@@ -513,7 +513,7 @@ function App() {
 
   const handleLogin = (token: string) => {
     setSessionToken(token);
-    setAuthState('checking');
+    setAuthState('ready');
     void load(token);
   };
 
