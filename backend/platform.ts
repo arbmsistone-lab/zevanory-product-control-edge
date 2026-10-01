@@ -342,21 +342,38 @@ async function configRecord(key: string) {
 }
 
 export async function adminPinState() {
-  const saved = await configRecord('admin_pin_hash');
-  const hash = String(saved?.value || '');
-  if (/^[a-f0-9]{64}$/.test(hash)) {
-    return { configured: true, fingerprint: hash, source: 'portable-store' };
+  try {
+    const saved = await configRecord('admin_pin_hash');
+    const hash = String(saved?.value || '');
+    if (/^[a-f0-9]{64}$/.test(hash)) {
+      return { configured: true, fingerprint: hash, source: 'portable-store' };
+    }
+  } catch {}
+
+  const legacyPin = String(env('ADMIN_PIN') || '').trim();
+  if (/^\d{4}$/.test(legacyPin)) {
+    return { configured: true, fingerprint: await sha256(legacyPin), source: 'legacy-secret-fallback' };
   }
   return { configured: false, fingerprint: 'unconfigured', source: 'none' };
 }
 
 export async function verifyAdminPin(candidate: string) {
-  const saved = await configRecord('admin_pin_hash');
-  const savedHash = String(saved?.value || '');
-  if (!/^[a-f0-9]{64}$/.test(savedHash)) {
+  let savedHash = '';
+  try {
+    const saved = await configRecord('admin_pin_hash');
+    savedHash = String(saved?.value || '');
+  } catch {}
+
+  if (/^[a-f0-9]{64}$/.test(savedHash)) {
+    return { valid: (await sha256(candidate)) === savedHash, fingerprint: savedHash };
+  }
+
+  const legacyPin = String(env('ADMIN_PIN') || '').trim();
+  if (!/^\d{4}$/.test(legacyPin)) {
     return { valid: false, fingerprint: 'unconfigured' };
   }
-  return { valid: (await sha256(candidate)) === savedHash, fingerprint: savedHash };
+  const fingerprint = await sha256(legacyPin);
+  return { valid: (await sha256(candidate)) === fingerprint, fingerprint };
 }
 
 function safeError(cause: unknown) {
