@@ -191,7 +191,7 @@ export default {
     }
 
     if (normalizedPath.startsWith('/api/')) {
-      const edgeAuthPath = normalizedPath === '/api/_auth_diagnostic' || normalizedPath === '/api/pin/login' || normalizedPath === '/api/pin/logout';
+      const edgeAuthPath = normalizedPath === '/api/_auth_diagnostic' || normalizedPath === '/api/_session_verify' || normalizedPath === '/api/pin/login' || normalizedPath === '/api/pin/logout';
       const forceDirect = edgeAuthPath || url.searchParams.get('runtime') === 'cloudflare';
       const renderBase = forceDirect ? '' : String(env.RENDER_BACKEND_URL || '').replace(/\/$/, '');
       if (renderBase) {

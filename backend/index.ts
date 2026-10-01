@@ -2495,6 +2495,24 @@ async function verifyEdgeSession(token: string) {
   }
 }
 
+async function verifyCanonicalEdgeSession(token: string) {
+  if (await verifyEdgeSession(token)) return true;
+  if (!token.startsWith('zpc1.')) return false;
+  try {
+    const response = await fetch('https://controle.zevanory.api.br/api/_session_verify?runtime=cloudflare', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ sessionToken: token }),
+      signal: AbortSignal.timeout(1500),
+    });
+    if (!response.ok) return false;
+    const data = await response.json() as { valid?: boolean };
+    return data.valid === true;
+  } catch {
+    return false;
+  }
+}
+
 async function securityState(fingerprint: string) {
   const state = await db.list<PinSecurityRecord>(PIN_SECURITY, { limit: 1 });
   if (state.items[0]) {
@@ -2518,7 +2536,7 @@ async function updateSecurity(id: string, record: PinSecurityRecord) {
 async function requirePinSession(token: unknown) {
   const value = String(token || '').trim();
   if (!value) return false;
-  if (await verifyEdgeSession(value)) return true;
+  if (await verifyCanonicalEdgeSession(value)) return true;
   const now = Date.now();
   const current = await db.list<PinSessionRecord>(PIN_CURRENT_SESSION, { limit: 10 });
   if (current.items.some(item => item.token === value && Date.parse(item.expiresAt) > now)) return true;
@@ -2968,7 +2986,7 @@ export const handler = router({
   }],
   'POST /api/_session_verify': [async ctx => {
     const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
-    return json({ valid: await verifyEdgeSession(token) });
+    return json({ valid: await verifyCanonicalEdgeSession(token) });
   }],
   'POST /api/pin/login': [async ctx => {
     try {
