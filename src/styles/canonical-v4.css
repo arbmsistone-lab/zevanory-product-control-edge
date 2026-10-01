@@ -1,0 +1,193 @@
+/* ZEVANORY Control Center — canonical application shell v4 */
+html,body,#root{width:100%;height:100%;margin:0;overflow:hidden}
+body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
+.zpcAppShell{
+  width:min(100%,1760px);height:100dvh;margin:0 auto;padding:10px 16px;
+  box-sizing:border-box;overflow:hidden;display:grid;
+  grid-template-columns:196px minmax(0,1fr);
+  grid-template-rows:58px 42px minmax(0,1fr);
+  grid-template-areas:"header header" "trust trust" "nav workspace";
+  gap:8px 14px;align-items:stretch
+}
+.zpcAppShell>.topbar{grid-area:header;height:58px;margin:0;display:grid;
+  grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px}
+.zpcBrandBlock{min-width:0;display:grid;gap:2px;align-content:center}
+.zpcBrandBlock .eyebrow,.zpcBrandBlock .subtitle{margin:0;line-height:1.15}
+.zpcBrandBlock .eyebrow{font-size:11px}
+.zpcBrandBlock h1{margin:0;font-size:21px;line-height:1.1;white-space:nowrap}
+.zpcBrandBlock .subtitle{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zpcHeaderActions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:nowrap}
+.zpcHeaderActions>*{min-height:36px;height:36px;padding:5px 10px;font-size:12px;white-space:nowrap}
+.zpcAppShell>.trustStrip{grid-area:trust;margin:0;min-height:42px;padding:6px 10px;
+  display:grid;grid-template-columns:1.1fr repeat(4,minmax(0,1fr));align-items:center;gap:8px}
+.zpcAppShell>.trustStrip>div{min-width:0}
+.zpcAppShell>.trustStrip small,.zpcAppShell>.trustStrip b,
+.zpcAppShell>.trustStrip strong,.zpcAppShell>.trustStrip span{
+  font-size:11px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zpcNavigation{grid-area:nav;height:100%;min-height:0;padding:8px;box-sizing:border-box;
+  display:grid;align-content:start;gap:4px;overflow:hidden;border:1px solid var(--border);
+  border-radius:14px;background:var(--surface)}
+.zpcNavGroup{display:grid;gap:2px}
+.zpcNavLabel{margin:4px 6px 1px;font-size:10px;line-height:1.1;letter-spacing:.08em}
+.zpcNavigation .tab{min-height:30px;height:30px;padding:4px 7px;font-size:12px;line-height:1.1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:8px}
+.zpcWorkspace{grid-area:workspace;width:100%;height:100%;min-width:0;min-height:0;
+  max-height:100%;overflow:hidden!important;padding:0;box-sizing:border-box}
+.zpcWorkspace>.globalError:first-child{margin:0 0 6px}
+.panel{box-shadow:none}
+.shell-governance[data-compact-governance='true'] .governanceStack{
+  height:100%;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:8px;overflow:hidden}
+.shell-governance[data-compact-governance='true'] .governanceHero{padding:8px 10px;min-height:0}
+.shell-governance[data-compact-governance='true'] .governanceHero .panelhead{margin-bottom:4px}
+.shell-governance[data-compact-governance='true'] .governanceHero h2{margin:0;font-size:16px;line-height:1.15}
+.shell-governance[data-compact-governance='true'] .governanceAbout{margin:4px 0 0;padding:0;border:0}
+.shell-governance[data-compact-governance='true'] .governanceAbout summary{font-size:12px}
+.shell-governance[data-compact-governance='true'] .standardStrip{
+  margin-top:6px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.shell-governance[data-compact-governance='true'] .standardStrip span{padding:6px 8px;font-size:11px}
+.shell-governance[data-compact-governance='true'] .standardStrip b{font-size:12px;margin-bottom:2px}
+.shell-governance[data-compact-governance='true'] .certWorkspace{
+  min-height:0;height:100%;display:grid;grid-template-columns:minmax(0,1fr);
+  grid-template-rows:42px minmax(0,1fr);gap:8px;overflow:hidden}
+.shell-governance[data-compact-governance='true'] .certTargetSelectWrap{
+  display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;gap:8px;margin:0}
+.shell-governance[data-compact-governance='true'] .certTargetSelectWrap span{font-size:11px;font-weight:800}
+.shell-governance[data-compact-governance='true'] .certTargetSelectWrap select{height:38px;min-height:38px;padding:5px 10px}
+.shell-governance[data-compact-governance='true'] .certSidebar{display:none!important}
+.shell-governance[data-compact-governance='true'] .certDetail{
+  min-height:0;height:100%;display:grid;grid-template-rows:40px minmax(0,1fr);gap:8px;overflow:hidden}
+.shell-governance[data-compact-governance='true'] .governanceSectionPager{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0}
+.shell-governance[data-compact-governance='true'] .governanceSectionPager .filter{
+  min-height:36px;height:36px;padding:4px 8px;font-size:12px}
+.shell-governance[data-compact-governance='true'] .certDetail[data-page='summary'] .governancePager,
+.shell-governance[data-compact-governance='true'] .certDetail[data-page='summary'] .pillarGrid{display:none!important}
+.shell-governance[data-compact-governance='true'] .certDetail[data-page='pillars'] .certSummaryPanel{display:none!important}
+.shell-governance[data-compact-governance='true'] .certSummaryPanel{
+  min-height:0;height:100%;padding:10px 12px;margin:0;overflow:hidden;display:grid;align-content:start;gap:8px}
+.shell-governance[data-compact-governance='true'] .certTitleRow{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px}
+.shell-governance[data-compact-governance='true'] .certTitleRow h2{margin:2px 0;font-size:17px;line-height:1.15}
+.shell-governance[data-compact-governance='true'] .certTitleRow p{margin:0;font-size:11px}
+.shell-governance[data-compact-governance='true'] .certActions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:nowrap}
+.shell-governance[data-compact-governance='true'] .certActions>*{min-height:34px;height:34px;padding:4px 8px;font-size:11px;white-space:nowrap}
+.shell-governance[data-compact-governance='true'] .certSummaryGrid{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.shell-governance[data-compact-governance='true'] .certSummaryGrid span{padding:7px 8px;min-width:0}
+.shell-governance[data-compact-governance='true'] .certSummaryGrid b{font-size:14px}
+.shell-governance[data-compact-governance='true'] .certSummaryGrid small{font-size:10px;line-height:1.15}
+.shell-governance[data-compact-governance='true'] .certRunStrip{
+  display:grid;grid-template-columns:1.2fr 1fr 1fr .7fr;gap:6px;margin:0}
+.shell-governance[data-compact-governance='true'] .certRunStrip span{
+  min-width:0;padding:6px 8px;font-size:10px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shell-governance[data-compact-governance='true'] .certRunStrip b{font-size:10px;margin-right:4px}
+.shell-governance[data-compact-governance='true'] .rootBlockerDetails{margin:0;padding:0 8px}
+.shell-governance[data-compact-governance='true'] .rootBlockerDetails summary{font-size:11px}
+.shell-governance[data-compact-governance='true'] .governancePager{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:6px;margin:0}
+.shell-governance[data-compact-governance='true'] .governancePager>*{min-width:0}
+.shell-governance[data-compact-governance='true'] .governancePager strong{
+  font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shell-governance[data-compact-governance='true'] .governancePager .compact{
+  min-height:34px;height:34px;padding:4px 8px;font-size:11px}
+.shell-governance[data-compact-governance='true'] .pillarGrid{
+  min-height:0;height:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:minmax(0,1fr);gap:8px;overflow:hidden}
+.shell-governance[data-compact-governance='true'] .pillarCard{
+  min-height:0;height:100%;padding:8px 10px;overflow:hidden}
+.shell-governance[data-compact-governance='true'] .pillarDisclosureToggle{min-height:0}
+.shell-governance[data-compact-governance='true'] .pillarDisclosureBody.expanded{max-height:calc(100% - 52px);overflow:hidden}
+@media (max-height:820px){
+  .zpcAppShell{padding:8px 14px;grid-template-columns:184px minmax(0,1fr);
+    grid-template-rows:52px 38px minmax(0,1fr);gap:6px 12px}
+  .zpcAppShell>.topbar{height:52px}
+  .zpcBrandBlock h1{font-size:19px}
+  .zpcBrandBlock .subtitle{display:none}
+  .zpcHeaderActions>*{min-height:34px;height:34px;padding:4px 8px}
+  .zpcAppShell>.trustStrip{min-height:38px;padding:4px 8px}
+  .zpcNavigation{padding:6px;gap:2px}
+  .zpcNavigation .tab{min-height:27px;height:27px;padding:3px 6px;font-size:11px}
+  .zpcNavLabel{margin:3px 5px 0;font-size:9px}
+}
+@media (max-width:1100px){
+  .zpcAppShell{grid-template-columns:1fr;grid-template-rows:auto auto auto minmax(0,1fr);
+    grid-template-areas:"header" "trust" "select" "workspace";padding:8px 10px;gap:6px}
+  .zpcNavigation{display:none}
+  .zpcAppShell>.areaSelectWrap{grid-area:select;display:grid;grid-template-columns:auto minmax(0,1fr);
+    align-items:center;gap:8px;margin:0}
+  .zpcAppShell>.areaSelectWrap>span{font-size:11px;font-weight:800}
+  .zpcAppShell>.areaSelectWrap select{min-height:36px;height:36px;padding:5px 8px}
+  .zpcAppShell>.trustStrip{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (max-width:700px){
+  .zpcAppShell>.topbar{grid-template-columns:minmax(0,1fr) auto}
+  .zpcBrandBlock .eyebrow{display:none}
+  .zpcBrandBlock h1{font-size:16px}
+  .zpcHeaderActions>a,.zpcHeaderActions .adminChip{display:none}
+  .zpcAppShell>.trustStrip{grid-template-columns:1.2fr repeat(2,minmax(0,1fr))}
+  .zpcAppShell>.trustStrip>div:nth-child(4),.zpcAppShell>.trustStrip>div:nth-child(5){display:none}
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .shell-governance[data-compact-governance='true'] .pillarGrid{grid-template-columns:1fr}
+}
+/* Accessibility/readability closure for compact governance */
+.shell-governance[data-compact-governance='true'] .standardStrip span,
+.shell-governance[data-compact-governance='true'] .governanceAbout summary,
+.shell-governance[data-compact-governance='true'] .certTargetSelectWrap span,
+.shell-governance[data-compact-governance='true'] .certTitleRow p,
+.shell-governance[data-compact-governance='true'] .certSeal,
+.shell-governance[data-compact-governance='true'] .certSummaryGrid small,
+.shell-governance[data-compact-governance='true'] .certRunStrip span,
+.shell-governance[data-compact-governance='true'] .certRunStrip b,
+.shell-governance[data-compact-governance='true'] .rootBlockerDetails summary,
+.shell-governance[data-compact-governance='true'] .governancePager strong,
+.shell-governance[data-compact-governance='true'] .governancePager .compact,
+.shell-governance[data-compact-governance='true'] .certActions>*{font-size:12px!important}
+.shell-governance[data-compact-governance='true'] .certTitleRow h2{font-size:16px!important}
+.shell-governance[data-compact-governance='true'] .certSummaryGrid b{font-size:14px!important}
+.shell-governance[data-compact-governance='true'] .certTargetSelectWrap select,
+.shell-governance[data-compact-governance='true'] .certTargetSelectWrap option{
+  background:var(--surface-elevated)!important;color:var(--text-primary)!important}
+@media (max-height:780px){
+  .zpcWorkspace.shell-commercial .commercialWorkspace{height:100%;min-height:0;overflow:hidden;gap:6px}
+  .zpcWorkspace.shell-commercial .commercialHeader{gap:6px}
+  .zpcWorkspace.shell-commercial .commercialHeader p{margin-block:2px}
+  .zpcWorkspace.shell-commercial .commercialPager{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  .zpcWorkspace.shell-commercial .commercialPager .filter{min-height:34px;height:34px;padding:4px 6px;font-size:12px}
+  .zpcWorkspace.shell-commercial .commercialMetrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .zpcWorkspace.shell-commercial .commercialMetrics article{min-height:70px;padding:6px 8px}
+  .zpcWorkspace.shell-commercial .commercialDashboardGrid{grid-template-columns:1fr;gap:6px}
+  .zpcWorkspace.shell-commercial .commercialProofStrip{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .zpcWorkspace.shell-commercial .commercialProofStrip span{padding:6px 8px}
+}
+@media (max-width:700px){
+  .zpcHeaderActions>a,.zpcHeaderActions .adminChip{display:none!important}
+  .zpcHeaderActions .themeToggle,.zpcHeaderActions>button.secondary{
+    min-width:44px!important;width:auto!important;height:40px!important;min-height:40px!important;padding:6px 10px!important}
+  .shell-governance[data-compact-governance='true'] .certTitleRow{
+    grid-template-columns:minmax(0,1fr);gap:8px}
+  .shell-governance[data-compact-governance='true'] .certActions{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .shell-governance[data-compact-governance='true'] .certActions .certSeal{grid-column:1/-1}
+  .shell-governance[data-compact-governance='true'] .certActions button{
+    min-width:0;width:100%;height:42px!important;min-height:42px!important;
+    padding:5px 8px!important;white-space:normal!important;line-height:1.15}
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px}
+  .shell-governance[data-compact-governance='true'] .certSummaryPanel{
+    min-width:0;width:100%;overflow:hidden!important}
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid span,
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid b,
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid small{min-width:0;max-width:100%}
+  .shell-governance[data-compact-governance='true'] .certRunStrip{
+    grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:700px){
+  .shell-governance[data-compact-governance='true'] .certSummaryPanel{
+    padding:6px 8px!important;gap:4px!important}
+  .shell-governance[data-compact-governance='true'] .certTitleRow,
+  .shell-governance[data-compact-governance='true'] .certActions,
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid,
+  .shell-governance[data-compact-governance='true'] .certRunStrip{gap:4px!important}
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid span{padding:5px 6px!important}
+  .shell-governance[data-compact-governance='true'] .rootBlockerDetails{padding:0 6px!important}
+}

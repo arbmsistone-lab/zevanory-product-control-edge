@@ -75,14 +75,18 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [liveState, setLiveState] = useState<'LIVE'|'SYNCING'|'STALE'>('SYNCING');
   const [lastSyncAt, setLastSyncAt] = useState<number>(Date.now());
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const [dashboardPage, setDashboardPage] = useState(0);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const meta = SECTION_META[section];
-  const pagedDashboard = viewportWidth <= 1180;
+  const pagedDashboard = viewportWidth <= 1180 || viewportHeight <= 780;
 
   useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
+    const onResize = () => {
+      setViewportWidth(window.innerWidth);
+      setViewportHeight(window.innerHeight);
+    };
     window.addEventListener('resize', onResize, { passive: true });
     return () => window.removeEventListener('resize', onResize);
   }, []);

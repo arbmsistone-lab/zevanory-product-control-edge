@@ -386,9 +386,13 @@ function App() {
     return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
 
   useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
+    const onResize = () => {
+      setViewportWidth(window.innerWidth);
+      setViewportHeight(window.innerHeight);
+    };
     window.addEventListener('resize', onResize, { passive: true });
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -699,18 +703,18 @@ function App() {
     () => certificationTargets.find(target => target.id === selectedTargetId) ?? certificationTargets[0] ?? null,
     [certificationTargets, selectedTargetId],
   );
-  const certTargetPageSize = viewportWidth <= 900 ? 1 : 6;
+  const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 820;
+  const certTargetPageSize = compactGovernance ? 1 : 6;
   const certTargetPageCount = Math.max(1, Math.ceil(certificationTargets.length / certTargetPageSize));
   const safeCertTargetPage = Math.min(certTargetPage, certTargetPageCount - 1);
   const pagedCertificationTargets = certificationTargets.slice(safeCertTargetPage * certTargetPageSize, (safeCertTargetPage + 1) * certTargetPageSize);
-  const governancePageSize = viewportWidth <= 900 ? 1 : 2;
+  const governancePageSize = viewportWidth <= 620 ? 1 : 2;
   const governancePageCount = selectedCertificationTarget ? Math.max(1, Math.ceil(selectedCertificationTarget.certification.pillars.length / governancePageSize)) : 1;
   const safeGovernancePage = Math.min(governancePage, governancePageCount - 1);
   const governancePillars = selectedCertificationTarget?.certification.pillars.slice(
     safeGovernancePage * governancePageSize,
     (safeGovernancePage + 1) * governancePageSize,
   ) ?? [];
-  const compactGovernance = viewportWidth <= 900;
   const openCertification = (product: Product) => {
     setSelectedTargetId(`product:${product.id}`);
     setGovernanceMode('certification');
@@ -824,7 +828,7 @@ function App() {
         </select>
       </label>
 
-      <main className={`zpcWorkspace shell shell-${view}`}>
+      <main className={`zpcWorkspace shell shell-${view}`} data-compact-governance={compactGovernance ? 'true' : 'false'}>
       {error && <div className='errorbox globalError'>{error}</div>}
 
       {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
