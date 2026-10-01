@@ -23,7 +23,7 @@ check(workspace.includes('O CFO não cria dados financeiros fictícios'), 'missi
 check(workspace.includes('EXECUÇÃO EXTERNA BLOQUEADA'), 'missing_external_execution_guard');
 check(css.includes('.cfoWorkspace'), 'missing_cfo_styles');
 check(app.includes('VENDA SEM GATE: BLOQUEADA'), 'regression_sale_gate');
-check(app.includes('zeesSealGrid'), 'regression_zees_grid');
+check(app.includes("className='pillarGrid'") && app.includes('openCertification(product)'), 'regression_zees_governance_navigation');
 
 if (failures.length) {
   console.error('ZEVANORY_CFO_AUDIT=FAIL', failures.join(','));
