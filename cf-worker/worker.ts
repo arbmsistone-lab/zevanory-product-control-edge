@@ -73,6 +73,18 @@ export default {
     normalizedUrl.pathname = normalizedPath;
     const normalizedRequest = new Request(normalizedUrl.toString(), request);
 
+    const publicPath = normalizedPath.startsWith('/produtos/')
+      ? normalizedPath.slice('/produtos'.length)
+      : normalizedPath;
+    const retiredPublicPaths = new Set(['/arbm-sist','/zevanory-one','/arbm-one']);
+    if (retiredPublicPaths.has(publicPath)) {
+      return new Response('Produto retirado da superficie publica ZEVANORY.', { status: 410, headers: { 'cache-control':'no-store' } });
+    }
+    const salesPublicPaths = new Set(['/solucoes','/zevanory-cfo','/arbm-contador-saloes','/ia-na-pratica','/vendas-na-pratica','/lucro-e-caixa','/combo-ia-vendas','/negocio-completo','/termos','/privacidade','/reembolso','/afiliados']);
+    if (salesPublicPaths.has(publicPath)) {
+      return Response.redirect('https://vendas.zevanory.api.br' + publicPath + url.search, 308);
+    }
+
     if (normalizedPath === '/certifier') {
       return new Response(CERTIFIER_HTML, {
         headers: {
