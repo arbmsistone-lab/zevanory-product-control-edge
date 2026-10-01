@@ -52,6 +52,7 @@ async function storeCall(payload: Record<string, unknown>) {
       authorization: `Bearer ${key}`,
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(2_500),
   });
 
   if (!response.ok) {
@@ -224,6 +225,11 @@ export async function completePortableAccessMigration(candidate: string, migrati
 }
 
 export async function adminPinState() {
+  const legacyPin = String(env('ADMIN_PIN') || '').trim();
+  if (/^\d{4}$/.test(legacyPin)) {
+    return { configured: true, fingerprint: await sha256(legacyPin), source: 'runtime-secret' };
+  }
+
   try {
     const saved = await configRecord('admin_pin_hash');
     const hash = String(saved?.value || '');
@@ -232,14 +238,16 @@ export async function adminPinState() {
     }
   } catch {}
 
-  const legacyPin = String(env('ADMIN_PIN') || '').trim();
-  if (/^\d{4}$/.test(legacyPin)) {
-    return { configured: true, fingerprint: await sha256(legacyPin), source: 'legacy-secret-fallback' };
-  }
   return { configured: false, fingerprint: 'unconfigured', source: 'none' };
 }
 
 export async function verifyAdminPin(candidate: string) {
+  const legacyPin = String(env('ADMIN_PIN') || '').trim();
+  if (/^\d{4}$/.test(legacyPin)) {
+    const fingerprint = await sha256(legacyPin);
+    return { valid: (await sha256(candidate)) === fingerprint, fingerprint };
+  }
+
   let savedHash = '';
   try {
     const saved = await configRecord('admin_pin_hash');
@@ -250,12 +258,7 @@ export async function verifyAdminPin(candidate: string) {
     return { valid: (await sha256(candidate)) === savedHash, fingerprint: savedHash };
   }
 
-  const legacyPin = String(env('ADMIN_PIN') || '').trim();
-  if (!/^\d{4}$/.test(legacyPin)) {
-    return { valid: false, fingerprint: 'unconfigured' };
-  }
-  const fingerprint = await sha256(legacyPin);
-  return { valid: (await sha256(candidate)) === fingerprint, fingerprint };
+  return { valid: false, fingerprint: 'unconfigured' };
 }
 
 export async function portableHealth() {

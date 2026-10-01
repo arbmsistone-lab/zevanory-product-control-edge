@@ -2456,8 +2456,6 @@ async function createPinSession() {
   const now = new Date();
   const expires = new Date(now.getTime() + SESSION_HOURS * 60 * 60 * 1000);
   const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
-  const current = await db.list<PinSessionRecord>(PIN_CURRENT_SESSION, { limit: 10 });
-  if (current.items.length > 0) await db.delete(PIN_CURRENT_SESSION, current.items.map(item => item.id));
   const [id] = await db.add(PIN_CURRENT_SESSION, [{ token, createdAt: now.toISOString(), expiresAt: expires.toISOString() }]);
   if (!id) throw new Error('pin_session_create_failed');
   return { token, expiresAt: expires.toISOString() };
@@ -2671,8 +2669,7 @@ async function loadOperationalSnapshot(): Promise<OperationalSnapshot> {
 }
 
 async function adminData() {
-  await ensureSeed();
-  await ensureProducts();
+  await Promise.all([ensureSeed(), ensureProducts()]);
   const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns, globalTrust, operations] = await Promise.all([
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
     db.list<AuditRecord>(AUDITS, { limit: 20 }),
