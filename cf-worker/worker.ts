@@ -167,6 +167,16 @@ export default {
       return new Response(response.body,{status:response.status,headers});
     }
 
+    if (normalizedPath === '/version.json') {
+      return Response.json({
+        sha: String(env.WORKER_COMMIT || 'untracked'),
+        runtime: 'cloudflare-worker',
+        host: url.hostname,
+      }, {
+        headers: { 'cache-control': 'no-store, max-age=0' },
+      });
+    }
+
     if (normalizedPath === '/portable-health') {
       const health = await portableHealth();
       const lineage = String(env.WORKER_COMMIT || 'untracked');
