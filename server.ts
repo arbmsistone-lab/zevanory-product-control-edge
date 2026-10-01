@@ -84,6 +84,11 @@ server.listen(port, '0.0.0.0', () => {
       .catch(error => console.error('commercial_robot_tick_failed', error instanceof Error ? error.message : String(error)));
   };
 
-  setTimeout(runCommercialRobot, 8_000).unref();
-  setInterval(runCommercialRobot, 15 * 60 * 1000).unref();
+  const commercialRobotEnabled = String(process.env.COMMERCIAL_ROBOT_ENABLED ?? '1').trim() !== '0';
+  if (commercialRobotEnabled) {
+    setTimeout(runCommercialRobot, 8_000).unref();
+    setInterval(runCommercialRobot, 15 * 60 * 1000).unref();
+  } else {
+    console.info('commercial_robot_disabled');
+  }
 });
