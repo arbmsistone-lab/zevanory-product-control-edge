@@ -15,7 +15,7 @@ function hardenedDatabaseUrl(raw: string) {
   return url.toString();
 }
 
-export async function runDrReconcileDryRun(cutoff = '2026-09-29T15:06:35Z'): Promise<Summary> {
+export async function runDrReconcileDryRun(cutoff = '2026-09-29T15:06:35Z', end = '2026-10-01T22:30:21Z'): Promise<Summary> {
   const databaseUrl = String(process.env.DATABASE_URL_PRIMARY || '').trim();
   if (!databaseUrl) throw new Error('DR_RECONCILE_PRIMARY_UNCONFIGURED');
 
@@ -33,14 +33,14 @@ export async function runDrReconcileDryRun(cutoff = '2026-09-29T15:06:35Z'): Pro
       select
         bucket,
         count(*)::int as current_records,
-        count(*) filter (where updated_at >= $1::timestamptz)::int as changed_since_cutoff,
-        min(updated_at) filter (where updated_at >= $1::timestamptz) as first_change,
-        max(updated_at) filter (where updated_at >= $1::timestamptz) as last_change
+        count(*) filter (where updated_at >= $1::timestamptz and updated_at <= $2::timestamptz)::int as changed_since_cutoff,
+        min(updated_at) filter (where updated_at >= $1::timestamptz and updated_at <= $2::timestamptz) as first_change,
+        max(updated_at) filter (where updated_at >= $1::timestamptz and updated_at <= $2::timestamptz) as last_change
       from public.zpc_records
       group by bucket
       order by bucket
       `,
-      [cutoff],
+      [cutoff, end],
     );
 
     const buckets = result.rows.map((row: any) => ({
@@ -65,7 +65,7 @@ export async function runDrReconcileDryRun(cutoff = '2026-09-29T15:06:35Z'): Pro
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  runDrReconcileDryRun(process.argv[2] || undefined)
+  runDrReconcileDryRun(process.argv[2] || undefined, process.argv[3] || undefined)
     .then(summary => {
       console.log(JSON.stringify(summary, null, 2));
       console.error(`DR_RECONCILE_DRY_RUN=${summary.exactMirrorSupported ? 'PASS' : 'FAIL'} changed=${summary.totalChangedSinceCutoff} current=${summary.totalCurrentRecords}`);
