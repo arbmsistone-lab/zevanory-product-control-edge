@@ -157,7 +157,26 @@ await fs.mkdir(outDir,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const report=[]; let failed=false;
 
+const navigationRoute={
+  overview:{primary:'overview',primaryLabel:'Visão Geral'},
+  products:{primary:'products',primaryLabel:'Produtos'},
+  commercial:{primary:'commercial',primaryLabel:'Comercial'},
+  creatives:{primary:'content',primaryLabel:'Conteúdo',subLabel:'Criativos'},
+  approvals:{primary:'content',primaryLabel:'Conteúdo',subLabel:'Aprovações'},
+  publications:{primary:'content',primaryLabel:'Conteúdo',subLabel:'Publicações'},
+  prospecting:{primary:'commercial',primaryLabel:'Comercial',subLabel:'Prospecção'},
+  crm:{primary:'commercial',primaryLabel:'Comercial',subLabel:'CRM/Vendas'},
+  support:{primary:'support',primaryLabel:'Atendimento'},
+  finance:{primary:'finance',primaryLabel:'Financeiro'},
+  cfo:{primary:'finance',primaryLabel:'Financeiro',subLabel:'ZEVANORY CFO'},
+  evidence:{primary:'evidence',primaryLabel:'Evidências'},
+  operations:{primary:'system',primaryLabel:'Sistema',subLabel:'Saúde do sistema'},
+  governance:{primary:'system',primaryLabel:'Sistema',subLabel:'Qualidade e certificação'},
+};
+
 async function navigate(page,width,key,label){
+  const route=navigationRoute[key];
+  if(!route) throw new Error('Unknown audit navigation key: '+key);
   if(width<=960){
     const sel=page.getByLabel('Selecionar área do Control Center');
     await sel.waitFor({state:'visible',timeout:15000});
@@ -165,7 +184,10 @@ async function navigate(page,width,key,label){
     return;
   }
   const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'});
-  await nav.getByRole('button',{name:label,exact:true}).click();
+  await nav.getByRole('button',{name:route.primaryLabel,exact:true}).click();
+  if(route.subLabel){
+    await nav.getByRole('button',{name:route.subLabel,exact:true}).click();
+  }
 }
 
 for(const size of sizes){
