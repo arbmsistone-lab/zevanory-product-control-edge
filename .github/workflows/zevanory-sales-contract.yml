@@ -30,3 +30,6 @@ jobs:
 
       - name: ZEVANORY SALES autonomy contract
         run: npm run test:zevanory-sales-contract
+
+      - name: ZEVANORY SALES runtime integration audit
+        run: npm run audit:zevanory-sales-integration
