@@ -816,6 +816,54 @@ function App() {
     () => activeCertificationTargets.find(target => target.id === selectedTargetId) ?? activeCertificationTargets[0] ?? null,
     [activeCertificationTargets, selectedTargetId],
   );
+  const ownerOverview = useMemo(() => {
+    if (!commercial) return null;
+    const now = new Date();
+    const sameDay = (value: string | null | undefined, daysAgo = 0) => {
+      if (!value) return false;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return false;
+      const target = new Date(now);
+      target.setHours(0, 0, 0, 0);
+      target.setDate(target.getDate() - daysAgo);
+      return date.getFullYear() === target.getFullYear()
+        && date.getMonth() === target.getMonth()
+        && date.getDate() === target.getDate();
+    };
+    const sameMonth = (value: string | null | undefined) => {
+      if (!value) return false;
+      const date = new Date(value);
+      return !Number.isNaN(date.getTime())
+        && date.getFullYear() === now.getFullYear()
+        && date.getMonth() === now.getMonth();
+    };
+    const confirmed = new Set(['confirmed', 'paid', 'received', 'settled', 'done']);
+    const saleSources = new Set(['sale', 'payment', 'checkout', 'order', 'asaas']);
+    const isSale = (item: CommercialWorkspaceData['finance'][number]) =>
+      confirmed.has(String(item.status || '').toLowerCase().replaceAll('_', '-'))
+      && saleSources.has(String(item.source || '').toLowerCase().replaceAll('_', '-'))
+      && Number(item.valueCents || 0) > 0;
+    const sales = commercial.finance.filter(isSale);
+    const salesToday = sales.filter(item => sameDay(item.updatedAt || item.createdAt)).length;
+    const salesMonth = sales.filter(item => sameMonth(item.updatedAt || item.createdAt)).length;
+    const revenueMonth = sales
+      .filter(item => sameMonth(item.updatedAt || item.createdAt))
+      .reduce((sum, item) => sum + Number(item.valueCents || 0), 0);
+    const openConversationStates = new Set(['contacted','conversation','offer','follow-up','checkout','proposal','opportunity']);
+    const openConversations = commercial.leads.filter(item => openConversationStates.has(String(item.status || '').toLowerCase().replaceAll('_','-'))).length;
+    const approvalStates = new Set(['approval','pending-approval','awaiting-approval']);
+    const approvalItems = [...commercial.creatives, ...commercial.publications]
+      .filter(item => approvalStates.has(String(item.status || '').toLowerCase().replaceAll('_','-')))
+      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+    const revenueBars = Array.from({ length: 12 }, (_, index) => {
+      const daysAgo = 11 - index;
+      return sales
+        .filter(item => sameDay(item.updatedAt || item.createdAt, daysAgo))
+        .reduce((sum, item) => sum + Number(item.valueCents || 0), 0);
+    });
+    return { salesToday, salesMonth, revenueMonth, openConversations, approvalItems, revenueBars };
+  }, [commercial]);
+
   const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 900;
   const certTargetPageSize = compactGovernance ? 1 : 6;
   const certTargetPageCount = Math.max(1, Math.ceil(activeCertificationTargets.length / certTargetPageSize));
@@ -873,7 +921,7 @@ function App() {
         </div>
       </header>
 
-      <section className={globalTrust ? (globalTrust.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked') : 'trustStrip loading'} aria-label='Estado global ZEVANORY'>
+      {primaryArea === 'system' && <section className={globalTrust ? (globalTrust.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked') : 'trustStrip loading'} aria-label='Estado global ZEVANORY'>
         <div className='trustState'>
           <ShieldCheck size={16} />
           <span>TRUST CHAIN</span>
@@ -883,7 +931,7 @@ function App() {
         <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
         <div><small>SHA</small><b>{canonicalSha ? canonicalSha.slice(0, 12) : canonicalShaLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
         <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
-      </section>
+      </section>}
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
         <div className='zpcNavGroup'>
@@ -999,99 +1047,71 @@ function App() {
       {view === 'cfo' && <CfoWorkspace data={cfo} />}
 
       {view === 'overview' && (
-        <section className='overviewStack' data-page={overviewPage}>
-          <section className='overviewHero panel'>
-            <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2></div>
-            <span className={fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>
-              {fastOverview?.sources.health.ok ? (overviewOperations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO') : 'INFRA INDISPONÍVEL'}
-            </span>
+        <section className='premiumOverview' aria-label='Visão Geral executiva'>
+          <header className='premiumOverviewHeader'>
+            <div>
+              <p className='premiumEyebrow'>VISÃO GERAL</p>
+              <h2>O negócio em uma tela.</h2>
+              <p>Vendas, receita, conversas e decisões que realmente precisam de você.</p>
+            </div>
+            <button
+              className={'ownerHealth ' + (fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'healthy' : fastOverviewLoading ? 'loading' : 'attention')}
+              type='button'
+              onClick={() => setView('operations')}
+              aria-label='Abrir detalhes de saúde do sistema'
+            >
+              <span className='ownerHealthDot' />
+              <span>
+                <b>{fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'Operação saudável' : fastOverviewLoading ? 'Verificando operação' : 'Atenção necessária'}</b>
+                <small>Ver detalhes</small>
+              </span>
+            </button>
+          </header>
+
+          <section className='ownerKpis' aria-label='Indicadores do negócio'>
+            <article><small>Vendas hoje</small><strong>{ownerOverview ? ownerOverview.salesToday : '—'}</strong><span>{ownerOverview?.salesToday ? 'confirmadas' : 'Nenhuma venda ainda'}</span></article>
+            <article><small>Vendas no mês</small><strong>{ownerOverview ? ownerOverview.salesMonth : '—'}</strong><span>{ownerOverview?.salesMonth ? 'confirmadas' : 'Sem vendas confirmadas'}</span></article>
+            <article><small>Receita no mês</small><strong>{ownerOverview ? new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ownerOverview.revenueMonth / 100) : '—'}</strong><span>{ownerOverview?.revenueMonth ? 'recebida e confirmada' : 'Nenhuma receita confirmada'}</span></article>
+            <article><small>Conversas abertas</small><strong>{ownerOverview ? ownerOverview.openConversations : '—'}</strong><span>{ownerOverview?.openConversations ? 'em andamento' : 'Nenhuma conversa aberta'}</span></article>
+            <article><small>Aprovações pendentes</small><strong>{ownerOverview ? ownerOverview.approvalItems.length : '—'}</strong><span>{ownerOverview?.approvalItems.length ? 'aguardam sua decisão' : 'Nada aguardando você'}</span></article>
           </section>
-          <nav className='overviewPager' aria-label='Páginas da visão geral'>
-            {['Operação', 'Certificação', 'Canais', 'Bloqueios'].map((label, index) => <button key={label} className={overviewPage === index ? 'filter active' : 'filter'} aria-pressed={overviewPage === index} onClick={() => setOverviewPage(index)}>{label}</button>)}
-          </nav>
 
-          {overviewPage === 0 && <section className='overviewCards'>
-            <article className='overviewCard'>
-              <span>Saúde</span>
-              {fastOverview?.sources.health.ok
-                ? <><strong>{overviewOperations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {overviewOperations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {overviewOperations?.health.schemaReady ? 'OK' : 'FAIL'}</small></>
-                : <><strong>ERRO</strong><small>Fonte de saúde indisponível. Os demais cards continuam independentes.</small></>}
-            </article>
-            <article className='overviewCard'>
-              <span>Vendas</span>
-              {fastOverview?.sources.status.ok
-                ? <><strong>{operationalLabel(overviewOperations?.runtime.sales)}</strong><small>checkout {overviewOperations?.runtime.checkout ?? 'unknown'} · financeiro {overviewOperations?.runtime.financial ?? 'unknown'}</small></>
-                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
-            </article>
-            <article className='overviewCard'>
-              <span>Produtos</span>
-              {fastOverview?.sources.inventory.ok
-                ? <><strong>{fastOverview.summary.total}</strong><small>{fastOverview.summary.salesEnabled} em venda · {fastOverview.summary.blocked} pendentes</small></>
-                : <><strong>ERRO</strong><small>Inventário indisponível.</small></>}
-            </article>
-            <article className='overviewCard'>
-              <span>Banco</span>
-              {fastOverview?.sources.health.ok
-                ? <><strong>{overviewOperations?.health.requiredTables ?? 0} tabelas</strong><small>{overviewOperations?.health.requiredMigrations ?? 0} migrations · faltas {(overviewOperations?.health.missingTables ?? 0)+(overviewOperations?.health.missingMigrations ?? 0)}</small></>
-                : <><strong>ERRO</strong><small>Fonte de saúde indisponível.</small></>}
-            </article>
-          </section>}
-
-          {overviewPage === 1 && <section className='overviewCards overviewCardsCertification'>
-            <article className='overviewCard'>
-              <span>Quorum técnico</span>
-              {fastOverview?.sources.continuity.ok
-                ? <><strong>{overviewOperations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{overviewOperations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></>
-                : <><strong>ERRO</strong><small>Fonte de continuidade indisponível.</small></>}
-            </article>
-            <article className='overviewCard'>
-              <span>ZEES-16</span>
-              {operations
-                ? <><strong>{operations.zees16.proven}/16</strong><small>{operations.zees16.partial} parciais · {operations.zees16.blocked} bloqueados</small></>
-                : <><strong>CARREGANDO</strong><small>Evidência detalhada em segundo plano.</small></>}
-            </article>
-            <article className='overviewCard'>
-              <span>ZEA-10</span>
-              {globalTrust
-                ? <><strong>{globalTrust.zea10.proven}/10</strong><small>{globalTrust.zea10.partial} parciais · {globalTrust.zea10.blocked} bloqueados</small></>
-                : <><strong>{globalTrustLoading ? 'CARREGANDO' : 'ERRO'}</strong><small>{globalTrustLoading ? 'Fonte de confiança em leitura.' : 'Fonte de confiança indisponível.'}</small></>}
-            </article>
-          </section>}
-
-          {overviewPage === 2 && <section className='overviewCards overviewCardsChannels'>
-            <article className='overviewCard'>
-              <span>Canais configurados</span>
-              {fastOverview?.sources.status.ok
-                ? <><strong>{overviewOperations?.channels.length ?? 0}</strong><small>detalhamento disponível em Comercial</small></>
-                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
-            </article>
-            <article className='overviewCard'>
-              <span>WhatsApp</span>
-              {fastOverview?.sources.status.ok && fastOverview?.sources.continuity.ok
-                ? <><strong>{operationalLabel(overviewOperations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {overviewOperations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></>
-                : <><strong>ERRO</strong><small>Status ou continuidade indisponível.</small></>}
-            </article>
-            <article className='overviewCard'>
-              <span>Execução comercial</span>
-              {fastOverview?.sources.status.ok
-                ? <><strong>{overviewOperations?.channels.filter(channel => channel.commercialExecution === 'enabled').length ?? 0}</strong><small>canais com execução habilitada</small></>
-                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
-            </article>
-            <article className='overviewCard'><button className='secondary compact overviewJump' onClick={() => setView('commercial')}>Abrir Comercial</button></article>
-          </section>}
-
-          {overviewPage === 3 && <section className='overviewGrid overviewGridSingle'>
-            <article className='panel'>
-              <div className='panelhead'><div><p className='kicker'>ATENÇÃO EXECUTIVA</p><h2>O que está bloqueando</h2></div><AlertTriangle size={20} /></div>
-              <div className='executiveList'>
-                <div><span>Estado global</span><b>{fastOverview?.sources.control.ok ? operationalLabel(overviewOperations?.control.globalState) : 'ERRO DA FONTE'}</b></div>
-                <div><span>Bloqueador raiz</span><b>{fastOverview?.sources.control.ok ? (overviewOperations?.control.rootBlocker ?? 'none') : 'indisponível'}</b></div>
-                <div><span>Decisão do core</span><b>{fastOverview?.sources.control.ok ? operationalLabel(overviewOperations?.control.decision) : 'indisponível'}</b></div>
-                <div><span>Produtos bloqueados</span><b>{fastOverview?.sources.inventory.ok ? fastOverview.summary.blocked : 'indisponível'}</b></div>
-                <div><span>Incidentes</span><b>{dashboard ? shellDashboard.incidents.length : 'carregando'}</b></div>
+          <section className='ownerOverviewGrid'>
+            <article className='ownerRevenueCard premiumCard'>
+              <div className='premiumCardHead'>
+                <div><h3>Receita</h3><p>Últimos 12 dias · somente pagamentos confirmados</p></div>
+                <strong>{ownerOverview ? new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ownerOverview.revenueBars.reduce((a,b)=>a+b,0)/100) : '—'}</strong>
               </div>
+              {ownerOverview && ownerOverview.revenueBars.some(value => value > 0) ? (
+                <div className='ownerRevenueChart' aria-label='Receita confirmada dos últimos 12 dias'>
+                  {ownerOverview.revenueBars.map((value,index) => {
+                    const max = Math.max(...ownerOverview.revenueBars, 1);
+                    return <span key={index} className='ownerRevenueBar' style={{'--bar-height': Math.max(5, Math.round((value/max)*100)) + '%'} as React.CSSProperties} title={new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value/100)}><i /></span>;
+                  })}
+                </div>
+              ) : (
+                <div className='ownerEmptyState'><b>Nenhuma receita confirmada ainda</b><span>O gráfico aparecerá quando houver pagamentos reais.</span><button onClick={() => setView('finance')}>Ver financeiro</button></div>
+              )}
             </article>
-          </section>}
+
+            <article className='ownerActionCard premiumCard'>
+              <div className='premiumCardHead'><div><h3>O que precisa de mim agora</h3><p>Só decisões que exigem sua ação.</p></div></div>
+              {ownerOverview?.approvalItems.length ? (
+                <div className='ownerApprovalList'>
+                  {ownerOverview.approvalItems.slice(0,4).map(item => <div key={item.kind+item.id}><b>{item.title}</b><span>{item.kind === 'creative' ? 'Criativo' : 'Publicação'} · aguardando aprovação</span></div>)}
+                  <button className='champagneAction' onClick={() => setView('approvals')}>Revisar aprovações</button>
+                </div>
+              ) : (
+                <div className='ownerEmptyState compact'><b>Nada exige sua aprovação agora</b><span>Novas decisões aparecerão aqui.</span><button onClick={() => setView('approvals')}>Ver aprovações</button></div>
+              )}
+            </article>
+          </section>
+
+          <section className='ownerQuickCards'>
+            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>{overviewOperations?.runtime.checkout && !['disabled','blocked','globally-blocked','unavailable'].includes(String(overviewOperations.runtime.checkout).toLowerCase()) ? 'Checkout disponível.' : 'Checkout ainda não disponível.'}</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
+            <article className='ownerQuickCard'><Headphones size={18}/><div><b>Atendimento</b><span>{ownerOverview?.openConversations ? `${ownerOverview.openConversations} conversa(s) aberta(s).` : 'Nenhuma conversa aberta.'}</span><button onClick={() => setView('support')}>Abrir conversas</button></div></article>
+            <article className='ownerQuickCard'><ShoppingBag size={18}/><div><b>Vendas</b><span>{ownerOverview?.salesMonth ? `${ownerOverview.salesMonth} venda(s) confirmada(s) neste mês.` : 'Nenhuma venda ainda.'}</span><button onClick={() => setView('finance')}>{ownerOverview?.salesMonth ? 'Ver vendas' : 'Ver checkout'}</button></div></article>
+          </section>
         </section>
       )}
 
