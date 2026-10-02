@@ -6,7 +6,7 @@ on:
       - 'src/zevanory-sales-model.ts'
       - 'scripts/zevanory-sales-model-contract.ts'
       - 'docs/zevanory-sales/**'
-      - 'package.json'
+      - 'package.json'\n      - 'scripts/zevanory-sales-integration-audit.mjs'\n      - 'backend/index.ts'\n      - 'backend/commercial.ts'
       - '.github/workflows/zevanory-sales-contract.yml'
   workflow_dispatch:
 
