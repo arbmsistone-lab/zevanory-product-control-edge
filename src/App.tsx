@@ -855,15 +855,29 @@ function App() {
 
       <label className='areaSelectWrap'>
         <span>Área do Control Center</span>
-        <select value={primaryArea} onChange={event => navigatePrimary(event.target.value as PrimaryArea)} aria-label='Selecionar área do Control Center'>
+        <select value={view} onChange={event => setView(event.target.value as typeof view)} aria-label='Selecionar área do Control Center'>
           <option value='overview'>Visão Geral</option>
           <option value='products'>Produtos</option>
-          <option value='commercial'>Comercial</option>
-          <option value='content'>Conteúdo</option>
+          <optgroup label='Comercial'>
+            <option value='commercial'>Resumo comercial</option>
+            <option value='prospecting'>Prospecção</option>
+            <option value='crm'>CRM/Vendas</option>
+          </optgroup>
+          <optgroup label='Conteúdo'>
+            <option value='creatives'>Criativos</option>
+            <option value='approvals'>Aprovações</option>
+            <option value='publications'>Publicações</option>
+          </optgroup>
           <option value='support'>Atendimento</option>
-          <option value='finance'>Financeiro</option>
+          <optgroup label='Financeiro'>
+            <option value='finance'>Movimentações</option>
+            <option value='cfo'>ZEVANORY CFO</option>
+          </optgroup>
           <option value='evidence'>Evidências</option>
-          <option value='system'>Sistema</option>
+          <optgroup label='Sistema'>
+            <option value='operations'>Saúde do sistema</option>
+            <option value='governance'>Qualidade e certificação</option>
+          </optgroup>
         </select>
       </label>
 
