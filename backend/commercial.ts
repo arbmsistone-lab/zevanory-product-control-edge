@@ -331,7 +331,7 @@ function extractTag(xml: string, tag: string) {
 }
 
 export async function searchProspects(query: string): Promise<ProspectResult[]> {
-  const response = await fetch('https://www.bing.com/search?format=rss&q=' + encodeURIComponent(query), {
+  const response = await fetch('https://www.bing.com/search?mkt=pt-BR&cc=br&setlang=pt-BR&format=rss&count=20&q=' + encodeURIComponent(query), {
     headers: {
       accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8',
       'user-agent': 'ZEVANORY-Commercial-Research/2026.09',
@@ -350,7 +350,7 @@ export async function searchProspects(query: string): Promise<ProspectResult[]> 
     if (!title || !/^https?:\/\//i.test(url) || seen.has(url)) continue;
     seen.add(url);
     results.push({ title: title.slice(0, 180), url, description: description.slice(0, 1200), query });
-    if (results.length >= 8) break;
+    if (results.length >= 12) break;
   }
   return results;
 }
@@ -398,7 +398,7 @@ export async function commercialRobotTick() {
   let rejected = 0;
   let queryFailures = 0;
   try {
-    const queries = M1_PROSPECTING.queries.map(item => String(item).trim()).filter(Boolean).slice(0, 12);
+    const queries = M1_PROSPECTING.queries.map(item => String(item).trim()).filter(Boolean).slice(0, 24);
     if (!queries.length) {
       return { ok: false, skipped: true, reason: 'm1_queries_missing', discovered: 0, rejected: 0, queryFailures: 0, briefsCreated: 0, at: new Date().toISOString() };
     }
