@@ -25,7 +25,7 @@ await page.locator('.zpcAppShell').waitFor();
 const nav=page.locator('.zpcNavigation');
 assert.equal(await nav.locator('.tab').count(),8,'expected exactly 8 primary navigation items');
 for(let i=0;i<8;i++) assert.equal(await nav.locator('.tab').nth(i).locator('svg').count(),1,'every primary item must have one icon');
-const forbidden=['ZEES-16 / Governança','Operações técnicas','ZEVANORY CFO'];
+const forbidden=['ZEES-16 / Governança','Operações técnicas'];
 const navText=await nav.innerText();
 for(const value of forbidden) assert.equal(navText.includes(value),false,'technical/duplicated label leaked into primary navigation: '+value);
 
@@ -55,8 +55,8 @@ for(const sub of ['Aprovações','Publicações']){
   checks.push(await singleActive('Conteúdo/'+sub));
 }
 await page.getByRole('button',{name:'Financeiro',exact:true}).click();
-await nav.getByRole('button',{name:'Inteligência financeira',exact:true}).click();
-checks.push(await singleActive('Financeiro/Inteligência financeira'));
+await nav.getByRole('button',{name:'ZEVANORY CFO',exact:true}).click();
+checks.push(await singleActive('Financeiro/ZEVANORY CFO'));
 await page.getByRole('button',{name:'Sistema',exact:true}).click();
 await nav.getByRole('button',{name:'Qualidade e certificação',exact:true}).click();
 checks.push(await singleActive('Sistema/Qualidade e certificação'));
