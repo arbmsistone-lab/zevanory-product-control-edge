@@ -1,16 +1,9 @@
 import fs from 'node:fs';
-import { searchProspects, scoreProspect } from '../backend/commercial.ts';
+import { loadM1ProspectingConfig, searchProspects, scoreProspect } from '../backend/commercial.ts';
 
-const queries = String(process.env.COMMERCIAL_M1_QUERIES || '')
-  .split('|')
-  .map(value => value.trim())
-  .filter(Boolean)
-  .slice(0, 12);
+const config = loadM1ProspectingConfig();
+const queries = config.queries.map(value => String(value).trim()).filter(Boolean).slice(0, 12);
 
-if (!queries.length) {
-  console.error('M1_QUERY_AUTHORITY_MISSING');
-  process.exit(2);
-}
 
 const accepted = [];
 const rejected = [];
