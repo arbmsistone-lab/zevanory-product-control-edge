@@ -6,6 +6,9 @@ const index = fs.readFileSync('backend/index.ts', 'utf8');
 const model = fs.readFileSync('src/zevanory-sales-model.ts', 'utf8');
 
 const required = [
+  [commercial, 'commercialBucketName', 'server-owned tenant bucket helper missing'],
+  [commercial, "ZEVANORY_SALES_TENANT_ID", 'server-owned tenant identity missing'],
+  [commercial, "isolation: 'server-owned-bucket-v1'", 'tenant isolation metadata missing'],
   [commercial, 'commercialSalesPromoteDiscovery', 'discovery promotion runtime missing'],
   [commercial, 'commercialSalesQualifyLead', 'scored qualification runtime missing'],
   [commercial, 'commercialSalesDecision', 'server-owned action gate runtime missing'],
@@ -55,6 +58,9 @@ const clientOwnedPolicyFields = [
 
 for (const token of clientOwnedPolicyFields) {
   if (index.includes(token)) throw new Error(`client must not own sales policy/autonomy: ${token}`);
+}
+if (/tenant(Id|_id)\s*\?:/.test(index)) {
+  throw new Error('client must not select tenant');
 }
 
 const tsc = spawnSync(
