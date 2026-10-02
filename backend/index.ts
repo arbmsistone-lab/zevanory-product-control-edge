@@ -2803,45 +2803,35 @@ async function adminData() {
       : item);
   }
 
-  const zevanoryCanonicalEvidence = zevanoryProduct
-    ? await canonicalZevanoryEvidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryP08Evidence = zevanoryProduct
-    ? await canonicalZevanoryP08Evidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryP09Evidence = zevanoryProduct
-    ? await canonicalZevanoryP09Evidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryP13Evidence = zevanoryProduct
-    ? await canonicalZevanoryP13Evidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryExactWorkflowEvidence = zevanoryProduct
-    ? await canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P07','P11','P12','P16'])
-    : [];
-  const zevanoryDirectExactEvidence = zevanoryProduct
-    ? await canonicalZevanoryDirectExactReleaseEvidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryDurableProtectedEvidence = zevanoryProduct
-    ? await canonicalZevanoryDurableProtectedEvidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryDurableSecuritySupplyEvidence = zevanoryProduct
-    ? await canonicalZevanoryDurableSecuritySupplyEvidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const digitalPortfolioTechnicalEvidence = (await Promise.all(
-    products.items.map(item => canonicalDigitalPortfolioTechnicalEvidence(item))
-  )).flat();
-  const digitalPortfolioP16Evidence = (await Promise.all(
-    products.items.map(item => canonicalDigitalPortfolioP16Evidence(item))
-  )).flat();
-  const zevanoryOneProtectedEvidence = (await Promise.all(
-    products.items.map(item => canonicalZevanoryOneProtectedEvidence(item))
-  )).flat();
-  const zevanoryOneDurableEvidence = (await Promise.all(
-    products.items.map(item => canonicalZevanoryOneDurableEvidence(item))
-  )).flat();
-  const portfolioExactWorkflowEvidence = (await Promise.all(
-    products.items.map(item => canonicalPortfolioExactVerifierEvidence(item, ['P03']))
-  )).flat();
+  const [
+    zevanoryCanonicalEvidence,
+    zevanoryP08Evidence,
+    zevanoryP09Evidence,
+    zevanoryP13Evidence,
+    zevanoryExactWorkflowEvidence,
+    zevanoryDirectExactEvidence,
+    zevanoryDurableProtectedEvidence,
+    zevanoryDurableSecuritySupplyEvidence,
+    digitalPortfolioTechnicalEvidence,
+    digitalPortfolioP16Evidence,
+    zevanoryOneProtectedEvidence,
+    zevanoryOneDurableEvidence,
+    portfolioExactWorkflowEvidence,
+  ] = await Promise.all([
+    zevanoryProduct ? canonicalZevanoryEvidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryP08Evidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryP09Evidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryP13Evidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P07','P11','P12','P16']) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryDirectExactReleaseEvidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryDurableProtectedEvidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryDurableSecuritySupplyEvidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    Promise.all(products.items.map(item => canonicalDigitalPortfolioTechnicalEvidence(item))).then(rows => rows.flat()),
+    Promise.all(products.items.map(item => canonicalDigitalPortfolioP16Evidence(item))).then(rows => rows.flat()),
+    Promise.all(products.items.map(item => canonicalZevanoryOneProtectedEvidence(item))).then(rows => rows.flat()),
+    Promise.all(products.items.map(item => canonicalZevanoryOneDurableEvidence(item))).then(rows => rows.flat()),
+    Promise.all(products.items.map(item => canonicalPortfolioExactVerifierEvidence(item, ['P03']))).then(rows => rows.flat()),
+  ]);
   const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...zevanoryDirectExactEvidence, ...zevanoryDurableProtectedEvidence, ...zevanoryDurableSecuritySupplyEvidence, ...digitalPortfolioTechnicalEvidence, ...digitalPortfolioP16Evidence, ...zevanoryOneProtectedEvidence, ...zevanoryOneDurableEvidence, ...portfolioExactWorkflowEvidence];
   const enriched = products.items.filter(product => !retiredPublicProductSlugs.has(product.slug)).map(product => {
     const base = enrichProduct(product);
@@ -2888,8 +2878,10 @@ async function adminData() {
     })),
   ];
 
-  const commercial = await commercialWorkspace(operations);
-  const cfo = await cfoWorkspace();
+  const [commercial, cfo] = await Promise.all([
+    commercialWorkspace(operations),
+    cfoWorkspace(),
+  ]);
 
   return {
     globalTrust,
