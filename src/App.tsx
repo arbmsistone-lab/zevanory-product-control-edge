@@ -13,6 +13,11 @@ import {
   ShieldCheck,
   ShoppingBag,
   LayoutDashboard,
+  Megaphone,
+  Sparkles,
+  Headphones,
+  CircleDollarSign,
+  FileCheck2,
   Moon,
   Sun,
   X,
@@ -22,6 +27,8 @@ import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 import type { CfoWorkspaceData } from './cfo-model';
+
+type PrimaryArea = 'overview' | 'products' | 'commercial' | 'content' | 'support' | 'finance' | 'evidence' | 'system';
 
 type SystemItem = {
   id: string;
@@ -398,6 +405,27 @@ function App() {
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const shellDashboard = dashboard ?? EMPTY_DASHBOARD;
   const bootstrapPending = dashboard === null;
+  const primaryArea: PrimaryArea =
+    view === 'overview' ? 'overview' :
+    view === 'products' ? 'products' :
+    (['commercial', 'prospecting', 'crm'] as const).includes(view as any) ? 'commercial' :
+    (['creatives', 'approvals', 'publications'] as const).includes(view as any) ? 'content' :
+    view === 'support' ? 'support' :
+    (['finance', 'cfo'] as const).includes(view as any) ? 'finance' :
+    view === 'evidence' ? 'evidence' : 'system';
+  const navigatePrimary = (area: PrimaryArea) => {
+    const defaults: Record<PrimaryArea, typeof view> = {
+      overview: 'overview',
+      products: 'products',
+      commercial: 'commercial',
+      content: 'creatives',
+      support: 'support',
+      finance: 'finance',
+      evidence: 'evidence',
+      system: 'operations',
+    };
+    setView(defaults[area]);
+  };
 
   useEffect(() => {
     const onResize = () => {
@@ -795,53 +823,29 @@ function App() {
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
         <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Comando</p>
-          <button className={view === 'overview' ? 'tab active' : 'tab'} aria-pressed={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
-          <button className={view === 'products' ? 'tab active' : 'tab'} aria-pressed={view === 'products'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
-        </div>
-
-        <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Crescimento</p>
-          <button className={view === 'commercial' ? 'tab active' : 'tab'} aria-pressed={view === 'commercial'} onClick={() => setView('commercial')}>Comercial</button>
-          <button className={view === 'creatives' ? 'tab active' : 'tab'} aria-pressed={view === 'creatives'} onClick={() => setView('creatives')}>Criativos</button>
-          <button className={view === 'approvals' ? 'tab active' : 'tab'} aria-pressed={view === 'approvals'} onClick={() => setView('approvals')}>Aprovações</button>
-          <button className={view === 'publications' ? 'tab active' : 'tab'} aria-pressed={view === 'publications'} onClick={() => setView('publications')}>Publicações</button>
-          <button className={view === 'prospecting' ? 'tab active' : 'tab'} aria-pressed={view === 'prospecting'} onClick={() => setView('prospecting')}>Prospecção</button>
-          <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM/Vendas</button>
-          <button className={view === 'support' ? 'tab active' : 'tab'} aria-pressed={view === 'support'} onClick={() => setView('support')}>Atendimento</button>
-        </div>
-
-        <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Gestão</p>
-          <button className={view === 'finance' ? 'tab active' : 'tab'} aria-pressed={view === 'finance'} onClick={() => setView('finance')}>Financeiro</button>
-          <button className={view === 'cfo' ? 'tab active' : 'tab'} aria-pressed={view === 'cfo'} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
-          <button className={view === 'evidence' ? 'tab active' : 'tab'} aria-pressed={view === 'evidence'} onClick={() => setView('evidence')}>Evidências</button>
-        </div>
-
-        <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Sistema</p>
-          <button className={view === 'operations' ? 'tab active' : 'tab'} aria-pressed={view === 'operations'} onClick={() => setView('operations')}>Operações técnicas</button>
-          <button className={view === 'governance' ? 'tab active' : 'tab'} aria-pressed={view === 'governance'} onClick={() => setView('governance')}>ZEES-16 / Governança</button>
+          <p className='zpcNavLabel'>Áreas</p>
+          <button className={primaryArea === 'overview' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'overview'} onClick={() => navigatePrimary('overview')}><LayoutDashboard size={16} />Visão Geral</button>
+          <button className={primaryArea === 'products' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'products'} onClick={() => navigatePrimary('products')}><ShoppingBag size={16} />Produtos</button>
+          <button className={primaryArea === 'commercial' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'commercial'} onClick={() => navigatePrimary('commercial')}><Megaphone size={16} />Comercial</button>
+          <button className={primaryArea === 'content' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'content'} onClick={() => navigatePrimary('content')}><Sparkles size={16} />Conteúdo</button>
+          <button className={primaryArea === 'support' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'support'} onClick={() => navigatePrimary('support')}><Headphones size={16} />Atendimento</button>
+          <button className={primaryArea === 'finance' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'finance'} onClick={() => navigatePrimary('finance')}><CircleDollarSign size={16} />Financeiro</button>
+          <button className={primaryArea === 'evidence' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'evidence'} onClick={() => navigatePrimary('evidence')}><FileCheck2 size={16} />Evidências</button>
+          <button className={primaryArea === 'system' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'system'} onClick={() => navigatePrimary('system')}><RadioTower size={16} />Sistema</button>
         </div>
       </nav>
 
       <label className='areaSelectWrap'>
         <span>Área do Control Center</span>
-        <select value={view} onChange={event => setView(event.target.value as typeof view)} aria-label='Selecionar área do Control Center'>
+        <select value={primaryArea} onChange={event => navigatePrimary(event.target.value as PrimaryArea)} aria-label='Selecionar área do Control Center'>
           <option value='overview'>Visão Geral</option>
           <option value='products'>Produtos</option>
           <option value='commercial'>Comercial</option>
-          <option value='creatives'>Criativos</option>
-          <option value='approvals'>Aprovações</option>
-          <option value='publications'>Publicações</option>
-          <option value='prospecting'>Prospecção</option>
-          <option value='crm'>CRM/Vendas</option>
+          <option value='content'>Conteúdo</option>
           <option value='support'>Atendimento</option>
           <option value='finance'>Financeiro</option>
-          <option value='cfo'>ZEVANORY CFO</option>
           <option value='evidence'>Evidências</option>
-          <option value='operations'>Operações técnicas</option>
-          <option value='governance'>ZEES-16 / Governança</option>
+          <option value='system'>Sistema</option>
         </select>
       </label>
 
@@ -858,6 +862,32 @@ function App() {
             <span /><span /><span /><span />
           </div>
         </section>
+      )}
+      {primaryArea === 'commercial' && (
+        <nav className='workspaceSubnav' aria-label='Seções comerciais'>
+          <button className={view === 'commercial' ? 'filter active' : 'filter'} onClick={() => setView('commercial')}>Resumo comercial</button>
+          <button className={view === 'prospecting' ? 'filter active' : 'filter'} onClick={() => setView('prospecting')}>Prospecção</button>
+          <button className={view === 'crm' ? 'filter active' : 'filter'} onClick={() => setView('crm')}>CRM e vendas</button>
+        </nav>
+      )}
+      {primaryArea === 'content' && (
+        <nav className='workspaceSubnav' aria-label='Seções de conteúdo'>
+          <button className={view === 'creatives' ? 'filter active' : 'filter'} onClick={() => setView('creatives')}>Criativos</button>
+          <button className={view === 'approvals' ? 'filter active' : 'filter'} onClick={() => setView('approvals')}>Aprovações</button>
+          <button className={view === 'publications' ? 'filter active' : 'filter'} onClick={() => setView('publications')}>Publicações</button>
+        </nav>
+      )}
+      {primaryArea === 'finance' && (
+        <nav className='workspaceSubnav' aria-label='Seções financeiras'>
+          <button className={view === 'finance' ? 'filter active' : 'filter'} onClick={() => setView('finance')}>Movimentações</button>
+          <button className={view === 'cfo' ? 'filter active' : 'filter'} onClick={() => setView('cfo')}>Inteligência financeira</button>
+        </nav>
+      )}
+      {primaryArea === 'system' && (
+        <nav className='workspaceSubnav' aria-label='Seções do sistema'>
+          <button className={view === 'operations' ? 'filter active' : 'filter'} onClick={() => setView('operations')}>Saúde do sistema</button>
+          <button className={view === 'governance' ? 'filter active' : 'filter'} onClick={() => setView('governance')}>Qualidade e certificação</button>
+        </nav>
       )}
       {error && <div className='errorbox globalError'>{error}</div>}
 
