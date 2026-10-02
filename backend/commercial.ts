@@ -343,7 +343,7 @@ export async function searchProspects(query: string): Promise<ProspectResult[]> 
     if (!title || !/^https?:\/\//i.test(url) || seen.has(url)) continue;
     seen.add(url);
     results.push({ title: title.slice(0, 180), url, description: description.slice(0, 1200), query });
-    if (results.length >= 4) break;
+    if (results.length >= 8) break;
   }
   return results;
 }
