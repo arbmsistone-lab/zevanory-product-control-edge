@@ -455,3 +455,288 @@ html,body,#root,.app-container{width:100%!important;max-width:100%!important;min
   .zpcWorkspace.shell-operations .feeditem{grid-template-columns:minmax(0,1fr)}
   .zpcWorkspace.shell-operations .feeditem .state{justify-self:start}
 }
+
+
+/* ROOT-CAUSE RUNTIME CLOSURE — dynamic content owns geometry */
+/* Dynamic content containers: fixed clipping contracts are superseded here, after all legacy layers. */
+.shell-governance[data-compact-governance='true'] .governanceStack,
+.shell-governance[data-compact-governance='true'] .certWorkspace,
+.shell-governance[data-compact-governance='true'] .certDetail,
+.shell-governance[data-compact-governance='true'] .certSummaryPanel,
+.shell-governance[data-compact-governance='true'] .pillarGrid,
+.shell-governance[data-compact-governance='true'] .pillarCard,
+.shell-governance[data-compact-governance='true'] .pillarDisclosureBody.expanded {
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  min-width:0;
+}
+.shell-governance[data-compact-governance='true'] .governanceStack {
+  grid-template-rows:auto auto!important;
+  align-content:start;
+}
+.shell-governance[data-compact-governance='true'] .certWorkspace {
+  grid-template-rows:auto auto!important;
+}
+.shell-governance[data-compact-governance='true'] .certDetail {
+  grid-template-rows:auto auto auto!important;
+  align-content:start;
+}
+.shell-governance[data-compact-governance='true'] .pillarGrid {
+  grid-template-rows:auto!important;
+  align-items:start;
+}
+.shell-governance[data-compact-governance='true'] .pillarDisclosureToggle {
+  height:auto!important;
+  min-height:var(--zpc-size-40);
+}
+.shell-governance[data-compact-governance='true'] .pillarDisclosureIdentity,
+.shell-governance[data-compact-governance='true'] .pillarDisclosureState {
+  min-width:0;
+}
+.shell-governance[data-compact-governance='true'] .pillarDisclosureIdentity strong,
+.shell-governance[data-compact-governance='true'] .pillarDisclosureState small {
+  white-space:normal!important;
+  overflow:visible!important;
+  overflow-wrap:anywhere;
+}
+
+.zpcWorkspace.shell-creatives .commercialWorkspace,
+.zpcWorkspace.shell-creatives .creativeLivePanel,
+.zpcWorkspace.shell-creatives .creativeLiveGrid,
+.zpcWorkspace.shell-creatives .creativeLiveCard,
+.zpcWorkspace.shell-creatives .creativeLiveBody {
+  min-width:0!important;
+}
+.zpcWorkspace.shell-creatives .creativeLiveCard {
+  grid-template-rows:minmax(var(--zpc-size-72),auto) auto!important;
+}
+.zpcWorkspace.shell-creatives .creativeLiveBody {
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+.zpcWorkspace.shell-creatives .creativeEvidence {
+  min-width:0;
+  flex-wrap:wrap;
+}
+.zpcWorkspace.shell-creatives .creativeEvidence span {
+  white-space:normal!important;
+  overflow:visible!important;
+  overflow-wrap:anywhere;
+}
+
+@media (max-width:1100px) {
+  .zpcWorkspace.shell-products .metrics {
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:var(--zpc-space-1)!important;
+    margin-bottom:var(--zpc-space-2)!important;
+  }
+  .zpcWorkspace.shell-products .metric {
+    min-width:0!important;
+    min-height:var(--zpc-size-56)!important;
+    padding:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-products .toolbar {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;
+    gap:var(--zpc-space-1)!important;
+    margin-bottom:var(--zpc-space-2)!important;
+  }
+  .zpcWorkspace.shell-products .toolbar > div:first-child {
+    min-width:0;
+  }
+  .zpcWorkspace.shell-products .toolbar > div:first-child :where(.kicker,h2) {
+    margin:0!important;
+  }
+  .zpcWorkspace.shell-products .toolbarControls {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;
+    gap:var(--zpc-space-1)!important;
+    min-width:0;
+  }
+  .zpcWorkspace.shell-products .filters {
+    display:none!important;
+  }
+  .zpcWorkspace.shell-products .productFilterSelect {
+    display:grid!important;
+    min-width:0;
+  }
+  .zpcWorkspace.shell-products .productFilterSelect > span {
+    display:none!important;
+  }
+  .zpcWorkspace.shell-products .productFilterSelect select {
+    width:100%!important;
+    min-width:0!important;
+    min-height:var(--zpc-size-44)!important;
+    height:var(--zpc-size-44)!important;
+    padding:var(--zpc-space-1) var(--zpc-space-2)!important;
+  }
+  .zpcWorkspace.shell-products .pagination {
+    display:grid!important;
+    grid-template-columns:var(--zpc-size-44) auto var(--zpc-size-44)!important;
+    align-items:center!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-products .pagination .filter {
+    width:var(--zpc-size-44)!important;
+    min-width:var(--zpc-size-44)!important;
+    height:var(--zpc-size-44)!important;
+    min-height:var(--zpc-size-44)!important;
+    padding:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-products .productGrid {
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:var(--zpc-space-2)!important;
+    min-width:0!important;
+  }
+  .zpcWorkspace.shell-products .productCard {
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    gap:var(--zpc-space-1)!important;
+    padding:var(--zpc-space-2)!important;
+  }
+  .zpcWorkspace.shell-products .productFacts {
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-products .productFacts span {
+    padding:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-products .gateRow {
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-products .gate {
+    min-width:0!important;
+    padding:var(--zpc-space-1)!important;
+    text-align:center;
+  }
+  .zpcWorkspace.shell-products .productActions {
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:var(--zpc-space-1)!important;
+    min-width:0!important;
+  }
+  .zpcWorkspace.shell-products .productActions > * {
+    min-width:0!important;
+    width:100%!important;
+    min-height:var(--zpc-size-44)!important;
+    height:auto!important;
+    padding:var(--zpc-space-1)!important;
+    white-space:normal!important;
+    line-height:1.2!important;
+  }
+}
+
+@media (max-width:620px) {
+  .zpcWorkspace.shell-products .toolbar {
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  .zpcWorkspace.shell-products .toolbar > div:first-child {
+    display:none!important;
+  }
+  .zpcWorkspace.shell-products .productHead {
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-products .productActions > * {
+    font-size:var(--zpc-font-xs)!important;
+  }
+
+  .zpcWorkspace.shell-operations .opsGrid {
+    gap:var(--zpc-space-2)!important;
+    grid-template-rows:auto auto auto!important;
+    align-content:start!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .zpcWorkspace.shell-operations .opsGrid > .panel {
+    min-height:0!important;
+    height:auto!important;
+    padding:var(--zpc-space-2)!important;
+    overflow:visible!important;
+  }
+  .zpcWorkspace.shell-operations .panelhead {
+    gap:var(--zpc-space-1)!important;
+    margin-bottom:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-operations .panelhead :where(.kicker,h2) {
+    margin:0!important;
+  }
+  .zpcWorkspace.shell-operations .operationSummary {
+    gap:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-operations .operationSummary span {
+    padding:var(--zpc-space-1)!important;
+  }
+  .zpcWorkspace.shell-operations .feed {
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .zpcWorkspace.shell-operations .empty {
+    padding:var(--zpc-space-2)!important;
+  }
+
+  .shell-governance[data-compact-governance='true'] .governanceHero {
+    padding:var(--zpc-space-1) var(--zpc-space-2)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .governanceHero .panelhead {
+    margin-bottom:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .governanceHero :where(h2,.productDescription) {
+    margin-block:0!important;
+  }
+  .shell-governance[data-compact-governance='true'] .standardStrip {
+    margin-top:var(--zpc-space-1)!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .standardStrip span {
+    padding:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .standardStrip b {
+    margin-bottom:0!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certActions {
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certActions .certSeal {
+    grid-column:auto!important;
+    min-width:0!important;
+    min-height:var(--zpc-size-44)!important;
+    display:grid!important;
+    place-items:center;
+    text-align:center;
+    white-space:normal!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certActions button {
+    min-width:0!important;
+    min-height:var(--zpc-size-44)!important;
+    height:auto!important;
+    padding:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid {
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid span {
+    padding:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certSummaryPanel {
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding:var(--zpc-space-1) var(--zpc-space-2)!important;
+    gap:var(--zpc-space-1)!important;
+  }
+}
