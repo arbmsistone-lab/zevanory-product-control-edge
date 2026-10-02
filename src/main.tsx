@@ -12,6 +12,7 @@ import './styles/products.css';
 import './styles/commercial-v2.css';
 import './styles/cfo-v2.css';
 import './styles/canonical-v4.css';
+import './styles/premium-shell.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
