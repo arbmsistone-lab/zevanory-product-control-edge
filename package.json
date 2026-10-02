@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run audit:runtime && npm run audit:commercial && npm run test:commercial-contract && npm run test:zevanory-sales-contract && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
+    "build": "npm run audit:runtime && npm run audit:commercial && npm run test:commercial-contract && npm run test:zevanory-sales-contract && npm run test:zevanory-sales-tenant && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
     "start": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "audit:commercial": "node scripts/ped-commercial-audit.mjs",
@@ -13,7 +13,8 @@
     "test:cfo-contract": "tsx scripts/cfo-model-contract.ts",
     "audit:runtime": "npm audit --omit=dev --audit-level=high",
     "test:zevanory-sales-contract": "tsx scripts/zevanory-sales-model-contract.ts",
-    "audit:zevanory-sales-integration": "node scripts/zevanory-sales-integration-audit.mjs"
+    "audit:zevanory-sales-integration": "node scripts/zevanory-sales-integration-audit.mjs",
+    "test:zevanory-sales-tenant": "tsx scripts/zevanory-sales-tenant-contract.ts"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
