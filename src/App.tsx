@@ -541,6 +541,11 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
+    if (sessionToken) {
+      void loadCanonicalVersion();
+      void loadGlobalTrustLive();
+      void loadFastOverview(sessionToken);
+    }
     void load(sessionToken);
     return () => {
       ++loadGeneration.current;
@@ -604,6 +609,13 @@ function App() {
     setAuthState('signedout');
     setDashboard(null);
     setGlobalTrust(null);
+    setGlobalTrustError('');
+    setGlobalTrustLoading(true);
+    setCanonicalSha(null);
+    setCanonicalShaLoading(true);
+    setFastOverview(null);
+    setFastOverviewError('');
+    setFastOverviewLoading(true);
     setCommercial(null);
     setCfo(null);
   };
@@ -611,6 +623,9 @@ function App() {
   const handleLogin = (token: string) => {
     setSessionToken(token);
     setAuthState('ready');
+    void loadCanonicalVersion();
+    void loadGlobalTrustLive();
+    void loadFastOverview(token);
     void load(token);
   };
 
