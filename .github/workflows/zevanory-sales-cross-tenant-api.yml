@@ -1,0 +1,19 @@
+name: ZEVANORY Sales Cross-Tenant API Attack
+on:
+  push:
+    branches:
+      - test/zevanory-sales-api-cross-tenant-20261002
+permissions:
+  contents: read
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci --no-audit --no-fund
+      - name: Direct API cross-tenant attack
+        run: npx tsx scripts/zevanory-sales-cross-tenant-api-contract.ts
