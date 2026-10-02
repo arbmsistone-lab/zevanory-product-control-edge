@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'src/zevanory-sales-model.ts'
+      - 'src/commercial-model.ts'
       - 'scripts/zevanory-sales-model-contract.ts'
+      - 'scripts/zevanory-sales-tenant-contract.ts'
       - 'scripts/zevanory-sales-integration-audit.mjs'
       - 'backend/commercial.ts'
       - 'backend/index.ts'
@@ -33,6 +35,9 @@ jobs:
 
       - name: ZEVANORY SALES autonomy contract
         run: npm run test:zevanory-sales-contract
+
+      - name: ZEVANORY SALES tenant isolation contract
+        run: npm run test:zevanory-sales-tenant
 
       - name: ZEVANORY SALES runtime integration audit
         run: npm run audit:zevanory-sales-integration

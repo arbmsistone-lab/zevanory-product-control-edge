@@ -26,6 +26,37 @@ const BUCKETS: Record<CommercialRecordKind, string> = {
   evidence: 'zpc_commercial_evidence',
 };
 
+const DEFAULT_SALES_TENANT = 'zevanory';
+const SALES_TENANT_RE = /^[a-z0-9][a-z0-9-]{2,63}$/;
+
+export function zevanorySalesTenantId() {
+  const raw = String(process.env.ZEVANORY_SALES_TENANT_ID || DEFAULT_SALES_TENANT)
+    .trim()
+    .toLowerCase();
+  if (!SALES_TENANT_RE.test(raw)) throw new Error('zevanory_sales_tenant_invalid');
+  return raw;
+}
+
+export function commercialBucketName(kind: CommercialRecordKind) {
+  const base = BUCKETS[kind];
+  if (!base) throw new Error('commercial_kind_invalid');
+  const tenantId = zevanorySalesTenantId();
+  return tenantId === DEFAULT_SALES_TENANT
+    ? base
+    : `${base}__tenant_${tenantId}`;
+}
+
+export function zevanorySalesTenantIsolation() {
+  const id = zevanorySalesTenantId();
+  return Object.freeze({
+    id,
+    defaultTenant: id === DEFAULT_SALES_TENANT,
+    tenantSource: 'server-environment',
+    isolation: 'server-owned-bucket-v1',
+    clientSelectable: false,
+  });
+}
+
 function cleanString(value: unknown, max = 4000) {
   return String(value ?? '').trim().slice(0, max);
 }
@@ -75,7 +106,7 @@ function normalizeCommercialRecord(
 }
 
 async function listKind(kind: CommercialRecordKind, limit = 200): Promise<CommercialRecord[]> {
-  const result = await db.list<Omit<CommercialRecord, 'id'>>(BUCKETS[kind], { limit });
+  const result = await db.list<Omit<CommercialRecord, 'id'>>(commercialBucketName(kind), { limit });
   return result.items.map(item => ({ ...item, kind, id: item.id })) as CommercialRecord[];
 }
 
@@ -89,11 +120,11 @@ async function upsertBySourceKey(raw: Partial<CommercialRecord>) {
     const current = await listKind(kind, 1000);
     const found = current.find(item => item.source === normalized.source && item.sourceKey === sourceKey);
     if (found) {
-      await db.update(BUCKETS[kind], [{ id: found.id, record: normalized }]);
+      await db.update(commercialBucketName(kind), [{ id: found.id, record: normalized }]);
       return { ...normalized, id: found.id };
     }
   }
-  const [id] = await db.add(BUCKETS[kind], [normalized]);
+  const [id] = await db.add(commercialBucketName(kind), [normalized]);
   if (!id) throw new Error('commercial_record_create_failed');
   return { ...normalized, id };
 }
@@ -122,6 +153,7 @@ export async function commercialWorkspace(operations: CommercialOperationsLike):
 
   return {
     generatedAt: new Date().toISOString(),
+    tenant: zevanorySalesTenantIsolation(),
     metrics,
     robot: deriveCommercialRobotState(operations, heartbeat?.updatedAt ?? null),
     leads: sortRecent(leads),
@@ -148,11 +180,11 @@ export async function commercialAdminCreate(raw: Partial<CommercialRecord>) {
 }
 
 export async function commercialAdminUpdate(id: string, kind: CommercialRecordKind, raw: Partial<CommercialRecord>) {
-  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS[kind], [id]);
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName(kind), [id]);
   if (!existing) throw new Error('commercial_record_not_found');
   const normalized = normalizeCommercialRecord({ ...raw, kind }, { ...existing, id, kind } as CommercialRecord);
   if (!normalized) throw new Error('commercial_record_invalid');
-  await db.update(BUCKETS[kind], [{ id, record: normalized }]);
+  await db.update(commercialBucketName(kind), [{ id, record: normalized }]);
   return { ...normalized, id };
 }
 
@@ -162,7 +194,7 @@ export async function commercialApprovalAction(input: {
   action: 'approve' | 'reject' | 'request-changes';
   note?: string;
 }) {
-  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS[input.kind], [input.id]);
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName(input.kind), [input.id]);
   if (!existing) throw new Error('commercial_record_not_found');
   const status = input.action === 'approve'
     ? 'approved'
@@ -179,7 +211,7 @@ export async function commercialApprovalAction(input: {
     { ...existing, id: input.id, kind: input.kind } as CommercialRecord,
   );
   if (!normalized) throw new Error('commercial_record_invalid');
-  await db.update(BUCKETS[input.kind], [{ id: input.id, record: normalized }]);
+  await db.update(commercialBucketName(input.kind), [{ id: input.id, record: normalized }]);
   await upsertBySourceKey({
     kind: 'event',
     title: input.action === 'approve' ? 'Item aprovado' : input.action === 'reject' ? 'Item rejeitado' : 'Alterações solicitadas',
@@ -415,7 +447,7 @@ export function buildZevanorySalesPolicy(
 }
 
 export async function commercialSalesPromoteDiscovery(discoveryId: string) {
-  const [discovery] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.evidence, [discoveryId]);
+  const [discovery] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('evidence'), [discoveryId]);
   if (!discovery) throw new Error('sales_discovery_not_found');
   if (discovery.status !== 'raw-discovery') throw new Error('sales_discovery_not_raw');
 
@@ -474,7 +506,7 @@ export async function commercialSalesQualifyLead(input: CommercialSalesQualifica
     : [];
   if (signals.length === 0) throw new Error('sales_qualification_evidence_required');
 
-  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [cleanString(input.leadId, 120)]);
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [cleanString(input.leadId, 120)]);
   if (!existing) throw new Error('sales_lead_not_found');
 
   const qualified = score >= threshold;
@@ -497,7 +529,7 @@ export async function commercialSalesQualifyLead(input: CommercialSalesQualifica
     { ...existing, id: input.leadId, kind: 'lead' } as CommercialRecord,
   );
   if (!normalized) throw new Error('commercial_record_invalid');
-  await db.update(BUCKETS.lead, [{ id: input.leadId, record: normalized }]);
+  await db.update(commercialBucketName('lead'), [{ id: input.leadId, record: normalized }]);
 
   await upsertBySourceKey({
     kind: 'event',
@@ -532,7 +564,7 @@ export async function commercialSalesDecision(
     paymentConfirmed?: boolean;
   },
 ) {
-  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [input.leadId]);
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [input.leadId]);
   if (!lead) throw new Error('sales_lead_not_found');
   const autonomy = configuredSalesAutonomy();
   const policy = buildZevanorySalesPolicy(operations, {
