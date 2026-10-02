@@ -384,6 +384,13 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
+  const [globalTrustLoading, setGlobalTrustLoading] = useState(true);
+  const [globalTrustError, setGlobalTrustError] = useState('');
+  const [canonicalSha, setCanonicalSha] = useState<string | null>(null);
+  const [canonicalShaLoading, setCanonicalShaLoading] = useState(true);
+  const [fastOverview, setFastOverview] = useState<FastOverview | null>(null);
+  const [fastOverviewLoading, setFastOverviewLoading] = useState(true);
+  const [fastOverviewError, setFastOverviewError] = useState('');
   const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
