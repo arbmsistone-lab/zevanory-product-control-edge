@@ -10,6 +10,7 @@ import {
   type CommercialWorkspaceData,
 } from '../src/commercial-model.ts';
 import {
+  evaluateZevanoryAutonomousSaleProof,
   evaluateZevanorySalesAction,
   type ZevanorySalesAction,
   type ZevanorySalesAutonomyLevel,
@@ -555,21 +556,31 @@ export async function commercialSalesQualifyLead(input: CommercialSalesQualifica
   };
 }
 
+async function paymentConfirmedForLead(leadId: string) {
+  const finance = await listKind('finance', 1000);
+  return finance.some(item => {
+    const status = String(item.status || '').trim().toLowerCase();
+    if (!['paid', 'received', 'confirmed'].includes(status)) return false;
+    return (item.evidence || []).some(value => value === 'lead-id:' + leadId);
+  });
+}
+
 export async function commercialSalesDecision(
   operations: CommercialOperationsLike,
   input: {
     leadId: string;
     action: ZevanorySalesAction;
     humanApproval?: boolean;
-    paymentConfirmed?: boolean;
   },
 ) {
   const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [input.leadId]);
   if (!lead) throw new Error('sales_lead_not_found');
+
+  const paymentConfirmed = await paymentConfirmedForLead(input.leadId);
   const autonomy = configuredSalesAutonomy();
   const policy = buildZevanorySalesPolicy(operations, {
     humanApproval: input.humanApproval,
-    paymentConfirmed: input.paymentConfirmed,
+    paymentConfirmed,
   });
   const decision = evaluateZevanorySalesAction(autonomy, input.action, policy);
   const leadStatus = String(lead.status || '').trim().toLowerCase().replaceAll('_', '-');
@@ -609,6 +620,7 @@ export async function commercialSalesDecision(
       'autonomy:' + autonomy,
       'decision:' + decision.reason,
       'lead-status:' + leadStatus,
+      'payment-confirmed:' + paymentConfirmed,
       'external-execution:false',
       at,
     ],
@@ -621,7 +633,325 @@ export async function commercialSalesDecision(
     decision,
     policy,
     leadStatus,
+    paymentConfirmed,
     externalExecution: false,
     evaluatedAt: at,
+  };
+}
+
+type CommercialSalesExecutableAction = 'contact' | 'offer' | 'follow-up' | 'checkout';
+
+function nextLeadStatusForAction(action: CommercialSalesExecutableAction) {
+  if (action === 'contact') return 'contacted';
+  if (action === 'offer') return 'offer';
+  if (action === 'follow-up') return 'follow-up';
+  return 'checkout';
+}
+
+export async function commercialSalesExecuteAction(
+  operations: CommercialOperationsLike,
+  input: {
+    leadId: string;
+    action: CommercialSalesExecutableAction;
+    content: string;
+    humanApproval?: boolean;
+  },
+) {
+  const content = cleanString(input.content, 4000);
+  if (!content) throw new Error('sales_action_content_required');
+
+  const decision = await commercialSalesDecision(operations, {
+    leadId: input.leadId,
+    action: input.action,
+    humanApproval: input.humanApproval,
+  });
+  if (!decision.decision.allowed) {
+    return { ...decision, executed: false, executionReason: decision.decision.reason };
+  }
+
+  const adapterUrl = String(process.env.ZEVANORY_SALES_CHANNEL_ADAPTER_URL || '').trim();
+  if (!/^https:\/\//i.test(adapterUrl)) throw new Error('sales_channel_adapter_url_missing');
+  const adapterToken = await secrets.readSecret('ZEVANORY_SALES_CHANNEL_ADAPTER_TOKEN');
+  if (!adapterToken) throw new Error('sales_channel_adapter_token_missing');
+
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [input.leadId]);
+  if (!lead) throw new Error('sales_lead_not_found');
+
+  const requestId = crypto.randomUUID();
+  const sentAt = new Date().toISOString();
+  const response = await fetch(adapterUrl, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: 'Bearer ' + adapterToken,
+      'x-zevanory-request-id': requestId,
+    },
+    body: JSON.stringify({
+      schema: 'zevanory.sales.action.v1',
+      tenantId: zevanorySalesTenantId(),
+      requestId,
+      action: input.action,
+      lead: {
+        id: input.leadId,
+        title: lead.title,
+        channel: lead.channel,
+        product: lead.product,
+        productId: lead.productId,
+      },
+      content,
+      sentAt,
+    }),
+    signal: AbortSignal.timeout(12_000),
+  });
+
+  const raw = await response.text();
+  let adapterResult: Record<string, unknown> = {};
+  try { adapterResult = raw ? JSON.parse(raw) as Record<string, unknown> : {}; } catch {}
+  if (!response.ok) throw new Error('sales_channel_adapter_http_' + response.status);
+
+  const externalId = cleanNullable(adapterResult.externalId || adapterResult.id, 220);
+  const readback = cleanNullable(adapterResult.readback || adapterResult.status, 500);
+  if (!externalId) throw new Error('sales_channel_adapter_external_id_missing');
+
+  const status = nextLeadStatusForAction(input.action);
+  const evidence = [
+    ...(lead.evidence || []),
+    'lead-id:' + input.leadId,
+    'sales-action:' + input.action,
+    'adapter-request-id:' + requestId,
+    'external-id:' + externalId,
+    ...(readback ? ['adapter-readback:' + readback] : []),
+    'executed-at:' + sentAt,
+  ].slice(-20);
+  const normalized = normalizeCommercialRecord(
+    { kind: 'lead', status, evidence },
+    { ...lead, id: input.leadId, kind: 'lead' } as CommercialRecord,
+  );
+  if (!normalized) throw new Error('commercial_record_invalid');
+  await db.update(commercialBucketName('lead'), [{ id: input.leadId, record: normalized }]);
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: 'Acao comercial executada · ' + lead.title,
+    detail: input.action + ' enviado pelo adapter externo.',
+    status: 'sales-action-executed',
+    channel: lead.channel,
+    product: lead.product || 'ZEVANORY SALES',
+    productId: lead.productId,
+    source: 'zevanory-sales',
+    sourceKey: ('sales-execution:' + requestId).slice(0, 220),
+    evidence,
+  });
+
+  return {
+    ...decision,
+    executed: true,
+    externalExecution: true,
+    requestId,
+    externalId,
+    readback,
+    leadStatus: status,
+    executedAt: sentAt,
+  };
+}
+
+export async function commercialSalesInbound(request: Request, body: unknown) {
+  if (!await requireCommercialAdapter(request)) return error('Adapter comercial nao autorizado.', 401);
+  const raw = body as {
+    leadId?: string;
+    externalId?: string;
+    channel?: string;
+    text?: string;
+    receivedAt?: string;
+  };
+  const leadId = cleanString(raw.leadId, 120);
+  const externalId = cleanString(raw.externalId, 220);
+  const text = cleanString(raw.text, 4000);
+  if (!leadId || !externalId || !text) return error('Evento inbound invalido.', 400);
+
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [leadId]);
+  if (!lead) return error('Lead nao encontrado.', 404);
+
+  const receivedAt = cleanString(raw.receivedAt, 64) || new Date().toISOString();
+  const evidence = [
+    ...(lead.evidence || []),
+    'lead-id:' + leadId,
+    'inbound-external-id:' + externalId,
+    'conversation-observed:true',
+    'received-at:' + receivedAt,
+  ].slice(-20);
+  const normalized = normalizeCommercialRecord(
+    { kind: 'lead', status: 'conversation', evidence },
+    { ...lead, id: leadId, kind: 'lead' } as CommercialRecord,
+  );
+  if (!normalized) return error('Registro comercial invalido.', 400);
+  await db.update(commercialBucketName('lead'), [{ id: leadId, record: normalized }]);
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: 'Resposta recebida · ' + lead.title,
+    detail: text,
+    status: 'sales-inbound',
+    channel: cleanNullable(raw.channel, 120) || lead.channel,
+    product: lead.product || 'ZEVANORY SALES',
+    productId: lead.productId,
+    source: 'zevanory-sales-adapter',
+    sourceKey: ('sales-inbound:' + externalId).slice(0, 220),
+    evidence,
+  });
+
+  return json({ ok: true, leadId, status: 'conversation', receivedAt });
+}
+
+
+function eventHasMarker(items: CommercialRecord[], leadId: string, marker: string) {
+  return items.some(item =>
+    (item.evidence || []).includes('lead-id:' + leadId) &&
+    (item.evidence || []).includes(marker)
+  );
+}
+
+export type CommercialSalesLifecycleEvent =
+  | 'checkout-completed'
+  | 'payment-confirmed'
+  | 'customer-created'
+  | 'fulfillment-started'
+  | 'follow-up-not-required';
+
+export async function commercialSalesLifecycle(request: Request, body: unknown) {
+  if (!await requireCommercialAdapter(request)) return error('Adapter comercial nao autorizado.', 401);
+  const raw = body as {
+    leadId?: string;
+    event?: CommercialSalesLifecycleEvent;
+    externalId?: string;
+    valueCents?: number;
+    currency?: string;
+    detail?: string;
+    occurredAt?: string;
+  };
+  const leadId = cleanString(raw.leadId, 120);
+  const event = cleanString(raw.event, 80) as CommercialSalesLifecycleEvent;
+  const allowed = new Set<CommercialSalesLifecycleEvent>([
+    'checkout-completed',
+    'payment-confirmed',
+    'customer-created',
+    'fulfillment-started',
+    'follow-up-not-required',
+  ]);
+  if (!leadId || !allowed.has(event)) return error('Evento de ciclo invalido.', 400);
+
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [leadId]);
+  if (!lead) return error('Lead nao encontrado.', 404);
+
+  const occurredAt = cleanString(raw.occurredAt, 64) || new Date().toISOString();
+  const externalId = cleanNullable(raw.externalId, 220);
+  const marker = event + ':true';
+  const evidence = [
+    ...(lead.evidence || []),
+    'lead-id:' + leadId,
+    marker,
+    ...(externalId ? ['lifecycle-external-id:' + externalId] : []),
+    'lifecycle-at:' + occurredAt,
+  ].slice(-20);
+
+  let nextStatus = String(lead.status || 'qualified');
+  if (event === 'checkout-completed') nextStatus = 'checkout';
+  if (event === 'payment-confirmed') nextStatus = 'payment';
+  if (event === 'customer-created') nextStatus = 'customer';
+  if (event === 'fulfillment-started') nextStatus = 'fulfillment';
+
+  const normalized = normalizeCommercialRecord(
+    { kind: 'lead', status: nextStatus, evidence },
+    { ...lead, id: leadId, kind: 'lead' } as CommercialRecord,
+  );
+  if (!normalized) return error('Registro comercial invalido.', 400);
+  await db.update(commercialBucketName('lead'), [{ id: leadId, record: normalized }]);
+
+  if (event === 'payment-confirmed') {
+    const valueRaw = Number(raw.valueCents);
+    const valueCents = Number.isFinite(valueRaw) && valueRaw >= 0 ? Math.round(valueRaw) : null;
+    await upsertBySourceKey({
+      kind: 'finance',
+      title: 'Pagamento confirmado · ' + lead.title,
+      detail: cleanString(raw.detail || 'Pagamento confirmado pelo adapter autenticado.', 1000),
+      status: 'confirmed',
+      channel: lead.channel,
+      product: lead.product || 'ZEVANORY SALES',
+      productId: lead.productId,
+      valueCents,
+      source: 'zevanory-sales-adapter',
+      sourceKey: ('payment-confirmed:' + leadId + ':' + (externalId || occurredAt)).slice(0, 220),
+      evidence: ['lead-id:' + leadId, marker, ...(externalId ? ['payment-external-id:' + externalId] : []), occurredAt],
+    });
+  }
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: 'Ciclo comercial · ' + event,
+    detail: cleanString(raw.detail || lead.title, 1000),
+    status: 'sales-lifecycle',
+    channel: lead.channel,
+    product: lead.product || 'ZEVANORY SALES',
+    productId: lead.productId,
+    source: 'zevanory-sales-adapter',
+    sourceKey: ('sales-lifecycle:' + leadId + ':' + event + ':' + (externalId || occurredAt)).slice(0, 220),
+    evidence: ['lead-id:' + leadId, marker, ...(externalId ? ['lifecycle-external-id:' + externalId] : []), occurredAt],
+  });
+
+  return json({ ok: true, leadId, event, status: nextStatus, occurredAt });
+}
+
+export async function commercialSalesProof(leadId: string) {
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [leadId]);
+  if (!lead) throw new Error('sales_lead_not_found');
+
+  const [events, finance] = await Promise.all([
+    listKind('event', 1000),
+    listKind('finance', 1000),
+  ]);
+  const evidence = lead.evidence || [];
+
+  const proof = {
+    leadDiscovered: evidence.some(value => value.startsWith('discovery-id:') || value.startsWith('discovered-at:')),
+    contactSent:
+      evidence.includes('sales-action:contact') &&
+      evidence.some(value => value.startsWith('external-id:')),
+    conversationObserved:
+      evidence.includes('conversation-observed:true') ||
+      eventHasMarker(events, leadId, 'conversation-observed:true'),
+    qualificationRecorded:
+      evidence.some(value => value.startsWith('qualification-score:')) &&
+      evidence.some(value => value.startsWith('qualification-signal:')),
+    offerSent:
+      evidence.includes('sales-action:offer') &&
+      evidence.some(value => value.startsWith('external-id:')),
+    followUpSatisfied:
+      evidence.includes('sales-action:follow-up') ||
+      evidence.includes('follow-up-not-required:true') ||
+      eventHasMarker(events, leadId, 'follow-up-not-required:true'),
+    checkoutCompleted:
+      evidence.includes('checkout-completed:true') ||
+      eventHasMarker(events, leadId, 'checkout-completed:true'),
+    paymentConfirmed:
+      finance.some(item =>
+        ['paid','received','confirmed'].includes(String(item.status || '').toLowerCase()) &&
+        (item.evidence || []).includes('lead-id:' + leadId) &&
+        (item.evidence || []).includes('payment-confirmed:true')
+      ),
+    customerCreated:
+      evidence.includes('customer-created:true') ||
+      eventHasMarker(events, leadId, 'customer-created:true'),
+    fulfillmentStarted:
+      evidence.includes('fulfillment-started:true') ||
+      eventHasMarker(events, leadId, 'fulfillment-started:true'),
+  };
+
+  const result = evaluateZevanoryAutonomousSaleProof(proof);
+  return {
+    leadId,
+    proof,
+    ...result,
+    verdict: result.pass ? 'AUTONOMOUS_SALE_PROVED' : 'AUTONOMOUS_SALE_NOT_PROVED',
+    evaluatedAt: new Date().toISOString(),
   };
 }

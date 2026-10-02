@@ -166,6 +166,72 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
     }
   };
 
+  const promoteDiscovery = async (item: CommercialRecord) => {
+    setBusyId(item.id + 'promote');
+    setActionError('');
+    try {
+      await api.post('/api/commercial/sales/promote-discovery', { sessionToken, discoveryId: item.id });
+      await onRefresh();
+    } catch (err: any) {
+      setActionError(String(err?.response?.data?.error || 'A descoberta não pôde ser promovida.'));
+    } finally { setBusyId(''); }
+  };
+
+  const qualifyLead = async (item: CommercialRecord) => {
+    const scoreRaw = window.prompt('Score de qualificação (0–100)', '70');
+    if (scoreRaw === null) return;
+    const score = Number(scoreRaw);
+    if (!Number.isFinite(score) || score < 0 || score > 100) {
+      setActionError('Score inválido. Use um número entre 0 e 100.');
+      return;
+    }
+    const signalsRaw = window.prompt('Evidências/sinais, separados por ponto e vírgula', item.detail || item.title);
+    if (signalsRaw === null) return;
+    const signals = signalsRaw.split(';').map(value => value.trim()).filter(Boolean);
+    if (!signals.length) {
+      setActionError('A qualificação exige pelo menos uma evidência.');
+      return;
+    }
+    setBusyId(item.id + 'qualify');
+    setActionError('');
+    try {
+      await api.post('/api/commercial/sales/qualify', {
+        sessionToken, leadId: item.id, score, signals,
+        reason: 'Qualificação aprovada no Control Center',
+      });
+      await onRefresh();
+    } catch (err: any) {
+      setActionError(String(err?.response?.data?.error || 'O lead não pôde ser qualificado.'));
+    } finally { setBusyId(''); }
+  };
+
+  const executeSalesAction = async (
+    item: CommercialRecord,
+    action: 'contact' | 'offer' | 'follow-up' | 'checkout',
+  ) => {
+    const labels = { contact: 'mensagem de contato', offer: 'oferta', 'follow-up': 'mensagem de follow-up', checkout: 'mensagem com checkout' };
+    const content = window.prompt('Conteúdo da ' + labels[action], '');
+    if (content === null) return;
+    if (!content.trim()) {
+      setActionError('A execução exige conteúdo explícito.');
+      return;
+    }
+    setBusyId(item.id + action);
+    setActionError('');
+    try {
+      const response = await api.post('/api/commercial/sales/execute', {
+        sessionToken, leadId: item.id, action, content, humanApproval: true,
+      });
+      const result = response.data;
+      if (!result?.executed) {
+        setActionError('Ação mantida bloqueada pelo gate: ' + String(result?.executionReason || result?.decision?.reason || 'não autorizada'));
+      }
+      await onRefresh();
+    } catch (err: any) {
+      setActionError(String(err?.response?.data?.error || 'A execução comercial não foi concluída.'));
+    } finally { setBusyId(''); }
+  };
+
   if (!data) {
     return <section className='commercialPanel'><div className='commercialEmpty'>Workspace comercial indisponível. Nenhuma métrica foi presumida.</div></section>;
   }
@@ -173,14 +239,14 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const genericMap: Partial<Record<CommercialSection, CommercialRecord[]>> = {
     creatives: data.creatives,
     publications: data.publications,
-    prospecting: data.leads,
+    prospecting: data.evidence.filter(item => item.status === 'raw-discovery'),
     crm: data.leads,
     support: data.support,
     finance: data.finance,
     evidence: [...data.evidence, ...data.events],
   };
   let items = genericMap[section] || [];
-  if (section === 'crm') items = data.leads.filter(item => ['qualified','contacted','opportunity','proposal','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+  if (section === 'crm') items = data.leads.filter(item => ['new','nurture','qualified','contact-ready','contacted','conversation','offer','follow-up','checkout','payment','customer','fulfillment','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
   const genericPageSize = viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4;
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);
@@ -306,8 +372,27 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             <div><b>{meta.title}</b><small>{items.length} registro(s)</small></div>
             <div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeListPage - 1))} disabled={safeListPage === 0}>‹</button><strong>{safeListPage + 1}/{genericPageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(genericPageCount - 1, safeListPage + 1))} disabled={safeListPage >= genericPageCount - 1}>›</button></div>
           </div>
+          {actionError && <div className='errorbox'>{actionError}</div>}
           <div className='commercialList commercialListTall' tabIndex={0} aria-label={meta.title + ' — registros'}>
-            {pagedItems.map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
+            {pagedItems.map(item => (
+              <div key={item.kind + item.id}>
+                <RecordRow item={item}/>
+                {section === 'prospecting' && item.status === 'raw-discovery' && (
+                  <div className='approvalActions'>
+                    <button className='approveBtn' disabled={Boolean(busyId)} onClick={() => void promoteDiscovery(item)}><Check size={15}/>Promover para lead</button>
+                  </div>
+                )}
+                {section === 'crm' && (
+                  <div className='approvalActions'>
+                    {['new','nurture'].includes(item.status) && <button className='changeBtn' disabled={Boolean(busyId)} onClick={() => void qualifyLead(item)}><ShieldCheck size={15}/>Qualificar</button>}
+                    {item.status === 'qualified' && <button className='approveBtn' disabled={Boolean(busyId)} onClick={() => void executeSalesAction(item, 'contact')}><Send size={15}/>Contato</button>}
+                    {item.status === 'conversation' && <button className='approveBtn' disabled={Boolean(busyId)} onClick={() => void executeSalesAction(item, 'offer')}><BadgeDollarSign size={15}/>Oferta</button>}
+                    {['offer','follow-up'].includes(item.status) && <button className='changeBtn' disabled={Boolean(busyId)} onClick={() => void executeSalesAction(item, 'follow-up')}><RotateCcw size={15}/>Follow-up</button>}
+                    {['offer','follow-up'].includes(item.status) && <button className='approveBtn' disabled={Boolean(busyId)} onClick={() => void executeSalesAction(item, 'checkout')}><CircleDollarSign size={15}/>Checkout</button>}
+                  </div>
+                )}
+              </div>
+            ))}
             {!items.length && <div className='commercialEmpty'>Nenhum registro comprovado nesta área. O painel não preencherá dados fictícios.</div>}
           </div>
         </article>
