@@ -460,14 +460,50 @@ function App() {
   }, []);
 
   const loadGlobalTrustLive = async () => {
+    if (!globalTrust) setGlobalTrustLoading(true);
     try {
       const response = await fetch(`/global-trust.json?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`trust_http_${response.status}`);
       const trust = await response.json() as GlobalTrust;
       setGlobalTrust(trust);
+      setGlobalTrustError('');
       return trust;
     } catch {
+      setGlobalTrustError('Fonte de confiança indisponível');
       return null;
+    } finally {
+      setGlobalTrustLoading(false);
+    }
+  };
+
+  const loadCanonicalVersion = async () => {
+    setCanonicalShaLoading(true);
+    try {
+      const response = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(`version_http_${response.status}`);
+      const payload = await response.json() as { sha?: string };
+      const sha = String(payload.sha || '').trim().toLowerCase();
+      if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error('version_sha_invalid');
+      setCanonicalSha(sha);
+    } catch {
+      setCanonicalSha(null);
+    } finally {
+      setCanonicalShaLoading(false);
+    }
+  };
+
+  const loadFastOverview = async (token = sessionToken) => {
+    if (!token) return;
+    setFastOverviewLoading(true);
+    setFastOverviewError('');
+    try {
+      const response = await api.post('/api/admin/overview', { sessionToken: token });
+      setFastOverview(response.data as FastOverview);
+    } catch {
+      setFastOverview(null);
+      setFastOverviewError('Dados executivos indisponíveis');
+    } finally {
+      setFastOverviewLoading(false);
     }
   };
 
@@ -485,14 +521,12 @@ function App() {
       const response = await api.post('/api/admin/bootstrap', { sessionToken: token }, { signal: controller.signal });
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       setDashboard(response.data.dashboard);
-      setGlobalTrust(response.data.globalTrust ?? null);
       setOperations(response.data.operations ?? null);
       setCommercial(response.data.commercial ?? null);
       setCfo(response.data.cfo ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setAuthState('ready');
-      void loadGlobalTrustLive();
     } catch {
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       localStorage.removeItem('arbm_admin_session');
