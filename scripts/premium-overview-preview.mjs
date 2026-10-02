@@ -73,7 +73,7 @@ for (const theme of ['light','dark']) {
     }).map(el=>({tag:el.tagName,cls:el.className,text:(el.textContent||'').trim().slice(0,80)}));
 
     const parseRgb=(value)=>{
-      const match=String(value).match(/rgba?\\(\\s*(\\d+)[, ]+\\s*(\\d+)[, ]+\\s*(\\d+)(?:[^\\d.]+([\\d.]+))?/i);
+      const match=String(value).match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\)/i);
       return match ? {r:+match[1],g:+match[2],b:+match[3],a:match[4]===undefined?1:+match[4]} : null;
     };
     const luminance=({r,g,b})=>{
