@@ -3117,6 +3117,11 @@ export const handler = router({
     if (legacyMatch) await db.delete(PIN_SESSIONS, [legacyMatch.id]);
     return json({ ok: true });
   }],
+  'POST /api/admin/overview': [async ctx => {
+    const token = (ctx.body as { sessionToken?: string })?.sessionToken;
+    if (!await requirePinSession(token)) return error('Sessao invalida ou expirada.', 401);
+    return json(await fastOverviewData());
+  }],
   'POST /api/admin/bootstrap': [async ctx => {
     const token = (ctx.body as { sessionToken?: string })?.sessionToken;
     if (!await requirePinSession(token)) return error('Sessao invalida ou expirada.', 401);
