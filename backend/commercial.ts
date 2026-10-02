@@ -447,7 +447,7 @@ export function buildZevanorySalesPolicy(
 }
 
 export async function commercialSalesPromoteDiscovery(discoveryId: string) {
-  const [discovery] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.evidence, [discoveryId]);
+  const [discovery] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('evidence'), [discoveryId]);
   if (!discovery) throw new Error('sales_discovery_not_found');
   if (discovery.status !== 'raw-discovery') throw new Error('sales_discovery_not_raw');
 
@@ -506,7 +506,7 @@ export async function commercialSalesQualifyLead(input: CommercialSalesQualifica
     : [];
   if (signals.length === 0) throw new Error('sales_qualification_evidence_required');
 
-  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [cleanString(input.leadId, 120)]);
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [cleanString(input.leadId, 120)]);
   if (!existing) throw new Error('sales_lead_not_found');
 
   const qualified = score >= threshold;
@@ -529,7 +529,7 @@ export async function commercialSalesQualifyLead(input: CommercialSalesQualifica
     { ...existing, id: input.leadId, kind: 'lead' } as CommercialRecord,
   );
   if (!normalized) throw new Error('commercial_record_invalid');
-  await db.update(BUCKETS.lead, [{ id: input.leadId, record: normalized }]);
+  await db.update(commercialBucketName('lead'), [{ id: input.leadId, record: normalized }]);
 
   await upsertBySourceKey({
     kind: 'event',
@@ -564,7 +564,7 @@ export async function commercialSalesDecision(
     paymentConfirmed?: boolean;
   },
 ) {
-  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [input.leadId]);
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [input.leadId]);
   if (!lead) throw new Error('sales_lead_not_found');
   const autonomy = configuredSalesAutonomy();
   const policy = buildZevanorySalesPolicy(operations, {
