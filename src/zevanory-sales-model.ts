@@ -38,7 +38,8 @@ export type ZevanorySalesActionDecision = {
     | 'fulfillment_not_ready'
     | 'payment_not_confirmed'
     | 'human_approval_required'
-    | 'autonomous_publication_not_allowed';
+    | 'autonomous_publication_not_allowed'
+    | 'lead_not_qualified';
 };
 
 function deny(reason: ZevanorySalesActionDecision['reason']): ZevanorySalesActionDecision {
