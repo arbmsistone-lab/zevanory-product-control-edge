@@ -180,11 +180,7 @@ async function navigate(page,width,key,label){
   if(width<=960){
     const sel=page.getByLabel('Selecionar área do Control Center');
     await sel.waitFor({state:'visible',timeout:15000});
-    await sel.selectOption(route.primary);
-    if(route.subLabel){
-      const subnav=page.locator('.workspaceSubnav');
-      await subnav.getByRole('button',{name:route.subLabel,exact:true}).click();
-    }
+    await sel.selectOption(key);
     return;
   }
   const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'});
