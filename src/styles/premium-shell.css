@@ -13,11 +13,11 @@
   --z-error: #D25C5C;
   --z-action-ink: #17140E;
   --z-text-light: #1A1A1A;
-  --z-muted-light: #5E594F;
+  --z-muted-light: #514C43;
   --z-border-light: #DED9CF;
-  --z-action-light: #7A5E2B;
+  --z-action-light: #5E4619;
   --z-text-dark: #E9E4D8;
-  --z-muted-dark: #A7A39A;
+  --z-muted-dark: #B0ABA1;
   --z-border-dark: #2A2D34;
 }
 
@@ -360,6 +360,10 @@ html, body, button, input, select, textarea {
   --status-error: var(--z-error);
   --status-warning: var(--z-warning);
   --status-info: var(--z-action-light);
+  --status-success-text: #235D46;
+  --status-error-text: #7B2D2D;
+  --status-warning-text: #5E4619;
+  --status-info-text: #5E4619;
   --focus-ring: var(--z-action-light);
 }
 :root[data-theme='dark'] {
@@ -376,6 +380,10 @@ html, body, button, input, select, textarea {
   --status-error: var(--z-error);
   --status-warning: var(--z-warning);
   --status-info: var(--z-champagne);
+  --status-success-text: #7BCFA9;
+  --status-error-text: #F09292;
+  --status-warning-text: var(--z-warning);
+  --status-info-text: var(--z-champagne);
   --focus-ring: var(--z-champagne);
 }
 
@@ -592,4 +600,75 @@ html, body, button, input, select, textarea {
 }
 :root[data-theme='light'] .zpcNavigation .tab.active {
   border-left-color: var(--z-action-light);
+}
+
+
+/* Semantic text contrast: keep official status colors for borders, use AAA-safe text variants. */
+.commercialState.ok,
+.commercialValue,
+.approveBtn {
+  color: var(--status-success-text);
+}
+.commercialState.bad,
+.rejectBtn {
+  color: var(--status-error-text);
+}
+.commercialState.warn,
+.changeBtn {
+  color: var(--status-warning-text);
+}
+.commercialState.neutral {
+  color: var(--status-info-text);
+}
+
+/* Premium shell mobile/tablet: selector navigation replaces the desktop rail. */
+@media (max-width: 900px) {
+  .zpcAppShell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+  }
+  .premiumShellTopbar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .zpcNavigation {
+    display: none;
+  }
+  .zpcAppShell > .areaSelectWrap {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--zpc-space-2);
+    padding: var(--zpc-space-1) var(--zpc-space-3);
+  }
+  .zpcAppShell > .trustStrip {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 0 var(--zpc-space-3) var(--zpc-space-1);
+  }
+  .zpcAppShell > main.shell {
+    grid-column: 1;
+    grid-row: 4;
+    padding: var(--zpc-space-2) var(--zpc-space-3);
+  }
+}
+
+@media (max-width: 560px) {
+  .ownerQuickCards {
+    display: none;
+  }
+  .ownerRevenueCard {
+    display: none;
+  }
+  .ownerOverviewGrid {
+    display: block;
+  }
+  .premiumOverview {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  .ownerActionCard {
+    height: 100%;
+  }
 }
