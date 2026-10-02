@@ -881,16 +881,16 @@ function App() {
         </div>
       </header>
 
-      <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
+      <section className={globalTrust ? (globalTrust.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked') : 'trustStrip loading'} aria-label='Estado global ZEVANORY'>
         <div className='trustState'>
           <ShieldCheck size={16} />
           <span>TRUST CHAIN</span>
-          <strong>{globalTrust?.state ?? 'BLOCKED'}</strong>
+          <strong>{globalTrust ? globalTrust.state : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</strong>
         </div>
-        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
-        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : 'sem prova'}</b></div>
-        <div><small>SHA</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
-        <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : 'SEM MOTOR'}</b></div>
+        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>SHA</small><b>{canonicalSha ? canonicalSha.slice(0, 12) : canonicalShaLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
       </section>
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
