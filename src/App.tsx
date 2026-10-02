@@ -842,7 +842,7 @@ function App() {
           <button className={primaryArea === 'finance' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'finance'} onClick={() => navigatePrimary('finance')}><CircleDollarSign size={16} />Financeiro</button>
           {primaryArea === 'finance' && <div className='zpcNavSubmenu' aria-label='Subáreas financeiras'>
             <button className='zpcNavSubitem' aria-current={view === 'finance' ? 'page' : undefined} onClick={() => setView('finance')}>Movimentações</button>
-            <button className='zpcNavSubitem' aria-current={view === 'cfo' ? 'page' : undefined} onClick={() => setView('cfo')}>Inteligência financeira</button>
+            <button className='zpcNavSubitem' aria-current={view === 'cfo' ? 'page' : undefined} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
           </div>}
           <button className={primaryArea === 'evidence' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'evidence'} onClick={() => navigatePrimary('evidence')}><FileCheck2 size={16} />Evidências</button>
           <button className={primaryArea === 'system' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'system'} onClick={() => navigatePrimary('system')}><RadioTower size={16} />Sistema</button>
@@ -898,7 +898,7 @@ function App() {
       {primaryArea === 'finance' && (
         <nav className='workspaceSubnav' aria-label='Seções financeiras'>
           <button className={view === 'finance' ? 'filter active' : 'filter'} onClick={() => setView('finance')}>Movimentações</button>
-          <button className={view === 'cfo' ? 'filter active' : 'filter'} onClick={() => setView('cfo')}>Inteligência financeira</button>
+          <button className={view === 'cfo' ? 'filter active' : 'filter'} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
         </nav>
       )}
       {primaryArea === 'system' && (
