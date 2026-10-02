@@ -13,6 +13,19 @@ on:
       - 'docs/zevanory-sales/**'
       - 'package.json'
       - '.github/workflows/zevanory-sales-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/zevanory-sales-model.ts'
+      - 'src/commercial-model.ts'
+      - 'scripts/zevanory-sales-model-contract.ts'
+      - 'scripts/zevanory-sales-tenant-contract.ts'
+      - 'scripts/zevanory-sales-integration-audit.mjs'
+      - 'backend/commercial.ts'
+      - 'backend/index.ts'
+      - 'docs/zevanory-sales/**'
+      - 'package.json'
+      - '.github/workflows/zevanory-sales-contract.yml'
   workflow_dispatch:
 
 permissions:
