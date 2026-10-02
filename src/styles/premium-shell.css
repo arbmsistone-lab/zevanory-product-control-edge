@@ -563,3 +563,33 @@ html, body, button, input, select, textarea {
     padding-right: var(--zpc-space-3);
   }
 }
+
+.ownerRevenueCard,
+.ownerActionCard {
+  display: flex;
+  flex-direction: column;
+}
+.ownerRevenueCard .ownerEmptyState,
+.ownerActionCard .ownerEmptyState {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.ownerRevenueCard .ownerEmptyState button,
+.ownerActionCard .ownerEmptyState button {
+  align-self: flex-start;
+}
+
+:root[data-theme='light'] .zpcNavigation .tab.active,
+:root[data-theme='light'] .premiumCard,
+:root[data-theme='light'] .ownerQuickCard,
+:root[data-theme='light'] .ownerKpis article,
+:root[data-theme='light'] .ownerApprovalList > div,
+:root[data-theme='light'] .ownerHealth {
+  border-color: var(--z-border-light);
+}
+:root[data-theme='light'] .zpcNavigation .tab.active {
+  border-left-color: var(--z-action-light);
+}
