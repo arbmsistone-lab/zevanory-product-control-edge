@@ -804,11 +804,101 @@ export async function commercialSalesInbound(request: Request, body: unknown) {
 }
 
 
-function hasEvidence(items: CommercialRecord[], leadId: string, needle: string) {
+function eventHasMarker(items: CommercialRecord[], leadId: string, marker: string) {
   return items.some(item =>
     (item.evidence || []).includes('lead-id:' + leadId) &&
-    ((item.evidence || []).includes(needle) || item.status === needle)
+    (item.evidence || []).includes(marker)
   );
+}
+
+export type CommercialSalesLifecycleEvent =
+  | 'checkout-completed'
+  | 'payment-confirmed'
+  | 'customer-created'
+  | 'fulfillment-started'
+  | 'follow-up-not-required';
+
+export async function commercialSalesLifecycle(request: Request, body: unknown) {
+  if (!await requireCommercialAdapter(request)) return error('Adapter comercial nao autorizado.', 401);
+  const raw = body as {
+    leadId?: string;
+    event?: CommercialSalesLifecycleEvent;
+    externalId?: string;
+    valueCents?: number;
+    currency?: string;
+    detail?: string;
+    occurredAt?: string;
+  };
+  const leadId = cleanString(raw.leadId, 120);
+  const event = cleanString(raw.event, 80) as CommercialSalesLifecycleEvent;
+  const allowed = new Set<CommercialSalesLifecycleEvent>([
+    'checkout-completed',
+    'payment-confirmed',
+    'customer-created',
+    'fulfillment-started',
+    'follow-up-not-required',
+  ]);
+  if (!leadId || !allowed.has(event)) return error('Evento de ciclo invalido.', 400);
+
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [leadId]);
+  if (!lead) return error('Lead nao encontrado.', 404);
+
+  const occurredAt = cleanString(raw.occurredAt, 64) || new Date().toISOString();
+  const externalId = cleanNullable(raw.externalId, 220);
+  const marker = event + ':true';
+  const evidence = [
+    ...(lead.evidence || []),
+    'lead-id:' + leadId,
+    marker,
+    ...(externalId ? ['lifecycle-external-id:' + externalId] : []),
+    'lifecycle-at:' + occurredAt,
+  ].slice(-20);
+
+  let nextStatus = String(lead.status || 'qualified');
+  if (event === 'checkout-completed') nextStatus = 'checkout';
+  if (event === 'payment-confirmed') nextStatus = 'payment';
+  if (event === 'customer-created') nextStatus = 'customer';
+  if (event === 'fulfillment-started') nextStatus = 'fulfillment';
+
+  const normalized = normalizeCommercialRecord(
+    { kind: 'lead', status: nextStatus, evidence },
+    { ...lead, id: leadId, kind: 'lead' } as CommercialRecord,
+  );
+  if (!normalized) return error('Registro comercial invalido.', 400);
+  await db.update(commercialBucketName('lead'), [{ id: leadId, record: normalized }]);
+
+  if (event === 'payment-confirmed') {
+    const valueRaw = Number(raw.valueCents);
+    const valueCents = Number.isFinite(valueRaw) && valueRaw >= 0 ? Math.round(valueRaw) : null;
+    await upsertBySourceKey({
+      kind: 'finance',
+      title: 'Pagamento confirmado · ' + lead.title,
+      detail: cleanString(raw.detail || 'Pagamento confirmado pelo adapter autenticado.', 1000),
+      status: 'confirmed',
+      channel: lead.channel,
+      product: lead.product || 'ZEVANORY SALES',
+      productId: lead.productId,
+      valueCents,
+      source: 'zevanory-sales-adapter',
+      sourceKey: ('payment-confirmed:' + leadId + ':' + (externalId || occurredAt)).slice(0, 220),
+      evidence: ['lead-id:' + leadId, marker, ...(externalId ? ['payment-external-id:' + externalId] : []), occurredAt],
+    });
+  }
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: 'Ciclo comercial · ' + event,
+    detail: cleanString(raw.detail || lead.title, 1000),
+    status: 'sales-lifecycle',
+    channel: lead.channel,
+    product: lead.product || 'ZEVANORY SALES',
+    productId: lead.productId,
+    source: 'zevanory-sales-adapter',
+    sourceKey: ('sales-lifecycle:' + leadId + ':' + event + ':' + (externalId || occurredAt)).slice(0, 220),
+    evidence: ['lead-id:' + leadId, marker, ...(externalId ? ['lifecycle-external-id:' + externalId] : []), occurredAt],
+  });
+
+  return json({ ok: true, leadId, event, status: nextStatus, occurredAt });
 }
 
 export async function commercialSalesProof(leadId: string) {
@@ -820,19 +910,40 @@ export async function commercialSalesProof(leadId: string) {
     listKind('finance', 1000),
   ]);
   const evidence = lead.evidence || [];
-  const status = String(lead.status || '').trim().toLowerCase();
 
   const proof = {
     leadDiscovered: evidence.some(value => value.startsWith('discovery-id:') || value.startsWith('discovered-at:')),
-    contactSent: evidence.some(value => value.startsWith('external-id:')) || hasEvidence(events, leadId, 'sales-action-executed'),
-    conversationObserved: evidence.includes('conversation-observed:true') || status === 'conversation' || hasEvidence(events, leadId, 'sales-inbound'),
-    qualificationRecorded: evidence.some(value => value.startsWith('qualification-score:')),
-    offerSent: status === 'offer' || evidence.includes('sales-action:offer') || events.some(item => item.status === 'sales-action-executed' && item.detail.startsWith('offer ') && (item.evidence || []).includes('lead-id:' + leadId)),
-    followUpSatisfied: ['follow-up','checkout','payment','customer','fulfillment','won'].includes(status) || events.some(item => item.status === 'sales-action-executed' && item.detail.startsWith('follow-up ') && (item.evidence || []).includes('lead-id:' + leadId)),
-    checkoutCompleted: ['checkout','payment','customer','fulfillment','won'].includes(status) || events.some(item => item.status === 'sales-action-executed' && item.detail.startsWith('checkout ') && (item.evidence || []).includes('lead-id:' + leadId)),
-    paymentConfirmed: finance.some(item => ['paid','received','confirmed'].includes(String(item.status || '').toLowerCase()) && (item.evidence || []).includes('lead-id:' + leadId)),
-    customerCreated: hasEvidence(events, leadId, 'customer-created') || ['customer','fulfillment','won'].includes(status),
-    fulfillmentStarted: hasEvidence(events, leadId, 'fulfillment-started') || ['fulfillment','won'].includes(status),
+    contactSent:
+      evidence.includes('sales-action:contact') &&
+      evidence.some(value => value.startsWith('external-id:')),
+    conversationObserved:
+      evidence.includes('conversation-observed:true') ||
+      eventHasMarker(events, leadId, 'conversation-observed:true'),
+    qualificationRecorded:
+      evidence.some(value => value.startsWith('qualification-score:')) &&
+      evidence.some(value => value.startsWith('qualification-signal:')),
+    offerSent:
+      evidence.includes('sales-action:offer') &&
+      evidence.some(value => value.startsWith('external-id:')),
+    followUpSatisfied:
+      evidence.includes('sales-action:follow-up') ||
+      evidence.includes('follow-up-not-required:true') ||
+      eventHasMarker(events, leadId, 'follow-up-not-required:true'),
+    checkoutCompleted:
+      evidence.includes('checkout-completed:true') ||
+      eventHasMarker(events, leadId, 'checkout-completed:true'),
+    paymentConfirmed:
+      finance.some(item =>
+        ['paid','received','confirmed'].includes(String(item.status || '').toLowerCase()) &&
+        (item.evidence || []).includes('lead-id:' + leadId) &&
+        (item.evidence || []).includes('payment-confirmed:true')
+      ),
+    customerCreated:
+      evidence.includes('customer-created:true') ||
+      eventHasMarker(events, leadId, 'customer-created:true'),
+    fulfillmentStarted:
+      evidence.includes('fulfillment-started:true') ||
+      eventHasMarker(events, leadId, 'fulfillment-started:true'),
   };
 
   const result = evaluateZevanoryAutonomousSaleProof(proof);
