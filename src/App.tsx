@@ -830,7 +830,7 @@ function App() {
           {primaryArea === 'commercial' && <div className='zpcNavSubmenu' aria-label='Subáreas comerciais'>
             <button className='zpcNavSubitem' aria-current={view === 'commercial' ? 'page' : undefined} onClick={() => setView('commercial')}>Resumo</button>
             <button className='zpcNavSubitem' aria-current={view === 'prospecting' ? 'page' : undefined} onClick={() => setView('prospecting')}>Prospecção</button>
-            <button className='zpcNavSubitem' aria-current={view === 'crm' ? 'page' : undefined} onClick={() => setView('crm')}>CRM e vendas</button>
+            <button className='zpcNavSubitem' aria-current={view === 'crm' ? 'page' : undefined} onClick={() => setView('crm')}>CRM/Vendas</button>
           </div>}
           <button className={primaryArea === 'content' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'content'} onClick={() => navigatePrimary('content')}><Sparkles size={16} />Conteúdo</button>
           {primaryArea === 'content' && <div className='zpcNavSubmenu' aria-label='Subáreas de conteúdo'>
@@ -885,7 +885,7 @@ function App() {
         <nav className='workspaceSubnav' aria-label='Seções comerciais'>
           <button className={view === 'commercial' ? 'filter active' : 'filter'} onClick={() => setView('commercial')}>Resumo comercial</button>
           <button className={view === 'prospecting' ? 'filter active' : 'filter'} onClick={() => setView('prospecting')}>Prospecção</button>
-          <button className={view === 'crm' ? 'filter active' : 'filter'} onClick={() => setView('crm')}>CRM e vendas</button>
+          <button className={view === 'crm' ? 'filter active' : 'filter'} onClick={() => setView('crm')}>CRM/Vendas</button>
         </nav>
       )}
       {primaryArea === 'content' && (
