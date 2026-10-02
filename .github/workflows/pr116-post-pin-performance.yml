@@ -68,10 +68,17 @@ jobs:
           RUNS: '5'
         run: node scripts/post-login-interactive-gate.mjs
 
-      - name: Upload performance evidence
+      - name: Run navigation single-active gate
+        env:
+          CANDIDATE_URL: http://127.0.0.1:4173
+        run: node scripts/navigation-single-active-gate.mjs
+
+      - name: Upload performance and navigation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: post-pin-performance-evidence
-          path: perf-evidence/post-login.json
+          name: owner-ux-evidence
+          path: |
+            perf-evidence/post-login.json
+            menu-evidence/navigation.json
           if-no-files-found: error
