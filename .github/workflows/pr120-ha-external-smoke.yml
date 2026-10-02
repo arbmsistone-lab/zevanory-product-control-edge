@@ -1,0 +1,26 @@
+name: PR120 HA External Smoke
+
+on:
+  push:
+    branches:
+      - ops/pr120-ha-smoke-e60c0fb2
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Smoke HA root and exact version
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://zevanory-product-control-edge-ha.onrender.com'
+          root="$(curl -fsS --retry 4 --retry-all-errors --connect-timeout 10 --max-time 30 "$base/")"
+          test -n "$root"
+          version="$(curl -fsS --retry 4 --retry-all-errors --connect-timeout 10 --max-time 30 "$base/version.json")"
+          printf '%s\n' "$version"
+          echo "$version" | grep -F 'e60c0fb2b7c278823090b6fbee9db60df2423127'
+          echo 'HA_SMOKE=PASS'
