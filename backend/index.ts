@@ -1,6 +1,6 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
-import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
+import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesLifecycle, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
 import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
 import type { CommercialRecordKind } from '../src/commercial-model.ts';
 import type { ZevanorySalesAction } from '../src/zevanory-sales-model.ts';
@@ -3185,6 +3185,7 @@ export const handler = router({
     }
   }],
   'POST /api/commercial/sales/inbound': [async ctx => commercialSalesInbound(ctx.request, ctx.body)],
+  'POST /api/commercial/sales/lifecycle': [async ctx => commercialSalesLifecycle(ctx.request, ctx.body)],
   'POST /api/commercial/sales/proof': [async ctx => {
     const body = ctx.body as { sessionToken?: string; leadId?: string };
     if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
