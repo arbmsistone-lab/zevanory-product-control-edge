@@ -91,11 +91,11 @@ body {
   min-inline-size: 0;
 }
 
-.zpcNavLabel {
+ .zpcNavLabel {
   margin: var(--zpc-space-1) var(--zpc-space-2) 0;
   color: var(--text-secondary);
-  font-size: var(--zpc-font-xs);
-  font-weight: 900;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -124,8 +124,8 @@ body {
 
 .zpcNavigation .tab.active {
   border-color: var(--action-primary);
-  background: var(--surface-elevated);
-  color: var(--text-primary);
+  background: var(--action-primary);
+  color: var(--action-primary-text);
 }
 
 .bootstrapSkeleton {
@@ -155,6 +155,36 @@ body {
   gap: var(--zpc-space-2);
 }
 .bootstrapSkeleton .skeletonCards span { min-height: 86px; }
+
+.zpcNavSubmenu {
+  display: grid;
+  gap: var(--zpc-space-1);
+  padding: 0 0 var(--zpc-space-1) var(--zpc-space-3);
+}
+.zpcNavSubitem {
+  min-height: 28px;
+  border: 0;
+  border-left: 2px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: var(--zpc-space-1) var(--zpc-space-2);
+  text-align: left;
+  font-size: 12px;
+}
+.zpcNavSubitem:hover,
+.zpcNavSubitem:focus-visible {
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+}
+.zpcNavSubitem[aria-current='page'] {
+  color: var(--text-primary);
+  border-left-color: var(--action-primary);
+  font-weight: 800;
+}
+.workspaceSubnav {
+  display: none;
+}
 
 .zpcWorkspace {
   position: relative;
@@ -268,6 +298,21 @@ body {
 
   .zpcNavigation {
     display: none;
+  }
+
+  .workspaceSubnav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--zpc-space-1);
+    margin: 0 0 var(--zpc-space-1);
+  }
+
+  .workspaceSubnav .filter {
+    min-width: 0;
+    min-height: 32px;
+    padding: var(--zpc-space-1);
+    font-size: 12px;
+    white-space: normal;
   }
 
   .zpcAppShell > .areaSelectWrap {
