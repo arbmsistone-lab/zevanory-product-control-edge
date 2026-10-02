@@ -740,3 +740,126 @@ html,body,#root,.app-container{width:100%!important;max-width:100%!important;min
     gap:var(--zpc-space-1)!important;
   }
 }
+
+
+/* MOBILE VIEWPORT BUDGET — preserve content without clipping */
+@media (max-width:620px) {
+  .zpcAppShell {
+    grid-template-rows:auto auto auto minmax(0,1fr)!important;
+    gap:var(--zpc-space-1)!important;
+    padding:var(--zpc-space-1) var(--zpc-space-2)!important;
+  }
+  .zpcAppShell>.topbar {
+    min-height:var(--zpc-size-56)!important;
+    height:auto!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    grid-template-rows:auto!important;
+    align-items:center!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .zpcBrandBlock h1 {
+    font-size:var(--zpc-font-sm)!important;
+    line-height:1.15!important;
+  }
+  .zpcBrandBlock .eyebrow,
+  .zpcBrandBlock .subtitle {
+    display:none!important;
+  }
+  .zpcHeaderActions {
+    width:auto!important;
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    justify-content:flex-end!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .zpcHeaderActions>a,
+  .zpcHeaderActions .adminChip {
+    display:none!important;
+  }
+  .zpcHeaderActions>button {
+    width:auto!important;
+    min-width:var(--zpc-size-44)!important;
+    min-height:var(--zpc-size-44)!important;
+    height:var(--zpc-size-44)!important;
+    padding:var(--zpc-space-1) var(--zpc-space-2)!important;
+  }
+
+  .zpcAppShell>.trustStrip {
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    min-height:0!important;
+    height:auto!important;
+    gap:var(--zpc-space-1)!important;
+    padding:var(--zpc-space-1) var(--zpc-space-2)!important;
+    align-items:start!important;
+  }
+  .zpcAppShell>.trustStrip>.trustState {
+    grid-column:auto!important;
+    justify-items:start!important;
+    text-align:left!important;
+  }
+  .zpcAppShell>.trustStrip>div:nth-child(n) {
+    display:block!important;
+    min-width:0!important;
+    text-align:left!important;
+  }
+  .zpcAppShell>.trustStrip :where(small,b,strong,span) {
+    font-size:var(--zpc-font-xs)!important;
+    line-height:1.15!important;
+  }
+  .zpcAppShell>.areaSelectWrap {
+    gap:var(--zpc-space-1)!important;
+  }
+  .zpcAppShell>.areaSelectWrap>span {
+    display:none!important;
+  }
+  .zpcAppShell>.areaSelectWrap select {
+    min-height:var(--zpc-size-40)!important;
+    height:var(--zpc-size-40)!important;
+  }
+
+  .shell-governance[data-compact-governance='true'] .certTitleRow {
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:start!important;
+    gap:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certTitleRow h2,
+  .shell-governance[data-compact-governance='true'] .certTitleRow p,
+  .shell-governance[data-compact-governance='true'] .certTitleRow .kicker {
+    margin-block:0!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certActions {
+    width:auto!important;
+    grid-template-columns:auto var(--zpc-size-44) var(--zpc-size-44)!important;
+    align-items:start!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certActions button {
+    width:var(--zpc-size-44)!important;
+    min-width:var(--zpc-size-44)!important;
+    max-width:var(--zpc-size-44)!important;
+    font-size:0!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certActions button svg {
+    width:var(--zpc-space-4)!important;
+    height:var(--zpc-space-4)!important;
+    margin:0!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certActions .certSeal {
+    width:auto!important;
+    min-width:0!important;
+    max-width:var(--zpc-size-72)!important;
+    font-size:var(--zpc-font-xs)!important;
+    line-height:1.15!important;
+    padding:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .certSummaryGrid {
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+
+  .zpcWorkspace.shell-products .productHead h3 {
+    line-height:1.15!important;
+  }
+  .zpcWorkspace.shell-products .productFacts :where(b,small),
+  .zpcWorkspace.shell-products .gate {
+    line-height:1.1!important;
+  }
+}
