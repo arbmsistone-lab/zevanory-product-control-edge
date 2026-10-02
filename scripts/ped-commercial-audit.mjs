@@ -49,6 +49,11 @@ assert(backend.includes('query-source:M1'), 'm1_evidence_binding_missing');
 assert(backend.includes('locale:pt-BR'), 'prospect_ptbr_guard_missing');
 assert(backend.includes('country:BR'), 'prospect_brazil_guard_missing');
 assert(backend.includes('no-cold-outreach'), 'cold_outreach_guard_missing');
+assert(backend.includes('commercialCleanup'), 'commercial_cleanup_function_missing');
+assert(backend.includes('AUTORIZO_ARQUIVAMENTO'), 'commercial_cleanup_apply_confirmation_missing');
+assert(backend.includes("status: 'archived'"), 'commercial_cleanup_archive_state_missing');
+assert(!backend.match(/commercialCleanup[\\s\\S]{0,7000}db\\.delete\\(/), 'commercial_cleanup_delete_forbidden');
+
 assert(backend.includes('no-auto-contact'), 'auto_contact_guard_missing');
 assert(backend.includes('no-auto-publish'), 'auto_publish_guard_missing');
 assert(backend.includes("status: 'brief'"), 'creative_brief_generation_missing');
