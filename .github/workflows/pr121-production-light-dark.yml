@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p production-ui-evidence
-          cat > /tmp/pr121-prod-verify.mjs <<'JS'
+          cat > production-ui-evidence/verify.mjs <<'JS'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
 
@@ -162,7 +162,7 @@ jobs:
           console.log('SKELETON_OVERLAP=0');
           console.log('TOP_STRIP_SHA='+expectedShort);
           JS
-          node /tmp/pr121-prod-verify.mjs
+          node production-ui-evidence/verify.mjs
 
       - name: Upload production UI evidence
         if: always()
