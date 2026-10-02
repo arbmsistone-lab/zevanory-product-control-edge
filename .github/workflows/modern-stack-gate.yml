@@ -8,6 +8,14 @@ on:
       - 'vite.config.ts'
       - 'tsconfig.json'
       - '.github/workflows/modern-stack-gate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - '.github/workflows/modern-stack-gate.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
