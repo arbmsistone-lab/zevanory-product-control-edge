@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "npm install --ignore-scripts && npm run build"
+  },
+  "deploy": {
+    "startCommand": "node scripts/owner-preview-server.mjs",
+    "healthcheckPath": "/preview-meta",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}
