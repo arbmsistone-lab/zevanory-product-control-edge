@@ -6,19 +6,25 @@ const index = fs.readFileSync('backend/index.ts', 'utf8');
 const model = fs.readFileSync('src/zevanory-sales-model.ts', 'utf8');
 
 const required = [
-  [commercial, 'commercialQualifyDiscovery', 'qualification runtime missing'],
-  [commercial, 'commercialSalesDecision', 'action gate runtime missing'],
-  [commercial, "externalExecution: false", 'external execution must remain disconnected in this slice'],
-  [commercial, "sales-decision-blocked", 'blocked action evidence missing'],
-  [commercial, "sales-decision-allowed", 'allowed action evidence missing'],
-  [commercial, "qualification:human-reviewed", 'qualification evidence chain missing'],
-  [commercial, "sales_lead_not_found", 'lead existence guard missing'],
-  [index, "'POST /api/commercial/sales/qualify'", 'qualification route missing'],
-  [index, "'POST /api/commercial/sales/decision'", 'action route missing'],
-  [index, 'requirePinSession(body.sessionToken)', 'admin session guard missing'],
-  [commercial, "sales_lead_not_qualified", 'unqualified lead action guard missing'],
+  [commercial, 'commercialSalesPromoteDiscovery', 'discovery promotion runtime missing'],
+  [commercial, 'commercialSalesQualifyLead', 'scored qualification runtime missing'],
+  [commercial, 'commercialSalesDecision', 'server-owned action gate runtime missing'],
+  [commercial, "ZEVANORY_SALES_QUALIFICATION_THRESHOLD", 'server-owned qualification threshold missing'],
+  [commercial, "ZEVANORY_SALES_AUTONOMY || 'assist'", 'assist default missing'],
   [commercial, "ZEVANORY_SALES_CONTACT_POLICY_READY", 'server-owned contact policy gate missing'],
   [commercial, "ZEVANORY_SALES_PRICING_POLICY_READY", 'server-owned pricing policy gate missing'],
+  [commercial, "ZEVANORY_SALES_CHECKOUT_POLICY_READY", 'server-owned checkout policy gate missing'],
+  [commercial, "ZEVANORY_SALES_FULFILLMENT_POLICY_READY", 'server-owned fulfillment policy gate missing'],
+  [commercial, "'external-execution:false'", 'external execution evidence guard missing'],
+  [commercial, 'externalExecution: false', 'external execution must remain disconnected in this slice'],
+  [commercial, "'qualification-signal:'", 'qualification evidence chain missing'],
+  [commercial, "decision.reason = 'lead_not_qualified'", 'unqualified lead action guard missing'],
+  [index, "'POST /api/commercial/sales/promote-discovery'", 'promotion route missing'],
+  [index, "'POST /api/commercial/sales/qualify'", 'qualification route missing'],
+  [index, "'POST /api/commercial/sales/decision'", 'decision route missing'],
+  [index, 'requirePinSession(body.sessionToken)', 'admin session guard missing'],
+  [model, 'evaluateZevanorySalesTransition', 'stage machine missing'],
+  [model, "'lead_not_qualified'", 'lead qualification decision reason missing'],
 ];
 
 for (const [source, token, message] of required) {
@@ -35,6 +41,20 @@ const forbidden = [
 
 for (const token of forbidden) {
   if (commercial.includes(token)) throw new Error(`unexpected external executor wired in protected slice: ${token}`);
+}
+
+const clientOwnedPolicyFields = [
+  'contactPolicyReady?:',
+  'publicationPolicyReady?:',
+  'pricingPolicyReady?:',
+  'checkoutReady?:',
+  'fulfillmentReady?:',
+  'autonomousPublicationAllowed?:',
+  "level?: 'assist' | 'autopilot' | 'autonomous'",
+];
+
+for (const token of clientOwnedPolicyFields) {
+  if (index.includes(token)) throw new Error(`client must not own sales policy/autonomy: ${token}`);
 }
 
 const tsc = spawnSync(
@@ -58,5 +78,8 @@ if (protectedErrors.length) {
 }
 
 console.log('ZEVANORY_SALES_RUNTIME_INTEGRATION=PASS');
+console.log('ZEVANORY_SALES_DISCOVERY_PROMOTION=PASS');
+console.log('ZEVANORY_SALES_SCORED_QUALIFICATION=PASS');
+console.log('ZEVANORY_SALES_SERVER_OWNED_GATES=PASS');
 console.log('ZEVANORY_SALES_EXTERNAL_EXECUTION=DISCONNECTED');
 console.log('ZEVANORY_SALES_PROTECTED_SLICE_TYPECHECK=PASS');

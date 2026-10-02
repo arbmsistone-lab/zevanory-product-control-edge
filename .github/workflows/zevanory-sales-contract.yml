@@ -5,6 +5,9 @@ on:
     paths:
       - 'src/zevanory-sales-model.ts'
       - 'scripts/zevanory-sales-model-contract.ts'
+      - 'scripts/zevanory-sales-integration-audit.mjs'
+      - 'backend/commercial.ts'
+      - 'backend/index.ts'
       - 'docs/zevanory-sales/**'
       - 'package.json'
       - '.github/workflows/zevanory-sales-contract.yml'
