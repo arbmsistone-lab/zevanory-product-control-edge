@@ -40,7 +40,7 @@ body {
   box-sizing: border-box;
   overflow: hidden;
   margin-inline: auto;
-  padding: var(--zpc-space-3) clamp(12px, 1.5vw, 24px);
+  padding: var(--zpc-space-3) clamp(var(--zpc-space-3), 1.5vw, var(--zpc-space-6));
   display: grid;
   grid-template-columns: var(--zpc-nav-width) minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr);
@@ -87,14 +87,14 @@ body {
 
 .zpcNavGroup {
   display: grid;
-  gap: 4px;
+  gap: var(--zpc-space-1);
   min-inline-size: 0;
 }
 
 .zpcNavLabel {
   margin: var(--zpc-space-1) var(--zpc-space-2) 0;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   font-weight: 900;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -109,7 +109,7 @@ body {
   border-radius: var(--zpc-radius-sm);
   background: transparent;
   color: var(--text-secondary);
-  padding: 4px var(--zpc-space-2);
+  padding: var(--zpc-space-1) var(--zpc-space-2);
   text-align: start;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -155,7 +155,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: var(--zpc-space-5);
+  gap: var(--zpc-space-6);
 }
 
 .zpcAppShell .topbar > div:first-child {
@@ -515,7 +515,7 @@ body {
 
   .zpcAppShell .topbar h1 {
     margin-block: var(--zpc-space-1);
-    font-size: 21px;
+    font-size: var(--zpc-font-md);
     line-height: 1.15;
   }
 
@@ -570,7 +570,7 @@ body {
   .zpcAppShell .trustStrip b,
   .zpcAppShell .trustStrip strong,
   .zpcAppShell .trustState span {
-    font-size: 12px;
+    font-size: var(--zpc-font-xs);
     line-height: 1.35;
   }
 
@@ -606,7 +606,7 @@ body {
 
 .zpcWorkspace.shell-governance .pillarDisclosureIdentity strong {
   overflow-wrap: anywhere;
-  font-size: 14px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.35;
 }
 
@@ -618,7 +618,7 @@ body {
 
 .zpcWorkspace.shell-governance .pillarDisclosureState small {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.35;
   text-align: right;
   overflow-wrap: anywhere;
@@ -675,14 +675,14 @@ body {
 /* Strict NO-SCROLL responsive chrome: preserve controls, reduce non-workspace height. */
 @media (max-width: 900px) {
   .zpcAppShell {
-    padding: 4px 8px;
-    gap: 4px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .topbar {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
+    gap: var(--zpc-space-2);
   }
 
   .zpcAppShell .zpcBrandBlock .eyebrow,
@@ -692,26 +692,29 @@ body {
 
   .zpcAppShell .topbar h1 {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--zpc-font-sm);
     line-height: 1.25;
   }
 
   .zpcAppShell .actions {
     display: flex;
     flex-wrap: nowrap;
-    gap: 4px;
+    gap: var(--zpc-space-1);
     width: auto;
   }
 
   .zpcAppShell .actions > * {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-    font-size: 0;
+    width: auto;
+    min-width: 44px;
+    height: auto;
+    min-height: 44px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--zpc-space-1);
+    font-size: var(--zpc-font-xs);
+    line-height: 1.2;
   }
 
   .zpcAppShell .actions svg {
@@ -721,17 +724,17 @@ body {
 
   .zpcAppShell .policybar {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .policybar span {
     min-height: 40px;
-    padding: 4px;
+    padding: var(--zpc-space-1);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    font-size: 12px;
+    gap: var(--zpc-space-1);
+    font-size: var(--zpc-font-xs);
     line-height: 1.1;
     text-align: center;
   }
@@ -744,8 +747,8 @@ body {
 
   .zpcAppShell .trustStrip {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-    padding: 4px;
+    gap: var(--zpc-space-1);
+    padding: var(--zpc-space-1);
   }
 
   .zpcAppShell .trustState {
@@ -765,7 +768,7 @@ body {
   .zpcAppShell .trustStrip strong,
   .zpcAppShell .trustState span {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--zpc-font-xs);
     line-height: 1.1;
     overflow-wrap: anywhere;
   }
@@ -785,14 +788,14 @@ body {
   .zpcAppShell > .areaSelectWrap select {
     min-height: 40px;
     height: 40px;
-    padding: 4px 8px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 }
 
 @media (max-width: 620px) {
   .zpcAppShell .topbar {
     grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .actions {
@@ -816,7 +819,7 @@ body {
     grid-column: 1 / -1;
     grid-template-columns: auto auto;
     justify-content: center;
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 }
 
@@ -824,33 +827,33 @@ body {
 /* Strict NO-SCROLL overview paging: use horizontal density instead of vertical scroll. */
 @media (max-width: 620px) {
   .zpcWorkspace.shell-overview .overviewHero {
-    padding: 8px;
+    padding: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-overview .overviewHeroActions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--zpc-space-1);
     width: 100%;
   }
 
   .zpcWorkspace.shell-overview .overviewHeroActions > * {
     min-width: 0;
     min-height: 40px;
-    padding: 4px;
-    font-size: 12px;
+    padding: var(--zpc-space-1);
+    font-size: var(--zpc-font-xs);
     white-space: normal;
     text-align: center;
   }
 
   .zpcWorkspace.shell-overview .overviewCards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-overview .overviewCard {
     min-height: 0;
-    padding: 8px;
+    padding: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-overview .overviewCard strong,
@@ -859,15 +862,15 @@ body {
   }
 
   .zpcWorkspace.shell-overview .overviewGrid > .panel {
-    padding: 8px;
+    padding: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-overview .executiveList {
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-overview .executiveList > div {
-    padding: 4px 8px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 }
 
@@ -880,31 +883,31 @@ body {
 
 @media (max-width: 900px) {
   .zpcWorkspace.shell-governance .governanceHero {
-    padding: 8px;
+    padding: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .governanceHero .productDescription {
-    margin: 4px 0;
+    margin: var(--zpc-space-1) 0;
     line-height: 1.3;
   }
 
   .zpcWorkspace.shell-governance .standardStrip {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
-    margin-top: 4px;
+    gap: var(--zpc-space-1);
+    margin-top: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .standardStrip span {
     min-width: 0;
-    padding: 4px;
-    font-size: 12px;
+    padding: var(--zpc-space-1);
+    font-size: var(--zpc-font-xs);
     text-align: center;
   }
 
   .zpcWorkspace.shell-governance .certWorkspace {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .certSidebar {
@@ -915,10 +918,10 @@ body {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    gap: 8px;
+    gap: var(--zpc-space-2);
     min-height: 40px;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--zpc-font-xs);
   }
 
   .zpcWorkspace.shell-governance .certTargetSelectWrap select {
@@ -928,18 +931,18 @@ body {
     border-radius: var(--zpc-radius-sm);
     background: var(--surface);
     color: var(--text-primary);
-    padding: 4px 8px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .governanceSectionPager {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .governanceSectionPager .filter {
     min-height: 40px;
-    padding: 4px 8px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .certDetail[data-page='summary'] .governancePager,
@@ -953,47 +956,47 @@ body {
 
   .zpcWorkspace.shell-governance .certSummaryPanel {
     margin: 0;
-    padding: 8px;
+    padding: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .certTitleRow {
-    gap: 8px;
+    gap: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .certActions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .certActions > * {
     min-width: 0;
     min-height: 40px;
-    padding: 4px;
-    font-size: 12px;
+    padding: var(--zpc-space-1);
+    font-size: var(--zpc-font-xs);
     text-align: center;
   }
 
   .zpcWorkspace.shell-governance .certSummaryGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
-    margin-top: 4px;
+    gap: var(--zpc-space-1);
+    margin-top: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .certSummaryGrid span {
     min-width: 0;
-    padding: 4px;
+    padding: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .rootBlocker {
-    margin-top: 4px;
-    padding: 4px 8px;
+    margin-top: var(--zpc-space-1);
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .governancePager {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 4px;
+    gap: var(--zpc-space-1);
     align-items: center;
   }
 
@@ -1010,15 +1013,15 @@ body {
 
   .zpcWorkspace.shell-governance .governancePager .compact {
     min-height: 40px;
-    padding: 4px 8px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .pillarGrid {
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .pillarCard {
-    padding: 8px;
+    padding: var(--zpc-space-2);
   }
 }
 
@@ -1043,51 +1046,51 @@ body {
   border-radius: var(--zpc-radius-sm);
   background: var(--surface-elevated);
   color: var(--text-primary);
-  padding: 8px;
+  padding: var(--zpc-space-2);
 }
 
 .zpcWorkspace.shell-governance .governanceAbout summary,
 .zpcWorkspace.shell-governance .rootBlockerDetails summary {
   cursor: pointer;
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   font-weight: 900;
 }
 
 .zpcWorkspace.shell-governance .governanceAbout[open],
 .zpcWorkspace.shell-governance .rootBlockerDetails[open] {
-  padding-bottom: 8px;
+  padding-bottom: var(--zpc-space-2);
 }
 
 @media (max-width: 620px) {
   .zpcWorkspace.shell-governance .governanceStack {
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .governanceHero {
-    padding: 4px 8px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .governanceHero .panelhead {
-    margin-bottom: 4px;
+    margin-bottom: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .governanceHero h2 {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--zpc-font-sm);
   }
 
   .zpcWorkspace.shell-governance .governanceAbout {
-    margin-top: 4px;
-    padding: 4px 8px;
+    margin-top: var(--zpc-space-1);
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .standardStrip {
-    margin-top: 4px;
+    margin-top: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .standardStrip span {
-    padding: 4px;
+    padding: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .certTargetName {
@@ -1099,20 +1102,20 @@ body {
   }
 
   .zpcWorkspace.shell-governance .certSummaryPanel {
-    padding: 4px 8px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .certSummaryGrid span {
-    padding: 4px;
+    padding: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-governance .rootBlockerDetails {
-    margin-top: 4px;
-    padding: 4px 8px;
+    margin-top: var(--zpc-space-1);
+    padding: var(--zpc-space-1) var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-governance .rootBlockerDetails .rootBlocker {
-    margin-top: 4px;
+    margin-top: var(--zpc-space-1);
   }
 }
 
@@ -1146,7 +1149,7 @@ body {
    ========================================================================== */
 
 :root {
-  --zpc-chrome-gap: 4px;
+  --zpc-chrome-gap: var(--zpc-space-1);
   --zpc-header-h: 56px;
   --zpc-policy-h: 32px;
   --zpc-trust-h: 48px;
@@ -1168,7 +1171,7 @@ body,
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
-  padding: 8px 16px;
+  padding: var(--zpc-space-2) var(--zpc-space-4);
   grid-template-columns: var(--zpc-nav-w-v3) minmax(0, 1fr);
   grid-template-rows:
     var(--zpc-header-h)
@@ -1178,32 +1181,32 @@ body,
     "header header"
     "trust trust"
     "nav workspace";
-  gap: var(--zpc-chrome-gap) 12px;
+  gap: var(--zpc-chrome-gap) var(--zpc-space-3);
 }
 
 .zpcAppShell > .topbar {
   height: var(--zpc-header-h);
   min-height: 0;
   align-items: center;
-  gap: 16px;
+  gap: var(--zpc-space-4);
 }
 
 .zpcBrandBlock {
   min-width: 0;
   display: grid;
   align-content: center;
-  gap: 4px;
+  gap: var(--zpc-space-1);
 }
 
 .zpcBrandBlock .eyebrow {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1;
 }
 
 .zpcAppShell .topbar h1 {
   margin: 0;
-  font-size: 21px;
+  font-size: var(--zpc-font-md);
   line-height: 1.05;
   letter-spacing: -.015em;
 }
@@ -1211,7 +1214,7 @@ body,
 .zpcAppShell .subtitle {
   margin: 0;
   max-width: 816px;
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.2;
 }
 
@@ -1220,13 +1223,13 @@ body,
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: var(--zpc-space-1);
 }
 
 .zpcAppShell .actions > * {
   min-height: 40px;
   height: 40px;
-  padding: 0 12px;
+  padding: 0 var(--zpc-space-3);
   white-space: nowrap;
 }
 
@@ -1234,15 +1237,15 @@ body,
   height: var(--zpc-policy-h);
   min-height: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
+  gap: var(--zpc-space-1);
 }
 
 .zpcAppShell .policybar span {
   min-height: 0;
   height: 100%;
-  padding: 4px 8px;
+  padding: var(--zpc-space-1) var(--zpc-space-2);
   justify-content: center;
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.05;
   text-align: center;
 }
@@ -1251,8 +1254,8 @@ body,
   height: var(--zpc-trust-h);
   min-height: 0;
   grid-template-columns: minmax(168px, 1.15fr) repeat(4, minmax(0, 1fr));
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--zpc-space-1);
+  padding: var(--zpc-space-1) var(--zpc-space-2);
 }
 
 .zpcAppShell .trustStrip > div,
@@ -1266,7 +1269,7 @@ body,
 .zpcAppShell .trustStrip strong,
 .zpcAppShell .trustState span {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.1;
 }
 
@@ -1274,26 +1277,26 @@ body,
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: 4px;
-  gap: 4px;
+  padding: var(--zpc-space-1);
+  gap: var(--zpc-space-1);
   align-content: start;
 }
 
 .zpcNavGroup {
-  gap: 4px;
+  gap: var(--zpc-space-1);
 }
 
 .zpcNavLabel {
-  margin: 4px 4px 0;
-  font-size: 12px;
+  margin: var(--zpc-space-1) var(--zpc-space-1) 0;
+  font-size: var(--zpc-font-xs);
   line-height: 1.05;
 }
 
 .zpcNavigation .tab {
   min-height: 28px;
   height: 28px;
-  padding: 4px 8px;
-  font-size: 12px;
+  padding: var(--zpc-space-1) var(--zpc-space-2);
+  font-size: var(--zpc-font-xs);
   line-height: 1.05;
 }
 
@@ -1321,7 +1324,7 @@ body,
   }
 
   .zpcAppShell {
-    padding: 4px 8px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows:
       var(--zpc-header-h)
@@ -1335,7 +1338,7 @@ body,
       "trust"
       "selector"
       "workspace";
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcNavigation {
@@ -1351,28 +1354,31 @@ body,
     height: var(--zpc-header-h);
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
+    gap: var(--zpc-space-2);
   }
 
   .zpcAppShell .topbar h1 {
-    font-size: 16px;
+    font-size: var(--zpc-font-sm);
     line-height: 1.1;
   }
 
   .zpcAppShell .actions {
     width: auto;
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .actions > * {
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
-    min-height: 36px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-    font-size: 0;
+    width: auto;
+    min-width: 44px;
+    height: auto;
+    min-height: 44px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--zpc-space-1);
+    font-size: var(--zpc-font-xs);
+    line-height: 1.2;
   }
 
   .zpcAppShell .actions svg {
@@ -1383,22 +1389,22 @@ body,
   .zpcAppShell .policybar {
     height: var(--zpc-policy-h);
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .policybar span {
     height: 28px;
     min-height: 28px;
-    padding: 4px 8px;
-    font-size: 12px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
+    font-size: var(--zpc-font-xs);
     line-height: 1.05;
   }
 
   .zpcAppShell .trustStrip {
     height: var(--zpc-trust-h);
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-    padding: 4px;
+    gap: var(--zpc-space-1);
+    padding: var(--zpc-space-1);
   }
 
   .zpcAppShell .trustState {
@@ -1420,7 +1426,7 @@ body,
   .zpcAppShell .trustStrip b,
   .zpcAppShell .trustStrip strong,
   .zpcAppShell .trustState span {
-    font-size: 12px;
+    font-size: var(--zpc-font-xs);
     line-height: 1.05;
   }
 
@@ -1444,8 +1450,8 @@ body,
     width: 100%;
     height: var(--zpc-selector-h);
     min-height: var(--zpc-selector-h);
-    padding: 4px 8px;
-    font-size: 14px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
+    font-size: var(--zpc-font-xs);
   }
 }
 
@@ -1458,19 +1464,19 @@ body,
   }
 
   .zpcAppShell {
-    padding: 4px;
-    gap: 4px;
+    padding: var(--zpc-space-1);
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .topbar {
     height: var(--zpc-header-h);
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 28px 44px;
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .topbar h1 {
-    font-size: 16px;
+    font-size: var(--zpc-font-sm);
     line-height: 1.1;
   }
 
@@ -1478,7 +1484,7 @@ body,
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     width: 100%;
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .actions > * {
@@ -1504,14 +1510,14 @@ body,
     grid-column: 1 / -1;
     grid-template-columns: auto auto;
     justify-content: center;
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcAppShell .trustStrip small,
   .zpcAppShell .trustStrip b,
   .zpcAppShell .trustStrip strong,
   .zpcAppShell .trustState span {
-    font-size: 12px;
+    font-size: var(--zpc-font-xs);
   }
 }
 
@@ -1519,34 +1525,34 @@ body,
 .zpcWorkspace.shell-overview .overviewPager{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:4px;
+  gap:var(--zpc-space-1);
   flex:0 0 auto;
 }
 .zpcWorkspace.shell-overview .overviewPager .filter{
   min-width:0;
   min-height:34px;
-  padding:4px 8px;
-  font-size:12px;
+  padding:var(--zpc-space-1) var(--zpc-space-2);
+  font-size:var(--zpc-font-xs);
 }
 .zpcWorkspace.shell-overview .overviewHero{
-  padding:8px 12px;
+  padding:var(--zpc-space-2) var(--zpc-space-3);
   min-height:0;
 }
 .zpcWorkspace.shell-overview .overviewHero h2{
-  margin:2px 0 0;
-  font-size:21px;
+  margin:var(--zpc-space-1) 0 0;
+  font-size:var(--zpc-font-md);
   line-height:1.2;
 }
 .zpcWorkspace.shell-overview .overviewCards{
   grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:8px;
+  gap:var(--zpc-space-2);
 }
 .zpcWorkspace.shell-overview .overviewCard{
-  padding:8px 10px;
+  padding:var(--zpc-space-2) var(--zpc-space-2);
   min-height:0;
 }
 .zpcWorkspace.shell-overview .overviewCard strong{
-  margin:2px 0 4px;
+  margin:var(--zpc-space-1) 0 var(--zpc-space-1);
 }
 .zpcWorkspace.shell-overview .overviewGridSingle{
   display:grid;
@@ -1558,15 +1564,15 @@ body,
   min-height:54px;
 }
 @media (max-height:760px){
-  .zpcAppShell{padding-top:6px;padding-bottom:6px;gap:4px var(--zpc-space-4)}
-  .zpcAppShell .topbar{gap:8px}
-  .zpcAppShell .topbar h1{font-size:18px;line-height:1.1;margin:2px 0}
-  .zpcAppShell .subtitle,.zpcAppShell .eyebrow{font-size:11px;line-height:1.15;margin:0}
-  .zpcAppShell .zpcHeaderActions>*{min-height:34px;height:34px;padding:4px 8px;font-size:12px}
-  .zpcAppShell .trustStrip{min-height:0;padding:4px 8px}
-  .zpcAppShell .trustStrip small,.zpcAppShell .trustStrip b,.zpcAppShell .trustStrip strong,.zpcAppShell .trustState span{font-size:11px;line-height:1.15}
-  .zpcNavigation{gap:2px;padding:6px}
-  .zpcNavigation .tab{min-height:28px;padding:3px 6px;font-size:12px}
-  .zpcNavLabel{margin:2px 6px 0;font-size:10px}
-  .zpcWorkspace.shell-overview .overviewStack{gap:6px}
+  .zpcAppShell{padding-top:var(--zpc-space-1);padding-bottom:var(--zpc-space-1);gap:var(--zpc-space-1) var(--zpc-space-4)}
+  .zpcAppShell .topbar{gap:var(--zpc-space-2)}
+  .zpcAppShell .topbar h1{font-size:var(--zpc-font-sm);line-height:1.1;margin:var(--zpc-space-1) 0}
+  .zpcAppShell .subtitle,.zpcAppShell .eyebrow{font-size:var(--zpc-font-xs);line-height:1.15;margin:0}
+  .zpcAppShell .zpcHeaderActions>*{min-height:34px;height:34px;padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs)}
+  .zpcAppShell .trustStrip{min-height:0;padding:var(--zpc-space-1) var(--zpc-space-2)}
+  .zpcAppShell .trustStrip small,.zpcAppShell .trustStrip b,.zpcAppShell .trustStrip strong,.zpcAppShell .trustState span{font-size:var(--zpc-font-xs);line-height:1.15}
+  .zpcNavigation{gap:var(--zpc-space-1);padding:var(--zpc-space-1)}
+  .zpcNavigation .tab{min-height:28px;padding:var(--zpc-space-1) var(--zpc-space-1);font-size:var(--zpc-font-xs)}
+  .zpcNavLabel{margin:var(--zpc-space-1) var(--zpc-space-1) 0;font-size:var(--zpc-font-xs)}
+  .zpcWorkspace.shell-overview .overviewStack{gap:var(--zpc-space-1)}
 }

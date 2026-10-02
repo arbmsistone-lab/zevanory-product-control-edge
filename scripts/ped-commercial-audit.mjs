@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 const css = fs.readFileSync('src/index.css','utf8');
+const designTokens = fs.readFileSync('src/styles/tokens.css','utf8');
 const app = fs.readFileSync('src/App.tsx','utf8');
 const workspace = fs.readFileSync('src/CommercialWorkspace.tsx','utf8');
 const model = fs.readFileSync('src/commercial-model.ts','utf8');
@@ -97,10 +98,10 @@ for (const match of geometryMatches) {
   assert(value % 4 === 0, 'non_ped_geometry:' + match[0]);
 }
 
-assert(ped.includes('font-size: 16px'), 'perfect_fourth_base_missing');
-assert(ped.includes('font-size: 21px'), 'perfect_fourth_h3_missing');
-assert(ped.includes('font-size: 28px'), 'perfect_fourth_h2_missing');
-assert(ped.includes('font-size: 37px'), 'perfect_fourth_h1_missing');
+assert(designTokens.includes('--zpc-font-sm: 16px'), 'perfect_fourth_base_missing');
+assert(designTokens.includes('--zpc-font-md: 21px'), 'perfect_fourth_h3_missing');
+assert(designTokens.includes('--zpc-font-lg: 28px'), 'perfect_fourth_h2_missing');
+assert(designTokens.includes('--zpc-font-xl: 37px'), 'perfect_fourth_h1_missing');
 
 if (failures.length) {
   console.error('PED_COMMERCIAL_AUDIT=FAIL');

@@ -1,0 +1,28 @@
+﻿{
+    "captured_at":  "2026-10-02T09:10:37.0087028-03:00",
+    "forms_bounds":  {
+                         "height":  864,
+                         "width":  1536
+                     },
+    "forms_working_area":  {
+                               "left":  0,
+                               "width":  1536,
+                               "height":  816,
+                               "top":  0
+                           },
+    "video_controller":  {
+                             "physical_height":  1080,
+                             "name":  "Intel(R) UHD Graphics",
+                             "physical_width":  1920
+                         },
+    "log_pixels":  null,
+    "scale_x":  1.25,
+    "scale_y":  1.25,
+    "scale":  1.25,
+    "dpi_estimate":  120,
+    "css_estimate":  {
+                         "width":  1536,
+                         "working_height":  816,
+                         "height":  864
+                     }
+}

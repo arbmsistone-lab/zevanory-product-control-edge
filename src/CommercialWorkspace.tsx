@@ -181,7 +181,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['qualified','contacted','opportunity','proposal','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-  const genericPageSize = viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4;
+  const genericPageSize = viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4;
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);
   const pagedItems = items.slice(safeListPage * genericPageSize, (safeListPage + 1) * genericPageSize);

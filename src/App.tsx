@@ -697,7 +697,7 @@ function App() {
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
-  const operationsPageSize = 4;
+  const operationsPageSize = viewportWidth <= 620 ? 1 : viewportWidth <= 900 ? 2 : 4;
   const operationIncidents = dashboard?.incidents ?? [];
   const operationAudits = dashboard?.audits ?? [];
   const incidentPageCount = Math.max(1, Math.ceil(operationIncidents.length / operationsPageSize));

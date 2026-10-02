@@ -82,7 +82,7 @@
 .zpcWorkspace.shell-products .productHead h3 {
   margin: 0;
   color: var(--zpc-product-text);
-  font-size: 16px;
+  font-size: var(--zpc-font-sm);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -90,7 +90,7 @@
 .zpcWorkspace.shell-products .productCategory {
   margin: 0 0 var(--zpc-space-1);
   color: var(--zpc-product-text-secondary);
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   font-weight: 900;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -107,7 +107,7 @@
   margin: 0;
   overflow: visible;
   color: var(--zpc-product-text-secondary);
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.55;
   text-overflow: clip;
   white-space: normal;
@@ -141,14 +141,14 @@
 
 .zpcWorkspace.shell-products .productFacts b {
   color: var(--zpc-product-text);
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.4;
 }
 
 .zpcWorkspace.shell-products .productFacts small {
   margin-top: var(--zpc-space-1);
   color: var(--zpc-product-text-muted);
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.35;
   font-weight: 700;
   text-transform: uppercase;
@@ -236,7 +236,7 @@
   margin: var(--zpc-space-2) 0 0;
   overflow: visible;
   color: var(--zpc-product-text-secondary);
-  font-size: 12px;
+  font-size: var(--zpc-font-xs);
   line-height: 1.5;
   text-overflow: clip;
   white-space: normal;
@@ -433,31 +433,31 @@
 @media (max-width: 620px) {
   .zpcWorkspace.shell-products .metrics {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
-    margin-bottom: 8px;
+    gap: var(--zpc-space-1);
+    margin-bottom: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-products .metric {
     min-width: 0;
-    padding: 4px;
+    padding: var(--zpc-space-1);
     text-align: center;
   }
 
   .zpcWorkspace.shell-products .metric span {
-    font-size: 12px;
+    font-size: var(--zpc-font-xs);
     line-height: 1.1;
   }
 
   .zpcWorkspace.shell-products .metric strong {
-    font-size: 16px;
+    font-size: var(--zpc-font-sm);
     line-height: 1.1;
   }
 
   .zpcWorkspace.shell-products .toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
-    margin-bottom: 8px;
+    gap: var(--zpc-space-1);
+    margin-bottom: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-products .toolbar > div:first-child {
@@ -467,29 +467,29 @@
   .zpcWorkspace.shell-products .toolbarControls {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-products .filters {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-products .filter {
     min-width: 0;
     min-height: 40px;
-    padding: 4px;
-    font-size: 12px;
+    padding: var(--zpc-space-1);
+    font-size: var(--zpc-font-xs);
   }
 
   .zpcWorkspace.shell-products .productGrid {
-    gap: 8px;
+    gap: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-products .productCard {
-    gap: 8px;
-    padding: 8px;
+    gap: var(--zpc-space-2);
+    padding: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-products .productDescription {
@@ -497,15 +497,15 @@
   }
 
   .zpcWorkspace.shell-products .productFacts span {
-    padding: 8px;
+    padding: var(--zpc-space-2);
   }
 
   .zpcWorkspace.shell-products .gateRow {
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-products .productActions {
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 }
 
@@ -526,7 +526,7 @@
 
   .zpcWorkspace.shell-products .productFacts {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-products .productFacts span:nth-child(3) {
@@ -534,7 +534,7 @@
   }
 
   .zpcWorkspace.shell-products .productFacts span {
-    padding: 4px;
+    padding: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-products .productFacts b,
@@ -549,7 +549,7 @@
 
   .zpcWorkspace.shell-products .gate {
     min-width: 0;
-    padding: 4px;
+    padding: var(--zpc-space-1);
     text-align: center;
   }
 }
@@ -557,24 +557,28 @@
 
 @media (max-width: 620px) {
   .zpcWorkspace.shell-products .productHead h3 {
-    font-size: 14px;
+    font-size: var(--zpc-font-xs);
     line-height: 1.25;
   }
 
   .zpcWorkspace.shell-products .productActions {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-products .productActions > * {
     min-width: 0;
     width: 100%;
     min-height: 44px;
-    height: 44px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-    font-size: 0;
+    height: auto;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--zpc-space-1);
+    font-size: var(--zpc-font-xs);
+    line-height: 1.2;
+    white-space: normal;
   }
 
   .zpcWorkspace.shell-products .productActions svg {
@@ -586,7 +590,7 @@
 
 @media (max-width: 620px) {
   .zpcWorkspace.shell-products .productCard {
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 }
 
@@ -622,15 +626,15 @@
     border-radius: var(--zpc-radius-sm);
     background: var(--surface);
     color: var(--text-primary);
-    padding: 4px 8px;
-    font-size: 14px;
+    padding: var(--zpc-space-1) var(--zpc-space-2);
+    font-size: var(--zpc-font-xs);
   }
 
   .zpcWorkspace.shell-products .pagination {
     display: grid;
     grid-template-columns: 40px auto 40px;
     align-items: center;
-    gap: 4px;
+    gap: var(--zpc-space-1);
   }
 
   .zpcWorkspace.shell-products .pagination .filter {
@@ -644,6 +648,6 @@
   .zpcWorkspace.shell-products .pagination > span {
     min-width: 36px;
     text-align: center;
-    font-size: 12px;
+    font-size: var(--zpc-font-xs);
   }
 }
