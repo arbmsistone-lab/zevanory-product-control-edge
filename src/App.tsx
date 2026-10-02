@@ -287,24 +287,6 @@ function certificationProfileLabel(profile: string) {
   return ({ AI_AGENTIC_PLATFORM: 'AI / AGENTIC PLATFORM', COMMERCE_CONTROL_PLANE: 'COMMERCE CONTROL PLANE', SAAS_TRANSACTIONAL: 'SAAS TRANSACIONAL', DIGITAL_CONTENT: 'PRODUTO DIGITAL' } as Record<string, string>)[profile] || profile;
 }
 
-function operationalLabel(value: string | null | undefined) {
-  const raw = String(value || 'unknown').trim().toLowerCase();
-  const labels: Record<string, string> = {
-    ready: 'READY',
-    pass: 'PASS',
-    fail: 'FAIL',
-    disabled: 'DESATIVADO',
-    enabled: 'ATIVO',
-    blocked: 'BLOQUEADO',
-    'globally-blocked': 'BLOQUEADO GLOBALMENTE',
-    active: 'ATIVO',
-    unknown: 'DESCONHECIDO',
-    unavailable: 'INDISPONÍVEL',
-    snapshot_unavailable: 'SNAPSHOT INDISPONÍVEL',
-  };
-  return labels[raw] || String(value || 'DESCONHECIDO').replaceAll('_', ' ').toUpperCase();
-}
-
 function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (token: string) => void; restoringSession?: boolean }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -389,7 +371,6 @@ function App() {
   const [canonicalShaLoading, setCanonicalShaLoading] = useState(true);
   const [fastOverview, setFastOverview] = useState<FastOverview | null>(null);
   const [fastOverviewLoading, setFastOverviewLoading] = useState(true);
-  const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -398,7 +379,6 @@ function App() {
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [expandedPillarIds, setExpandedPillarIds] = useState<Set<string>>(() => new Set());
-  const [overviewPage, setOverviewPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
   const [auditPage, setAuditPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
@@ -515,7 +495,6 @@ function App() {
       const response = await api.post('/api/admin/bootstrap', { sessionToken: token }, { signal: controller.signal });
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       setDashboard(response.data.dashboard);
-      setOperations(response.data.operations ?? null);
       setCommercial(response.data.commercial ?? null);
       setCfo(response.data.cfo ?? null);
       setProducts(response.data.products);
