@@ -1,0 +1,59 @@
+name: Premium Overview Preview
+
+on:
+  push:
+    branches:
+      - fix/premium-panel-a-cleanup-20261002
+    paths:
+      - "src/**"
+      - "scripts/premium-overview-preview.mjs"
+      - "package.json"
+      - ".github/workflows/premium-overview-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: premium-overview-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build preview
+        run: npx vite build
+      - name: Start preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup npx vite preview --host 127.0.0.1 --port 4173 >/tmp/premium-overview-vite.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4173 >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/premium-overview-vite.log
+          exit 1
+      - name: Capture light and dark previews
+        run: node scripts/premium-overview-preview.mjs
+      - name: Upload previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-overview-preview-${{ github.run_id }}
+          path: premium-overview-preview/
+          retention-days: 30
+          if-no-files-found: error
