@@ -1,0 +1,28 @@
+name: Dispatch ZPC Exact e0ae6e85
+on:
+  push:
+    branches:
+      - ops/dispatch-zpc-e0ae6e85-20261002
+permissions:
+  contents: read
+  actions: write
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect ZPC workflow state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/zpc-canonical-build.yml"             --jq '"ZPC_WORKFLOW_STATE=" + .state + "\nZPC_WORKFLOW_ID=" + (.id|tostring)'
+      - name: Dispatch exact candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method POST             "repos/${GITHUB_REPOSITORY}/actions/workflows/zpc-canonical-build.yml/dispatches"             -f ref='cert/zpc-e0ae6e85-20261002'
+          echo "ZPC_EXACT_SHA_DISPATCH=PASS"
+          echo "EXPECTED_SHA=e0ae6e855d6aec0088faa18605313d593d6a3ad2"
