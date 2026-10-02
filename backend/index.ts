@@ -1,6 +1,6 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
-import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesDecision, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
+import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
 import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
 import type { CommercialRecordKind } from '../src/commercial-model.ts';
 import type { ZevanorySalesAction } from '../src/zevanory-sales-model.ts';
@@ -3144,7 +3144,6 @@ export const handler = router({
       leadId?: string;
       action?: ZevanorySalesAction;
       humanApproval?: boolean;
-      paymentConfirmed?: boolean;
     };
     if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
     const allowedActions = new Set<ZevanorySalesAction>(['research', 'contact', 'publish', 'offer', 'follow-up', 'checkout', 'fulfill']);
@@ -3155,12 +3154,37 @@ export const handler = router({
         leadId: String(body.leadId),
         action: body.action,
         humanApproval: Boolean(body.humanApproval),
-        paymentConfirmed: Boolean(body.paymentConfirmed),
       }));
     } catch (err) {
       return error(`Falha na decisao comercial: ${String(err)}`, 400);
     }
   }],
+  'POST /api/commercial/sales/execute': [async ctx => {
+    const body = ctx.body as {
+      sessionToken?: string;
+      leadId?: string;
+      action?: 'contact' | 'offer' | 'follow-up' | 'checkout';
+      content?: string;
+      humanApproval?: boolean;
+    };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    const allowedActions = new Set(['contact', 'offer', 'follow-up', 'checkout']);
+    if (!body.leadId || !body.action || !allowedActions.has(body.action) || !String(body.content || '').trim()) {
+      return error('Execucao comercial invalida.', 400);
+    }
+    try {
+      const snapshot = await adminData();
+      return json(await commercialSalesExecuteAction(snapshot.operations, {
+        leadId: String(body.leadId),
+        action: body.action,
+        content: String(body.content),
+        humanApproval: Boolean(body.humanApproval),
+      }));
+    } catch (err) {
+      return error(`Falha na execucao ZEVANORY SALES: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/commercial/sales/inbound': [async ctx => commercialSalesInbound(ctx.request, ctx.body)],
   'POST /api/commercial/adapter/ingest': [async ctx => commercialAdapterIngest(ctx.request, ctx.body)],
   'POST /api/certification/run': [async ctx => {
     const body = ctx.body as { sessionToken?: string; targetId?: string };
