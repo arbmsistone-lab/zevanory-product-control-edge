@@ -184,7 +184,7 @@ async function navigate(page,width,key,label){
     await sel.selectOption(key);
     return;
   }
-  const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'});
+  const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY'});
   await nav.getByRole('button',{name:route.primaryLabel,exact:true}).click();
   if(route.subLabel){
     await nav.getByRole('button',{name:route.subLabel,exact:true}).click();
