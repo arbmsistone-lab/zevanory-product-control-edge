@@ -219,9 +219,10 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
     setBusyId(item.id + action);
     setActionError('');
     try {
-      const result = await api.post('/api/commercial/sales/execute', {
+      const response = await api.post('/api/commercial/sales/execute', {
         sessionToken, leadId: item.id, action, content, humanApproval: true,
       });
+      const result = response.data;
       if (!result?.executed) {
         setActionError('Ação mantida bloqueada pelo gate: ' + String(result?.executionReason || result?.decision?.reason || 'não autorizada'));
       }
