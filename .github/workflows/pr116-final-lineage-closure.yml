@@ -1,0 +1,100 @@
+name: PR116 Final Lineage Closure
+
+on:
+  push:
+    branches:
+      - ops/finalize-pr116-20261002
+
+permissions:
+  contents: read
+  actions: write
+
+env:
+  TARGET_SHA: fa3dc0a2dce1cd238fc7e1d5330bfe0b19b3f353
+
+jobs:
+  dispatch-commercial-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch Commercial Visual on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run commercial-visual-regression.yml --repo "${GITHUB_REPOSITORY}" --ref main
+
+  production-lineage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Read current canonical version
+        id: before
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 20 \
+            https://controle.zevanory.api.br/version.json -o /tmp/version-before.json
+          cat /tmp/version-before.json
+          sha="$(jq -r '.sha // empty' /tmp/version-before.json)"
+          runtime="$(jq -r '.runtime // empty' /tmp/version-before.json)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "runtime=$runtime" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact target SHA
+        if: steps.before.outputs.sha != env.TARGET_SHA || steps.before.outputs.runtime != 'cloudflare-worker'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
+
+      - name: Setup Node
+        if: steps.before.outputs.sha != env.TARGET_SHA || steps.before.outputs.runtime != 'cloudflare-worker'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Promote Cloudflare Worker without portable-health
+        if: steps.before.outputs.sha != env.TARGET_SHA || steps.before.outputs.runtime != 'cloudflare-worker'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "BLOCKER=CLOUDFLARE_API_TOKEN_MISSING"
+            exit 42
+          fi
+          npm install --no-audit --no-fund
+          npm run build
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='cf-worker/wrangler.toml';
+          const base=fs.readFileSync(p,'utf8');
+          const rs=base.indexOf('routes = [');
+          const re=rs>=0?base.indexOf(']\n\n',rs):-1;
+          const routeFree=rs>=0&&re>=0?base.slice(0,rs)+base.slice(re+3):base;
+          fs.writeFileSync('cf-worker/wrangler.script-only.toml',routeFree);
+          NODE
+          npx --yes wrangler@4.135.0 deploy \
+            --config cf-worker/wrangler.script-only.toml \
+            --var "WORKER_COMMIT:${TARGET_SHA}"
+
+      - name: Verify canonical version until converged
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..12}; do
+            if curl --fail --silent --show-error --max-time 20 \
+              https://controle.zevanory.api.br/version.json -o /tmp/version-final.json; then
+              cat /tmp/version-final.json
+              sha="$(jq -r '.sha // empty' /tmp/version-final.json)"
+              runtime="$(jq -r '.runtime // empty' /tmp/version-final.json)"
+              if [ "$sha" = "$TARGET_SHA" ] && [ "$runtime" = "cloudflare-worker" ]; then
+                echo "FINAL_VERSION_SHA=$sha"
+                echo "FINAL_VERSION_RUNTIME=$runtime"
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+          echo "BLOCKER=VERSION_LINEAGE_NOT_CONVERGED"
+          cat /tmp/version-final.json 2>/dev/null || true
+          exit 1
