@@ -840,7 +840,10 @@ function App() {
         .filter(item => sameDay(item.updatedAt || item.createdAt, daysAgo))
         .reduce((sum, item) => sum + Number(item.valueCents || 0), 0);
     });
-    return { salesToday, salesMonth, revenueMonth, openConversations, approvalItems, revenueBars };
+    const latestEvents = [...commercial.events]
+      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 3);
+    return { salesToday, salesMonth, revenueMonth, openConversations, approvalItems, revenueBars, latestEvents };
   }, [commercial]);
 
   const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 900;
@@ -866,13 +869,7 @@ function App() {
   if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} restoringSession={authState === 'checking'} />;
   return (
     <div className='zpcAppShell'>
-      <header className='topbar'>
-        <div className='zpcBrandBlock'>
-          <p className='eyebrow'>ZEVANORY · ADMINISTRATIVO GERAL</p>
-          <h1>ZEVANORY CONTROL CENTER</h1>
-          <p className='subtitle'>Centro único de operação, produtos, canais, finanças, evidências e governança.</p>
-        </div>
-
+      <header className='topbar premiumShellTopbar' aria-label='Ações globais'>
         <div className='actions zpcHeaderActions'>
           <a
             className='secondary linkButton'
@@ -912,9 +909,9 @@ function App() {
         <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
       </section>}
 
-      <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
+      <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY'>
+        <div className='zpcSidebarBrand' aria-label='ZEVANORY'>ZEVANORY</div>
         <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Áreas</p>
           <button className={primaryArea === 'overview' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'overview'} onClick={() => navigatePrimary('overview')}><LayoutDashboard size={16} />Visão Geral</button>
           <button className={primaryArea === 'products' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'products'} onClick={() => navigatePrimary('products')}><ShoppingBag size={16} />Produtos</button>
           <button className={primaryArea === 'commercial' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'commercial'} onClick={() => navigatePrimary('commercial')}><Megaphone size={16} />Comercial</button>
@@ -1087,9 +1084,9 @@ function App() {
           </section>
 
           <section className='ownerQuickCards'>
-            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>{overviewOperations?.runtime.checkout && !['disabled','blocked','globally-blocked','unavailable'].includes(String(overviewOperations.runtime.checkout).toLowerCase()) ? 'Checkout disponível.' : 'Checkout ainda não disponível.'}</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
+            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>Vendas pausadas · modo teste</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
             <article className='ownerQuickCard'><Headphones size={18}/><div><b>Atendimento</b><span>{ownerOverview?.openConversations ? `${ownerOverview.openConversations} conversa(s) aberta(s).` : 'Nenhuma conversa aberta.'}</span><button onClick={() => setView('support')}>Abrir conversas</button></div></article>
-            <article className='ownerQuickCard'><ShoppingBag size={18}/><div><b>Vendas</b><span>{ownerOverview?.salesMonth ? `${ownerOverview.salesMonth} venda(s) confirmada(s) neste mês.` : 'Nenhuma venda ainda.'}</span><button onClick={() => setView('finance')}>{ownerOverview?.salesMonth ? 'Ver vendas' : 'Ver checkout'}</button></div></article>
+            <article className='ownerQuickCard ownerEventCard'><FileCheck2 size={18}/><div><b>Últimos eventos</b>{ownerOverview?.latestEvents.length ? ownerOverview.latestEvents.map(event => <span key={event.id}>{event.title}</span>) : <span>Nenhum evento recente.</span>}<button onClick={() => setView('evidence')}>Ver evidências</button></div></article>
           </section>
         </section>
       )}
