@@ -259,12 +259,51 @@ export async function commercialAdapterIngest(request: Request, body: unknown) {
 
 type ProspectResult = { title: string; url: string; description: string; query: string };
 
-const DEFAULT_PROSPECT_QUERIES = [
-  'empresa varejo Ceara automacao WhatsApp',
-  'clinica Ceara atendimento WhatsApp Instagram',
-  'salao Ceara agendamento WhatsApp Instagram',
-  'loja Ceara vendas Instagram WhatsApp',
+const PROSPECT_HARD_REJECT = [
+  'nfl','nba','futebol','football','esporte','sports','peppa pig','wikipedia','wikimedia',
+  'enciclopedia','encyclopedia','microsoft store','xbox','fandom','imdb','netflix','espn',
 ];
+const PROSPECT_ICP_TERMS = [
+  'empresa','negocio','loja','varejo','comercio','clinica','salao','restaurante','oficina',
+  'academia','estetica','imobiliaria','escritorio','prestador','servico','microempresa','mei',
+];
+const PROSPECT_PRODUCT_TERMS = [
+  'whatsapp','instagram','vendas','atendimento','agendamento','automacao','crm','fluxo de caixa',
+  'financeiro','gestao','marketing','cliente','pedido','inteligencia artificial',' ia ',
+];
+const PROSPECT_BR_TERMS = [
+  'brasil','brazil','ceara','fortaleza','juazeiro do norte','crato','iguatu','barbalha','varzea alegre','.br',
+];
+
+function prospectText(result: ProspectResult) {
+  return [result.title,result.description,result.url,result.query]
+    .join(' ')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+export function scoreProspect(result: ProspectResult) {
+  const text = prospectText(result);
+  const reject = PROSPECT_HARD_REJECT.filter(term => text.includes(term));
+  const icp = PROSPECT_ICP_TERMS.filter(term => text.includes(term));
+  const product = PROSPECT_PRODUCT_TERMS.filter(term => text.includes(term));
+  const brazil = PROSPECT_BR_TERMS.filter(term => text.includes(term));
+  let score = 0;
+  if (icp.length) score += 3;
+  if (product.length) score += 3;
+  if (brazil.length) score += 2;
+  if (/https?:\/\/[^\s/]+\.br(?:[/:]|$)/i.test(result.url)) score += 1;
+  if (reject.length) score -= 10;
+  const threshold = Math.max(1, Number(process.env.COMMERCIAL_PROSPECT_MIN_SCORE || 7));
+  const relevant = reject.length === 0 && icp.length > 0 && product.length > 0 && brazil.length > 0 && score >= threshold;
+  const reason = relevant
+    ? `ICP=${icp.slice(0,3).join(',')} · PRODUTO=${product.slice(0,3).join(',')} · BR=${brazil.slice(0,3).join(',')} · SCORE=${score}`
+    : reject.length
+      ? `DESCARTADO_CATEGORIA=${reject.slice(0,3).join(',')} · SCORE=${score}`
+      : `DESCARTADO_RELEVANCIA · ICP=${icp.length} · PRODUTO=${product.length} · BR=${brazil.length} · SCORE=${score}`;
+  return { relevant, score, threshold, reason };
+}
 
 function decodeXml(value: string) {
   return value
@@ -349,28 +388,48 @@ export async function commercialRobotTick() {
   robotTickRunning = true;
   const startedAt = new Date().toISOString();
   let discovered = 0;
+  let rejected = 0;
   let queryFailures = 0;
   try {
-    const configuredQueries = String(process.env.COMMERCIAL_PROSPECT_QUERIES || '')
+    const queries = String(process.env.COMMERCIAL_M1_QUERIES || '')
       .split('|')
       .map(item => item.trim())
-      .filter(Boolean);
-    const queries = (configuredQueries.length ? configuredQueries : DEFAULT_PROSPECT_QUERIES).slice(0, 6);
+      .filter(Boolean)
+      .slice(0, 12);
+    if (!queries.length) {
+      return { ok: false, skipped: true, reason: 'm1_queries_missing', discovered: 0, rejected: 0, queryFailures: 0, briefsCreated: 0, at: new Date().toISOString() };
+    }
 
     for (const query of queries) {
       try {
         const results = await searchProspects(query);
         for (const result of results) {
+          const review = scoreProspect(result);
+          if (!review.relevant) {
+            rejected += 1;
+            continue;
+          }
           await upsertBySourceKey({
             kind: 'evidence',
             title: result.title,
-            detail: result.description || 'Descoberta pública ainda não qualificada.',
+            detail: result.description || 'Descoberta pública qualificada por relevância.',
             status: 'raw-discovery',
             channel: 'web',
             product: 'ZEVANORY',
             source: 'public-search',
             sourceKey: ('bing:' + result.url).slice(0, 220),
-            evidence: [result.url, 'query:' + query, 'stage:raw-discovery', 'discovered-at:' + startedAt],
+            evidence: [
+              result.url,
+              'query-source:M1',
+              'query:' + query,
+              'locale:pt-BR',
+              'country:BR',
+              'score:' + review.score,
+              'relevance:' + review.reason,
+              'rule:no-cold-outreach',
+              'stage:reviewed-discovery',
+              'discovered-at:' + startedAt,
+            ],
           });
           discovered += 1;
         }
@@ -384,11 +443,11 @@ export async function commercialRobotTick() {
     await upsertBySourceKey({
       kind: 'event',
       title: 'Ciclo de prospecção concluído',
-      detail: `${discovered} resultado(s) processado(s) em ${queries.length} busca(s); ${queryFailures} busca(s) com falha; ${briefsCreated} brief(s) criado(s).`,
+      detail: `${discovered} resultado(s) relevantes persistidos; ${rejected} descartados; ${queries.length} consulta(s) M1; ${queryFailures} busca(s) com falha; ${briefsCreated} brief(s) criado(s).`,
       status: 'research',
       source: 'commercial-robot',
       sourceKey: 'research-cycle:' + hourKey,
-      evidence: ['public-search-only', 'no-auto-contact', 'no-auto-publish', startedAt],
+      evidence: ['query-source:M1', 'locale:pt-BR', 'country:BR', 'relevance-filter:enabled', 'no-cold-outreach', 'no-auto-contact', 'no-auto-publish', startedAt],
     });
     await upsertBySourceKey({
       kind: 'event',
@@ -399,7 +458,7 @@ export async function commercialRobotTick() {
       sourceKey: 'commercial-orchestrator-heartbeat',
       evidence: ['runtime-worker', 'public-search-only', 'approval-required', new Date().toISOString()],
     });
-    return { ok: true, discovered, queryFailures, briefsCreated, at: new Date().toISOString() };
+    return { ok: true, discovered, rejected, queryFailures, briefsCreated, at: new Date().toISOString() };
   } finally {
     robotTickRunning = false;
   }
