@@ -198,6 +198,20 @@ type ProductSummary = {
   zeesBlocked: number;
 };
 
+type FastOverviewSource = { ok: boolean; elapsedMs: number; error: string | null };
+type FastOverview = {
+  elapsedMs: number;
+  sources: {
+    health: FastOverviewSource;
+    status: FastOverviewSource;
+    control: FastOverviewSource;
+    continuity: FastOverviewSource;
+    inventory: FastOverviewSource;
+  };
+  operations: OperationalSnapshot;
+  summary: Pick<ProductSummary, 'total' | 'salesEnabled' | 'commercialReady' | 'blocked'>;
+};
+
 type CertificationTarget = {
   id: string;
   name: string;
