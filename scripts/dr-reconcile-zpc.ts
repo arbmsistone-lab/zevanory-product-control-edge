@@ -66,6 +66,20 @@ export async function runDrReconcileDryRun(cutoff = '2026-09-29T15:06:35Z', end 
 
 type PrimaryRecord = { bucket: string; id: string; record: unknown };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function remoteIdSet(value: unknown): Set<string> {
+  if (!isRecord(value) || !Array.isArray(value.items)) return new Set<string>();
+  const ids: string[] = [];
+  for (const item of value.items) {
+    if (!isRecord(item) || item.id === undefined || item.id === null) continue;
+    ids.push(String(item.id));
+  }
+  return new Set<string>(ids);
+}
+
 async function fetchPrimaryRecords(pool: Pool, bucket: string) {
   const result = await pool.query(
     'select bucket, id::text, record from public.zpc_records where bucket=$1 order by id',
@@ -112,9 +126,9 @@ export async function executeDrReconcile() {
     const result: Record<string, { upserted: number; deleted: number }> = {};
     for (const bucket of summary.buckets.map(item => item.bucket)) {
       const primary = await fetchPrimaryRecords(pool, bucket);
-      const remote = await secondaryRpc('zpc_worker_list', { p_bucket: bucket, p_limit: 1000 }) as any;
-      const remoteIds = new Set((remote?.items || []).map((item: any) => String(item.id)));
-      const primaryIds = new Set(primary.map(item => item.id));
+      const remote = await secondaryRpc('zpc_worker_list', { p_bucket: bucket, p_limit: 1000 });
+      const remoteIds = remoteIdSet(remote);
+      const primaryIds: Set<string> = new Set(primary.map(item => item.id));
 
       for (let i = 0; i < primary.length; i += 100) {
         const chunk = primary.slice(i, i + 100).map(item => ({ id: item.id, record: item.record }));

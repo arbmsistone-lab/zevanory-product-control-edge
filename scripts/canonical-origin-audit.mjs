@@ -2,7 +2,8 @@ import fs from 'node:fs';
 
 const app=fs.readFileSync('src/App.tsx','utf8');
 const worker=fs.readFileSync('cf-worker/worker.ts','utf8');
-const shell=fs.readFileSync('src/styles/shell.css','utf8');
+const shellPath=process.env.CANONICAL_SHELL_PATH || 'src/styles/shell.css';
+const shell=fs.readFileSync(shellPath,'utf8');
 
 const fail=(m)=>{console.error('CANONICAL_ORIGIN_GATE=FAIL',m);process.exit(1)};
 
@@ -25,11 +26,20 @@ for(const required of [
   if(!worker.includes(required)) fail('worker contract missing: '+required);
 }
 
-for(const required of [
+for(const forbidden of [
   'width: 100vw;',
-  'height: 100vh;',
-  'max-width: 100vw !important;',
-  'max-height: 100vh !important;',
+  'max-width: 100vw',
+  'overflow-x: auto',
+  'overflow-x: scroll'
+]){
+  if(shell.includes(forbidden)) fail('horizontal overflow regression detected: '+forbidden);
+}
+
+for(const required of [
+  'width: 100%;',
+  'height: 100dvh;',
+  'max-width: 100% !important;',
+  'max-height: 100dvh !important;',
   'overflow: hidden !important;',
   'overscroll-behavior: none !important;',
   'text-rendering: optimizeLegibility;',
@@ -48,8 +58,17 @@ console.log('PUBLIC_PRODUCTS_PREFIX=/produtos/');
 console.log('LEGAL_ROUTES=/termos,/privacidade,/reembolso');
 
 
+const retiredPublicRoutes=['zevanory-one','arbm-sist'];
+for(const slug of retiredPublicRoutes){
+  if(fs.existsSync('public/'+slug)) fail('retired public route reintroduced: '+slug);
+  if(!worker.includes("retiredPublicPaths = new Set(['/arbm-sist','/zevanory-one','/arbm-one'])")) {
+    fail('retired public route 410 guard missing');
+  }
+}
+console.log('RETIRED_PUBLIC_ROUTES_410=PASS');
+
 const publicRoutes=[
-  'solucoes','zevanory-one','arbm-contador-saloes','arbm-sist',
+  'solucoes','arbm-contador-saloes',
   'ia-na-pratica','vendas-na-pratica','lucro-e-caixa','combo-ia-vendas',
   'negocio-completo','privacidade','termos','reembolso','afiliados'
 ];

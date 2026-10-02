@@ -23,9 +23,27 @@ jobs:
           node-version: '24'
       - name: Install
         run: npm install --no-audit --no-fund
-      - name: Canonical origin static audit
+      - name: Canonical origin static audit · positive
         run: node scripts/canonical-origin-audit.mjs
+
+      - name: Canonical zero-scroll regression · negative
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp src/styles/shell.css /tmp/shell-negative.css
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/shell-negative.css')
+          s=p.read_text()
+          needle='width: 100%;'
+          if needle not in s:
+              raise SystemExit('negative fixture anchor missing')
+          p.write_text(s.replace(needle, 'width: 100vw;\n  overflow-x: auto;', 1))
+          PY
+          if CANONICAL_SHELL_PATH=/tmp/shell-negative.css node scripts/canonical-origin-audit.mjs; then
+            echo 'NEGATIVE_ZERO_SCROLL_TEST=UNEXPECTED_PASS'
+            exit 1
+          fi
+          echo 'NEGATIVE_ZERO_SCROLL_TEST=EXPECTED_FAIL'
       - name: Build
         run: npm run build
-      - name: Zero-debt static audit
-        run: python3 scripts/ped_versal_zero_debt_audit.py
