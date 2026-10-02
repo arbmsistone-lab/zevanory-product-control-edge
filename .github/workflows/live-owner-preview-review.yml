@@ -1,0 +1,36 @@
+name: Live Owner Preview Review
+
+on:
+  push:
+    branches:
+      - feat/commercial-control-center-final
+    paths:
+      - 'scripts/live-owner-preview-review.mjs'
+      - '.github/workflows/live-owner-preview-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Open live preview and traverse 14 areas x 2 themes
+        run: node scripts/live-owner-preview-review.mjs
+      - name: Upload live preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-owner-preview-review-${{ github.sha }}
+          path: live-owner-preview-review/
+          retention-days: 7
