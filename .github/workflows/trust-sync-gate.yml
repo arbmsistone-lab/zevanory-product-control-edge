@@ -2,7 +2,9 @@ name: Product Control Trust Sync Gate
 on:
   push:
     branches:
+      - main
       - chatgpt/sync-global-trust-20260919
+  workflow_dispatch:
 jobs:
   validate:
     runs-on: ubuntu-latest
