@@ -157,6 +157,7 @@ body {
 .bootstrapSkeleton .skeletonCards span { min-height: 86px; }
 
 .zpcWorkspace {
+  position: relative;
   grid-area: workspace;
   width: 100%;
   height: 100%;
