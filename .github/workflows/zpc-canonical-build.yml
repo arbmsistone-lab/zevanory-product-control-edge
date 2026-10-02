@@ -50,7 +50,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q "zeesSealGrid" src/App.tsx
+          grep -q "governanceStack" src/App.tsx
           grep -q "shell-products" src/index.css
           grep -q "P01" backend/zees-verifiers.ts
           grep -q "P16" backend/zees-verifiers.ts
