@@ -1010,17 +1010,39 @@ function App() {
         <section className='overviewStack' data-page={overviewPage}>
           <section className='overviewHero panel'>
             <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2></div>
-            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
+            <span className={fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>
+              {fastOverview?.sources.health.ok ? (overviewOperations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO') : 'INFRA INDISPONÍVEL'}
+            </span>
           </section>
           <nav className='overviewPager' aria-label='Páginas da visão geral'>
             {['Operação', 'Certificação', 'Canais', 'Bloqueios'].map((label, index) => <button key={label} className={overviewPage === index ? 'filter active' : 'filter'} aria-pressed={overviewPage === index} onClick={() => setOverviewPage(index)}>{label}</button>)}
           </nav>
 
           {overviewPage === 0 && <section className='overviewCards'>
-            <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
-            <article className='overviewCard'><span>Vendas</span><strong>{operationalLabel(operations?.runtime.sales)}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>
-            <article className='overviewCard'><span>Produtos</span><strong>{activeSummary.total}</strong><small>{activeSummary.salesEnabled} em venda · {activeSummary.blocked} pendentes</small></article>
-            <article className='overviewCard'><span>Banco</span><strong>{operations?.health.requiredTables ?? 0} tabelas</strong><small>{operations?.health.requiredMigrations ?? 0} migrations · faltas {(operations?.health.missingTables ?? 0)+(operations?.health.missingMigrations ?? 0)}</small></article>
+            <article className='overviewCard'>
+              <span>Saúde</span>
+              {fastOverview?.sources.health.ok
+                ? <><strong>{overviewOperations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {overviewOperations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {overviewOperations?.health.schemaReady ? 'OK' : 'FAIL'}</small></>
+                : <><strong>ERRO</strong><small>Fonte de saúde indisponível. Os demais cards continuam independentes.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>Vendas</span>
+              {fastOverview?.sources.status.ok
+                ? <><strong>{operationalLabel(overviewOperations?.runtime.sales)}</strong><small>checkout {overviewOperations?.runtime.checkout ?? 'unknown'} · financeiro {overviewOperations?.runtime.financial ?? 'unknown'}</small></>
+                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>Produtos</span>
+              {fastOverview?.sources.inventory.ok
+                ? <><strong>{fastOverview.summary.total}</strong><small>{fastOverview.summary.salesEnabled} em venda · {fastOverview.summary.blocked} pendentes</small></>
+                : <><strong>ERRO</strong><small>Inventário indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>Banco</span>
+              {fastOverview?.sources.health.ok
+                ? <><strong>{overviewOperations?.health.requiredTables ?? 0} tabelas</strong><small>{overviewOperations?.health.requiredMigrations ?? 0} migrations · faltas {(overviewOperations?.health.missingTables ?? 0)+(overviewOperations?.health.missingMigrations ?? 0)}</small></>
+                : <><strong>ERRO</strong><small>Fonte de saúde indisponível.</small></>}
+            </article>
           </section>}
 
           {overviewPage === 1 && <section className='overviewCards overviewCardsCertification'>
