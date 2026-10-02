@@ -1,0 +1,32 @@
+name: ZEVANORY Sales Contract
+
+on:
+  pull_request:
+    paths:
+      - 'src/zevanory-sales-model.ts'
+      - 'scripts/zevanory-sales-model-contract.ts'
+      - 'docs/zevanory-sales/**'
+      - 'package.json'
+      - '.github/workflows/zevanory-sales-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sales-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: ZEVANORY SALES autonomy contract
+        run: npm run test:zevanory-sales-contract
