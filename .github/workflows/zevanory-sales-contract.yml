@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'src/zevanory-sales-model.ts'
+      - 'src/CommercialWorkspace.tsx'
       - 'src/commercial-model.ts'
       - 'scripts/zevanory-sales-model-contract.ts'
       - 'scripts/zevanory-sales-tenant-contract.ts'
