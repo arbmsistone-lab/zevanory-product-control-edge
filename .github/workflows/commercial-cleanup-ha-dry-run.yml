@@ -1,0 +1,115 @@
+name: Commercial Cleanup HA Dry Run
+
+on:
+  push:
+    branches:
+      - fix/premium-panel-a-cleanup-20261002
+    paths:
+      - "backend/commercial.ts"
+      - "backend/index.ts"
+      - "scripts/ped-commercial-audit.mjs"
+      - ".github/workflows/commercial-cleanup-ha-dry-run.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commercial-cleanup-ha-dry-run
+  cancel-in-progress: true
+
+jobs:
+  deploy-ha-and-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
+      HA_SERVICE_ID: srv-darvennavr4c738chlag
+      HA_URL: https://zevanory-product-control-edge-ha.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard required credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${ADMIN_PIN}" || { echo "ADMIN_PIN_MISSING"; exit 2; }
+          test -n "${RENDER_API_KEY}" || { echo "RENDER_API_KEY_MISSING"; exit 3; }
+
+      - name: Deploy exact PR commit to HA
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc --arg commitId "$GITHUB_SHA" '{commitId:$commitId}')
+          curl -fsS -X POST "https://api.render.com/v1/services/${HA_SERVICE_ID}/deploys"             -H "Authorization: Bearer ${RENDER_API_KEY}"             -H "Content-Type: application/json"             -d "$payload" > render-deploy.json
+          deploy_id=$(jq -r '.id // empty' render-deploy.json)
+          test -n "$deploy_id"
+          echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
+          echo "HA_DEPLOY_ID=$deploy_id"
+
+      - name: Wait inside workflow for HA deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_id="${{ steps.deploy.outputs.deploy_id }}"
+          for i in $(seq 1 90); do
+            curl -fsS "https://api.render.com/v1/services/${HA_SERVICE_ID}/deploys/${deploy_id}"               -H "Authorization: Bearer ${RENDER_API_KEY}" > render-status.json
+            status=$(jq -r '.status // empty' render-status.json)
+            echo "HA_DEPLOY_STATUS=$status"
+            case "$status" in
+              live) exit 0 ;;
+              build_failed|update_failed|canceled|deactivated) exit 4 ;;
+            esac
+            sleep 5
+          done
+          echo "HA_DEPLOY_TIMEOUT"
+          exit 5
+
+      - name: Authenticate with ADMIN_PIN
+        id: auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          auth_payload=$(jq -nc --arg pin "$ADMIN_PIN" '{pin:$pin}')
+          curl -fsS -X POST "${HA_URL}/api/pin/login"             -H "Content-Type: application/json"             -d "$auth_payload" > auth.json
+          token=$(jq -r '.sessionToken // empty' auth.json)
+          test -n "$token"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Commercial cleanup dry-run
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="${{ steps.auth.outputs.token }}"
+          body=$(jq -nc --arg sessionToken "$token" '{sessionToken:$sessionToken,mode:"dry-run"}')
+          curl -fsS -X POST "${HA_URL}/api/admin/commercial-cleanup"             -H "Content-Type: application/json"             -d "$body" > commercial-cleanup-dry-run.json
+          jq .
+          test "$(jq -r '.mode' commercial-cleanup-dry-run.json)" = "dry-run"
+          test "$(jq -r '.archived' commercial-cleanup-dry-run.json)" = "0"
+          test "$(jq -r '.deleteOperations' commercial-cleanup-dry-run.json)" = "0"
+          echo "COMMERCIAL_CLEANUP_DRY_RUN=PASS"
+          echo "WOULD_ARCHIVE_LEAD=$(jq -r '.byType.lead // 0' commercial-cleanup-dry-run.json)"
+          echo "WOULD_ARCHIVE_EVIDENCE=$(jq -r '.byType.evidence // 0' commercial-cleanup-dry-run.json)"
+          echo "WOULD_ARCHIVE_TOTAL=$(jq -r '.wouldArchive // 0' commercial-cleanup-dry-run.json)"
+
+      - name: Upload dry-run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commercial-cleanup-ha-dry-run-${{ github.run_id }}
+          path: |
+            render-deploy.json
+            render-status.json
+            commercial-cleanup-dry-run.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Restore HA to latest main
+        if: always() && env.RENDER_API_KEY != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -X POST "https://api.render.com/v1/services/${HA_SERVICE_ID}/deploys"             -H "Authorization: Bearer ${RENDER_API_KEY}"             -H "Content-Type: application/json"             -d '{"clearCache":"do_not_clear"}' > render-restore-main.json
+          echo "HA_RESTORE_MAIN_TRIGGERED=1"
