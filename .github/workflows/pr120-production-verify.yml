@@ -1,0 +1,101 @@
+name: PR120 Production Verification
+
+on:
+  push:
+    branches:
+      - ops/pr120-ha-smoke-e60c0fb2
+    paths:
+      - ".github/workflows/pr120-production-verify.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      EXPECTED_SHA: e60c0fb2b7c278823090b6fbee9db60df2423127
+      ADMIN_PIN: ${{ secrets.ADMIN_PIN || secrets.ZEVANORY_ADMIN_PIN || secrets.CONTROL_CENTER_PIN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify canonical Cloudflare version
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -H 'Cache-Control: no-cache' https://controle.zevanory.api.br/version.json -o /tmp/version.json
+          cat /tmp/version.json
+          jq -e --arg sha "$EXPECTED_SHA" '.sha == $sha and .runtime == "cloudflare-worker"' /tmp/version.json >/dev/null
+          echo "CANONICAL_VERSION=PASS"
+
+      - name: Prepare production browser verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${ADMIN_PIN:-}" || { echo "ADMIN_PIN_SECRET=ABSENT"; exit 41; }
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Measure production login and menu
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const base='https://controle.zevanory.api.br';
+          const pin=process.env.ADMIN_PIN;
+          const expected=['Visão Geral','Produtos','Comercial','Conteúdo','Atendimento','Financeiro','Evidências','Sistema'];
+          const browser=await chromium.launch({headless:true});
+          const times=[];
+
+          for(let i=0;i<5;i++){
+            const context=await browser.newContext({viewport:{width:1536,height:730},colorScheme:'dark'});
+            const page=await context.newPage();
+            await page.goto(base,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.getByLabel('PIN de 4 numeros').fill(pin);
+            const start=performance.now();
+            await page.getByRole('button',{name:'Entrar',exact:true}).click();
+            await page.locator('.zpcAppShell').waitFor({state:'visible',timeout:15000});
+            const elapsed=Math.round(performance.now()-start);
+            const nav=page.locator('.zpcNavigation');
+            if(await nav.locator('.tab').count()!==8) throw new Error('menu_count_dark');
+            for(let n=0;n<8;n++){
+              if(await nav.locator('.tab').nth(n).locator('svg').count()!==1) throw new Error('menu_icon_dark_'+n);
+            }
+            if(await nav.locator('.tab.active').count()!==1) throw new Error('menu_active_dark');
+            const labels=(await nav.locator('.tab').allInnerTexts()).map(x=>x.trim());
+            if(JSON.stringify(labels)!==JSON.stringify(expected)) throw new Error('menu_labels_dark:'+JSON.stringify(labels));
+
+            const toggle=page.locator('.themeToggle');
+            await toggle.click();
+            await page.waitForTimeout(150);
+            if(await nav.locator('.tab').count()!==8) throw new Error('menu_count_light');
+            for(let n=0;n<8;n++){
+              if(await nav.locator('.tab').nth(n).locator('svg').count()!==1) throw new Error('menu_icon_light_'+n);
+            }
+            if(await nav.locator('.tab.active').count()!==1) throw new Error('menu_active_light');
+            times.push(elapsed);
+            await context.close();
+          }
+
+          await browser.close();
+          const sorted=[...times].sort((a,b)=>a-b);
+          const result={timesMs:times,medianMs:sorted[2],maxMs:Math.max(...times),menu:{items:8,icons:true,singleActive:true,dark:true,light:true}};
+          fs.writeFileSync('/tmp/pr120-production.json',JSON.stringify(result,null,2));
+          console.log(JSON.stringify(result));
+          if(result.medianMs>=2000) process.exit(42);
+          JS
+          echo "PRODUCTION_LOGIN_MENU=PASS"
+      - name: Upload production evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr120-production-verification
+          path: /tmp/pr120-production.json
+          if-no-files-found: ignore
