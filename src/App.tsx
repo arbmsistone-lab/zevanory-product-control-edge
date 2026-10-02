@@ -712,7 +712,7 @@ function App() {
     () => activeCertificationTargets.find(target => target.id === selectedTargetId) ?? activeCertificationTargets[0] ?? null,
     [activeCertificationTargets, selectedTargetId],
   );
-  const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 820;
+  const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 900;
   const certTargetPageSize = compactGovernance ? 1 : 6;
   const certTargetPageCount = Math.max(1, Math.ceil(activeCertificationTargets.length / certTargetPageSize));
   const safeCertTargetPage = Math.min(certTargetPage, certTargetPageCount - 1);
