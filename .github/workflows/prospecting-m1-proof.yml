@@ -6,6 +6,7 @@ on:
       - fix/premium-panel-a-cleanup-20261002
     paths:
       - "backend/commercial.ts"
+      - "config/m1-queries.json"
       - "scripts/prospecting-m1-proof.ts"
       - ".github/workflows/prospecting-m1-proof.yml"
   workflow_dispatch:
@@ -21,9 +22,6 @@ jobs:
   review-20:
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    env:
-      COMMERCIAL_M1_QUERIES: ${{ secrets.COMMERCIAL_M1_QUERIES }}
-      COMMERCIAL_PROSPECT_MIN_SCORE: "7"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
