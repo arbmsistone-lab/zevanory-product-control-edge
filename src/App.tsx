@@ -1046,15 +1046,45 @@ function App() {
           </section>}
 
           {overviewPage === 1 && <section className='overviewCards overviewCardsCertification'>
-            <article className='overviewCard'><span>Quorum técnico</span><strong>{operations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{operations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></article>
-            <article className='overviewCard'><span>ZEES-16</span><strong>{operations?.zees16.proven ?? 0}/16</strong><small>{operations?.zees16.partial ?? 0} parciais · {operations?.zees16.blocked ?? 0} bloqueados</small></article>
-            <article className='overviewCard'><span>ZEA-10</span><strong>{operations?.zea10.proven ?? 0}/10</strong><small>{operations?.zea10.partial ?? 0} parciais · {operations?.zea10.blocked ?? 0} bloqueados</small></article>
+            <article className='overviewCard'>
+              <span>Quorum técnico</span>
+              {fastOverview?.sources.continuity.ok
+                ? <><strong>{overviewOperations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{overviewOperations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></>
+                : <><strong>ERRO</strong><small>Fonte de continuidade indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>ZEES-16</span>
+              {operations
+                ? <><strong>{operations.zees16.proven}/16</strong><small>{operations.zees16.partial} parciais · {operations.zees16.blocked} bloqueados</small></>
+                : <><strong>CARREGANDO</strong><small>Evidência detalhada em segundo plano.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>ZEA-10</span>
+              {globalTrust
+                ? <><strong>{globalTrust.zea10.proven}/10</strong><small>{globalTrust.zea10.partial} parciais · {globalTrust.zea10.blocked} bloqueados</small></>
+                : <><strong>{globalTrustLoading ? 'CARREGANDO' : 'ERRO'}</strong><small>{globalTrustLoading ? 'Fonte de confiança em leitura.' : 'Fonte de confiança indisponível.'}</small></>}
+            </article>
           </section>}
 
           {overviewPage === 2 && <section className='overviewCards overviewCardsChannels'>
-            <article className='overviewCard'><span>Canais configurados</span><strong>{operations?.channels.length ?? 0}</strong><small>detalhamento disponível em Comercial</small></article>
-            <article className='overviewCard'><span>WhatsApp</span><strong>{operationalLabel(operations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {operations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></article>
-            <article className='overviewCard'><span>Execução comercial</span><strong>{operations?.channels.filter(channel => channel.commercialExecution === 'enabled').length ?? 0}</strong><small>canais com execução habilitada</small></article>
+            <article className='overviewCard'>
+              <span>Canais configurados</span>
+              {fastOverview?.sources.status.ok
+                ? <><strong>{overviewOperations?.channels.length ?? 0}</strong><small>detalhamento disponível em Comercial</small></>
+                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>WhatsApp</span>
+              {fastOverview?.sources.status.ok && fastOverview?.sources.continuity.ok
+                ? <><strong>{operationalLabel(overviewOperations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {overviewOperations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></>
+                : <><strong>ERRO</strong><small>Status ou continuidade indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>Execução comercial</span>
+              {fastOverview?.sources.status.ok
+                ? <><strong>{overviewOperations?.channels.filter(channel => channel.commercialExecution === 'enabled').length ?? 0}</strong><small>canais com execução habilitada</small></>
+                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
+            </article>
             <article className='overviewCard'><button className='secondary compact overviewJump' onClick={() => setView('commercial')}>Abrir Comercial</button></article>
           </section>}
 
@@ -1062,11 +1092,11 @@ function App() {
             <article className='panel'>
               <div className='panelhead'><div><p className='kicker'>ATENÇÃO EXECUTIVA</p><h2>O que está bloqueando</h2></div><AlertTriangle size={20} /></div>
               <div className='executiveList'>
-                <div><span>Estado global</span><b>{operationalLabel(operations?.control.globalState)}</b></div>
-                <div><span>Bloqueador raiz</span><b>{operations?.control.rootBlocker ?? 'unknown'}</b></div>
-                <div><span>Decisão do core</span><b>{operationalLabel(operations?.control.decision)}</b></div>
-                <div><span>Produtos bloqueados</span><b>{activeSummary.blocked}</b></div>
-                <div><span>Incidentes</span><b>{shellDashboard.incidents.length}</b></div>
+                <div><span>Estado global</span><b>{fastOverview?.sources.control.ok ? operationalLabel(overviewOperations?.control.globalState) : 'ERRO DA FONTE'}</b></div>
+                <div><span>Bloqueador raiz</span><b>{fastOverview?.sources.control.ok ? (overviewOperations?.control.rootBlocker ?? 'none') : 'indisponível'}</b></div>
+                <div><span>Decisão do core</span><b>{fastOverview?.sources.control.ok ? operationalLabel(overviewOperations?.control.decision) : 'indisponível'}</b></div>
+                <div><span>Produtos bloqueados</span><b>{fastOverview?.sources.inventory.ok ? fastOverview.summary.blocked : 'indisponível'}</b></div>
+                <div><span>Incidentes</span><b>{dashboard ? shellDashboard.incidents.length : 'carregando'}</b></div>
               </div>
             </article>
           </section>}
