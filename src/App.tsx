@@ -426,6 +426,8 @@ function App() {
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const shellDashboard = dashboard ?? EMPTY_DASHBOARD;
   const bootstrapPending = dashboard === null;
+  const overviewOperations = fastOverview?.operations ?? null;
+  const surfacePending = view === 'overview' ? fastOverviewLoading : bootstrapPending;
   const primaryArea: PrimaryArea =
     view === 'overview' ? 'overview' :
     view === 'products' ? 'products' :
