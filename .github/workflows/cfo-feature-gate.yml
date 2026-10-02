@@ -65,7 +65,7 @@ jobs:
           grep -q "zevanory-cfo" backend/index.ts
           grep -q "FAIL_CLOSED" backend/cfo.ts
           grep -q "READY_FOR_APPROVAL" backend/cfo.ts
-          grep -q "VENDA SEM GATE: BLOQUEADA" src/App.tsx
-          grep -q "zeesSealGrid" src/App.tsx
+          grep -q "Venda bloqueada pelo gate comercial/ZEES" src/App.tsx
+          grep -q "certSeal blocked" src/App.tsx
           grep -q "ARBM ONE" CANONICAL_DEPLOYMENT.md
           grep -q "ZEVANORY ONE" CANONICAL_DEPLOYMENT.md
