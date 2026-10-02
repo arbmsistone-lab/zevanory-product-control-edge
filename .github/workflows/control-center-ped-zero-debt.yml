@@ -3,6 +3,8 @@ name: Control Center PED-Versal Supreme Zero-Debt
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
     paths:
       - 'src/**'
       - 'scripts/ped_versal_zero_debt_audit.py'
