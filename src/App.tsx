@@ -117,6 +117,16 @@ type Dashboard = {
   }>;
 };
 
+const EMPTY_DASHBOARD: Dashboard = {
+  systems: [],
+  audits: [],
+  improvements: [],
+  incidents: [],
+  policy: { zeroSpend: true, failClosed: true, destructiveActions: false, greenRule: 'Somente com evidencia reproduzivel' },
+  lastEngineRun: '',
+  certificationRuns: [],
+};
+
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
 
 type ProductAudit = {
@@ -386,6 +396,8 @@ function App() {
   });
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
+  const shellDashboard = dashboard ?? EMPTY_DASHBOARD;
+  const bootstrapPending = dashboard === null;
 
   useEffect(() => {
     const onResize = () => {
@@ -733,10 +745,6 @@ function App() {
 
   // Session restoration never blocks PIN entry; protected content still requires ready.
   if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} restoringSession={authState === 'checking'} />;
-  if (!dashboard) {
-    return <main className='loading'><div className='loader' /><p>Inicializando ZEVANORY PRODUCT CONTROL...</p></main>;
-  }
-
   return (
     <div className='zpcAppShell'>
       <header className='topbar'>
@@ -837,7 +845,20 @@ function App() {
         </select>
       </label>
 
-      <main className={`zpcWorkspace shell shell-${view}`} data-compact-governance={compactGovernance ? 'true' : 'false'}>
+      <main
+        className={`zpcWorkspace shell shell-${view}`}
+        data-compact-governance={compactGovernance ? 'true' : 'false'}
+        data-bootstrap-ready={bootstrapPending ? 'false' : 'true'}
+      >
+      {bootstrapPending && (
+        <section className='bootstrapSkeleton' role='status' aria-live='polite' aria-label='Carregando dados do painel'>
+          <div className='skeletonLine wide' />
+          <div className='skeletonLine medium' />
+          <div className='skeletonCards' aria-hidden='true'>
+            <span /><span /><span /><span />
+          </div>
+        </section>
+      )}
       {error && <div className='errorbox globalError'>{error}</div>}
 
       {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
@@ -889,7 +910,7 @@ function App() {
                 <div><span>Bloqueador raiz</span><b>{operations?.control.rootBlocker ?? 'unknown'}</b></div>
                 <div><span>Decisão do core</span><b>{operationalLabel(operations?.control.decision)}</b></div>
                 <div><span>Produtos bloqueados</span><b>{activeSummary.blocked}</b></div>
-                <div><span>Incidentes</span><b>{dashboard.incidents.length}</b></div>
+                <div><span>Incidentes</span><b>{shellDashboard.incidents.length}</b></div>
               </div>
             </article>
           </section>}
@@ -991,15 +1012,15 @@ function App() {
               </div>
             </div>
             <div className='operationSummary'>
-              <span>Incidentes <b>{dashboard.incidents.length}</b></span>
-              <span>Auditorias <b>{dashboard.audits.length}</b></span>
-              <span>Melhorias <b>{dashboard.improvements.length}</b></span>
+              <span>Incidentes <b>{shellDashboard.incidents.length}</b></span>
+              <span>Auditorias <b>{shellDashboard.audits.length}</b></span>
+              <span>Melhorias <b>{shellDashboard.improvements.length}</b></span>
             </div>
           </div>
           <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>INCIDENTES</p><h2>Fila operacional</h2></div><div className='opsPager'>{incidentPageCount > 1 && <><button className='secondary compact' onClick={() => setIncidentPage(Math.max(0, safeIncidentPage - 1))} disabled={safeIncidentPage === 0}>‹</button><strong>{safeIncidentPage + 1}/{incidentPageCount}</strong><button className='secondary compact' onClick={() => setIncidentPage(Math.min(incidentPageCount - 1, safeIncidentPage + 1))} disabled={safeIncidentPage >= incidentPageCount - 1}>›</button></>}<AlertTriangle size={20} /></div></div>
             <div className='feed'>
-              {dashboard.incidents.length === 0
+              {shellDashboard.incidents.length === 0
                 ? <div className='empty'>Nenhum incidente registrado.</div>
                 : pagedIncidents.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
@@ -1012,7 +1033,7 @@ function App() {
           <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>AUDITORIA</p><h2>Achados recentes</h2></div><div className='opsPager'>{auditPageCount > 1 && <><button className='secondary compact' onClick={() => setAuditPage(Math.max(0, safeAuditPage - 1))} disabled={safeAuditPage === 0}>‹</button><strong>{safeAuditPage + 1}/{auditPageCount}</strong><button className='secondary compact' onClick={() => setAuditPage(Math.min(auditPageCount - 1, safeAuditPage + 1))} disabled={safeAuditPage >= auditPageCount - 1}>›</button></>}<ShieldCheck size={20} /></div></div>
             <div className='feed'>
-              {dashboard.audits.length === 0
+              {shellDashboard.audits.length === 0
                 ? <div className='empty'>Execute uma auditoria para gerar novos achados.</div>
                 : pagedAudits.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
@@ -1095,8 +1116,8 @@ function App() {
                     <span><b>{selectedCertificationTarget.certification.evidenceCount}</b><small>Evidencias</small></span>
                     <span><b>{selectedCertificationTarget.certification.summary.provedControls}/{selectedCertificationTarget.certification.summary.applicableControls}</b><small>Controles provados</small></span>
                   </div>
-                  {dashboard.certificationRuns?.find(run => run.targetId === selectedCertificationTarget.id) && (() => {
-                    const run = dashboard.certificationRuns!.find(item => item.targetId === selectedCertificationTarget.id)!;
+                  {shellDashboard.certificationRuns?.find(run => run.targetId === selectedCertificationTarget.id) && (() => {
+                    const run = shellDashboard.certificationRuns!.find(item => item.targetId === selectedCertificationTarget.id)!;
                     return <div className='certRunStrip'><span><b>Última execução</b>{run.status.toUpperCase()}</span><span><b>Release</b>{run.releaseFingerprint}</span><span><b>SHA</b>{run.sourceSha.slice(0, 12)}</span><span><b>Pilares</b>{run.completedPillars}/16</span></div>;
                   })()}
                   {!selectedCertificationTarget.certification.ready && (compactGovernance
@@ -1154,7 +1175,7 @@ function App() {
             </div>
             <p className='productDescription'>Fonte operacional separada da certificacao: evidencias so promovem pilares quando explicitamente vinculadas ao produto e release.</p>
             <div className='systems'>
-              {dashboard.systems.map(system => (
+              {shellDashboard.systems.map(system => (
                 <article className='system' key={system.id}>
                   <div className='systemtop'>
                     <div><h3>{system.name}</h3><p>{system.domain}</p></div>
