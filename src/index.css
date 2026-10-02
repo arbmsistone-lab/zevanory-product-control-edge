@@ -4128,7 +4128,7 @@ html, body, button, input, select, textarea {
   left: var(--zpc-space-3);
   right: var(--zpc-space-3);
   top: -1px;
-  height: 1px;
+  height: var(--zpc-space-1);
   background: linear-gradient(90deg, transparent, var(--z-champagne), transparent);
   opacity: .65;
   pointer-events: none;
