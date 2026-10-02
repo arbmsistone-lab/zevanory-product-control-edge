@@ -1,4 +1,4 @@
-name: PR121 HA smoke
+name: PR121 primary smoke
 
 on:
   push:
@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Smoke HA without portable-health
+      - name: Smoke primary without portable-health
         shell: bash
         run: |
           set -euo pipefail
-          base="https://zevanory-product-control-edge-ha.onrender.com"
+          base="https://zevanory-product-control-edge.onrender.com"
           for i in $(seq 1 24); do
             if curl -fsS "$base/api/_healthcheck" -o /tmp/health.json; then
               jq -e '.ok == true' /tmp/health.json >/dev/null && break
@@ -27,5 +27,5 @@ jobs:
           jq -e '.ok == true' /tmp/health.json >/dev/null
           curl -fsS "$base/api/_auth_diagnostic" -o /tmp/auth.json
           jq -e '.secretValid == true and .locked == false' /tmp/auth.json >/dev/null
-          echo "HA_SMOKE=PASS"
+          echo "PRIMARY_SMOKE=PASS"
           echo "PORTABLE_HEALTH_USED=NO"
