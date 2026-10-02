@@ -956,9 +956,9 @@ function App() {
       <main
         className={`zpcWorkspace shell shell-${view}`}
         data-compact-governance={compactGovernance ? 'true' : 'false'}
-        data-bootstrap-ready={bootstrapPending ? 'false' : 'true'}
+        data-bootstrap-ready={surfacePending ? 'false' : 'true'}
       >
-      {bootstrapPending && (
+      {surfacePending && (
         <section className='bootstrapSkeleton' role='status' aria-live='polite' aria-label='Carregando dados do painel'>
           <div className='skeletonLine wide' />
           <div className='skeletonLine medium' />
