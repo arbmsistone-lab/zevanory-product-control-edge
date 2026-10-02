@@ -128,6 +128,34 @@ body {
   color: var(--text-primary);
 }
 
+.bootstrapSkeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  align-content: start;
+  gap: var(--zpc-space-2);
+  padding: var(--zpc-space-4);
+  pointer-events: none;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+.bootstrapSkeleton .skeletonLine,
+.bootstrapSkeleton .skeletonCards span {
+  display: block;
+  border-radius: var(--zpc-radius-sm);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  min-height: 18px;
+}
+.bootstrapSkeleton .skeletonLine.wide { width: min(420px, 72%); }
+.bootstrapSkeleton .skeletonLine.medium { width: min(300px, 52%); }
+.bootstrapSkeleton .skeletonCards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--zpc-space-2);
+}
+.bootstrapSkeleton .skeletonCards span { min-height: 86px; }
+
 .zpcWorkspace {
   grid-area: workspace;
   width: 100%;
