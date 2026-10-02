@@ -28,7 +28,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
   display:grid;align-content:start;gap:var(--zpc-space-1);overflow:hidden;border:1px solid var(--border);
   border-radius:var(--zpc-radius-md);background:var(--surface)}
 .zpcNavGroup{display:grid;gap:var(--zpc-space-1)}
-.zpcNavLabel{margin:var(--zpc-space-1) var(--zpc-space-1) var(--zpc-space-1);font-size:var(--zpc-font-xs);line-height:1.1;letter-spacing:.08em}
+.zpcNavLabel{margin:var(--zpc-space-1) var(--zpc-space-1) var(--zpc-space-1);font-size:.6875em;line-height:1.1;letter-spacing:.08em}
 .zpcNavigation .tab{min-height:var(--zpc-size-32);height:var(--zpc-size-32);padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs);line-height:1.1;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:var(--zpc-radius-sm)}
 .zpcWorkspace{grid-area:workspace;width:100%;height:100%;min-width:0;min-height:0;
@@ -332,7 +332,7 @@ html,body,#root,.app-container{width:100%!important;max-width:100%!important;min
   }
   .zpcNavLabel{
     margin:var(--zpc-space-1) var(--zpc-space-1) 0!important;
-    font-size:var(--zpc-font-xs)!important;line-height:1!important
+    font-size:.6875em!important;line-height:1!important
   }
   .zpcWorkspace .robotBadge b{font-size:var(--zpc-font-xs)!important}
   .zpcWorkspace .robotBadge small{font-size:var(--zpc-font-xs)!important}
