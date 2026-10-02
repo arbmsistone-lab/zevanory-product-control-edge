@@ -2,6 +2,9 @@ import { db, error, json, secrets } from './platform.ts';
 import {
   computeCommercialMetrics,
   deriveCommercialRobotState,
+  isOperationallyActive,
+  isOperationallyBlocked,
+  normalizeCommercialState,
   type CommercialOperationsLike,
   type CommercialRecord,
   type CommercialRecordKind,
@@ -493,7 +496,7 @@ export async function commercialSalesEvaluateAction(
     lead = { ...found, id: leadId, kind: 'lead' } as CommercialRecord;
     if (input.action !== 'research' && normalizeCommercialState(lead.status) === 'new') {
       decision.allowed = false;
-      decision.reason = 'lead_not_qualified' as any;
+      decision.reason = 'lead_not_qualified';
     }
   }
 
