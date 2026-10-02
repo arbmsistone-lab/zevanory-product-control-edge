@@ -9,7 +9,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
   grid-template-areas:"header header" "trust trust" "nav workspace";
   gap:var(--zpc-space-2) var(--zpc-space-3);align-items:stretch
 }
-.zpcAppShell>.topbar{grid-area:header;height:58px;margin:0;display:grid;
+.zpcAppShell>.topbar{grid-area:header;height:var(--zpc-size-60);margin:0;display:grid;
   grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--zpc-space-4)}
 .zpcBrandBlock{min-width:0;display:grid;gap:var(--zpc-space-1);align-content:center}
 .zpcBrandBlock .eyebrow,.zpcBrandBlock .subtitle{margin:0;line-height:1.15}
@@ -18,7 +18,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
 .zpcBrandBlock .subtitle{font-size:var(--zpc-font-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .zpcHeaderActions{display:flex;align-items:center;justify-content:flex-end;gap:var(--zpc-space-1);flex-wrap:nowrap}
 .zpcHeaderActions>*{min-height:36px;height:36px;padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs);white-space:nowrap}
-.zpcAppShell>.trustStrip{grid-area:trust;margin:0;min-height:42px;padding:var(--zpc-space-1) var(--zpc-space-2);
+.zpcAppShell>.trustStrip{grid-area:trust;margin:0;min-height:var(--zpc-size-44);padding:var(--zpc-space-1) var(--zpc-space-2);
   display:grid;grid-template-columns:1.1fr repeat(4,minmax(0,1fr));align-items:center;gap:var(--zpc-space-2)}
 .zpcAppShell>.trustStrip>div{min-width:0}
 .zpcAppShell>.trustStrip small,.zpcAppShell>.trustStrip b,
@@ -29,7 +29,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
   border-radius:var(--zpc-radius-md);background:var(--surface)}
 .zpcNavGroup{display:grid;gap:var(--zpc-space-1)}
 .zpcNavLabel{margin:var(--zpc-space-1) var(--zpc-space-1) var(--zpc-space-1);font-size:var(--zpc-font-xs);line-height:1.1;letter-spacing:.08em}
-.zpcNavigation .tab{min-height:30px;height:30px;padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs);line-height:1.1;
+.zpcNavigation .tab{min-height:var(--zpc-size-32);height:var(--zpc-size-32);padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs);line-height:1.1;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:var(--zpc-radius-sm)}
 .zpcWorkspace{grid-area:workspace;width:100%;height:100%;min-width:0;min-height:0;
   max-height:100%;overflow:hidden!important;padding:0;box-sizing:border-box}
@@ -52,7 +52,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
 .shell-governance[data-compact-governance='true'] .certTargetSelectWrap{
   display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;gap:var(--zpc-space-2);margin:0}
 .shell-governance[data-compact-governance='true'] .certTargetSelectWrap span{font-size:var(--zpc-font-xs);font-weight:800}
-.shell-governance[data-compact-governance='true'] .certTargetSelectWrap select{height:38px;min-height:38px;padding:var(--zpc-space-1) var(--zpc-space-2)}
+.shell-governance[data-compact-governance='true'] .certTargetSelectWrap select{height:var(--zpc-size-40);min-height:var(--zpc-size-40);padding:var(--zpc-space-1) var(--zpc-space-2)}
 .shell-governance[data-compact-governance='true'] .certSidebar{display:none!important}
 .shell-governance[data-compact-governance='true'] .certDetail{
   min-height:0;height:100%;display:grid;grid-template-rows:40px minmax(0,1fr);gap:var(--zpc-space-2);overflow:hidden}
@@ -76,7 +76,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
 .shell-governance[data-compact-governance='true'] .certTitleRow h2{margin:var(--zpc-space-1) 0;font-size:var(--zpc-font-sm);line-height:1.15}
 .shell-governance[data-compact-governance='true'] .certTitleRow p{margin:0;font-size:var(--zpc-font-xs)}
 .shell-governance[data-compact-governance='true'] .certActions{display:flex;align-items:center;justify-content:flex-end;gap:var(--zpc-space-1);flex-wrap:nowrap}
-.shell-governance[data-compact-governance='true'] .certActions>*{min-height:34px;height:34px;padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs);white-space:nowrap}
+.shell-governance[data-compact-governance='true'] .certActions>*{min-height:var(--zpc-size-36);height:var(--zpc-size-36);padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs);white-space:nowrap}
 .shell-governance[data-compact-governance='true'] .certSummaryGrid{
   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--zpc-space-1)}
 .shell-governance[data-compact-governance='true'] .certSummaryGrid span{padding:var(--zpc-space-2) var(--zpc-space-2);min-width:0}
@@ -95,7 +95,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
 .shell-governance[data-compact-governance='true'] .governancePager strong{
   font-size:var(--zpc-font-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .shell-governance[data-compact-governance='true'] .governancePager .compact{
-  min-height:34px;height:34px;padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs)}
+  min-height:var(--zpc-size-36);height:var(--zpc-size-36);padding:var(--zpc-space-1) var(--zpc-space-2);font-size:var(--zpc-font-xs)}
 .shell-governance[data-compact-governance='true'] .pillarGrid{
   min-height:0;height:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
   grid-template-rows:minmax(0,1fr);gap:var(--zpc-space-2);overflow:hidden}
@@ -109,10 +109,10 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
   .zpcAppShell>.topbar{height:52px}
   .zpcBrandBlock h1{font-size:var(--zpc-font-md)}
   .zpcBrandBlock .subtitle{display:none}
-  .zpcHeaderActions>*{min-height:34px;height:34px;padding:var(--zpc-space-1) var(--zpc-space-2)}
-  .zpcAppShell>.trustStrip{min-height:38px;padding:var(--zpc-space-1) var(--zpc-space-2)}
+  .zpcHeaderActions>*{min-height:var(--zpc-size-36);height:var(--zpc-size-36);padding:var(--zpc-space-1) var(--zpc-space-2)}
+  .zpcAppShell>.trustStrip{min-height:var(--zpc-size-40);padding:var(--zpc-space-1) var(--zpc-space-2)}
   .zpcNavigation{padding:var(--zpc-space-1);gap:var(--zpc-space-1)}
-  .zpcNavigation .tab{min-height:27px;height:27px;padding:var(--zpc-space-1) var(--zpc-space-1);font-size:var(--zpc-font-xs)}
+  .zpcNavigation .tab{min-height:var(--zpc-size-28);height:var(--zpc-size-28);padding:var(--zpc-space-1) var(--zpc-space-1);font-size:var(--zpc-font-xs)}
   .zpcNavLabel{margin:var(--zpc-space-1) var(--zpc-space-1) 0;font-size:var(--zpc-font-xs)}
 }
 @media (max-width:1100px){
@@ -158,9 +158,9 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
   .zpcWorkspace.shell-commercial .commercialHeader{gap:var(--zpc-space-1)}
   .zpcWorkspace.shell-commercial .commercialHeader p{margin-block:var(--zpc-space-1)}
   .zpcWorkspace.shell-commercial .commercialPager{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--zpc-space-1)}
-  .zpcWorkspace.shell-commercial .commercialPager .filter{min-height:34px;height:34px;padding:var(--zpc-space-1) var(--zpc-space-1);font-size:var(--zpc-font-xs)}
+  .zpcWorkspace.shell-commercial .commercialPager .filter{min-height:var(--zpc-size-36);height:var(--zpc-size-36);padding:var(--zpc-space-1) var(--zpc-space-1);font-size:var(--zpc-font-xs)}
   .zpcWorkspace.shell-commercial .commercialMetrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--zpc-space-1)}
-  .zpcWorkspace.shell-commercial .commercialMetrics article{min-height:70px;padding:var(--zpc-space-1) var(--zpc-space-2)}
+  .zpcWorkspace.shell-commercial .commercialMetrics article{min-height:var(--zpc-size-72);padding:var(--zpc-space-1) var(--zpc-space-2)}
   .zpcWorkspace.shell-commercial .commercialDashboardGrid{grid-template-columns:1fr;gap:var(--zpc-space-1)}
   .zpcWorkspace.shell-commercial .commercialProofStrip{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--zpc-space-1)}
   .zpcWorkspace.shell-commercial .commercialProofStrip span{padding:var(--zpc-space-1) var(--zpc-space-2)}
@@ -175,7 +175,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
     display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--zpc-space-1)}
   .shell-governance[data-compact-governance='true'] .certActions .certSeal{grid-column:1/-1}
   .shell-governance[data-compact-governance='true'] .certActions button{
-    min-width:0;width:100%;height:42px!important;min-height:42px!important;
+    min-width:0;width:100%;height:var(--zpc-size-44)!important;min-height:var(--zpc-size-44)!important;
     padding:var(--zpc-space-1) var(--zpc-space-2)!important;white-space:normal!important;line-height:1.15}
   .shell-governance[data-compact-governance='true'] .certSummaryGrid{
     grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:var(--zpc-space-1)}
@@ -199,7 +199,7 @@ body{min-width:320px;background:var(--bg-primary);color:var(--text-primary)}
 }
 /* Collection pagination: real no-scroll composition */
 .zpcWorkspace .recordPager{margin-left:auto;display:flex;align-items:center;gap:var(--zpc-space-1)}
-.zpcWorkspace .recordPager .compact{min-width:34px;height:34px;min-height:34px;padding:var(--zpc-space-1) var(--zpc-space-2)}
+.zpcWorkspace .recordPager .compact{min-width:var(--zpc-size-36);height:var(--zpc-size-36);min-height:var(--zpc-size-36);padding:var(--zpc-space-1) var(--zpc-space-2)}
 .zpcWorkspace .recordPager strong{font-size:var(--zpc-font-xs);white-space:nowrap}
 .zpcWorkspace.shell-creatives .creativeLivePanel,
 .zpcWorkspace.shell-evidence .commercialPanel{height:100%;min-height:0;overflow:hidden}
@@ -327,7 +327,7 @@ html,body,#root,.app-container{width:100%!important;max-width:100%!important;min
   .zpcAppShell .trustStrip span{font-size:var(--zpc-font-xs)!important;line-height:1.1!important}
   .zpcNavigation{padding:var(--zpc-space-1)!important;gap:var(--zpc-space-1)!important}
   .zpcNavigation .tab{
-    min-height:26px!important;height:26px!important;
+    min-height:var(--zpc-size-28)!important;height:var(--zpc-size-28)!important;
     padding:var(--zpc-space-1) var(--zpc-space-1)!important;font-size:var(--zpc-font-xs)!important;line-height:1!important
   }
   .zpcNavLabel{
