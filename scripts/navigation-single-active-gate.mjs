@@ -44,7 +44,7 @@ for(const item of ['Produtos','Comercial','Conteúdo','Atendimento','Financeiro'
   await page.getByRole('button',{name:item,exact:true}).click();
   checks.push(await singleActive(item));
 }
-for(const sub of ['Prospecção','CRM e vendas']){
+for(const sub of ['Prospecção','CRM/Vendas']){
   await page.getByRole('button',{name:'Comercial',exact:true}).click();
   await nav.getByRole('button',{name:sub,exact:true}).click();
   checks.push(await singleActive('Comercial/'+sub));
