@@ -41,10 +41,10 @@ const required = [
   [index, 'requirePinSession(body.sessionToken)', 'admin session guard missing'],
   [model, 'evaluateZevanorySalesTransition', 'stage machine missing'],
   [model, "'lead_not_qualified'", 'lead qualification decision reason missing'],
-  [commercial, "'checkout-completed:true'", 'strict lifecycle marker missing: 'checkout-completed:true''],
-  [commercial, "'payment-confirmed:true'", 'strict lifecycle marker missing: 'payment-confirmed:true''],
-  [commercial, "'customer-created:true'", 'strict lifecycle marker missing: 'customer-created:true''],
-  [commercial, "'fulfillment-started:true'", 'strict lifecycle marker missing: 'fulfillment-started:true''],
+  [commercial, "'checkout-completed:true'", "strict lifecycle marker missing: checkout-completed:true"],
+  [commercial, "'payment-confirmed:true'", "strict lifecycle marker missing: payment-confirmed:true"],
+  [commercial, "'customer-created:true'", "strict lifecycle marker missing: customer-created:true"],
+  [commercial, "'fulfillment-started:true'", "strict lifecycle marker missing: fulfillment-started:true"],
 ];
 
 for (const [source, token, message] of required) {
