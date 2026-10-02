@@ -112,6 +112,19 @@ async function listKind(kind: CommercialRecordKind, limit = 200): Promise<Commer
   return result.items.map(item => ({ ...item, kind, id: item.id })) as CommercialRecord[];
 }
 
+async function listKindAllPrimary(kind: CommercialRecordKind, pageSize = 250): Promise<CommercialRecord[]> {
+  const items: CommercialRecord[] = [];
+  let offset = 0;
+  while (true) {
+    const page = await db.listPrimaryPage<Omit<CommercialRecord, 'id'>>(commercialBucketName(kind), { limit: pageSize, offset });
+    const mapped = page.items.map(item => ({ ...item, kind, id: item.id })) as CommercialRecord[];
+    items.push(...mapped);
+    if (mapped.length < pageSize) break;
+    offset += mapped.length;
+  }
+  return items;
+}
+
 async function upsertBySourceKey(raw: Partial<CommercialRecord>) {
   const kind = cleanString(raw.kind, 32) as CommercialRecordKind;
   if (!Object.prototype.hasOwnProperty.call(BUCKETS, kind)) throw new Error('commercial_kind_invalid');
@@ -190,6 +203,46 @@ export async function commercialAdminUpdate(id: string, kind: CommercialRecordKi
   return { ...normalized, id };
 }
 
+export type CommercialCleanupReportType = 'lead' | 'prospecting' | 'evidence';
+
+function isPublicSearchDerived(record: CommercialRecord) {
+  const evidenceItems = Array.isArray(record.evidence) ? record.evidence.map(String) : [];
+  const source = String(record.source || '').toLowerCase();
+  const sourceKey = String(record.sourceKey || '').toLowerCase();
+  return source === 'public-search'
+    || sourceKey.startsWith('bing:')
+    || sourceKey.includes(':bing:')
+    || evidenceItems.some(item =>
+      item.startsWith('query:')
+      || item.startsWith('query-source:M1')
+      || item.startsWith('stage:raw-discovery')
+      || item.startsWith('discovered-at:')
+    );
+}
+
+export function reviewCommercialCleanupRecord(kind: 'lead' | 'evidence', record: CommercialRecord) {
+  if (record.status === 'archived' || !isPublicSearchDerived(record)) return null;
+  const evidenceItems = Array.isArray(record.evidence) ? record.evidence.map(String) : [];
+  const url = evidenceItems.find(item => /^https?:\/\//i.test(item)) || '';
+  const query = evidenceItems.find(item => item.startsWith('query:'))?.slice('query:'.length) || '';
+  const review = scoreProspect({
+    title: record.title,
+    description: record.detail || '',
+    url,
+    query,
+  });
+  if (review.relevant) return null;
+  const reportType: CommercialCleanupReportType =
+    kind === 'lead' ? 'lead' : record.status === 'raw-discovery' ? 'prospecting' : 'evidence';
+  return {
+    kind,
+    reportType,
+    record,
+    reason: review.reason,
+    score: review.score,
+  };
+}
+
 export async function commercialCleanup(input: { mode?: 'dry-run' | 'apply'; confirm?: string }) {
   const mode = input.mode === 'apply' ? 'apply' : 'dry-run';
   if (mode === 'apply' && input.confirm !== 'AUTORIZO_ARQUIVAMENTO') {
@@ -197,47 +250,33 @@ export async function commercialCleanup(input: { mode?: 'dry-run' | 'apply'; con
   }
 
   const [leads, evidence] = await Promise.all([
-    listKind('lead', 1000),
-    listKind('evidence', 1000),
+    listKindAllPrimary('lead'),
+    listKindAllPrimary('evidence'),
   ]);
 
-  const candidates: Array<{ kind: 'lead' | 'evidence'; record: CommercialRecord; reason: string; score: number }> = [];
-  const inspect = (kind: 'lead' | 'evidence', record: CommercialRecord) => {
-    if (record.status === 'archived') return;
-    const evidenceItems = Array.isArray(record.evidence) ? record.evidence.map(String) : [];
-    const sourceKey = String(record.sourceKey || '');
-    const discoveryDerived = kind === 'evidence'
-      ? record.source === 'public-search' || sourceKey.startsWith('bing:')
-      : record.source === 'zevanory-sales' && (
-          sourceKey.startsWith('promoted:bing:') ||
-          evidenceItems.some(item => item.startsWith('query:') || item.startsWith('query-source:M1'))
-        );
-    if (!discoveryDerived) return;
+  const candidates = [
+    ...leads.map(record => reviewCommercialCleanupRecord('lead', record)).filter(Boolean),
+    ...evidence.map(record => reviewCommercialCleanupRecord('evidence', record)).filter(Boolean),
+  ] as Array<{
+    kind: 'lead' | 'evidence';
+    reportType: CommercialCleanupReportType;
+    record: CommercialRecord;
+    reason: string;
+    score: number;
+  }>;
 
-    const url = evidenceItems.find(item => /^https?:\/\//i.test(item)) || '';
-    const query = evidenceItems.find(item => item.startsWith('query:'))?.slice('query:'.length) || '';
-    const review = scoreProspect({
-      title: record.title,
-      description: record.detail || '',
-      url,
-      query,
-    });
-    if (review.relevant) return;
-    candidates.push({
-      kind,
-      record,
-      reason: review.reason,
-      score: review.score,
-    });
+  const inspected = {
+    lead: leads.length,
+    prospecting: evidence.filter(item => item.status === 'raw-discovery').length,
+    evidence: evidence.filter(item => item.status !== 'raw-discovery').length,
+    evidenceStorageTotal: evidence.length,
+    total: leads.length + evidence.length,
   };
 
-  leads.forEach(record => inspect('lead', record));
-  evidence.forEach(record => inspect('evidence', record));
-
-  const byType = candidates.reduce<Record<string, number>>((acc, item) => {
-    acc[item.kind] = (acc[item.kind] || 0) + 1;
+  const byType = candidates.reduce<Record<CommercialCleanupReportType, number>>((acc, item) => {
+    acc[item.reportType] += 1;
     return acc;
-  }, { lead: 0, evidence: 0 });
+  }, { lead: 0, prospecting: 0, evidence: 0 });
 
   if (mode === 'apply') {
     for (const item of candidates) {
@@ -261,13 +300,14 @@ export async function commercialCleanup(input: { mode?: 'dry-run' | 'apply'; con
   return {
     ok: true,
     mode,
-    scanned: { lead: leads.length, evidence: evidence.length },
+    inspected,
     wouldArchive: candidates.length,
     archived: mode === 'apply' ? candidates.length : 0,
     byType,
     deleteOperations: 0,
-    samples: candidates.slice(0, 20).map(item => ({
+    samples: candidates.slice(0, 40).map(item => ({
       kind: item.kind,
+      reportType: item.reportType,
       id: item.record.id,
       title: item.record.title,
       score: item.score,
