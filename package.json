@@ -12,7 +12,8 @@
     "audit:cfo": "node scripts/cfo-audit.mjs",
     "test:cfo-contract": "tsx scripts/cfo-model-contract.ts",
     "audit:runtime": "npm audit --omit=dev --audit-level=high",
-    "test:zevanory-sales-contract": "tsx scripts/zevanory-sales-model-contract.ts"
+    "test:zevanory-sales-contract": "tsx scripts/zevanory-sales-model-contract.ts",
+    "audit:zevanory-sales-integration": "node scripts/zevanory-sales-integration-audit.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
