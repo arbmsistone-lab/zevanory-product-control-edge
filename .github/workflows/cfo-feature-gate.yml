@@ -7,20 +7,13 @@ on:
     branches:
       - main
       - feature/zevanory-cfo-v1
-    paths:
-      - 'src/**'
-      - 'backend/**'
-      - 'scripts/**'
-      - 'package.json'
-      - 'ZEVANORY_CFO.md'
-      - '.github/workflows/cfo-feature-gate.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: zevanory-cfo-feature-gate
+  group: zevanory-cfo-feature-gate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
