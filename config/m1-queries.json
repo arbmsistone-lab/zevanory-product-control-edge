@@ -1,0 +1,123 @@
+{
+  "schema": "zevanory-m1-prospecting-config/v1",
+  "version": "2026-10-02",
+  "provenance": {
+    "canonical_catalog": {
+      "source": "PR #119 - canonical lifecycle source and portfolio reconciliation",
+      "status": "resolved",
+      "active_or_preparing": [
+        "ZEVANORY",
+        "IA na Prática",
+        "Vendas na Prática",
+        "Lucro & Caixa",
+        "Combo IA + Vendas",
+        "Negócio Completo",
+        "ZEVANORY CFO",
+        "ZEVANORY SALES",
+        "ARBM Contador para Salões"
+      ],
+      "retired_excluded": [
+        "ARBM SIST",
+        "ZEVANORY ONE"
+      ]
+    },
+    "rules_plan": {
+      "source": "ZEVANORY_REGRAS_E_PLANO.md",
+      "status": "not_found_in_repository_or_connected_drive",
+      "note": "Não inventar conteúdo ausente. O bloco NR-1 abaixo usa somente a validação oficial MTE 2026 até o arquivo-fonte ser materializado."
+    },
+    "nr1_validation": {
+      "source": "MTE NR-1/GRO/PGR vigente desde 2026-05-26",
+      "status": "official_public_source_checked_2026-10-02"
+    }
+  },
+  "policy": {
+    "locale": "pt-BR",
+    "country": "BR",
+    "primary_region": "CE",
+    "min_score": 7,
+    "cold_outreach": false,
+    "automatic_contact": false,
+    "automatic_publish": false
+  },
+  "icp": [
+    "microempresa",
+    "pequena empresa",
+    "loja",
+    "varejo",
+    "clínica",
+    "salão de beleza",
+    "estética",
+    "academia",
+    "restaurante",
+    "oficina",
+    "imobiliária",
+    "escritório contábil",
+    "consultoria SST",
+    "saúde ocupacional"
+  ],
+  "product_intent_terms": [
+    "vendas",
+    "atendimento",
+    "WhatsApp",
+    "Instagram",
+    "CRM",
+    "automação",
+    "inteligência artificial",
+    "fluxo de caixa",
+    "financeiro",
+    "gestão",
+    "contabilidade",
+    "NR-1",
+    "PGR",
+    "GRO",
+    "riscos psicossociais",
+    "segurança do trabalho",
+    "saúde ocupacional"
+  ],
+  "negative_keywords": [
+    "NFL",
+    "NBA",
+    "futebol",
+    "football",
+    "esporte",
+    "sports",
+    "Peppa Pig",
+    "Wikipedia",
+    "Wikimedia",
+    "enciclopédia",
+    "encyclopedia",
+    "Microsoft Store",
+    "Xbox",
+    "Fandom",
+    "IMDb",
+    "Netflix",
+    "ESPN",
+    "curso grátis",
+    "apostila grátis",
+    "download grátis",
+    "vaga de emprego",
+    "emprego",
+    "concurso",
+    "notícia",
+    "jornal",
+    "fórum",
+    "reddit",
+    "quora",
+    "marketplace genérico"
+  ],
+  "queries": [
+    "microempresa Ceará vendas WhatsApp automação CRM",
+    "pequena empresa Ceará gestão fluxo de caixa financeiro",
+    "loja varejo Ceará Instagram WhatsApp vendas",
+    "clínica Ceará atendimento WhatsApp agendamento",
+    "salão de beleza Ceará WhatsApp agendamento gestão",
+    "estética Ceará Instagram WhatsApp atendimento",
+    "academia Ceará WhatsApp atendimento vendas",
+    "restaurante Ceará WhatsApp pedidos gestão",
+    "oficina Ceará WhatsApp atendimento gestão",
+    "imobiliária Ceará WhatsApp CRM vendas",
+    "consultoria SST Ceará NR-1 PGR riscos psicossociais",
+    "saúde ocupacional Ceará NR-1 GRO PGR empresa"
+  ]
+}
