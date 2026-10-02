@@ -118,3 +118,68 @@ export function evaluateZevanoryAutonomousSaleProof(
   const missing = required.filter(key => proof[key] !== true);
   return { pass: missing.length === 0, missing };
 }
+
+export type ZevanorySalesStage =
+  | 'discovered'
+  | 'qualified'
+  | 'contact-ready'
+  | 'contacted'
+  | 'conversation'
+  | 'offer'
+  | 'follow-up'
+  | 'checkout'
+  | 'payment'
+  | 'customer'
+  | 'fulfillment';
+
+const SALES_STAGE_ORDER: ZevanorySalesStage[] = [
+  'discovered',
+  'qualified',
+  'contact-ready',
+  'contacted',
+  'conversation',
+  'offer',
+  'follow-up',
+  'checkout',
+  'payment',
+  'customer',
+  'fulfillment',
+];
+
+export type ZevanorySalesTransitionDecision = {
+  allowed: boolean;
+  reason: 'allowed' | 'invalid_transition' | 'action_gate_blocked';
+  actionDecision?: ZevanorySalesActionDecision;
+};
+
+function actionForTargetStage(stage: ZevanorySalesStage): ZevanorySalesAction | null {
+  if (stage === 'contact-ready' || stage === 'contacted') return 'contact';
+  if (stage === 'offer') return 'offer';
+  if (stage === 'follow-up') return 'follow-up';
+  if (stage === 'checkout' || stage === 'payment' || stage === 'customer') return 'checkout';
+  if (stage === 'fulfillment') return 'fulfill';
+  return null;
+}
+
+export function evaluateZevanorySalesTransition(
+  level: ZevanorySalesAutonomyLevel,
+  from: ZevanorySalesStage,
+  to: ZevanorySalesStage,
+  policy: ZevanorySalesPolicy,
+): ZevanorySalesTransitionDecision {
+  const fromIndex = SALES_STAGE_ORDER.indexOf(from);
+  const toIndex = SALES_STAGE_ORDER.indexOf(to);
+  if (fromIndex < 0 || toIndex !== fromIndex + 1) {
+    return { allowed: false, reason: 'invalid_transition' };
+  }
+
+  const action = actionForTargetStage(to);
+  if (!action) return { allowed: true, reason: 'allowed' };
+
+  const actionDecision = evaluateZevanorySalesAction(level, action, policy);
+  if (!actionDecision.allowed) {
+    return { allowed: false, reason: 'action_gate_blocked', actionDecision };
+  }
+
+  return { allowed: true, reason: 'allowed', actionDecision };
+}
