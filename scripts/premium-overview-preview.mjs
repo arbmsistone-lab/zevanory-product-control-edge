@@ -6,6 +6,13 @@ const outDir = 'premium-overview-preview';
 const now = new Date().toISOString();
 await fs.mkdir(outDir,{recursive:true});
 
+const premiumCss = await fs.readFile('src/styles/premium-shell.css','utf8');
+const rawColorLines = premiumCss.split('\n').filter(line => /#[0-9a-fA-F]{3,8}|rgba?\(/.test(line));
+const nonTokenColorLines = rawColorLines.filter(line => !/^\s*--[a-z0-9-]+\s*:/i.test(line));
+if (nonTokenColorLines.length) {
+  throw new Error('PREMIUM_COLOR_OUTSIDE_TOKEN=' + JSON.stringify(nonTokenColorLines));
+}
+
 const operations = {
   available:true,generatedAt:now,releaseSha:'preview',
   health:{ready:true,live:true,databaseReachable:true,schemaReady:true,requiredTables:1,requiredMigrations:1,missingTables:0,missingMigrations:0},
@@ -55,7 +62,8 @@ for (const theme of ['light','dark']) {
   await page.waitForTimeout(150);
   const audit=await page.evaluate(()=>{
     const root=document.documentElement, body=document.body;
-    const visible=[...document.querySelectorAll('.premiumOverview *')].filter(el=>{
+    const shell=document.querySelector('.zpcAppShell');
+    const visible=[...(shell?.querySelectorAll('*')||[])].filter(el=>{
       const s=getComputedStyle(el); const r=el.getBoundingClientRect();
       return s.display!=='none' && s.visibility!=='hidden' && r.width>0 && r.height>0;
     });
@@ -63,20 +71,83 @@ for (const theme of ['light','dark']) {
       const r=el.getBoundingClientRect();
       return r.left < -1 || r.right > innerWidth+1 || r.top < -1 || r.bottom > innerHeight+1;
     }).map(el=>({tag:el.tagName,cls:el.className,text:(el.textContent||'').trim().slice(0,80)}));
+
+    const parseRgb=(value)=>{
+      const match=String(value).match(/rgba?\\(\\s*(\\d+)[, ]+\\s*(\\d+)[, ]+\\s*(\\d+)(?:[^\\d.]+([\\d.]+))?/i);
+      return match ? {r:+match[1],g:+match[2],b:+match[3],a:match[4]===undefined?1:+match[4]} : null;
+    };
+    const luminance=({r,g,b})=>{
+      const cv=[r,g,b].map(value=>{
+        const c=value/255;
+        return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
+      });
+      return 0.2126*cv[0]+0.7152*cv[1]+0.0722*cv[2];
+    };
+    const contrast=(a,b)=>{
+      const l1=luminance(a),l2=luminance(b);
+      return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+    };
+    const effectiveBg=(el)=>{
+      let node=el;
+      while(node){
+        const c=parseRgb(getComputedStyle(node).backgroundColor);
+        if(c && c.a>0.95) return c;
+        node=node.parentElement;
+      }
+      return parseRgb(getComputedStyle(document.body).backgroundColor);
+    };
+    const directText=(el)=>[...el.childNodes].some(node=>node.nodeType===Node.TEXT_NODE && String(node.textContent||'').trim().length>0);
+    const contrastFailures=visible.filter(directText).map(el=>{
+      const fg=parseRgb(getComputedStyle(el).color), bg=effectiveBg(el);
+      return fg&&bg ? {el,ratio:contrast(fg,bg),fg,bg} : null;
+    }).filter(Boolean).filter(item=>item.ratio<4.5).map(item=>({
+      tag:item.el.tagName,cls:item.el.className,text:(item.el.textContent||'').trim().slice(0,80),ratio:Number(item.ratio.toFixed(2)),fg:item.fg,bg:item.bg
+    }));
+
+    const rgbToHueSat=({r,g,b})=>{
+      const rr=r/255,gg=g/255,bb=b/255,max=Math.max(rr,gg,bb),min=Math.min(rr,gg,bb),d=max-min;
+      let h=0;
+      if(d){
+        if(max===rr) h=60*(((gg-bb)/d)%6);
+        else if(max===gg) h=60*((bb-rr)/d+2);
+        else h=60*((rr-gg)/d+4);
+      }
+      if(h<0) h+=360;
+      const l=(max+min)/2;
+      const sat=d===0?0:d/(1-Math.abs(2*l-1));
+      return {h,sat};
+    };
+    const blueUsages=[];
+    for(const el of visible){
+      const cs=getComputedStyle(el);
+      for(const prop of ['color','backgroundColor','borderTopColor','borderRightColor','borderBottomColor','borderLeftColor']){
+        const rgb=parseRgb(cs[prop]);
+        if(!rgb||rgb.a===0) continue;
+        const hs=rgbToHueSat(rgb);
+        if(hs.sat>0.20 && hs.h>=185 && hs.h<=255) {
+          blueUsages.push({tag:el.tagName,cls:el.className,prop,value:cs[prop],h:Number(hs.h.toFixed(1)),sat:Number(hs.sat.toFixed(2))});
+        }
+      }
+    }
     return {
       horizontalScroll: Math.max(root.scrollWidth,body.scrollWidth)-innerWidth,
       verticalScroll: Math.max(root.scrollHeight,body.scrollHeight)-innerHeight,
       clipped,
       fakeRevenueText: /38\.420|12\.840|R\$\s*38/.test(document.body.innerText),
       emptySaleState: document.body.innerText.includes('Nenhuma venda ainda'),
+      testModeStatus: document.body.innerText.includes('Vendas pausadas · modo teste'),
       technicalTrustVisible: !!document.querySelector('.trustStrip'),
+      oldHeaderVisible: document.body.innerText.includes('ADMINISTRATIVO GERAL') || document.body.innerText.includes('ZEVANORY CONTROL CENTER'),
+      sidebarBrand: document.querySelector('.zpcSidebarBrand')?.textContent?.trim() === 'ZEVANORY',
       font: getComputedStyle(document.body).fontFamily,
+      contrastFailures,
+      blueUsages: blueUsages.slice(0,30),
     };
   });
   const path=`${outDir}/overview-${theme}-1536x730@1.25.png`;
   await page.screenshot({path,fullPage:false});
   report.push({theme,path,audit});
-  if(audit.horizontalScroll>1 || audit.verticalScroll>1 || audit.clipped.length || audit.fakeRevenueText || !audit.emptySaleState || audit.technicalTrustVisible || !/Inter/i.test(audit.font)) {
+  if(audit.horizontalScroll>1 || audit.verticalScroll>1 || audit.clipped.length || audit.fakeRevenueText || !audit.emptySaleState || !audit.testModeStatus || audit.technicalTrustVisible || audit.oldHeaderVisible || !audit.sidebarBrand || !/Inter/i.test(audit.font) || audit.contrastFailures.length || audit.blueUsages.length) {
     throw new Error('PREMIUM_OVERVIEW_PREVIEW_FAIL '+JSON.stringify({theme,audit}));
   }
   await context.close();
