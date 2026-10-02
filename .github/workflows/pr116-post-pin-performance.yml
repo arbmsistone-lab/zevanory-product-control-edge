@@ -1,0 +1,77 @@
+name: PR116 Post-PIN Performance Gate
+
+on:
+  push:
+    branches:
+      - fix/pin-under-2s-menu-ux-20261002
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  post-pin-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install candidate
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck candidate
+        run: npm run typecheck
+
+      - name: Build candidate
+        run: npm run build
+
+      - name: Prepare exact production baseline source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git worktree add /tmp/zpc-baseline fa3dc0a2dce1cd238fc7e1d5330bfe0b19b3f353
+          cd /tmp/zpc-baseline
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start baseline and candidate previews
+        shell: bash
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/candidate.log 2>&1 &
+          (cd /tmp/zpc-baseline && nohup npx vite preview --host 127.0.0.1 --port 4174 > /tmp/baseline.log 2>&1 &)
+          for port in 4173 4174; do
+            for i in {1..30}; do
+              curl -fsS "http://127.0.0.1:$port" >/dev/null && break
+              sleep 1
+            done
+            curl -fsS "http://127.0.0.1:$port" >/dev/null
+          done
+
+      - name: Run five-sample 10s delayed-bootstrap comparison
+        env:
+          BASELINE_URL: http://127.0.0.1:4174
+          CANDIDATE_URL: http://127.0.0.1:4173
+          BOOTSTRAP_DELAY_MS: '10000'
+          RUNS: '5'
+        run: node scripts/post-login-interactive-gate.mjs
+
+      - name: Upload performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-pin-performance-evidence
+          path: perf-evidence/post-login.json
+          if-no-files-found: error
