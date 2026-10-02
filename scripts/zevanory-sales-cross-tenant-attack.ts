@@ -67,7 +67,8 @@ try {
   }
   for (const required of [
     "commercialBucketName('lead')",
-    "commercialBucketName('finance')",
+    "listKind('finance'",
+    "paymentConfirmedForLead",
     "tenantSource: 'server-environment'",
     "clientSelectable: false",
   ]) assert.equal(commercial.includes(required), true, 'tenant isolation marker missing: ' + required);
