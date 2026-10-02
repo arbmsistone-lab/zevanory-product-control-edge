@@ -24,6 +24,10 @@ jobs:
           targets={
             "core_snapshot":"https://zevanory.api.br/api/core/v1/snapshot",
             "core_decision":"https://zevanory.api.br/api/core/v1/decision",
+            "health":"https://zevanory.api.br/api/health",
+            "status":"https://zevanory.api.br/api/status",
+            "control_plane":"https://zevanory.api.br/api/control-plane",
+            "continuity":"https://zevanory.api.br/api/continuity",
             "control_global_trust":"https://controle.zevanory.api.br/global-trust.json",
             "control_version":"https://controle.zevanory.api.br/version.json",
           }
