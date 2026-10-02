@@ -1,4 +1,4 @@
-name: PR120 HA External Smoke
+name: PR120 Primary External Smoke
 
 on:
   push:
@@ -13,15 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Smoke HA safe endpoints
+      - name: Smoke primary safe endpoints
         shell: bash
         run: |
           set -euo pipefail
-          base='https://zevanory-product-control-edge-ha.onrender.com'
+          base='https://zevanory-product-control-edge.onrender.com'
           health="$(curl -fsS --retry 4 --retry-all-errors --connect-timeout 10 --max-time 30 "$base/api/_healthcheck")"
           release="$(curl -fsS --retry 4 --retry-all-errors --connect-timeout 10 --max-time 30 "$base/api/_release")"
           printf '%s\n' "$health"
           printf '%s\n' "$release"
           echo "$health" | grep -F '"ok":true'
           echo "$release" | grep -F '"ok":true'
-          echo 'HA_SMOKE=PASS'
+          echo 'PRIMARY_SMOKE=PASS'
