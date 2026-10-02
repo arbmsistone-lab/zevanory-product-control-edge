@@ -7,6 +7,12 @@ import {
   type CommercialRecordKind,
   type CommercialWorkspaceData,
 } from '../src/commercial-model.ts';
+import {
+  evaluateZevanorySalesAction,
+  type ZevanorySalesAction,
+  type ZevanorySalesAutonomyLevel,
+  type ZevanorySalesPolicy,
+} from '../src/zevanory-sales-model.ts';
 
 const BUCKETS: Record<CommercialRecordKind, string> = {
   lead: 'zpc_commercial_leads',
@@ -362,4 +368,165 @@ export async function commercialRobotTick() {
   } finally {
     robotTickRunning = false;
   }
+}
+
+
+export type CommercialSalesQualificationInput = {
+  leadId: string;
+  score: number;
+  signals?: string[];
+  reason?: string;
+  threshold?: number;
+};
+
+export async function commercialSalesQualifyLead(input: CommercialSalesQualificationInput) {
+  const score = Math.max(0, Math.min(100, Math.round(Number(input.score))));
+  if (!Number.isFinite(score)) throw new Error('sales_qualification_score_invalid');
+  const thresholdRaw = Number(input.threshold ?? 60);
+  const threshold = Number.isFinite(thresholdRaw)
+    ? Math.max(1, Math.min(100, Math.round(thresholdRaw)))
+    : 60;
+  const signals = Array.isArray(input.signals)
+    ? input.signals.map(item => cleanString(item, 240)).filter(Boolean).slice(0, 20)
+    : [];
+  if (signals.length === 0) throw new Error('sales_qualification_evidence_required');
+
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [cleanString(input.leadId, 120)]);
+  if (!existing) throw new Error('commercial_lead_not_found');
+
+  const qualified = score >= threshold;
+  const now = new Date().toISOString();
+  const evidence = [
+    ...(existing.evidence || []),
+    `qualification-score:${score}`,
+    `qualification-threshold:${threshold}`,
+    ...signals.map(item => `qualification-signal:${item}`),
+    ...(input.reason ? [`qualification-reason:${cleanString(input.reason, 500)}`] : []),
+    `qualification-at:${now}`,
+  ].slice(-20);
+
+  const normalized = normalizeCommercialRecord(
+    {
+      kind: 'lead',
+      status: qualified ? 'qualified' : 'nurture',
+      evidence,
+    },
+    { ...existing, id: input.leadId, kind: 'lead' } as CommercialRecord,
+  );
+  if (!normalized) throw new Error('commercial_record_invalid');
+  await db.update(BUCKETS.lead, [{ id: input.leadId, record: normalized }]);
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: qualified ? 'Lead qualificado pelo ZEVANORY SALES' : 'Lead mantido em nutrição',
+    detail: `score=${score}; threshold=${threshold}; lead=${existing.title}`,
+    status: 'qualification',
+    channel: existing.channel,
+    product: existing.product,
+    productId: existing.productId,
+    source: 'zevanory-sales',
+    sourceKey: `sales-qualification:${input.leadId}:${now}`,
+    evidence,
+  });
+
+  return {
+    leadId: input.leadId,
+    qualified,
+    score,
+    threshold,
+    status: qualified ? 'qualified' : 'nurture',
+    evidenceCount: signals.length,
+    at: now,
+  };
+}
+
+export type CommercialSalesDecisionInput = {
+  level: ZevanorySalesAutonomyLevel;
+  action: ZevanorySalesAction;
+  leadId?: string;
+  humanApproval?: boolean;
+  contactPolicyReady?: boolean;
+  publicationPolicyReady?: boolean;
+  pricingPolicyReady?: boolean;
+  checkoutReady?: boolean;
+  fulfillmentReady?: boolean;
+  paymentConfirmed?: boolean;
+  autonomousPublicationAllowed?: boolean;
+};
+
+export async function commercialSalesEvaluateAction(
+  operations: CommercialOperationsLike,
+  input: CommercialSalesDecisionInput,
+) {
+  const channels = Array.isArray(operations?.channels) ? operations.channels : [];
+  const channelReady = channels.some(item =>
+    isOperationallyActive(item.commercialExecution)
+    && !isOperationallyBlocked(item.releaseGate)
+    && Boolean(String(item.name || '').trim())
+  );
+  const infrastructureReady = Boolean(
+    operations?.available
+    && operations?.health?.ready
+    && operations?.continuity?.quorumOk
+  );
+
+  const policy: ZevanorySalesPolicy = {
+    infrastructureReady,
+    channelReady,
+    contactPolicyReady: input.contactPolicyReady === true,
+    publicationPolicyReady: input.publicationPolicyReady === true,
+    pricingPolicyReady: input.pricingPolicyReady === true,
+    checkoutReady: input.checkoutReady === true && isOperationallyActive(operations?.runtime?.checkout),
+    fulfillmentReady: input.fulfillmentReady === true,
+    paymentConfirmed: input.paymentConfirmed === true,
+    humanApproval: input.humanApproval === true,
+    autonomousPublicationAllowed: input.autonomousPublicationAllowed === true,
+  };
+
+  const decision = evaluateZevanorySalesAction(input.level, input.action, policy);
+  const now = new Date().toISOString();
+  const leadId = cleanNullable(input.leadId, 120);
+  let lead: CommercialRecord | null = null;
+  if (leadId) {
+    const [found] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [leadId]);
+    if (!found) throw new Error('commercial_lead_not_found');
+    lead = { ...found, id: leadId, kind: 'lead' } as CommercialRecord;
+    if (input.action !== 'research' && normalizeCommercialState(lead.status) === 'new') {
+      decision.allowed = false;
+      decision.reason = 'lead_not_qualified' as any;
+    }
+  }
+
+  const evidence = [
+    `sales-level:${input.level}`,
+    `sales-action:${input.action}`,
+    `sales-decision:${decision.allowed ? 'allowed' : 'blocked'}`,
+    `sales-reason:${decision.reason}`,
+    `infrastructure-ready:${policy.infrastructureReady}`,
+    `channel-ready:${policy.channelReady}`,
+    `decision-at:${now}`,
+  ];
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: decision.allowed ? 'Ação comercial liberada pelo gate' : 'Ação comercial bloqueada pelo gate',
+    detail: `${input.level} / ${input.action} / ${decision.reason}`,
+    status: decision.allowed ? 'sales-action-allowed' : 'sales-action-blocked',
+    channel: lead?.channel ?? null,
+    product: lead?.product ?? 'ZEVANORY SALES',
+    productId: lead?.productId ?? null,
+    source: 'zevanory-sales',
+    sourceKey: `sales-decision:${leadId || 'global'}:${input.action}:${now}`,
+    evidence,
+  });
+
+  return {
+    ...decision,
+    level: input.level,
+    action: input.action,
+    leadId,
+    policy,
+    execution: 'not-executed',
+    at: now,
+  };
 }
