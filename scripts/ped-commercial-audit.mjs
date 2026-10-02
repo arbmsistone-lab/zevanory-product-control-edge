@@ -42,8 +42,8 @@ assert(model.includes("state: 'ACTIVE'"), 'robot_missing_active_state');
 assert(model.includes('heartbeatFresh'), 'robot_active_without_heartbeat_guard');
 assert(model.includes('if (heartbeatFresh)'), 'robot_active_without_fresh_heartbeat_guard');
 assert(backend.includes('commercialRobotTick'), 'commercial_robot_worker_missing');
-assert(backend.includes('https://www.bing.com/search?format=rss&q='), 'public_search_provider_missing');
-assert(backend.includes('COMMERCIAL_M1_QUERIES'), 'm1_query_authority_missing');
+assert(backend.includes('https://www.bing.com/search?mkt=pt-BR&cc=br&setlang=pt-BR&format=rss&count=20&q='), 'public_search_provider_missing');
+assert(backend.includes("new URL('../config/m1-queries.json', import.meta.url)"), 'm1_query_authority_missing');
 assert(backend.includes('scoreProspect'), 'prospect_relevance_filter_missing');
 assert(backend.includes('query-source:M1'), 'm1_evidence_binding_missing');
 assert(backend.includes('locale:pt-BR'), 'prospect_ptbr_guard_missing');
@@ -56,7 +56,8 @@ assert(backend.includes("reportType: CommercialCleanupReportType"), 'commercial_
 assert(backend.includes("source === 'public-search'"), 'commercial_cleanup_public_search_source_missing');
 assert(backend.includes('AUTORIZO_ARQUIVAMENTO'), 'commercial_cleanup_apply_confirmation_missing');
 assert(backend.includes("status: 'archived'"), 'commercial_cleanup_archive_state_missing');
-const cleanupSlice = backend.slice(backend.indexOf('export async function commercialCleanup'), backend.indexOf('export async function commercialApprovalAction'));\nassert(!cleanupSlice.includes('db.delete('), 'commercial_cleanup_delete_forbidden');
+const cleanupSlice = backend.slice(backend.indexOf('export async function commercialCleanup'), backend.indexOf('export async function commercialApprovalAction'));
+assert(!cleanupSlice.includes('db.delete('), 'commercial_cleanup_delete_forbidden');
 
 assert(backend.includes('no-auto-contact'), 'auto_contact_guard_missing');
 assert(backend.includes('no-auto-publish'), 'auto_publish_guard_missing');
