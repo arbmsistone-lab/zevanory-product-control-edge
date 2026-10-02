@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { loadM1ProspectingConfig, searchProspects, scoreProspect } from '../backend/commercial.ts';
 
 const config = loadM1ProspectingConfig();
-const queries = config.queries.map(value => String(value).trim()).filter(Boolean).slice(0, 12);
+const queries = config.queries.map(value => String(value).trim()).filter(Boolean).slice(0, 24);
 
 
 const accepted = [];
