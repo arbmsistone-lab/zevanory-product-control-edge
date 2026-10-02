@@ -6,17 +6,19 @@ const index = fs.readFileSync('backend/index.ts', 'utf8');
 const model = fs.readFileSync('src/zevanory-sales-model.ts', 'utf8');
 
 const required = [
-  [commercial, 'commercialSalesQualifyLead', 'qualification runtime missing'],
-  [commercial, 'commercialSalesEvaluateAction', 'action gate runtime missing'],
-  [commercial, "execution: 'not-executed'", 'external execution must remain disconnected in this slice'],
-  [commercial, "sales-action-blocked", 'blocked action evidence missing'],
-  [commercial, "sales-action-allowed", 'allowed action evidence missing'],
-  [commercial, "qualification-signal:", 'qualification evidence chain missing'],
-  [commercial, "commercial_lead_not_found", 'lead existence guard missing'],
+  [commercial, 'commercialQualifyDiscovery', 'qualification runtime missing'],
+  [commercial, 'commercialSalesDecision', 'action gate runtime missing'],
+  [commercial, "externalExecution: false", 'external execution must remain disconnected in this slice'],
+  [commercial, "sales-decision-blocked", 'blocked action evidence missing'],
+  [commercial, "sales-decision-allowed", 'allowed action evidence missing'],
+  [commercial, "qualification:human-reviewed", 'qualification evidence chain missing'],
+  [commercial, "sales_lead_not_found", 'lead existence guard missing'],
   [index, "'POST /api/commercial/sales/qualify'", 'qualification route missing'],
-  [index, "'POST /api/commercial/sales/evaluate-action'", 'action route missing'],
+  [index, "'POST /api/commercial/sales/decision'", 'action route missing'],
   [index, 'requirePinSession(body.sessionToken)', 'admin session guard missing'],
-  [model, "'lead_not_qualified'", 'unqualified lead reason missing'],
+  [commercial, "sales_lead_not_qualified", 'unqualified lead action guard missing'],
+  [commercial, "ZEVANORY_SALES_CONTACT_POLICY_READY", 'server-owned contact policy gate missing'],
+  [commercial, "ZEVANORY_SALES_PRICING_POLICY_READY", 'server-owned pricing policy gate missing'],
 ];
 
 for (const [source, token, message] of required) {
