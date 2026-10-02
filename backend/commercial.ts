@@ -414,44 +414,113 @@ export function buildZevanorySalesPolicy(
   };
 }
 
-export async function commercialQualifyDiscovery(discoveryId: string) {
+export async function commercialSalesPromoteDiscovery(discoveryId: string) {
   const [discovery] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.evidence, [discoveryId]);
   if (!discovery) throw new Error('sales_discovery_not_found');
   if (discovery.status !== 'raw-discovery') throw new Error('sales_discovery_not_raw');
 
-  const qualifiedAt = new Date().toISOString();
+  const promotedAt = new Date().toISOString();
   const lead = await upsertBySourceKey({
     kind: 'lead',
     title: discovery.title,
     detail: discovery.detail,
-    status: 'qualified',
+    status: 'new',
     channel: discovery.channel || 'web',
     product: discovery.product || 'ZEVANORY SALES',
     productId: discovery.productId,
     source: 'zevanory-sales',
-    sourceKey: ('qualified:' + (discovery.sourceKey || discoveryId)).slice(0, 220),
+    sourceKey: ('promoted:' + (discovery.sourceKey || discoveryId)).slice(0, 220),
     evidence: [
       ...(discovery.evidence || []),
-      'qualification:human-reviewed',
+      'promotion:human-reviewed',
       'discovery-id:' + discoveryId,
-      'qualified-at:' + qualifiedAt,
+      'promoted-at:' + promotedAt,
     ].slice(-20),
   });
 
   await upsertBySourceKey({
     kind: 'event',
-    title: 'Oportunidade qualificada',
+    title: 'Lead criado a partir de descoberta',
     detail: discovery.title,
-    status: 'sales-qualified',
+    status: 'sales-promoted',
     channel: discovery.channel,
     product: discovery.product || 'ZEVANORY SALES',
     productId: discovery.productId,
     source: 'zevanory-sales',
-    sourceKey: 'qualified-event:' + lead.id,
-    evidence: ['lead-id:' + lead.id, 'discovery-id:' + discoveryId, qualifiedAt],
+    sourceKey: 'promoted-event:' + lead.id,
+    evidence: ['lead-id:' + lead.id, 'discovery-id:' + discoveryId, promotedAt],
   });
 
   return lead;
+}
+
+export type CommercialSalesQualificationInput = {
+  leadId: string;
+  score: number;
+  signals: string[];
+  reason?: string;
+};
+
+export async function commercialSalesQualifyLead(input: CommercialSalesQualificationInput) {
+  const score = Math.max(0, Math.min(100, Math.round(Number(input.score))));
+  if (!Number.isFinite(score)) throw new Error('sales_qualification_score_invalid');
+
+  const thresholdRaw = Number(process.env.ZEVANORY_SALES_QUALIFICATION_THRESHOLD || '60');
+  const threshold = Number.isFinite(thresholdRaw)
+    ? Math.max(1, Math.min(100, Math.round(thresholdRaw)))
+    : 60;
+  const signals = Array.isArray(input.signals)
+    ? input.signals.map(item => cleanString(item, 240)).filter(Boolean).slice(0, 20)
+    : [];
+  if (signals.length === 0) throw new Error('sales_qualification_evidence_required');
+
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [cleanString(input.leadId, 120)]);
+  if (!existing) throw new Error('sales_lead_not_found');
+
+  const qualified = score >= threshold;
+  const now = new Date().toISOString();
+  const evidence = [
+    ...(existing.evidence || []),
+    'qualification-score:' + score,
+    'qualification-threshold:' + threshold,
+    ...signals.map(item => 'qualification-signal:' + item),
+    ...(input.reason ? ['qualification-reason:' + cleanString(input.reason, 500)] : []),
+    'qualification-at:' + now,
+  ].slice(-20);
+
+  const normalized = normalizeCommercialRecord(
+    {
+      kind: 'lead',
+      status: qualified ? 'qualified' : 'nurture',
+      evidence,
+    },
+    { ...existing, id: input.leadId, kind: 'lead' } as CommercialRecord,
+  );
+  if (!normalized) throw new Error('commercial_record_invalid');
+  await db.update(BUCKETS.lead, [{ id: input.leadId, record: normalized }]);
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: qualified ? 'Lead qualificado pelo ZEVANORY SALES' : 'Lead mantido em nutrição',
+    detail: 'score=' + score + '; threshold=' + threshold + '; lead=' + existing.title,
+    status: 'sales-qualification',
+    channel: existing.channel,
+    product: existing.product || 'ZEVANORY SALES',
+    productId: existing.productId,
+    source: 'zevanory-sales',
+    sourceKey: 'sales-qualification:' + input.leadId + ':' + now,
+    evidence,
+  });
+
+  return {
+    leadId: input.leadId,
+    qualified,
+    score,
+    threshold,
+    status: qualified ? 'qualified' : 'nurture',
+    evidenceCount: signals.length,
+    at: now,
+  };
 }
 
 export async function commercialSalesDecision(
@@ -465,16 +534,29 @@ export async function commercialSalesDecision(
 ) {
   const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [input.leadId]);
   if (!lead) throw new Error('sales_lead_not_found');
-  if (input.action !== 'research' && String(lead.status || '').trim().toLowerCase() !== 'qualified') {
-    throw new Error('sales_lead_not_qualified');
-  }
-
   const autonomy = configuredSalesAutonomy();
   const policy = buildZevanorySalesPolicy(operations, {
     humanApproval: input.humanApproval,
     paymentConfirmed: input.paymentConfirmed,
   });
   const decision = evaluateZevanorySalesAction(autonomy, input.action, policy);
+  const leadStatus = String(lead.status || '').trim().toLowerCase().replaceAll('_', '-');
+  const qualifiedStatuses = new Set([
+    'qualified',
+    'contact-ready',
+    'contacted',
+    'conversation',
+    'offer',
+    'follow-up',
+    'checkout',
+    'payment',
+    'customer',
+    'fulfillment',
+  ]);
+  if (input.action !== 'research' && !qualifiedStatuses.has(leadStatus)) {
+    decision.allowed = false;
+    decision.reason = 'lead_not_qualified';
+  }
   const at = new Date().toISOString();
 
   await upsertBySourceKey({
@@ -494,6 +576,7 @@ export async function commercialSalesDecision(
       'action:' + input.action,
       'autonomy:' + autonomy,
       'decision:' + decision.reason,
+      'lead-status:' + leadStatus,
       'external-execution:false',
       at,
     ],
@@ -505,6 +588,7 @@ export async function commercialSalesDecision(
     action: input.action,
     decision,
     policy,
+    leadStatus,
     externalExecution: false,
     evaluatedAt: at,
   };
