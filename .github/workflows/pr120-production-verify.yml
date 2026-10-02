@@ -99,3 +99,5 @@ jobs:
           name: pr120-production-verification
           path: /tmp/pr120-production.json
           if-no-files-found: ignore
+
+# rerun after canonical Cloudflare promotion
