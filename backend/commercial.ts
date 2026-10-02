@@ -10,6 +10,7 @@ import {
   type CommercialWorkspaceData,
 } from '../src/commercial-model.ts';
 import {
+  evaluateZevanoryAutonomousSaleProof,
   evaluateZevanorySalesAction,
   type ZevanorySalesAction,
   type ZevanorySalesAutonomyLevel,
@@ -800,4 +801,46 @@ export async function commercialSalesInbound(request: Request, body: unknown) {
   });
 
   return json({ ok: true, leadId, status: 'conversation', receivedAt });
+}
+
+
+function hasEvidence(items: CommercialRecord[], leadId: string, needle: string) {
+  return items.some(item =>
+    (item.evidence || []).includes('lead-id:' + leadId) &&
+    ((item.evidence || []).includes(needle) || item.status === needle)
+  );
+}
+
+export async function commercialSalesProof(leadId: string) {
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [leadId]);
+  if (!lead) throw new Error('sales_lead_not_found');
+
+  const [events, finance] = await Promise.all([
+    listKind('event', 1000),
+    listKind('finance', 1000),
+  ]);
+  const evidence = lead.evidence || [];
+  const status = String(lead.status || '').trim().toLowerCase();
+
+  const proof = {
+    leadDiscovered: evidence.some(value => value.startsWith('discovery-id:') || value.startsWith('discovered-at:')),
+    contactSent: evidence.some(value => value.startsWith('external-id:')) || hasEvidence(events, leadId, 'sales-action-executed'),
+    conversationObserved: evidence.includes('conversation-observed:true') || status === 'conversation' || hasEvidence(events, leadId, 'sales-inbound'),
+    qualificationRecorded: evidence.some(value => value.startsWith('qualification-score:')),
+    offerSent: status === 'offer' || evidence.includes('sales-action:offer') || events.some(item => item.status === 'sales-action-executed' && item.detail.startsWith('offer ') && (item.evidence || []).includes('lead-id:' + leadId)),
+    followUpSatisfied: ['follow-up','checkout','payment','customer','fulfillment','won'].includes(status) || events.some(item => item.status === 'sales-action-executed' && item.detail.startsWith('follow-up ') && (item.evidence || []).includes('lead-id:' + leadId)),
+    checkoutCompleted: ['checkout','payment','customer','fulfillment','won'].includes(status) || events.some(item => item.status === 'sales-action-executed' && item.detail.startsWith('checkout ') && (item.evidence || []).includes('lead-id:' + leadId)),
+    paymentConfirmed: finance.some(item => ['paid','received','confirmed'].includes(String(item.status || '').toLowerCase()) && (item.evidence || []).includes('lead-id:' + leadId)),
+    customerCreated: hasEvidence(events, leadId, 'customer-created') || ['customer','fulfillment','won'].includes(status),
+    fulfillmentStarted: hasEvidence(events, leadId, 'fulfillment-started') || ['fulfillment','won'].includes(status),
+  };
+
+  const result = evaluateZevanoryAutonomousSaleProof(proof);
+  return {
+    leadId,
+    proof,
+    ...result,
+    verdict: result.pass ? 'AUTONOMOUS_SALE_PROVED' : 'AUTONOMOUS_SALE_NOT_PROVED',
+    evaluatedAt: new Date().toISOString(),
+  };
 }
