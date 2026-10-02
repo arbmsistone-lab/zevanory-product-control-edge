@@ -1,0 +1,51 @@
+name: PR121 Production Data Source Timing
+
+on:
+  push:
+    branches:
+      - fix/overview-data-loading-pr121-20261002
+    paths:
+      - ".github/workflows/pr121-production-data-source-timing.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  timing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Measure production public data sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,statistics,time,urllib.request
+          targets={
+            "core_snapshot":"https://zevanory.api.br/api/core/v1/snapshot",
+            "core_decision":"https://zevanory.api.br/api/core/v1/decision",
+            "control_global_trust":"https://controle.zevanory.api.br/global-trust.json",
+            "control_version":"https://controle.zevanory.api.br/version.json",
+          }
+          out={}
+          for name,url in targets.items():
+              vals=[]
+              statuses=[]
+              for _ in range(5):
+                  req=urllib.request.Request(url,headers={"User-Agent":"ZPC-PR121-Timing/1.0","Cache-Control":"no-cache","Accept":"application/json"})
+                  t=time.perf_counter()
+                  try:
+                      with urllib.request.urlopen(req,timeout=10) as r:
+                          r.read(4096)
+                          statuses.append(r.status)
+                  except Exception as e:
+                      statuses.append(type(e).__name__)
+                  vals.append(round((time.perf_counter()-t)*1000))
+              out[name]={"samples_ms":vals,"median_ms":round(statistics.median(vals)),"max_ms":max(vals),"statuses":statuses}
+          print(json.dumps(out,separators=(",",":")))
+          open("/tmp/pr121-source-timing.json","w").write(json.dumps(out,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr121-production-source-timing
+          path: /tmp/pr121-source-timing.json
