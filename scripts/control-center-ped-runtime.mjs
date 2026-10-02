@@ -218,7 +218,8 @@ for(const size of sizes){
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
     await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:auditSha,runtime:'audit-preview'})}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
-    await page.locator('.zpcSidebarBrand').filter({hasText:'ZEVANORY'}).waitFor({state:'visible',timeout:15000});
+    if(size.width<=900) await page.getByLabel('Selecionar área do Control Center').waitFor({state:'visible',timeout:15000});
+    else await page.locator('.zpcSidebarBrand').filter({hasText:'ZEVANORY'}).waitFor({state:'visible',timeout:15000});
     await page.addScriptTag({path:axePath});
 
     const auditViews=views.map(([key,label])=>[key,label,0]);
