@@ -5,8 +5,11 @@ on:
     paths:
       - 'src/zevanory-sales-model.ts'
       - 'scripts/zevanory-sales-model-contract.ts'
+      - 'scripts/zevanory-sales-integration-audit.mjs'
+      - 'backend/commercial.ts'
+      - 'backend/index.ts'
       - 'docs/zevanory-sales/**'
-      - 'package.json'\n      - 'scripts/zevanory-sales-integration-audit.mjs'\n      - 'backend/index.ts'\n      - 'backend/commercial.ts'
+      - 'package.json'
       - '.github/workflows/zevanory-sales-contract.yml'
   workflow_dispatch:
 
