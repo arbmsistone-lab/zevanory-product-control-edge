@@ -145,7 +145,7 @@ body {
   border-radius: var(--zpc-radius-sm);
   background: var(--surface-elevated);
   border: 1px solid var(--border);
-  min-height: 18px;
+  min-height: 20px;
 }
 .bootstrapSkeleton .skeletonLine.wide { width: min(420px, 72%); }
 .bootstrapSkeleton .skeletonLine.medium { width: min(300px, 52%); }
@@ -154,7 +154,7 @@ body {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--zpc-space-2);
 }
-.bootstrapSkeleton .skeletonCards span { min-height: 86px; }
+.bootstrapSkeleton .skeletonCards span { min-height: 88px; }
 
 .zpcNavSubmenu {
   display: grid;
