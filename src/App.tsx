@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   AlertTriangle,
   Archive,
@@ -1086,7 +1086,7 @@ function App() {
                 <div className='ownerRevenueChart' aria-label='Receita confirmada dos últimos 12 dias'>
                   {ownerOverview.revenueBars.map((value,index) => {
                     const max = Math.max(...ownerOverview.revenueBars, 1);
-                    return <span key={index} className='ownerRevenueBar' style={{'--bar-height': Math.max(5, Math.round((value/max)*100)) + '%'} as React.CSSProperties} title={new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value/100)}><i /></span>;
+                    return <span key={index} className='ownerRevenueBar' style={{'--bar-height': Math.max(5, Math.round((value/max)*100)) + '%'} as CSSProperties} title={new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value/100)}><i /></span>;
                   })}
                 </div>
               ) : (
