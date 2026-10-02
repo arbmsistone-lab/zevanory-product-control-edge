@@ -145,8 +145,11 @@ const views=[
   ['operations','Operações técnicas'],['governance','ZEES-16 / Governança'],
 ];
 const sizes=[
-  {name:'large',width:1920,height:1080},{name:'desktop',width:1440,height:900},
-  {name:'tablet',width:768,height:1024},{name:'mobile',width:375,height:812},
+  {name:'large',width:1920,height:1080,deviceScaleFactor:1},
+  {name:'desktop',width:1440,height:900,deviceScaleFactor:1},
+  {name:'owner-1536x730',width:1536,height:730,deviceScaleFactor:1.25},
+  {name:'tablet',width:768,height:1024,deviceScaleFactor:1},
+  {name:'mobile',width:375,height:812,deviceScaleFactor:1},
 ];
 const themes=['dark','light'];
 const allowedFonts=new Set([12,14,16,21,28,37]);
@@ -167,7 +170,7 @@ async function navigate(page,width,key,label){
 
 for(const size of sizes){
   for(const theme of themes){
-    const context=await browser.newContext({viewport:{width:size.width,height:size.height},colorScheme:theme,reducedMotion:'reduce'});
+    const context=await browser.newContext({viewport:{width:size.width,height:size.height},deviceScaleFactor:size.deviceScaleFactor||1,colorScheme:theme,reducedMotion:'reduce'});
     await context.addInitScript(({theme})=>{
       localStorage.setItem('arbm_admin_session','ped-runtime-session');
       localStorage.setItem('zpc_theme',theme);
