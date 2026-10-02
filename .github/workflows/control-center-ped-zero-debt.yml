@@ -8,6 +8,13 @@ on:
       - 'scripts/ped_versal_zero_debt_audit.py'
       - 'scripts/control-center-ped-runtime.mjs'
       - '.github/workflows/control-center-ped-zero-debt.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/ped_versal_zero_debt_audit.py'
+      - 'scripts/control-center-ped-runtime.mjs'
+      - '.github/workflows/control-center-ped-zero-debt.yml'
   workflow_dispatch:
 
 permissions:
