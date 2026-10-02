@@ -2,7 +2,8 @@ import fs from 'node:fs';
 
 const app=fs.readFileSync('src/App.tsx','utf8');
 const worker=fs.readFileSync('cf-worker/worker.ts','utf8');
-const shell=fs.readFileSync('src/styles/shell.css','utf8');
+const shellPath=process.env.CANONICAL_SHELL_PATH || 'src/styles/shell.css';
+const shell=fs.readFileSync(shellPath,'utf8');
 
 const fail=(m)=>{console.error('CANONICAL_ORIGIN_GATE=FAIL',m);process.exit(1)};
 
@@ -23,6 +24,15 @@ for(const required of [
   "internal-public-mirror"
 ]){
   if(!worker.includes(required)) fail('worker contract missing: '+required);
+}
+
+for(const forbidden of [
+  'width: 100vw;',
+  'max-width: 100vw',
+  'overflow-x: auto',
+  'overflow-x: scroll'
+]){
+  if(shell.includes(forbidden)) fail('horizontal overflow regression detected: '+forbidden);
 }
 
 for(const required of [
