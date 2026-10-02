@@ -1,0 +1,174 @@
+name: PR121 Production Light Dark Verification
+
+on:
+  push:
+    branches: [audit/pr121-production-light-dark-20261002]
+    paths:
+      - ".github/workflows/pr121-production-light-dark.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://controle.zevanory.api.br
+      EXPECTED_SHA: 790b7c5511a8fd7f508969c0baad8df4ca5b8bf5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify production light and dark
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p production-ui-evidence
+          cat > /tmp/pr121-prod-verify.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const base=process.env.BASE_URL;
+          const expected=process.env.EXPECTED_SHA;
+          const expectedShort=expected.slice(0,12);
+          const now=new Date().toISOString();
+
+          const dashboard={
+            systems:[],audits:[],improvements:[],incidents:[],
+            policy:{zeroSpend:true,failClosed:true,destructiveActions:false,greenRule:'proof'},
+            lastEngineRun:now,certificationRuns:[]
+          };
+          const operations={
+            available:true,generatedAt:now,releaseSha:expected,
+            health:{ready:true,live:true,databaseReachable:true,schemaReady:true,requiredTables:1,requiredMigrations:1,missingTables:0,missingMigrations:0},
+            runtime:{sales:'active',checkout:'ready',financial:'ready',whatsapp:'ready'},
+            control:{globalState:'GREEN',rootBlocker:'none',decision:'ALLOW'},
+            continuity:{quorumOk:true,mode:'multi-provider',channels:['web'],whatsappDependencyRequired:false},
+            channels:[{name:'web',scopeStatus:'ready',releaseGate:'green',commercialExecution:'enabled'}],
+            zees16:{proven:16,partial:0,blocked:0},
+            zea10:{proven:10,partial:0,blocked:0,unknown:0}
+          };
+          const bootstrap={
+            dashboard,operations,commercial:null,cfo:null,products:[],certificationTargets:[],
+            summary:{total:0,salesEnabled:0,commercialReady:0,blocked:0,certified:0,inCertification:0,zeesBlocked:0}
+          };
+          const overview={
+            elapsedMs:1800,
+            sources:{
+              health:{ok:true,elapsedMs:40,error:null},
+              status:{ok:true,elapsedMs:50,error:null},
+              control:{ok:true,elapsedMs:45,error:null},
+              continuity:{ok:true,elapsedMs:60,error:null},
+              inventory:{ok:true,elapsedMs:55,error:null}
+            },
+            operations,
+            summary:{total:5,salesEnabled:3,commercialReady:3,blocked:2}
+          };
+
+          const browser=await chromium.launch({headless:true});
+          const results=[];
+          for (const theme of ['light','dark']) {
+            const context=await browser.newContext({viewport:{width:1536,height:864},colorScheme:theme});
+            await context.addInitScript(({theme})=>{
+              localStorage.setItem('arbm_admin_session','production-ui-verification-session');
+              localStorage.setItem('zpc_theme',theme);
+            },{theme});
+            const page=await context.newPage();
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e)));
+
+            await page.route('**/api/admin/bootstrap',route=>route.fulfill({
+              status:200,contentType:'application/json',body:JSON.stringify(bootstrap)
+            }));
+            await page.route('**/api/admin/overview',async route=>{
+              await new Promise(r=>setTimeout(r,1800));
+              await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(overview)});
+            });
+
+            await page.goto(base,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.locator('.zpcAppShell').waitFor({state:'visible',timeout:15000});
+            await page.locator('.bootstrapSkeleton').waitFor({state:'visible',timeout:5000});
+
+            const loadingState=await page.locator('.zpcWorkspace').evaluate(el=>{
+              const children=[...el.children];
+              const nonSkeleton=children.filter(x=>!x.classList.contains('bootstrapSkeleton'));
+              return {
+                ready:el.getAttribute('data-bootstrap-ready'),
+                skeletonVisible:!!el.querySelector('.bootstrapSkeleton'),
+                nonSkeletonVisibility:nonSkeleton.map(x=>getComputedStyle(x).visibility),
+                hasBlockedText:(el.innerText||'').includes('TRUST CHAIN BLOCKED'),
+                hasSemSha:(el.innerText||'').includes('SEM SHA')
+              };
+            });
+            if (loadingState.ready!=='false') throw new Error(theme+': workspace should be pending during delayed overview');
+            if (!loadingState.skeletonVisible) throw new Error(theme+': skeleton missing during pending state');
+            if (!loadingState.nonSkeletonVisibility.every(v=>v==='hidden')) throw new Error(theme+': stale workspace content visible beneath skeleton');
+            await page.screenshot({path:`production-ui-evidence/${theme}-loading.png`,fullPage:true});
+
+            await page.locator('.bootstrapSkeleton').waitFor({state:'detached',timeout:8000}).catch(async()=>{
+              await page.locator('.bootstrapSkeleton').waitFor({state:'hidden',timeout:2000});
+            });
+            await page.locator('.overviewHero').waitFor({state:'visible',timeout:5000});
+
+            const version=await page.evaluate(async()=>{
+              const r=await fetch('/version.json?t='+Date.now(),{cache:'no-store',headers:{Accept:'application/json'}});
+              return {status:r.status,body:await r.json()};
+            });
+            if (version.status!==200 || version.body.sha!==expected) throw new Error(theme+': canonical version SHA mismatch '+JSON.stringify(version));
+
+            const finalState=await page.evaluate(({theme,expectedShort})=>{
+              const strip=document.querySelector('.trustStrip');
+              let displayedSha='';
+              for (const div of strip?.querySelectorAll('div')||[]) {
+                if (div.querySelector('small')?.textContent?.trim()==='SHA') {
+                  displayedSha=div.querySelector('b')?.textContent?.trim()||'';
+                  break;
+                }
+              }
+              const workspace=document.querySelector('.zpcWorkspace');
+              return {
+                theme:document.documentElement.dataset.theme,
+                displayedSha,
+                expectedShort,
+                skeletonPresent:!!workspace?.querySelector('.bootstrapSkeleton'),
+                workspaceReady:workspace?.getAttribute('data-bootstrap-ready'),
+                overviewVisible:!!document.querySelector('.overviewHero') && getComputedStyle(document.querySelector('.overviewHero')).visibility!=='hidden',
+                bodyText:(document.body.innerText||'').slice(0,12000)
+              };
+            },{theme,expectedShort});
+
+            if (finalState.theme!==theme) throw new Error(theme+': theme mismatch '+JSON.stringify(finalState));
+            if (finalState.displayedSha!==expectedShort) throw new Error(theme+': top strip SHA mismatch '+JSON.stringify(finalState));
+            if (finalState.skeletonPresent) throw new Error(theme+': skeleton remained after overview load');
+            if (finalState.workspaceReady!=='true' || !finalState.overviewVisible) throw new Error(theme+': overview not ready');
+            if (finalState.bodyText.includes('SEM SHA')) throw new Error(theme+': SEM SHA leaked into production');
+            if (errors.length) throw new Error(theme+': page errors '+JSON.stringify(errors));
+
+            await page.screenshot({path:`production-ui-evidence/${theme}-final.png`,fullPage:true});
+            results.push({theme,loadingState,version,finalState:{...finalState,bodyText:undefined},pageErrors:errors});
+            await context.close();
+          }
+          await browser.close();
+          fs.writeFileSync('production-ui-evidence/result.json',JSON.stringify({expectedSha:expected,status:'PASS',results},null,2));
+          console.log('PRODUCTION_LIGHT_DARK=PASS');
+          console.log('SKELETON_OVERLAP=0');
+          console.log('TOP_STRIP_SHA='+expectedShort);
+          JS
+          node /tmp/pr121-prod-verify.mjs
+
+      - name: Upload production UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr121-production-light-dark-${{ env.EXPECTED_SHA }}
+          path: production-ui-evidence
+          if-no-files-found: error
+          retention-days: 90
