@@ -26,10 +26,10 @@ for(const required of [
 }
 
 for(const required of [
-  'width: 100vw;',
-  'height: 100vh;',
-  'max-width: 100vw !important;',
-  'max-height: 100vh !important;',
+  'width: 100%;',
+  'height: 100dvh;',
+  'max-width: 100% !important;',
+  'max-height: 100dvh !important;',
   'overflow: hidden !important;',
   'overscroll-behavior: none !important;',
   'text-rendering: optimizeLegibility;',
