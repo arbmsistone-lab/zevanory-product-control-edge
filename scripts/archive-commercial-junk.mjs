@@ -60,15 +60,19 @@ function scoreRecord(record) {
   return { score, relevant, hardReject, icpHits, productHits, geoHits };
 }
 
+const APPLY = String(process.env.COMMERCIAL_CLEANUP_APPLY || '').trim() === '1';
+
 const report = {
   schema: 'zevanory-commercial-cleanup/v1',
   startedAt: new Date().toISOString(),
-  mode: 'apply',
+  mode: APPLY ? 'apply' : 'dry-run',
   sourceBuckets: SOURCE_BUCKETS,
   archiveBucket: ARCHIVE_BUCKET,
   scanned: 0,
   candidates: 0,
   archived: 0,
+  wouldArchive: 0,
+  wouldArchiveByType: {},
   preserved: 0,
   reasons: {},
   samplesArchived: [],
@@ -135,17 +139,22 @@ try {
       }
     };
 
-    await client.query(
-      'update public.zpc_records set bucket=$1,record=$2::jsonb,updated_at=now() where bucket=$3 and id=$4::uuid',
-      [ARCHIVE_BUCKET, JSON.stringify(archivedRecord), row.bucket, row.id]
-    );
-    report.archived += 1;
+    report.wouldArchive += 1;
+    report.wouldArchiveByType[row.bucket] = (report.wouldArchiveByType[row.bucket] || 0) + 1;
+    if (APPLY) {
+      await client.query(
+        'update public.zpc_records set bucket=$1,record=$2::jsonb,updated_at=now() where bucket=$3 and id=$4::uuid',
+        [ARCHIVE_BUCKET, JSON.stringify(archivedRecord), row.bucket, row.id]
+      );
+      report.archived += 1;
+    }
     if (report.samplesArchived.length < 30) {
       report.samplesArchived.push({id:row.id,from:row.bucket,title:record.title||'',reason,score:q.score,hardReject:q.hardReject});
     }
   }
 
-  await client.query('commit');
+  if (APPLY) await client.query('commit');
+  else await client.query('rollback');
 } catch (error) {
   await client.query('rollback');
   report.error = error instanceof Error ? error.message : String(error);
