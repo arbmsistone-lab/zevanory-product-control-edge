@@ -257,7 +257,7 @@ export async function commercialAdapterIngest(request: Request, body: unknown) {
 
 
 
-type ProspectResult = { title: string; url: string; description: string; query: string };
+export type ProspectResult = { title: string; url: string; description: string; query: string };
 
 const PROSPECT_HARD_REJECT = [
   'nfl','nba','futebol','football','esporte','sports','peppa pig','wikipedia','wikimedia',
@@ -323,7 +323,7 @@ function extractTag(xml: string, tag: string) {
   return match ? decodeXml(match[1]) : '';
 }
 
-async function searchProspects(query: string): Promise<ProspectResult[]> {
+export async function searchProspects(query: string): Promise<ProspectResult[]> {
   const response = await fetch('https://www.bing.com/search?format=rss&q=' + encodeURIComponent(query), {
     headers: {
       accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8',
