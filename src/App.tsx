@@ -385,12 +385,10 @@ function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
   const [globalTrustLoading, setGlobalTrustLoading] = useState(true);
-  const [globalTrustError, setGlobalTrustError] = useState('');
   const [canonicalSha, setCanonicalSha] = useState<string | null>(null);
   const [canonicalShaLoading, setCanonicalShaLoading] = useState(true);
   const [fastOverview, setFastOverview] = useState<FastOverview | null>(null);
   const [fastOverviewLoading, setFastOverviewLoading] = useState(true);
-  const [fastOverviewError, setFastOverviewError] = useState('');
   const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
@@ -466,10 +464,8 @@ function App() {
       if (!response.ok) throw new Error(`trust_http_${response.status}`);
       const trust = await response.json() as GlobalTrust;
       setGlobalTrust(trust);
-      setGlobalTrustError('');
       return trust;
     } catch {
-      setGlobalTrustError('Fonte de confiança indisponível');
       return null;
     } finally {
       setGlobalTrustLoading(false);
@@ -495,13 +491,11 @@ function App() {
   const loadFastOverview = async (token = sessionToken) => {
     if (!token) return;
     setFastOverviewLoading(true);
-    setFastOverviewError('');
     try {
       const response = await api.post('/api/admin/overview', { sessionToken: token });
       setFastOverview(response.data as FastOverview);
     } catch {
       setFastOverview(null);
-      setFastOverviewError('Dados executivos indisponíveis');
     } finally {
       setFastOverviewLoading(false);
     }
@@ -609,12 +603,10 @@ function App() {
     setAuthState('signedout');
     setDashboard(null);
     setGlobalTrust(null);
-    setGlobalTrustError('');
     setGlobalTrustLoading(true);
     setCanonicalSha(null);
     setCanonicalShaLoading(true);
     setFastOverview(null);
-    setFastOverviewError('');
     setFastOverviewLoading(true);
     setCommercial(null);
     setCfo(null);
