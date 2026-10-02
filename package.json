@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run audit:runtime && npm run audit:commercial && npm run test:commercial-contract && npm run test:zevanory-sales-contract && npm run audit:cfo && npm run test:cfo-contract && vite build",
+    "build": "npm run audit:runtime && npm run audit:commercial && npm run test:commercial-contract && npm run test:zevanory-sales-contract && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
     "start": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "audit:commercial": "node scripts/ped-commercial-audit.mjs",
