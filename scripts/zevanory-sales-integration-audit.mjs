@@ -14,6 +14,8 @@ const required = [
   [commercial, 'commercialSalesDecision', 'server-owned action gate runtime missing'],
   [commercial, 'commercialSalesExecuteAction', 'external execution runtime missing'],
   [commercial, 'commercialSalesInbound', 'inbound capture runtime missing'],
+  [commercial, 'commercialSalesProof', 'evidence-derived sale proof missing'],
+  [commercial, 'evaluateZevanoryAutonomousSaleProof', 'canonical autonomous proof evaluator missing'],
   [commercial, 'paymentConfirmedForLead', 'server-derived payment proof missing'],
   [commercial, "ZEVANORY_SALES_CHANNEL_ADAPTER_URL", 'server-owned channel adapter URL missing'],
   [commercial, "ZEVANORY_SALES_CHANNEL_ADAPTER_TOKEN", 'server-owned channel adapter token missing'],
@@ -33,6 +35,7 @@ const required = [
   [index, "'POST /api/commercial/sales/decision'", 'decision route missing'],
   [index, "'POST /api/commercial/sales/execute'", 'execution route missing'],
   [index, "'POST /api/commercial/sales/inbound'", 'inbound route missing'],
+  [index, "'POST /api/commercial/sales/proof'", 'proof route missing'],
   [index, 'requirePinSession(body.sessionToken)', 'admin session guard missing'],
   [model, 'evaluateZevanorySalesTransition', 'stage machine missing'],
   [model, "'lead_not_qualified'", 'lead qualification decision reason missing'],
@@ -105,4 +108,5 @@ if (!commercial.includes("externalId")) {
 console.log('ZEVANORY_SALES_EXTERNAL_EXECUTION=GATED_ADAPTER');
 console.log('ZEVANORY_SALES_INBOUND_CAPTURE=PASS');
 console.log('ZEVANORY_SALES_PAYMENT_AUTHORITY=SERVER_DERIVED');
+console.log('ZEVANORY_SALES_AUTONOMOUS_PROOF=EVIDENCE_DERIVED');
 console.log('ZEVANORY_SALES_PROTECTED_SLICE_TYPECHECK=PASS');
