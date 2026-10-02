@@ -4034,13 +4034,13 @@ html, body, button, input, select, textarea {
 .premiumOverviewHeader p:not(.premiumEyebrow) {
   margin: 0;
   color: var(--owner-muted);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.45;
 }
 .premiumEyebrow {
   margin: 0;
   color: var(--z-champagne);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .14em;
 }
@@ -4066,7 +4066,7 @@ html, body, button, input, select, textarea {
 .ownerHealth.loading .ownerHealthDot { background: var(--owner-muted); }
 .ownerHealth b, .ownerHealth small { display: block; }
 .ownerHealth b { font-size: 12px; line-height: 1.2; }
-.ownerHealth small { color: var(--owner-muted); font-size: 10px; margin-top: 2px; }
+.ownerHealth small { color: var(--owner-muted); font-size: 12px; margin-top: 2px; }
 
 .ownerKpis {
   display: grid;
@@ -4082,9 +4082,9 @@ html, body, button, input, select, textarea {
   box-shadow: 0 6px 20px rgba(0, 0, 0, .025);
 }
 .ownerKpis small, .ownerKpis span { display: block; overflow-wrap: anywhere; }
-.ownerKpis small { color: var(--owner-muted); font-size: 10px; line-height: 1.25; }
+.ownerKpis small { color: var(--owner-muted); font-size: 12px; line-height: 1.25; }
 .ownerKpis strong { display: block; margin: 6px 0 4px; font-size: clamp(18px, 1.65vw, 25px); letter-spacing: -.03em; line-height: 1.05; overflow-wrap: anywhere; }
-.ownerKpis span { color: var(--owner-muted); font-size: 10px; line-height: 1.3; }
+.ownerKpis span { color: var(--owner-muted); font-size: 12px; line-height: 1.3; }
 
 .ownerOverviewGrid {
   display: grid;
@@ -4123,13 +4123,13 @@ html, body, button, input, select, textarea {
 }
 .premiumCardHead h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: -.01em;
 }
 .premiumCardHead p {
   margin: 3px 0 0;
   color: var(--owner-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.35;
 }
 .premiumCardHead > strong {
@@ -4179,7 +4179,7 @@ html, body, button, input, select, textarea {
 }
 .ownerApprovalList b,
 .ownerApprovalList span { display: block; overflow-wrap: anywhere; }
-.ownerApprovalList b { font-size: 11px; line-height: 1.35; }
+.ownerApprovalList b { font-size: 12px; line-height: 1.35; }
 .ownerApprovalList span { margin-top: 3px; color: var(--owner-muted); font-size: 9px; line-height: 1.3; }
 .champagneAction,
 .ownerEmptyState button,
@@ -4198,7 +4198,7 @@ html, body, button, input, select, textarea {
   border-radius: 9px;
   background: var(--z-champagne);
   color: #17140E;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
   transition: transform 180ms ease, filter 180ms ease;
 }
@@ -4218,9 +4218,9 @@ html, body, button, input, select, textarea {
 .ownerEmptyState b,
 .ownerEmptyState span { display: block; overflow-wrap: anywhere; }
 .ownerEmptyState b { font-size: 12px; }
-.ownerEmptyState span { margin-top: 4px; color: var(--owner-muted); font-size: 10px; line-height: 1.4; }
+.ownerEmptyState span { margin-top: 4px; color: var(--owner-muted); font-size: 12px; line-height: 1.4; }
 .ownerEmptyState button,
-.ownerQuickCard button { margin-top: 8px; padding: 0; color: var(--z-champagne); font-size: 10px; font-weight: 700; }
+.ownerQuickCard button { margin-top: 8px; padding: 0; color: var(--z-champagne); font-size: 12px; font-weight: 700; }
 
 .ownerQuickCards {
   display: grid;
@@ -4242,8 +4242,8 @@ html, body, button, input, select, textarea {
 .ownerQuickCard div { min-width: 0; }
 .ownerQuickCard b,
 .ownerQuickCard span { display: block; overflow-wrap: anywhere; }
-.ownerQuickCard b { font-size: 11px; }
-.ownerQuickCard span { margin-top: 3px; color: var(--owner-muted); font-size: 10px; line-height: 1.35; }
+.ownerQuickCard b { font-size: 12px; }
+.ownerQuickCard span { margin-top: 3px; color: var(--owner-muted); font-size: 12px; line-height: 1.35; }
 .ownerQuickCard button { margin-top: 5px; }
 
 @media (max-width: 1180px) {
