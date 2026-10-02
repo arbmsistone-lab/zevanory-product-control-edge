@@ -6,6 +6,7 @@ const axePath=require.resolve('axe-core/axe.min.js');
 
 const baseUrl=process.env.CONTROL_CENTER_AUDIT_URL || 'http://127.0.0.1:4173';
 const outDir=process.env.CONTROL_CENTER_AUDIT_OUT || 'control-center-audit';
+const auditSha=/^[0-9a-f]{40}$/i.test(process.env.GITHUB_SHA||'')?process.env.GITHUB_SHA:'0000000000000000000000000000000000000000';
 const now='2026-09-26T16:00:00.000Z';
 const record=(id,kind,title,status,extra={})=>({
   id,kind,title,detail:extra.detail||'Registro auditável.',status,
@@ -215,7 +216,7 @@ for(const size of sizes){
     })}));
     await page.route(/\/(control\/)?api\/commercial\/stream$/,r=>r.fulfill({status:200,contentType:'text/event-stream; charset=utf-8',headers:{'cache-control':'no-cache','connection':'keep-alive'},body:'event: commercial-update\ndata: {"seq":1,"at":"2026-09-26T16:00:00.000Z"}\n\n'}));
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
-    await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:'8f08288265230dfe37f4d6034eb3bdb6ff8c4e31',runtime:'audit-preview'})}));
+    await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:auditSha,runtime:'audit-preview'})}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
     await page.getByText('ZEVANORY CONTROL CENTER',{exact:true}).waitFor({state:'visible',timeout:15000});
     await page.addScriptTag({path:axePath});
