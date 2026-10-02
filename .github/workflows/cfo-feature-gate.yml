@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches:
+      - main
       - feature/zevanory-cfo-v1
     paths:
       - 'src/**'
