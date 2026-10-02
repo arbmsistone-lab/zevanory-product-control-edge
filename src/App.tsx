@@ -827,11 +827,29 @@ function App() {
           <button className={primaryArea === 'overview' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'overview'} onClick={() => navigatePrimary('overview')}><LayoutDashboard size={16} />Visão Geral</button>
           <button className={primaryArea === 'products' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'products'} onClick={() => navigatePrimary('products')}><ShoppingBag size={16} />Produtos</button>
           <button className={primaryArea === 'commercial' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'commercial'} onClick={() => navigatePrimary('commercial')}><Megaphone size={16} />Comercial</button>
+          {primaryArea === 'commercial' && <div className='zpcNavSubmenu' aria-label='Subáreas comerciais'>
+            <button className='zpcNavSubitem' aria-current={view === 'commercial' ? 'page' : undefined} onClick={() => setView('commercial')}>Resumo</button>
+            <button className='zpcNavSubitem' aria-current={view === 'prospecting' ? 'page' : undefined} onClick={() => setView('prospecting')}>Prospecção</button>
+            <button className='zpcNavSubitem' aria-current={view === 'crm' ? 'page' : undefined} onClick={() => setView('crm')}>CRM e vendas</button>
+          </div>}
           <button className={primaryArea === 'content' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'content'} onClick={() => navigatePrimary('content')}><Sparkles size={16} />Conteúdo</button>
+          {primaryArea === 'content' && <div className='zpcNavSubmenu' aria-label='Subáreas de conteúdo'>
+            <button className='zpcNavSubitem' aria-current={view === 'creatives' ? 'page' : undefined} onClick={() => setView('creatives')}>Criativos</button>
+            <button className='zpcNavSubitem' aria-current={view === 'approvals' ? 'page' : undefined} onClick={() => setView('approvals')}>Aprovações</button>
+            <button className='zpcNavSubitem' aria-current={view === 'publications' ? 'page' : undefined} onClick={() => setView('publications')}>Publicações</button>
+          </div>}
           <button className={primaryArea === 'support' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'support'} onClick={() => navigatePrimary('support')}><Headphones size={16} />Atendimento</button>
           <button className={primaryArea === 'finance' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'finance'} onClick={() => navigatePrimary('finance')}><CircleDollarSign size={16} />Financeiro</button>
+          {primaryArea === 'finance' && <div className='zpcNavSubmenu' aria-label='Subáreas financeiras'>
+            <button className='zpcNavSubitem' aria-current={view === 'finance' ? 'page' : undefined} onClick={() => setView('finance')}>Movimentações</button>
+            <button className='zpcNavSubitem' aria-current={view === 'cfo' ? 'page' : undefined} onClick={() => setView('cfo')}>Inteligência financeira</button>
+          </div>}
           <button className={primaryArea === 'evidence' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'evidence'} onClick={() => navigatePrimary('evidence')}><FileCheck2 size={16} />Evidências</button>
           <button className={primaryArea === 'system' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'system'} onClick={() => navigatePrimary('system')}><RadioTower size={16} />Sistema</button>
+          {primaryArea === 'system' && <div className='zpcNavSubmenu' aria-label='Subáreas do sistema'>
+            <button className='zpcNavSubitem' aria-current={view === 'operations' ? 'page' : undefined} onClick={() => setView('operations')}>Saúde do sistema</button>
+            <button className='zpcNavSubitem' aria-current={view === 'governance' ? 'page' : undefined} onClick={() => setView('governance')}>Qualidade e certificação</button>
+          </div>}
         </div>
       </nav>
 
