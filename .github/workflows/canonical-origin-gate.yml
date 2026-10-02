@@ -10,11 +10,6 @@ on:
       - '.github/workflows/canonical-origin-gate.yml'
   push:
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'cf-worker/**'
-      - 'scripts/canonical-origin-audit.mjs'
-      - '.github/workflows/canonical-origin-gate.yml'
   workflow_dispatch:
 
 permissions:
