@@ -1,10 +1,24 @@
 name: ZEVANORY Sales Cross-Tenant Attack
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/commercial.ts'
+      - 'src/zevanory-sales-model.ts'
+      - 'scripts/zevanory-sales-cross-tenant-attack.ts'
+      - '.github/workflows/zevanory-sales-cross-tenant-attack.yml'
   push:
-    branches:
-      - audit/zevanory-sales-cross-tenant-20261002
+    branches: [main]
+    paths:
+      - 'backend/commercial.ts'
+      - 'src/zevanory-sales-model.ts'
+      - 'scripts/zevanory-sales-cross-tenant-attack.ts'
+      - '.github/workflows/zevanory-sales-cross-tenant-attack.yml'
+  workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
   attack-matrix:
     runs-on: ubuntu-latest
