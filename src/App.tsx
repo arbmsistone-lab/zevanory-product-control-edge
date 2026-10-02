@@ -198,6 +198,20 @@ type ProductSummary = {
   zeesBlocked: number;
 };
 
+type FastOverviewSource = { ok: boolean; elapsedMs: number; error: string | null };
+type FastOverview = {
+  elapsedMs: number;
+  sources: {
+    health: FastOverviewSource;
+    status: FastOverviewSource;
+    control: FastOverviewSource;
+    continuity: FastOverviewSource;
+    inventory: FastOverviewSource;
+  };
+  operations: OperationalSnapshot;
+  summary: Pick<ProductSummary, 'total' | 'salesEnabled' | 'commercialReady' | 'blocked'>;
+};
+
 type CertificationTarget = {
   id: string;
   name: string;
@@ -370,6 +384,11 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
+  const [globalTrustLoading, setGlobalTrustLoading] = useState(true);
+  const [canonicalSha, setCanonicalSha] = useState<string | null>(null);
+  const [canonicalShaLoading, setCanonicalShaLoading] = useState(true);
+  const [fastOverview, setFastOverview] = useState<FastOverview | null>(null);
+  const [fastOverviewLoading, setFastOverviewLoading] = useState(true);
   const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
@@ -405,6 +424,8 @@ function App() {
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const shellDashboard = dashboard ?? EMPTY_DASHBOARD;
   const bootstrapPending = dashboard === null;
+  const overviewOperations = fastOverview?.operations ?? null;
+  const surfacePending = view === 'overview' ? fastOverviewLoading : bootstrapPending;
   const primaryArea: PrimaryArea =
     view === 'overview' ? 'overview' :
     view === 'products' ? 'products' :
@@ -437,6 +458,7 @@ function App() {
   }, []);
 
   const loadGlobalTrustLive = async () => {
+    if (!globalTrust) setGlobalTrustLoading(true);
     try {
       const response = await fetch(`/global-trust.json?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`trust_http_${response.status}`);
@@ -445,6 +467,37 @@ function App() {
       return trust;
     } catch {
       return null;
+    } finally {
+      setGlobalTrustLoading(false);
+    }
+  };
+
+  const loadCanonicalVersion = async () => {
+    setCanonicalShaLoading(true);
+    try {
+      const response = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(`version_http_${response.status}`);
+      const payload = await response.json() as { sha?: string };
+      const sha = String(payload.sha || '').trim().toLowerCase();
+      if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error('version_sha_invalid');
+      setCanonicalSha(sha);
+    } catch {
+      setCanonicalSha(null);
+    } finally {
+      setCanonicalShaLoading(false);
+    }
+  };
+
+  const loadFastOverview = async (token = sessionToken) => {
+    if (!token) return;
+    setFastOverviewLoading(true);
+    try {
+      const response = await api.post('/api/admin/overview', { sessionToken: token });
+      setFastOverview(response.data as FastOverview);
+    } catch {
+      setFastOverview(null);
+    } finally {
+      setFastOverviewLoading(false);
     }
   };
 
@@ -462,14 +515,12 @@ function App() {
       const response = await api.post('/api/admin/bootstrap', { sessionToken: token }, { signal: controller.signal });
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       setDashboard(response.data.dashboard);
-      setGlobalTrust(response.data.globalTrust ?? null);
       setOperations(response.data.operations ?? null);
       setCommercial(response.data.commercial ?? null);
       setCfo(response.data.cfo ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setAuthState('ready');
-      void loadGlobalTrustLive();
     } catch {
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       localStorage.removeItem('arbm_admin_session');
@@ -484,6 +535,11 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
+    if (sessionToken) {
+      void loadCanonicalVersion();
+      void loadGlobalTrustLive();
+      void loadFastOverview(sessionToken);
+    }
     void load(sessionToken);
     return () => {
       ++loadGeneration.current;
@@ -547,6 +603,11 @@ function App() {
     setAuthState('signedout');
     setDashboard(null);
     setGlobalTrust(null);
+    setGlobalTrustLoading(true);
+    setCanonicalSha(null);
+    setCanonicalShaLoading(true);
+    setFastOverview(null);
+    setFastOverviewLoading(true);
     setCommercial(null);
     setCfo(null);
   };
@@ -554,6 +615,9 @@ function App() {
   const handleLogin = (token: string) => {
     setSessionToken(token);
     setAuthState('ready');
+    void loadCanonicalVersion();
+    void loadGlobalTrustLive();
+    void loadFastOverview(token);
     void load(token);
   };
 
@@ -809,16 +873,16 @@ function App() {
         </div>
       </header>
 
-      <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
+      <section className={globalTrust ? (globalTrust.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked') : 'trustStrip loading'} aria-label='Estado global ZEVANORY'>
         <div className='trustState'>
           <ShieldCheck size={16} />
           <span>TRUST CHAIN</span>
-          <strong>{globalTrust?.state ?? 'BLOCKED'}</strong>
+          <strong>{globalTrust ? globalTrust.state : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</strong>
         </div>
-        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
-        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : 'sem prova'}</b></div>
-        <div><small>SHA</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
-        <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : 'SEM MOTOR'}</b></div>
+        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>SHA</small><b>{canonicalSha ? canonicalSha.slice(0, 12) : canonicalShaLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
       </section>
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
@@ -884,9 +948,9 @@ function App() {
       <main
         className={`zpcWorkspace shell shell-${view}`}
         data-compact-governance={compactGovernance ? 'true' : 'false'}
-        data-bootstrap-ready={bootstrapPending ? 'false' : 'true'}
+        data-bootstrap-ready={surfacePending ? 'false' : 'true'}
       >
-      {bootstrapPending && (
+      {surfacePending && (
         <section className='bootstrapSkeleton' role='status' aria-live='polite' aria-label='Carregando dados do painel'>
           <div className='skeletonLine wide' />
           <div className='skeletonLine medium' />
@@ -938,29 +1002,81 @@ function App() {
         <section className='overviewStack' data-page={overviewPage}>
           <section className='overviewHero panel'>
             <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2></div>
-            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
+            <span className={fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>
+              {fastOverview?.sources.health.ok ? (overviewOperations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO') : 'INFRA INDISPONÍVEL'}
+            </span>
           </section>
           <nav className='overviewPager' aria-label='Páginas da visão geral'>
             {['Operação', 'Certificação', 'Canais', 'Bloqueios'].map((label, index) => <button key={label} className={overviewPage === index ? 'filter active' : 'filter'} aria-pressed={overviewPage === index} onClick={() => setOverviewPage(index)}>{label}</button>)}
           </nav>
 
           {overviewPage === 0 && <section className='overviewCards'>
-            <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
-            <article className='overviewCard'><span>Vendas</span><strong>{operationalLabel(operations?.runtime.sales)}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>
-            <article className='overviewCard'><span>Produtos</span><strong>{activeSummary.total}</strong><small>{activeSummary.salesEnabled} em venda · {activeSummary.blocked} pendentes</small></article>
-            <article className='overviewCard'><span>Banco</span><strong>{operations?.health.requiredTables ?? 0} tabelas</strong><small>{operations?.health.requiredMigrations ?? 0} migrations · faltas {(operations?.health.missingTables ?? 0)+(operations?.health.missingMigrations ?? 0)}</small></article>
+            <article className='overviewCard'>
+              <span>Saúde</span>
+              {fastOverview?.sources.health.ok
+                ? <><strong>{overviewOperations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {overviewOperations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {overviewOperations?.health.schemaReady ? 'OK' : 'FAIL'}</small></>
+                : <><strong>ERRO</strong><small>Fonte de saúde indisponível. Os demais cards continuam independentes.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>Vendas</span>
+              {fastOverview?.sources.status.ok
+                ? <><strong>{operationalLabel(overviewOperations?.runtime.sales)}</strong><small>checkout {overviewOperations?.runtime.checkout ?? 'unknown'} · financeiro {overviewOperations?.runtime.financial ?? 'unknown'}</small></>
+                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>Produtos</span>
+              {fastOverview?.sources.inventory.ok
+                ? <><strong>{fastOverview.summary.total}</strong><small>{fastOverview.summary.salesEnabled} em venda · {fastOverview.summary.blocked} pendentes</small></>
+                : <><strong>ERRO</strong><small>Inventário indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>Banco</span>
+              {fastOverview?.sources.health.ok
+                ? <><strong>{overviewOperations?.health.requiredTables ?? 0} tabelas</strong><small>{overviewOperations?.health.requiredMigrations ?? 0} migrations · faltas {(overviewOperations?.health.missingTables ?? 0)+(overviewOperations?.health.missingMigrations ?? 0)}</small></>
+                : <><strong>ERRO</strong><small>Fonte de saúde indisponível.</small></>}
+            </article>
           </section>}
 
           {overviewPage === 1 && <section className='overviewCards overviewCardsCertification'>
-            <article className='overviewCard'><span>Quorum técnico</span><strong>{operations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{operations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></article>
-            <article className='overviewCard'><span>ZEES-16</span><strong>{operations?.zees16.proven ?? 0}/16</strong><small>{operations?.zees16.partial ?? 0} parciais · {operations?.zees16.blocked ?? 0} bloqueados</small></article>
-            <article className='overviewCard'><span>ZEA-10</span><strong>{operations?.zea10.proven ?? 0}/10</strong><small>{operations?.zea10.partial ?? 0} parciais · {operations?.zea10.blocked ?? 0} bloqueados</small></article>
+            <article className='overviewCard'>
+              <span>Quorum técnico</span>
+              {fastOverview?.sources.continuity.ok
+                ? <><strong>{overviewOperations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{overviewOperations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></>
+                : <><strong>ERRO</strong><small>Fonte de continuidade indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>ZEES-16</span>
+              {operations
+                ? <><strong>{operations.zees16.proven}/16</strong><small>{operations.zees16.partial} parciais · {operations.zees16.blocked} bloqueados</small></>
+                : <><strong>CARREGANDO</strong><small>Evidência detalhada em segundo plano.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>ZEA-10</span>
+              {globalTrust
+                ? <><strong>{globalTrust.zea10.proven}/10</strong><small>{globalTrust.zea10.partial} parciais · {globalTrust.zea10.blocked} bloqueados</small></>
+                : <><strong>{globalTrustLoading ? 'CARREGANDO' : 'ERRO'}</strong><small>{globalTrustLoading ? 'Fonte de confiança em leitura.' : 'Fonte de confiança indisponível.'}</small></>}
+            </article>
           </section>}
 
           {overviewPage === 2 && <section className='overviewCards overviewCardsChannels'>
-            <article className='overviewCard'><span>Canais configurados</span><strong>{operations?.channels.length ?? 0}</strong><small>detalhamento disponível em Comercial</small></article>
-            <article className='overviewCard'><span>WhatsApp</span><strong>{operationalLabel(operations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {operations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></article>
-            <article className='overviewCard'><span>Execução comercial</span><strong>{operations?.channels.filter(channel => channel.commercialExecution === 'enabled').length ?? 0}</strong><small>canais com execução habilitada</small></article>
+            <article className='overviewCard'>
+              <span>Canais configurados</span>
+              {fastOverview?.sources.status.ok
+                ? <><strong>{overviewOperations?.channels.length ?? 0}</strong><small>detalhamento disponível em Comercial</small></>
+                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>WhatsApp</span>
+              {fastOverview?.sources.status.ok && fastOverview?.sources.continuity.ok
+                ? <><strong>{operationalLabel(overviewOperations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {overviewOperations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></>
+                : <><strong>ERRO</strong><small>Status ou continuidade indisponível.</small></>}
+            </article>
+            <article className='overviewCard'>
+              <span>Execução comercial</span>
+              {fastOverview?.sources.status.ok
+                ? <><strong>{overviewOperations?.channels.filter(channel => channel.commercialExecution === 'enabled').length ?? 0}</strong><small>canais com execução habilitada</small></>
+                : <><strong>ERRO</strong><small>Fonte de status indisponível.</small></>}
+            </article>
             <article className='overviewCard'><button className='secondary compact overviewJump' onClick={() => setView('commercial')}>Abrir Comercial</button></article>
           </section>}
 
@@ -968,11 +1084,11 @@ function App() {
             <article className='panel'>
               <div className='panelhead'><div><p className='kicker'>ATENÇÃO EXECUTIVA</p><h2>O que está bloqueando</h2></div><AlertTriangle size={20} /></div>
               <div className='executiveList'>
-                <div><span>Estado global</span><b>{operationalLabel(operations?.control.globalState)}</b></div>
-                <div><span>Bloqueador raiz</span><b>{operations?.control.rootBlocker ?? 'unknown'}</b></div>
-                <div><span>Decisão do core</span><b>{operationalLabel(operations?.control.decision)}</b></div>
-                <div><span>Produtos bloqueados</span><b>{activeSummary.blocked}</b></div>
-                <div><span>Incidentes</span><b>{shellDashboard.incidents.length}</b></div>
+                <div><span>Estado global</span><b>{fastOverview?.sources.control.ok ? operationalLabel(overviewOperations?.control.globalState) : 'ERRO DA FONTE'}</b></div>
+                <div><span>Bloqueador raiz</span><b>{fastOverview?.sources.control.ok ? (overviewOperations?.control.rootBlocker ?? 'none') : 'indisponível'}</b></div>
+                <div><span>Decisão do core</span><b>{fastOverview?.sources.control.ok ? operationalLabel(overviewOperations?.control.decision) : 'indisponível'}</b></div>
+                <div><span>Produtos bloqueados</span><b>{fastOverview?.sources.inventory.ok ? fastOverview.summary.blocked : 'indisponível'}</b></div>
+                <div><span>Incidentes</span><b>{dashboard ? shellDashboard.incidents.length : 'carregando'}</b></div>
               </div>
             </article>
           </section>}
