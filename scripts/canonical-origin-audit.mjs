@@ -58,8 +58,17 @@ console.log('PUBLIC_PRODUCTS_PREFIX=/produtos/');
 console.log('LEGAL_ROUTES=/termos,/privacidade,/reembolso');
 
 
+const retiredPublicRoutes=['zevanory-one','arbm-sist'];
+for(const slug of retiredPublicRoutes){
+  if(fs.existsSync('public/'+slug)) fail('retired public route reintroduced: '+slug);
+  if(!worker.includes("retiredPublicPaths = new Set(['/arbm-sist','/zevanory-one','/arbm-one'])")) {
+    fail('retired public route 410 guard missing');
+  }
+}
+console.log('RETIRED_PUBLIC_ROUTES_410=PASS');
+
 const publicRoutes=[
-  'solucoes','zevanory-one','arbm-contador-saloes','arbm-sist',
+  'solucoes','arbm-contador-saloes',
   'ia-na-pratica','vendas-na-pratica','lucro-e-caixa','combo-ia-vendas',
   'negocio-completo','privacidade','termos','reembolso','afiliados'
 ];
