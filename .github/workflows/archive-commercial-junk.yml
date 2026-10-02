@@ -1,0 +1,47 @@
+name: ZEVANORY Commercial Cleanup A
+
+on:
+  push:
+    branches:
+      - fix/premium-panel-a-cleanup-20261002
+    paths:
+      - "scripts/archive-commercial-junk.mjs"
+      - ".github/workflows/archive-commercial-junk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zevanory-commercial-cleanup-a
+  cancel-in-progress: true
+
+jobs:
+  archive-junk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DATABASE_URL_PRIMARY: ${{ secrets.DATABASE_URL_PRIMARY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Guard production-primary-only cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL_PRIMARY}"
+          echo "SUPABASE_WRITE=DISABLED_BY_DESIGN"
+          echo "DELETE_STATEMENTS=0"
+      - name: Install runtime dependency
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Archive irrelevant commercial records
+        run: node scripts/archive-commercial-junk.mjs
+      - name: Upload cleanup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commercial-cleanup-${{ github.run_id }}
+          path: commercial-cleanup-report.json
+          if-no-files-found: warn
