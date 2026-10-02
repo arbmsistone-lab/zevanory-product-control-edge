@@ -1,0 +1,17 @@
+name: ZEVANORY Sales Cross-Tenant Attack
+on:
+  push:
+    branches:
+      - audit/zevanory-sales-cross-tenant-20261002
+permissions:
+  contents: read
+jobs:
+  attack-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - run: npm install --no-audit --no-fund
+      - run: npx tsx scripts/zevanory-sales-cross-tenant-attack.ts
