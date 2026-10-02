@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   evaluateZevanoryAutonomousSaleProof,
   evaluateZevanorySalesAction,
+  evaluateZevanorySalesTransition,
   type ZevanorySalesPolicy,
 } from '../src/zevanory-sales-model.ts';
 
@@ -100,3 +101,42 @@ assert.deepEqual(completeProof.missing, []);
 console.log('ZEVANORY_SALES_MODEL_CONTRACT=PASS');
 console.log('ZEVANORY_SALES_FAIL_CLOSED=PASS');
 console.log('ZEVANORY_SALES_REAL_SALE_PROOF_GATE=PASS');
+
+assert.deepEqual(
+  evaluateZevanorySalesTransition('assist', 'discovered', 'qualified', closed),
+  { allowed: true, reason: 'allowed' },
+  'qualification is an internal transition and must not depend on an external channel',
+);
+
+assert.deepEqual(
+  evaluateZevanorySalesTransition('assist', 'qualified', 'contact-ready', {
+    ...ready,
+    humanApproval: false,
+  }),
+  {
+    allowed: false,
+    reason: 'action_gate_blocked',
+    actionDecision: { allowed: false, reason: 'human_approval_required' },
+  },
+  'assist mode must not cross the contact boundary without approval',
+);
+
+assert.deepEqual(
+  evaluateZevanorySalesTransition('assist', 'qualified', 'contact-ready', {
+    ...ready,
+    humanApproval: true,
+  }),
+  {
+    allowed: true,
+    reason: 'allowed',
+    actionDecision: { allowed: true, reason: 'allowed' },
+  },
+);
+
+assert.deepEqual(
+  evaluateZevanorySalesTransition('autopilot', 'qualified', 'offer', ready),
+  { allowed: false, reason: 'invalid_transition' },
+  'the pipeline must not skip required stages',
+);
+
+console.log('ZEVANORY_SALES_STAGE_MACHINE=PASS');
