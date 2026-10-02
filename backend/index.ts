@@ -1,6 +1,6 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
-import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesEvaluateAction, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
+import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialQualifyDiscovery, commercialSalesDecision, commercialWorkspace } from './commercial.ts';
 import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
 import type { CommercialRecordKind } from '../src/commercial-model.ts';
 import type { ZevanorySalesAction } from '../src/zevanory-sales-model.ts';
@@ -3141,58 +3141,6 @@ export const handler = router({
     }
   }],
   'POST /api/commercial/adapter/ingest': [async ctx => commercialAdapterIngest(ctx.request, ctx.body)],
-  'POST /api/commercial/sales/qualify': [async ctx => {
-    const body = ctx.body as { sessionToken?: string; leadId?: string; score?: number; signals?: string[]; reason?: string; threshold?: number };
-    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
-    if (!body.leadId || body.score === undefined) return error('Qualificacao comercial invalida.', 400);
-    try {
-      return json(await commercialSalesQualifyLead({
-        leadId: String(body.leadId),
-        score: Number(body.score),
-        signals: Array.isArray(body.signals) ? body.signals.map(String) : [],
-        reason: body.reason,
-        threshold: body.threshold,
-      }));
-    } catch (err) {
-      return error(`Falha na qualificacao ZEVANORY SALES: ${String(err)}`, 400);
-    }
-  }],
-  'POST /api/commercial/sales/evaluate-action': [async ctx => {
-    const body = ctx.body as {
-      sessionToken?: string;
-      level?: 'assist' | 'autopilot' | 'autonomous';
-      action?: 'research' | 'contact' | 'publish' | 'offer' | 'follow-up' | 'checkout' | 'fulfill';
-      leadId?: string;
-      humanApproval?: boolean;
-      contactPolicyReady?: boolean;
-      publicationPolicyReady?: boolean;
-      pricingPolicyReady?: boolean;
-      checkoutReady?: boolean;
-      fulfillmentReady?: boolean;
-      paymentConfirmed?: boolean;
-      autonomousPublicationAllowed?: boolean;
-    };
-    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
-    if (!body.level || !body.action) return error('Decisao comercial invalida.', 400);
-    try {
-      const operations = await loadOperationalSnapshot();
-      return json(await commercialSalesEvaluateAction(operations, {
-        level: body.level,
-        action: body.action,
-        leadId: body.leadId,
-        humanApproval: body.humanApproval,
-        contactPolicyReady: body.contactPolicyReady,
-        publicationPolicyReady: body.publicationPolicyReady,
-        pricingPolicyReady: body.pricingPolicyReady,
-        checkoutReady: body.checkoutReady,
-        fulfillmentReady: body.fulfillmentReady,
-        paymentConfirmed: body.paymentConfirmed,
-        autonomousPublicationAllowed: body.autonomousPublicationAllowed,
-      }));
-    } catch (err) {
-      return error(`Falha no gate ZEVANORY SALES: ${String(err)}`, 400);
-    }
-  }],
   'POST /api/certification/run': [async ctx => {
     const body = ctx.body as { sessionToken?: string; targetId?: string };
     if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
