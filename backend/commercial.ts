@@ -4,12 +4,20 @@ import {
   deriveCommercialRobotState,
   isOperationallyActive,
   isOperationallyBlocked,
+  isOperationallyActive,
+  isOperationallyBlocked,
   normalizeCommercialState,
   type CommercialOperationsLike,
   type CommercialRecord,
   type CommercialRecordKind,
   type CommercialWorkspaceData,
 } from '../src/commercial-model.ts';
+import {
+  evaluateZevanorySalesAction,
+  type ZevanorySalesAction,
+  type ZevanorySalesAutonomyLevel,
+  type ZevanorySalesPolicy,
+} from '../src/zevanory-sales-model.ts';
 import {
   evaluateZevanorySalesAction,
   type ZevanorySalesAction,
@@ -531,5 +539,140 @@ export async function commercialSalesEvaluateAction(
     policy,
     execution: 'not-executed',
     at: now,
+  };
+}
+
+
+function envEnabled(name: string) {
+  return String(process.env[name] || '').trim().toLowerCase() === 'true';
+}
+
+function configuredSalesAutonomy(): ZevanorySalesAutonomyLevel {
+  const value = String(process.env.ZEVANORY_SALES_AUTONOMY || 'assist').trim().toLowerCase();
+  return value === 'autopilot' || value === 'autonomous' ? value : 'assist';
+}
+
+export function buildZevanorySalesPolicy(
+  operations: CommercialOperationsLike,
+  options: { humanApproval?: boolean; paymentConfirmed?: boolean } = {},
+): ZevanorySalesPolicy {
+  const channels = Array.isArray(operations?.channels) ? operations.channels : [];
+  const activeChannelReady = channels.some(channel =>
+    isOperationallyActive(channel.commercialExecution) &&
+    !isOperationallyBlocked(channel.releaseGate) &&
+    Boolean(String(channel.name || '').trim()),
+  );
+  const infrastructureReady = Boolean(
+    operations?.available &&
+    operations?.health?.ready &&
+    operations?.continuity?.quorumOk,
+  );
+
+  return {
+    infrastructureReady,
+    channelReady: infrastructureReady && activeChannelReady,
+    contactPolicyReady: envEnabled('ZEVANORY_SALES_CONTACT_POLICY_READY'),
+    publicationPolicyReady: envEnabled('ZEVANORY_SALES_PUBLICATION_POLICY_READY'),
+    pricingPolicyReady: envEnabled('ZEVANORY_SALES_PRICING_POLICY_READY'),
+    checkoutReady:
+      isOperationallyActive(operations?.runtime?.checkout) &&
+      envEnabled('ZEVANORY_SALES_CHECKOUT_POLICY_READY'),
+    fulfillmentReady: envEnabled('ZEVANORY_SALES_FULFILLMENT_POLICY_READY'),
+    paymentConfirmed: Boolean(options.paymentConfirmed),
+    humanApproval: Boolean(options.humanApproval),
+    autonomousPublicationAllowed: envEnabled('ZEVANORY_SALES_AUTONOMOUS_PUBLICATION_ALLOWED'),
+  };
+}
+
+export async function commercialQualifyDiscovery(discoveryId: string) {
+  const [discovery] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.evidence, [discoveryId]);
+  if (!discovery) throw new Error('sales_discovery_not_found');
+  if (discovery.status !== 'raw-discovery') throw new Error('sales_discovery_not_raw');
+
+  const qualifiedAt = new Date().toISOString();
+  const lead = await upsertBySourceKey({
+    kind: 'lead',
+    title: discovery.title,
+    detail: discovery.detail,
+    status: 'qualified',
+    channel: discovery.channel || 'web',
+    product: discovery.product || 'ZEVANORY SALES',
+    productId: discovery.productId,
+    source: 'zevanory-sales',
+    sourceKey: ('qualified:' + (discovery.sourceKey || discoveryId)).slice(0, 220),
+    evidence: [
+      ...(discovery.evidence || []),
+      'qualification:human-reviewed',
+      'discovery-id:' + discoveryId,
+      'qualified-at:' + qualifiedAt,
+    ].slice(-20),
+  });
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: 'Oportunidade qualificada',
+    detail: discovery.title,
+    status: 'sales-qualified',
+    channel: discovery.channel,
+    product: discovery.product || 'ZEVANORY SALES',
+    productId: discovery.productId,
+    source: 'zevanory-sales',
+    sourceKey: 'qualified-event:' + lead.id,
+    evidence: ['lead-id:' + lead.id, 'discovery-id:' + discoveryId, qualifiedAt],
+  });
+
+  return lead;
+}
+
+export async function commercialSalesDecision(
+  operations: CommercialOperationsLike,
+  input: {
+    leadId: string;
+    action: ZevanorySalesAction;
+    humanApproval?: boolean;
+    paymentConfirmed?: boolean;
+  },
+) {
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS.lead, [input.leadId]);
+  if (!lead) throw new Error('sales_lead_not_found');
+
+  const autonomy = configuredSalesAutonomy();
+  const policy = buildZevanorySalesPolicy(operations, {
+    humanApproval: input.humanApproval,
+    paymentConfirmed: input.paymentConfirmed,
+  });
+  const decision = evaluateZevanorySalesAction(autonomy, input.action, policy);
+  const at = new Date().toISOString();
+
+  await upsertBySourceKey({
+    kind: 'evidence',
+    title: 'Decisao comercial · ' + lead.title,
+    detail: decision.allowed
+      ? 'Acao autorizada pelos gates atuais; nenhuma execucao externa foi realizada por este endpoint.'
+      : 'Acao bloqueada pelos gates atuais: ' + decision.reason,
+    status: decision.allowed ? 'sales-decision-allowed' : 'sales-decision-blocked',
+    channel: lead.channel,
+    product: lead.product || 'ZEVANORY SALES',
+    productId: lead.productId,
+    source: 'zevanory-sales',
+    sourceKey: ('sales-decision:' + input.leadId + ':' + input.action + ':' + at).slice(0, 220),
+    evidence: [
+      'lead-id:' + input.leadId,
+      'action:' + input.action,
+      'autonomy:' + autonomy,
+      'decision:' + decision.reason,
+      'external-execution:false',
+      at,
+    ],
+  });
+
+  return {
+    leadId: input.leadId,
+    autonomy,
+    action: input.action,
+    decision,
+    policy,
+    externalExecution: false,
+    evaluatedAt: at,
   };
 }
