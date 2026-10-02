@@ -113,8 +113,8 @@ export async function executeDrReconcile() {
     for (const bucket of summary.buckets.map(item => item.bucket)) {
       const primary = await fetchPrimaryRecords(pool, bucket);
       const remote = await secondaryRpc('zpc_worker_list', { p_bucket: bucket, p_limit: 1000 }) as any;
-      const remoteIds = new Set((remote?.items || []).map((item: any) => String(item.id)));
-      const primaryIds = new Set(primary.map(item => item.id));
+      const remoteIds = new Set<string>((remote?.items || []).map((item: any) => String(item.id)));
+      const primaryIds = new Set<string>(primary.map(item => item.id));
 
       for (let i = 0; i < primary.length; i += 100) {
         const chunk = primary.slice(i, i + 100).map(item => ({ id: item.id, record: item.record }));
