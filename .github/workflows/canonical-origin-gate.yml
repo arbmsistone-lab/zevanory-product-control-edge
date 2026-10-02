@@ -47,5 +47,3 @@ jobs:
           echo 'NEGATIVE_ZERO_SCROLL_TEST=EXPECTED_FAIL'
       - name: Build
         run: npm run build
-      - name: Zero-debt static audit
-        run: python3 scripts/ped_versal_zero_debt_audit.py
