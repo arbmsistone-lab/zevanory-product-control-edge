@@ -3,7 +3,9 @@ name: ZEVANORY Security and Architecture Audit
 on:
   push:
     branches:
+      - main
       - audit/security-zees-products-20260929
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,7 +24,9 @@ jobs:
         run: |
           set -euo pipefail
           remote_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
-          test "$remote_main" = "a628145bb088ad4bf07841d4f9f4b1e90e20266e"
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            test "$remote_main" = "$GITHUB_SHA"
+          fi
           echo "BASE_SOURCE_SHA=$remote_main"
       - name: Install clean dependency graph
         run: npm install --ignore-scripts --no-fund
