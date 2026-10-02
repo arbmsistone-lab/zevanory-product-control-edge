@@ -23,8 +23,8 @@
     },
     "rules_plan": {
       "source": "ZEVANORY_REGRAS_E_PLANO.md",
-      "status": "not_found_in_repository_or_connected_drive",
-      "note": "Não inventar conteúdo ausente. O bloco NR-1 abaixo usa somente a validação oficial MTE 2026 até o arquivo-fonte ser materializado."
+      "status": "project_source_accessible",
+      "note": "Fonte oficial do PROJETO ZEVANORY. M1 coleta dores reais e a regra 4 proíbe prospecção fria automatizada; NR-1 riscos psicossociais é o nicho mais promissor da rodada 1."
     },
     "nr1_validation": {
       "source": "MTE NR-1/GRO/PGR vigente desde 2026-05-26",
@@ -34,7 +34,7 @@
   "policy": {
     "locale": "pt-BR",
     "country": "BR",
-    "primary_region": "CE",
+    "primary_region": "Brasil",
     "min_score": 7,
     "cold_outreach": false,
     "automatic_contact": false,
@@ -107,29 +107,29 @@
     "marketplace genérico"
   ],
   "queries": [
-    "site:.br Fortaleza microempresa WhatsApp automação",
-    "site:.br Fortaleza pequena empresa CRM vendas",
-    "site:.br Ceará loja WhatsApp vendas",
-    "site:.br Fortaleza varejo WhatsApp Instagram",
-    "site:.br Ceará clínica WhatsApp agendamento",
-    "site:.br Fortaleza clínica WhatsApp atendimento",
-    "site:.br Ceará \"salão de beleza\" WhatsApp",
-    "site:.br Fortaleza estética WhatsApp Instagram",
-    "site:.br Ceará academia WhatsApp atendimento",
-    "site:.br Fortaleza restaurante WhatsApp pedidos",
-    "site:.br Ceará oficina WhatsApp atendimento",
-    "site:.br Fortaleza imobiliária WhatsApp CRM",
-    "site:.br Ceará \"escritório contábil\" WhatsApp",
-    "site:.br Fortaleza contabilidade \"fluxo de caixa\" empresa",
-    "site:.br Ceará \"consultoria SST\" \"NR-1\"",
-    "site:.br Fortaleza \"segurança do trabalho\" \"NR-1\"",
-    "site:.br Ceará \"saúde ocupacional\" PGR",
-    "site:.br Fortaleza \"riscos psicossociais\" \"NR-1\"",
-    "site:.br Ceará empresa PGR GRO",
-    "site:.br Fortaleza empresa automação WhatsApp",
-    "site:.br \"Juazeiro do Norte\" clínica WhatsApp",
-    "site:.br \"Juazeiro do Norte\" salão WhatsApp",
-    "site:.br Crato clínica WhatsApp",
-    "site:.br Ceará MEI WhatsApp vendas"
+    "site:.br microempresa WhatsApp automação vendas",
+    "site:.br pequena empresa CRM vendas",
+    "site:.br loja varejo WhatsApp Instagram vendas",
+    "site:.br clínica WhatsApp agendamento atendimento",
+    "site:.br \"salão de beleza\" WhatsApp agendamento",
+    "site:.br estética WhatsApp Instagram atendimento",
+    "site:.br academia WhatsApp atendimento vendas",
+    "site:.br restaurante WhatsApp pedidos gestão",
+    "site:.br oficina WhatsApp atendimento gestão",
+    "site:.br imobiliária WhatsApp CRM vendas",
+    "site:.br \"escritório contábil\" WhatsApp empresa",
+    "site:.br contabilidade \"fluxo de caixa\" pequena empresa",
+    "site:.br \"consultoria SST\" \"NR-1\"",
+    "site:.br \"segurança do trabalho\" \"NR-1\" pequena empresa",
+    "site:.br \"saúde ocupacional\" PGR pequena empresa",
+    "site:.br \"riscos psicossociais\" \"NR-1\" empresa",
+    "site:.br pequena empresa PGR GRO",
+    "site:.br empresa automação WhatsApp atendimento",
+    "site:.br MEI WhatsApp vendas",
+    "site:.br pequena empresa inteligência artificial atendimento",
+    "site:.br empresa gestão financeiro automação",
+    "site:.br empresa atendimento Instagram WhatsApp",
+    "site:.br pequena empresa contabilidade gestão",
+    "site:.br pequena empresa NR-1 riscos psicossociais"
   ]
 }
