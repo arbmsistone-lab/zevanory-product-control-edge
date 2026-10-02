@@ -2,11 +2,19 @@ import { db, error, json, secrets } from './platform.ts';
 import {
   computeCommercialMetrics,
   deriveCommercialRobotState,
+  isOperationallyActive,
+  isOperationallyBlocked,
   type CommercialOperationsLike,
   type CommercialRecord,
   type CommercialRecordKind,
   type CommercialWorkspaceData,
 } from '../src/commercial-model.ts';
+import {
+  evaluateZevanorySalesAction,
+  type ZevanorySalesAction,
+  type ZevanorySalesAutonomyLevel,
+  type ZevanorySalesPolicy,
+} from '../src/zevanory-sales-model.ts';
 
 const BUCKETS: Record<CommercialRecordKind, string> = {
   lead: 'zpc_commercial_leads',
@@ -17,6 +25,37 @@ const BUCKETS: Record<CommercialRecordKind, string> = {
   finance: 'zpc_commercial_finance',
   evidence: 'zpc_commercial_evidence',
 };
+
+const DEFAULT_SALES_TENANT = 'zevanory';
+const SALES_TENANT_RE = /^[a-z0-9][a-z0-9-]{2,63}$/;
+
+export function zevanorySalesTenantId() {
+  const raw = String(process.env.ZEVANORY_SALES_TENANT_ID || DEFAULT_SALES_TENANT)
+    .trim()
+    .toLowerCase();
+  if (!SALES_TENANT_RE.test(raw)) throw new Error('zevanory_sales_tenant_invalid');
+  return raw;
+}
+
+export function commercialBucketName(kind: CommercialRecordKind) {
+  const base = BUCKETS[kind];
+  if (!base) throw new Error('commercial_kind_invalid');
+  const tenantId = zevanorySalesTenantId();
+  return tenantId === DEFAULT_SALES_TENANT
+    ? base
+    : `${base}__tenant_${tenantId}`;
+}
+
+export function zevanorySalesTenantIsolation() {
+  const id = zevanorySalesTenantId();
+  return Object.freeze({
+    id,
+    defaultTenant: id === DEFAULT_SALES_TENANT,
+    tenantSource: 'server-environment',
+    isolation: 'server-owned-bucket-v1',
+    clientSelectable: false,
+  });
+}
 
 function cleanString(value: unknown, max = 4000) {
   return String(value ?? '').trim().slice(0, max);
@@ -67,7 +106,7 @@ function normalizeCommercialRecord(
 }
 
 async function listKind(kind: CommercialRecordKind, limit = 200): Promise<CommercialRecord[]> {
-  const result = await db.list<Omit<CommercialRecord, 'id'>>(BUCKETS[kind], { limit });
+  const result = await db.list<Omit<CommercialRecord, 'id'>>(commercialBucketName(kind), { limit });
   return result.items.map(item => ({ ...item, kind, id: item.id })) as CommercialRecord[];
 }
 
@@ -81,11 +120,11 @@ async function upsertBySourceKey(raw: Partial<CommercialRecord>) {
     const current = await listKind(kind, 1000);
     const found = current.find(item => item.source === normalized.source && item.sourceKey === sourceKey);
     if (found) {
-      await db.update(BUCKETS[kind], [{ id: found.id, record: normalized }]);
+      await db.update(commercialBucketName(kind), [{ id: found.id, record: normalized }]);
       return { ...normalized, id: found.id };
     }
   }
-  const [id] = await db.add(BUCKETS[kind], [normalized]);
+  const [id] = await db.add(commercialBucketName(kind), [normalized]);
   if (!id) throw new Error('commercial_record_create_failed');
   return { ...normalized, id };
 }
@@ -114,6 +153,7 @@ export async function commercialWorkspace(operations: CommercialOperationsLike):
 
   return {
     generatedAt: new Date().toISOString(),
+    tenant: zevanorySalesTenantIsolation(),
     metrics,
     robot: deriveCommercialRobotState(operations, heartbeat?.updatedAt ?? null),
     leads: sortRecent(leads),
@@ -140,11 +180,11 @@ export async function commercialAdminCreate(raw: Partial<CommercialRecord>) {
 }
 
 export async function commercialAdminUpdate(id: string, kind: CommercialRecordKind, raw: Partial<CommercialRecord>) {
-  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS[kind], [id]);
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName(kind), [id]);
   if (!existing) throw new Error('commercial_record_not_found');
   const normalized = normalizeCommercialRecord({ ...raw, kind }, { ...existing, id, kind } as CommercialRecord);
   if (!normalized) throw new Error('commercial_record_invalid');
-  await db.update(BUCKETS[kind], [{ id, record: normalized }]);
+  await db.update(commercialBucketName(kind), [{ id, record: normalized }]);
   return { ...normalized, id };
 }
 
@@ -154,7 +194,7 @@ export async function commercialApprovalAction(input: {
   action: 'approve' | 'reject' | 'request-changes';
   note?: string;
 }) {
-  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(BUCKETS[input.kind], [input.id]);
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName(input.kind), [input.id]);
   if (!existing) throw new Error('commercial_record_not_found');
   const status = input.action === 'approve'
     ? 'approved'
@@ -171,7 +211,7 @@ export async function commercialApprovalAction(input: {
     { ...existing, id: input.id, kind: input.kind } as CommercialRecord,
   );
   if (!normalized) throw new Error('commercial_record_invalid');
-  await db.update(BUCKETS[input.kind], [{ id: input.id, record: normalized }]);
+  await db.update(commercialBucketName(input.kind), [{ id: input.id, record: normalized }]);
   await upsertBySourceKey({
     kind: 'event',
     title: input.action === 'approve' ? 'Item aprovado' : input.action === 'reject' ? 'Item rejeitado' : 'Alterações solicitadas',
@@ -362,4 +402,226 @@ export async function commercialRobotTick() {
   } finally {
     robotTickRunning = false;
   }
+}
+
+
+function envEnabled(name: string) {
+  return String(process.env[name] || '').trim().toLowerCase() === 'true';
+}
+
+function configuredSalesAutonomy(): ZevanorySalesAutonomyLevel {
+  const value = String(process.env.ZEVANORY_SALES_AUTONOMY || 'assist').trim().toLowerCase();
+  return value === 'autopilot' || value === 'autonomous' ? value : 'assist';
+}
+
+export function buildZevanorySalesPolicy(
+  operations: CommercialOperationsLike,
+  options: { humanApproval?: boolean; paymentConfirmed?: boolean } = {},
+): ZevanorySalesPolicy {
+  const channels = Array.isArray(operations?.channels) ? operations.channels : [];
+  const activeChannelReady = channels.some(channel =>
+    isOperationallyActive(channel.commercialExecution) &&
+    !isOperationallyBlocked(channel.releaseGate) &&
+    Boolean(String(channel.name || '').trim()),
+  );
+  const infrastructureReady = Boolean(
+    operations?.available &&
+    operations?.health?.ready &&
+    operations?.continuity?.quorumOk,
+  );
+
+  return {
+    infrastructureReady,
+    channelReady: infrastructureReady && activeChannelReady,
+    contactPolicyReady: envEnabled('ZEVANORY_SALES_CONTACT_POLICY_READY'),
+    publicationPolicyReady: envEnabled('ZEVANORY_SALES_PUBLICATION_POLICY_READY'),
+    pricingPolicyReady: envEnabled('ZEVANORY_SALES_PRICING_POLICY_READY'),
+    checkoutReady:
+      isOperationallyActive(operations?.runtime?.checkout) &&
+      envEnabled('ZEVANORY_SALES_CHECKOUT_POLICY_READY'),
+    fulfillmentReady: envEnabled('ZEVANORY_SALES_FULFILLMENT_POLICY_READY'),
+    paymentConfirmed: Boolean(options.paymentConfirmed),
+    humanApproval: Boolean(options.humanApproval),
+    autonomousPublicationAllowed: envEnabled('ZEVANORY_SALES_AUTONOMOUS_PUBLICATION_ALLOWED'),
+  };
+}
+
+export async function commercialSalesPromoteDiscovery(discoveryId: string) {
+  const [discovery] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('evidence'), [discoveryId]);
+  if (!discovery) throw new Error('sales_discovery_not_found');
+  if (discovery.status !== 'raw-discovery') throw new Error('sales_discovery_not_raw');
+
+  const promotedAt = new Date().toISOString();
+  const lead = await upsertBySourceKey({
+    kind: 'lead',
+    title: discovery.title,
+    detail: discovery.detail,
+    status: 'new',
+    channel: discovery.channel || 'web',
+    product: discovery.product || 'ZEVANORY SALES',
+    productId: discovery.productId,
+    source: 'zevanory-sales',
+    sourceKey: ('promoted:' + (discovery.sourceKey || discoveryId)).slice(0, 220),
+    evidence: [
+      ...(discovery.evidence || []),
+      'promotion:human-reviewed',
+      'discovery-id:' + discoveryId,
+      'promoted-at:' + promotedAt,
+    ].slice(-20),
+  });
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: 'Lead criado a partir de descoberta',
+    detail: discovery.title,
+    status: 'sales-promoted',
+    channel: discovery.channel,
+    product: discovery.product || 'ZEVANORY SALES',
+    productId: discovery.productId,
+    source: 'zevanory-sales',
+    sourceKey: 'promoted-event:' + lead.id,
+    evidence: ['lead-id:' + lead.id, 'discovery-id:' + discoveryId, promotedAt],
+  });
+
+  return lead;
+}
+
+export type CommercialSalesQualificationInput = {
+  leadId: string;
+  score: number;
+  signals: string[];
+  reason?: string;
+};
+
+export async function commercialSalesQualifyLead(input: CommercialSalesQualificationInput) {
+  const score = Math.max(0, Math.min(100, Math.round(Number(input.score))));
+  if (!Number.isFinite(score)) throw new Error('sales_qualification_score_invalid');
+
+  const thresholdRaw = Number(process.env.ZEVANORY_SALES_QUALIFICATION_THRESHOLD || '60');
+  const threshold = Number.isFinite(thresholdRaw)
+    ? Math.max(1, Math.min(100, Math.round(thresholdRaw)))
+    : 60;
+  const signals = Array.isArray(input.signals)
+    ? input.signals.map(item => cleanString(item, 240)).filter(Boolean).slice(0, 20)
+    : [];
+  if (signals.length === 0) throw new Error('sales_qualification_evidence_required');
+
+  const [existing] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [cleanString(input.leadId, 120)]);
+  if (!existing) throw new Error('sales_lead_not_found');
+
+  const qualified = score >= threshold;
+  const now = new Date().toISOString();
+  const evidence = [
+    ...(existing.evidence || []),
+    'qualification-score:' + score,
+    'qualification-threshold:' + threshold,
+    ...signals.map(item => 'qualification-signal:' + item),
+    ...(input.reason ? ['qualification-reason:' + cleanString(input.reason, 500)] : []),
+    'qualification-at:' + now,
+  ].slice(-20);
+
+  const normalized = normalizeCommercialRecord(
+    {
+      kind: 'lead',
+      status: qualified ? 'qualified' : 'nurture',
+      evidence,
+    },
+    { ...existing, id: input.leadId, kind: 'lead' } as CommercialRecord,
+  );
+  if (!normalized) throw new Error('commercial_record_invalid');
+  await db.update(commercialBucketName('lead'), [{ id: input.leadId, record: normalized }]);
+
+  await upsertBySourceKey({
+    kind: 'event',
+    title: qualified ? 'Lead qualificado pelo ZEVANORY SALES' : 'Lead mantido em nutrição',
+    detail: 'score=' + score + '; threshold=' + threshold + '; lead=' + existing.title,
+    status: 'sales-qualification',
+    channel: existing.channel,
+    product: existing.product || 'ZEVANORY SALES',
+    productId: existing.productId,
+    source: 'zevanory-sales',
+    sourceKey: 'sales-qualification:' + input.leadId + ':' + now,
+    evidence,
+  });
+
+  return {
+    leadId: input.leadId,
+    qualified,
+    score,
+    threshold,
+    status: qualified ? 'qualified' : 'nurture',
+    evidenceCount: signals.length,
+    at: now,
+  };
+}
+
+export async function commercialSalesDecision(
+  operations: CommercialOperationsLike,
+  input: {
+    leadId: string;
+    action: ZevanorySalesAction;
+    humanApproval?: boolean;
+    paymentConfirmed?: boolean;
+  },
+) {
+  const [lead] = await db.get<Omit<CommercialRecord, 'id'>>(commercialBucketName('lead'), [input.leadId]);
+  if (!lead) throw new Error('sales_lead_not_found');
+  const autonomy = configuredSalesAutonomy();
+  const policy = buildZevanorySalesPolicy(operations, {
+    humanApproval: input.humanApproval,
+    paymentConfirmed: input.paymentConfirmed,
+  });
+  const decision = evaluateZevanorySalesAction(autonomy, input.action, policy);
+  const leadStatus = String(lead.status || '').trim().toLowerCase().replaceAll('_', '-');
+  const qualifiedStatuses = new Set([
+    'qualified',
+    'contact-ready',
+    'contacted',
+    'conversation',
+    'offer',
+    'follow-up',
+    'checkout',
+    'payment',
+    'customer',
+    'fulfillment',
+  ]);
+  if (input.action !== 'research' && !qualifiedStatuses.has(leadStatus)) {
+    decision.allowed = false;
+    decision.reason = 'lead_not_qualified';
+  }
+  const at = new Date().toISOString();
+
+  await upsertBySourceKey({
+    kind: 'evidence',
+    title: 'Decisao comercial · ' + lead.title,
+    detail: decision.allowed
+      ? 'Acao autorizada pelos gates atuais; nenhuma execucao externa foi realizada por este endpoint.'
+      : 'Acao bloqueada pelos gates atuais: ' + decision.reason,
+    status: decision.allowed ? 'sales-decision-allowed' : 'sales-decision-blocked',
+    channel: lead.channel,
+    product: lead.product || 'ZEVANORY SALES',
+    productId: lead.productId,
+    source: 'zevanory-sales',
+    sourceKey: ('sales-decision:' + input.leadId + ':' + input.action + ':' + at).slice(0, 220),
+    evidence: [
+      'lead-id:' + input.leadId,
+      'action:' + input.action,
+      'autonomy:' + autonomy,
+      'decision:' + decision.reason,
+      'lead-status:' + leadStatus,
+      'external-execution:false',
+      at,
+    ],
+  });
+
+  return {
+    leadId: input.leadId,
+    autonomy,
+    action: input.action,
+    decision,
+    policy,
+    leadStatus,
+    externalExecution: false,
+    evaluatedAt: at,
+  };
 }

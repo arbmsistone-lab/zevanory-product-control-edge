@@ -60,6 +60,13 @@ export type CommercialMetrics = {
 
 export type CommercialWorkspaceData = {
   generatedAt: string;
+  tenant: {
+    id: string;
+    defaultTenant: boolean;
+    tenantSource: 'server-environment';
+    isolation: 'server-owned-bucket-v1';
+    clientSelectable: false;
+  };
   metrics: CommercialMetrics;
   robot: CommercialRobotState;
   leads: CommercialRecord[];

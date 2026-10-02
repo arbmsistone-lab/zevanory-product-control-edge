@@ -1,8 +1,9 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
-import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialWorkspace } from './commercial.ts';
+import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesDecision, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
 import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
 import type { CommercialRecordKind } from '../src/commercial-model.ts';
+import type { ZevanorySalesAction } from '../src/zevanory-sales-model.ts';
 
 type SystemStatus = 'healthy' | 'attention' | 'integration';
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
@@ -3104,6 +3105,60 @@ export const handler = router({
       return json(await commercialApprovalAction({ id: String(body.id), kind: body.kind, action: body.action, note: body.note }));
     } catch (err) {
       return error(`Falha na aprovacao comercial: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/commercial/sales/promote-discovery': [async ctx => {
+    const body = ctx.body as { sessionToken?: string; discoveryId?: string };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    if (!body.discoveryId) return error('Descoberta comercial ausente.', 400);
+    try {
+      return json(await commercialSalesPromoteDiscovery(String(body.discoveryId)), 201);
+    } catch (err) {
+      return error(`Falha ao promover descoberta: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/commercial/sales/qualify': [async ctx => {
+    const body = ctx.body as {
+      sessionToken?: string;
+      leadId?: string;
+      score?: number;
+      signals?: string[];
+      reason?: string;
+    };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    if (!body.leadId || body.score === undefined) return error('Qualificacao comercial invalida.', 400);
+    try {
+      return json(await commercialSalesQualifyLead({
+        leadId: String(body.leadId),
+        score: Number(body.score),
+        signals: Array.isArray(body.signals) ? body.signals.map(String) : [],
+        reason: body.reason,
+      }));
+    } catch (err) {
+      return error(`Falha na qualificacao ZEVANORY SALES: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/commercial/sales/decision': [async ctx => {
+    const body = ctx.body as {
+      sessionToken?: string;
+      leadId?: string;
+      action?: ZevanorySalesAction;
+      humanApproval?: boolean;
+      paymentConfirmed?: boolean;
+    };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    const allowedActions = new Set<ZevanorySalesAction>(['research', 'contact', 'publish', 'offer', 'follow-up', 'checkout', 'fulfill']);
+    if (!body.leadId || !body.action || !allowedActions.has(body.action)) return error('Decisao comercial invalida.', 400);
+    try {
+      const snapshot = await adminData();
+      return json(await commercialSalesDecision(snapshot.operations, {
+        leadId: String(body.leadId),
+        action: body.action,
+        humanApproval: Boolean(body.humanApproval),
+        paymentConfirmed: Boolean(body.paymentConfirmed),
+      }));
+    } catch (err) {
+      return error(`Falha na decisao comercial: ${String(err)}`, 400);
     }
   }],
   'POST /api/commercial/adapter/ingest': [async ctx => commercialAdapterIngest(ctx.request, ctx.body)],
