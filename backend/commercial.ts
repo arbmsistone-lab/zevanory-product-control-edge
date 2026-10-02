@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { db, error, json, secrets } from './platform.ts';
 import {
   computeCommercialMetrics,
@@ -259,24 +260,30 @@ export async function commercialAdapterIngest(request: Request, body: unknown) {
 
 export type ProspectResult = { title: string; url: string; description: string; query: string };
 
-const PROSPECT_HARD_REJECT = [
-  'nfl','nba','futebol','football','esporte','sports','peppa pig','wikipedia','wikimedia',
-  'enciclopedia','encyclopedia','microsoft store','xbox','fandom','imdb','netflix','espn',
-];
-const PROSPECT_ICP_TERMS = [
-  'empresa','negocio','loja','varejo','comercio','clinica','salao','restaurante','oficina',
-  'academia','estetica','imobiliaria','escritorio','prestador','servico','microempresa','mei',
-];
-const PROSPECT_PRODUCT_TERMS = [
-  'whatsapp','instagram','vendas','atendimento','agendamento','automacao','crm','fluxo de caixa',
-  'financeiro','gestao','marketing','cliente','pedido','inteligencia artificial',' ia ',
-];
-const PROSPECT_BR_TERMS = [
-  'brasil','brazil','ceara','fortaleza','juazeiro do norte','crato','iguatu','barbalha','varzea alegre','.br',
-];
+type M1ProspectingConfig = {
+  policy: { locale: string; country: string; primary_region: string; min_score: number; cold_outreach: boolean };
+  icp: string[];
+  product_intent_terms: string[];
+  negative_keywords: string[];
+  queries: string[];
+};
+
+export function loadM1ProspectingConfig(): M1ProspectingConfig {
+  const raw = readFileSync(new URL('../config/m1-queries.json', import.meta.url), 'utf8');
+  const parsed = JSON.parse(raw) as M1ProspectingConfig;
+  if (!Array.isArray(parsed.queries) || parsed.queries.length === 0) throw new Error('m1_queries_config_empty');
+  return parsed;
+}
+
+const M1_PROSPECTING = loadM1ProspectingConfig();
+const normalizeTerm = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const PROSPECT_HARD_REJECT = M1_PROSPECTING.negative_keywords.map(normalizeTerm);
+const PROSPECT_ICP_TERMS = M1_PROSPECTING.icp.map(normalizeTerm);
+const PROSPECT_PRODUCT_TERMS = M1_PROSPECTING.product_intent_terms.map(normalizeTerm);
+const PROSPECT_BR_TERMS = ['brasil','brazil','ceara','fortaleza','juazeiro do norte','crato','iguatu','barbalha','varzea alegre','.br'];
 
 function prospectText(result: ProspectResult) {
-  return [result.title,result.description,result.url,result.query]
+  return [result.title,result.description,result.url]
     .join(' ')
     .toLowerCase()
     .normalize('NFD')
@@ -295,7 +302,7 @@ export function scoreProspect(result: ProspectResult) {
   if (brazil.length) score += 2;
   if (/https?:\/\/[^\s/]+\.br(?:[/:]|$)/i.test(result.url)) score += 1;
   if (reject.length) score -= 10;
-  const threshold = Math.max(1, Number(process.env.COMMERCIAL_PROSPECT_MIN_SCORE || 7));
+  const threshold = Math.max(1, Number(M1_PROSPECTING.policy.min_score || 7));
   const relevant = reject.length === 0 && icp.length > 0 && product.length > 0 && brazil.length > 0 && score >= threshold;
   const reason = relevant
     ? `ICP=${icp.slice(0,3).join(',')} · PRODUTO=${product.slice(0,3).join(',')} · BR=${brazil.slice(0,3).join(',')} · SCORE=${score}`
@@ -391,11 +398,7 @@ export async function commercialRobotTick() {
   let rejected = 0;
   let queryFailures = 0;
   try {
-    const queries = String(process.env.COMMERCIAL_M1_QUERIES || '')
-      .split('|')
-      .map(item => item.trim())
-      .filter(Boolean)
-      .slice(0, 12);
+    const queries = M1_PROSPECTING.queries.map(item => String(item).trim()).filter(Boolean).slice(0, 12);
     if (!queries.length) {
       return { ok: false, skipped: true, reason: 'm1_queries_missing', discovered: 0, rejected: 0, queryFailures: 0, briefsCreated: 0, at: new Date().toISOString() };
     }
