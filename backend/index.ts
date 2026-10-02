@@ -1,6 +1,6 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
-import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialQualifyDiscovery, commercialSalesDecision, commercialWorkspace } from './commercial.ts';
+import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesDecision, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
 import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
 import type { CommercialRecordKind } from '../src/commercial-model.ts';
 import type { ZevanorySalesAction } from '../src/zevanory-sales-model.ts';
@@ -3107,14 +3107,35 @@ export const handler = router({
       return error(`Falha na aprovacao comercial: ${String(err)}`, 400);
     }
   }],
-  'POST /api/commercial/sales/qualify': [async ctx => {
+  'POST /api/commercial/sales/promote-discovery': [async ctx => {
     const body = ctx.body as { sessionToken?: string; discoveryId?: string };
     if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
     if (!body.discoveryId) return error('Descoberta comercial ausente.', 400);
     try {
-      return json(await commercialQualifyDiscovery(String(body.discoveryId)), 201);
+      return json(await commercialSalesPromoteDiscovery(String(body.discoveryId)), 201);
     } catch (err) {
-      return error(`Falha ao qualificar descoberta: ${String(err)}`, 400);
+      return error(`Falha ao promover descoberta: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/commercial/sales/qualify': [async ctx => {
+    const body = ctx.body as {
+      sessionToken?: string;
+      leadId?: string;
+      score?: number;
+      signals?: string[];
+      reason?: string;
+    };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    if (!body.leadId || body.score === undefined) return error('Qualificacao comercial invalida.', 400);
+    try {
+      return json(await commercialSalesQualifyLead({
+        leadId: String(body.leadId),
+        score: Number(body.score),
+        signals: Array.isArray(body.signals) ? body.signals.map(String) : [],
+        reason: body.reason,
+      }));
+    } catch (err) {
+      return error(`Falha na qualificacao ZEVANORY SALES: ${String(err)}`, 400);
     }
   }],
   'POST /api/commercial/sales/decision': [async ctx => {
