@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: premium-overview-preview
@@ -57,3 +57,22 @@ jobs:
           path: premium-overview-preview/
           retention-days: 30
           if-no-files-found: error
+      - name: Publish previews to review branch
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d premium-overview-preview || exit 0
+          src_sha="$(git rev-parse HEAD)"
+          rm -rf /tmp/review && mkdir -p /tmp/review && cp premium-overview-preview/* /tmp/review/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan review/premium-overview-preview
+          git rm -rfq . >/dev/null 2>&1 || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/review/* .
+          echo "$src_sha" > SOURCE_SHA
+          git add -A
+          git commit -qm "preview: premium overview screenshots for $src_sha"
+          git push -f origin HEAD:review/premium-overview-preview
+          echo "REVIEW_BRANCH=review/premium-overview-preview SOURCE_SHA=$src_sha"
