@@ -91,11 +91,11 @@ body {
   min-inline-size: 0;
 }
 
-.zpcNavLabel {
+ .zpcNavLabel {
   margin: var(--zpc-space-1) var(--zpc-space-2) 0;
   color: var(--text-secondary);
-  font-size: var(--zpc-font-xs);
-  font-weight: 900;
+  font-size: .6875em !important;
+  font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -124,11 +124,74 @@ body {
 
 .zpcNavigation .tab.active {
   border-color: var(--action-primary);
+  background: var(--action-primary);
+  color: var(--action-primary-text);
+}
+
+.zpcWorkspace[data-bootstrap-ready='false'] > :not(.bootstrapSkeleton) {
+  visibility: hidden;
+}
+
+.bootstrapSkeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  align-content: start;
+  gap: var(--zpc-space-2);
+  padding: var(--zpc-space-4);
+  pointer-events: none;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+.bootstrapSkeleton .skeletonLine,
+.bootstrapSkeleton .skeletonCards span {
+  display: block;
+  border-radius: var(--zpc-radius-sm);
   background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  min-height: 20px;
+}
+.bootstrapSkeleton .skeletonLine.wide { width: min(420px, 72%); }
+.bootstrapSkeleton .skeletonLine.medium { width: min(300px, 52%); }
+.bootstrapSkeleton .skeletonCards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--zpc-space-2);
+}
+.bootstrapSkeleton .skeletonCards span { min-height: 88px; }
+
+.zpcNavSubmenu {
+  display: grid;
+  gap: var(--zpc-space-1);
+  padding: 0 0 var(--zpc-space-1) var(--zpc-space-3);
+}
+.zpcNavSubitem {
+  min-height: 28px;
+  border: 0;
+  border-left: 2px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: var(--zpc-space-1) var(--zpc-space-2);
+  text-align: left;
+  font-size: 12px;
+}
+.zpcNavSubitem:hover,
+.zpcNavSubitem:focus-visible {
   color: var(--text-primary);
+  background: var(--surface-elevated);
+}
+.zpcNavSubitem[aria-current='page'] {
+  color: var(--text-primary);
+  border-left-color: var(--action-primary);
+  font-weight: 800;
+}
+.workspaceSubnav {
+  display: none;
 }
 
 .zpcWorkspace {
+  position: relative;
   grid-area: workspace;
   width: 100%;
   height: 100%;
@@ -238,6 +301,10 @@ body {
   }
 
   .zpcNavigation {
+    display: none;
+  }
+
+  .workspaceSubnav {
     display: none;
   }
 

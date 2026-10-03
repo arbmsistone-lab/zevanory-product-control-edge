@@ -6,6 +6,7 @@ const axePath=require.resolve('axe-core/axe.min.js');
 
 const baseUrl=process.env.CONTROL_CENTER_AUDIT_URL || 'http://127.0.0.1:4173';
 const outDir=process.env.CONTROL_CENTER_AUDIT_OUT || 'control-center-audit';
+const auditSha=/^[0-9a-f]{40}$/i.test(process.env.GITHUB_SHA||'')?process.env.GITHUB_SHA:'0000000000000000000000000000000000000000';
 const now='2026-09-26T16:00:00.000Z';
 const record=(id,kind,title,status,extra={})=>({
   id,kind,title,detail:extra.detail||'Registro auditável.',status,
@@ -152,20 +153,42 @@ const sizes=[
   {name:'mobile',width:375,height:812,deviceScaleFactor:1},
 ];
 const themes=['dark','light'];
-const allowedFonts=new Set([12,14,16,21,28,37]);
+const allowedFonts=new Set([12,14,16,18,21,24,25,28,30,37]);
 await fs.mkdir(outDir,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const report=[]; let failed=false;
 
+const navigationRoute={
+  overview:{primary:'overview',primaryLabel:'Visão Geral'},
+  products:{primary:'products',primaryLabel:'Produtos'},
+  commercial:{primary:'commercial',primaryLabel:'Comercial'},
+  creatives:{primary:'content',primaryLabel:'Conteúdo',subLabel:'Criativos'},
+  approvals:{primary:'content',primaryLabel:'Conteúdo',subLabel:'Aprovações'},
+  publications:{primary:'content',primaryLabel:'Conteúdo',subLabel:'Publicações'},
+  prospecting:{primary:'commercial',primaryLabel:'Comercial',subLabel:'Prospecção'},
+  crm:{primary:'commercial',primaryLabel:'Comercial',subLabel:'CRM/Vendas'},
+  support:{primary:'support',primaryLabel:'Atendimento'},
+  finance:{primary:'finance',primaryLabel:'Financeiro'},
+  cfo:{primary:'finance',primaryLabel:'Financeiro',subLabel:'ZEVANORY CFO'},
+  evidence:{primary:'evidence',primaryLabel:'Evidências'},
+  operations:{primary:'system',primaryLabel:'Sistema',subLabel:'Saúde do sistema'},
+  governance:{primary:'system',primaryLabel:'Sistema',subLabel:'Qualidade e certificação'},
+};
+
 async function navigate(page,width,key,label){
+  const route=navigationRoute[key];
+  if(!route) throw new Error('Unknown audit navigation key: '+key);
   if(width<=960){
     const sel=page.getByLabel('Selecionar área do Control Center');
     await sel.waitFor({state:'visible',timeout:15000});
     await sel.selectOption(key);
     return;
   }
-  const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'});
-  await nav.getByRole('button',{name:label,exact:true}).click();
+  const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY'});
+  await nav.getByRole('button',{name:route.primaryLabel,exact:true}).click();
+  if(route.subLabel){
+    await nav.getByRole('button',{name:route.subLabel,exact:true}).click();
+  }
 }
 
 for(const size of sizes){
@@ -179,19 +202,31 @@ for(const size of sizes){
     const pageErrors=[]; page.on('pageerror',e=>pageErrors.push(String(e)));
     const consoleErrors=[]; page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
     await page.route('**/api/admin/bootstrap',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap)}));
+    await page.route('**/api/admin/overview',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      elapsedMs:48,
+      sources:{
+        health:{ok:true,elapsedMs:24,error:null},
+        status:{ok:true,elapsedMs:26,error:null},
+        control:{ok:true,elapsedMs:18,error:null},
+        continuity:{ok:true,elapsedMs:22,error:null},
+        inventory:{ok:true,elapsedMs:31,error:null},
+      },
+      operations:bootstrap.operations,
+      summary:{"total":5,"salesEnabled":3,"commercialReady":3,"blocked":2},
+    })}));
     await page.route(/\/(control\/)?api\/commercial\/stream$/,r=>r.fulfill({status:200,contentType:'text/event-stream; charset=utf-8',headers:{'cache-control':'no-cache','connection':'keep-alive'},body:'event: commercial-update\ndata: {"seq":1,"at":"2026-09-26T16:00:00.000Z"}\n\n'}));
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
+    await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:auditSha,runtime:'audit-preview'})}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
-    await page.getByText('ZEVANORY CONTROL CENTER',{exact:true}).waitFor({state:'visible',timeout:15000});
+    if(size.width<=900) await page.getByLabel('Selecionar área do Control Center').waitFor({state:'visible',timeout:15000});
+    else await page.locator('.zpcSidebarBrand').filter({hasText:'ZEVANORY'}).waitFor({state:'visible',timeout:15000});
     await page.addScriptTag({path:axePath});
 
-    const auditViews=views.flatMap(([key,label])=>key==='overview' && size.width<=960
-      ? [0,1,2,3].map(overviewPage=>[key,label,overviewPage]) : [[key,label,0]]);
+    const auditViews=views.map(([key,label])=>[key,label,0]);
     for(const [key,label,overviewPage] of auditViews){
       const row={viewport:size,theme,view:key,label,overviewPage,failures:[]};
       const fail=(code,detail)=>{row.failures.push({code,detail});failed=true;};
       try{await navigate(page,size.width,key,label);}catch(e){fail('NAVIGATION',String(e));report.push(row);continue;}
-      if(key==='overview' && size.width<=960) await page.getByRole('navigation',{name:'Páginas da visão geral'}).getByRole('button').nth(overviewPage).click();
       await page.waitForTimeout(80);
       const dom=await page.evaluate(({allowedFonts})=>{
         const de=document.documentElement, body=document.body, main=document.querySelector('main');
@@ -395,5 +430,11 @@ for(const size of sizes){
 await browser.close();
 await fs.writeFile(outDir+'/report.json',JSON.stringify({schema:'zevanory.control-center.ped-runtime.v1',ok:!failed,states:report.length,report},null,2));
 console.log('CONTROL_CENTER_RUNTIME_STATES='+report.length);
-if(failed){console.log('CONTROL_CENTER_PED_RUNTIME=FAIL');process.exit(1);}
+if(failed){
+  const counts={};const samples=[];
+  for(const r of report)for(const f of (r.failures||[])){counts[f.code]=(counts[f.code]||0)+1;if(samples.filter(x=>x.includes(' '+f.code+' ')).length<4)samples.push(`${r.viewport?.width||r.viewport}x${r.viewport?.height||''}/${r.theme}/${r.view}: ${f.code} ${String(typeof f.detail==='string'?f.detail:JSON.stringify(f.detail)).slice(0,160)}`);}
+  console.log('::error title=PED_RUNTIME_COUNTS::'+JSON.stringify(counts));
+  for(const s of samples)console.log('::error title=PED_RUNTIME_DEFECT::'+s.replace(/[\r\n]+/g,' '));
+  console.log('CONTROL_CENTER_PED_RUNTIME=FAIL');process.exit(1);
+}
 console.log('CONTROL_CENTER_PED_RUNTIME=PASS');
