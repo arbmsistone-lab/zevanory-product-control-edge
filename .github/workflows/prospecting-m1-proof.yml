@@ -1,0 +1,39 @@
+name: ZEVANORY M1 Prospecting Proof
+
+on:
+  push:
+    branches:
+      - fix/premium-panel-a-cleanup-20261002
+    paths:
+      - "backend/commercial.ts"
+      - "config/m1-queries.json"
+      - "scripts/prospecting-m1-proof.ts"
+      - ".github/workflows/prospecting-m1-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zevanory-m1-prospecting-proof
+  cancel-in-progress: true
+
+jobs:
+  review-20:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Review 20 new M1-sourced results
+        run: npx tsx scripts/prospecting-m1-proof.ts
+      - name: Upload reviewed evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-prospecting-proof-${{ github.run_id }}
+          path: prospecting-m1-proof.json
+          if-no-files-found: warn

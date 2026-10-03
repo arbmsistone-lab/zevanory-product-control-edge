@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { db, error, json, secrets } from './platform.ts';
 import {
   computeCommercialMetrics,
@@ -111,6 +112,19 @@ async function listKind(kind: CommercialRecordKind, limit = 200): Promise<Commer
   return result.items.map(item => ({ ...item, kind, id: item.id })) as CommercialRecord[];
 }
 
+async function listKindAllPrimary(kind: CommercialRecordKind, pageSize = 250): Promise<CommercialRecord[]> {
+  const items: CommercialRecord[] = [];
+  let offset = 0;
+  while (true) {
+    const page = await db.listPrimaryPage<Omit<CommercialRecord, 'id'>>(commercialBucketName(kind), { limit: pageSize, offset });
+    const mapped = page.items.map(item => ({ ...item, kind, id: item.id })) as CommercialRecord[];
+    items.push(...mapped);
+    if (mapped.length < pageSize) break;
+    offset += mapped.length;
+  }
+  return items;
+}
+
 async function upsertBySourceKey(raw: Partial<CommercialRecord>) {
   const kind = cleanString(raw.kind, 32) as CommercialRecordKind;
   if (!Object.prototype.hasOwnProperty.call(BUCKETS, kind)) throw new Error('commercial_kind_invalid');
@@ -189,6 +203,120 @@ export async function commercialAdminUpdate(id: string, kind: CommercialRecordKi
   return { ...normalized, id };
 }
 
+export type CommercialCleanupReportType = 'lead' | 'prospecting' | 'evidence';
+
+function isPublicSearchDerived(record: CommercialRecord) {
+  const evidenceItems = Array.isArray(record.evidence) ? record.evidence.map(String) : [];
+  const source = String(record.source || '').toLowerCase();
+  const sourceKey = String(record.sourceKey || '').toLowerCase();
+  return source === 'public-search'
+    || sourceKey.startsWith('bing:')
+    || sourceKey.includes(':bing:')
+    || evidenceItems.some(item =>
+      item.startsWith('query:')
+      || item.startsWith('query-source:M1')
+      || item.startsWith('stage:raw-discovery')
+      || item.startsWith('discovered-at:')
+    );
+}
+
+export function reviewCommercialCleanupRecord(kind: 'lead' | 'evidence', record: CommercialRecord) {
+  if (record.status === 'archived' || !isPublicSearchDerived(record)) return null;
+  const evidenceItems = Array.isArray(record.evidence) ? record.evidence.map(String) : [];
+  const url = evidenceItems.find(item => /^https?:\/\//i.test(item)) || '';
+  const query = evidenceItems.find(item => item.startsWith('query:'))?.slice('query:'.length) || '';
+  const review = scoreProspect({
+    title: record.title,
+    description: record.detail || '',
+    url,
+    query,
+  });
+  if (review.relevant) return null;
+  const reportType: CommercialCleanupReportType =
+    kind === 'lead' ? 'lead' : record.status === 'raw-discovery' ? 'prospecting' : 'evidence';
+  return {
+    kind,
+    reportType,
+    record,
+    reason: review.reason,
+    score: review.score,
+  };
+}
+
+export async function commercialCleanup(input: { mode?: 'dry-run' | 'apply'; confirm?: string }) {
+  const mode = input.mode === 'apply' ? 'apply' : 'dry-run';
+  if (mode === 'apply' && input.confirm !== 'AUTORIZO_ARQUIVAMENTO') {
+    throw new Error('commercial_cleanup_apply_confirmation_required');
+  }
+
+  const [leads, evidence] = await Promise.all([
+    listKindAllPrimary('lead'),
+    listKindAllPrimary('evidence'),
+  ]);
+
+  const candidates = [
+    ...leads.map(record => reviewCommercialCleanupRecord('lead', record)).filter(Boolean),
+    ...evidence.map(record => reviewCommercialCleanupRecord('evidence', record)).filter(Boolean),
+  ] as Array<{
+    kind: 'lead' | 'evidence';
+    reportType: CommercialCleanupReportType;
+    record: CommercialRecord;
+    reason: string;
+    score: number;
+  }>;
+
+  const inspected = {
+    lead: leads.length,
+    prospecting: evidence.filter(item => item.status === 'raw-discovery').length,
+    evidence: evidence.filter(item => item.status !== 'raw-discovery').length,
+    evidenceStorageTotal: evidence.length,
+    total: leads.length + evidence.length,
+  };
+
+  const byType = candidates.reduce<Record<CommercialCleanupReportType, number>>((acc, item) => {
+    acc[item.reportType] += 1;
+    return acc;
+  }, { lead: 0, prospecting: 0, evidence: 0 });
+
+  if (mode === 'apply') {
+    for (const item of candidates) {
+      const archived = normalizeCommercialRecord({
+        kind: item.kind,
+        status: 'archived',
+        evidence: [
+          ...(item.record.evidence || []),
+          'archive:premium-panel-cleanup-20261002',
+          'archive-reason:' + item.reason,
+          'archive-score:' + item.score,
+          'archive-authority:owner-explicit-authorization',
+          'archived-at:' + new Date().toISOString(),
+        ].slice(-20),
+      }, item.record);
+      if (!archived) throw new Error('commercial_cleanup_record_invalid');
+      await db.update(commercialBucketName(item.kind), [{ id: item.record.id, record: archived }]);
+    }
+  }
+
+  return {
+    ok: true,
+    mode,
+    inspected,
+    wouldArchive: candidates.length,
+    archived: mode === 'apply' ? candidates.length : 0,
+    byType,
+    deleteOperations: 0,
+    samples: candidates.slice(0, 40).map(item => ({
+      kind: item.kind,
+      reportType: item.reportType,
+      id: item.record.id,
+      title: item.record.title,
+      score: item.score,
+      reason: item.reason,
+    })),
+    at: new Date().toISOString(),
+  };
+}
+
 export async function commercialApprovalAction(input: {
   id: string;
   kind: 'creative' | 'publication';
@@ -257,14 +385,59 @@ export async function commercialAdapterIngest(request: Request, body: unknown) {
 
 
 
-type ProspectResult = { title: string; url: string; description: string; query: string };
+export type ProspectResult = { title: string; url: string; description: string; query: string };
 
-const DEFAULT_PROSPECT_QUERIES = [
-  'empresa varejo Ceara automacao WhatsApp',
-  'clinica Ceara atendimento WhatsApp Instagram',
-  'salao Ceara agendamento WhatsApp Instagram',
-  'loja Ceara vendas Instagram WhatsApp',
-];
+type M1ProspectingConfig = {
+  policy: { locale: string; country: string; primary_region: string; min_score: number; cold_outreach: boolean };
+  icp: string[];
+  product_intent_terms: string[];
+  negative_keywords: string[];
+  queries: string[];
+};
+
+export function loadM1ProspectingConfig(): M1ProspectingConfig {
+  const raw = readFileSync(new URL('../config/m1-queries.json', import.meta.url), 'utf8');
+  const parsed = JSON.parse(raw) as M1ProspectingConfig;
+  if (!Array.isArray(parsed.queries) || parsed.queries.length === 0) throw new Error('m1_queries_config_empty');
+  return parsed;
+}
+
+const M1_PROSPECTING = loadM1ProspectingConfig();
+const normalizeTerm = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const PROSPECT_HARD_REJECT = M1_PROSPECTING.negative_keywords.map(normalizeTerm);
+const PROSPECT_ICP_TERMS = M1_PROSPECTING.icp.map(normalizeTerm);
+const PROSPECT_PRODUCT_TERMS = M1_PROSPECTING.product_intent_terms.map(normalizeTerm);
+const PROSPECT_BR_TERMS = ['brasil','brazil','ceara','fortaleza','juazeiro do norte','crato','iguatu','barbalha','varzea alegre','.br'];
+
+function prospectText(result: ProspectResult) {
+  return [result.title,result.description,result.url]
+    .join(' ')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+export function scoreProspect(result: ProspectResult) {
+  const text = prospectText(result);
+  const reject = PROSPECT_HARD_REJECT.filter(term => text.includes(term));
+  const icp = PROSPECT_ICP_TERMS.filter(term => text.includes(term));
+  const product = PROSPECT_PRODUCT_TERMS.filter(term => text.includes(term));
+  const brazil = PROSPECT_BR_TERMS.filter(term => text.includes(term));
+  let score = 0;
+  if (icp.length) score += 3;
+  if (product.length) score += 3;
+  if (brazil.length) score += 2;
+  if (/https?:\/\/[^\s/]+\.br(?:[/:]|$)/i.test(result.url)) score += 1;
+  if (reject.length) score -= 10;
+  const threshold = Math.max(1, Number(M1_PROSPECTING.policy.min_score || 7));
+  const relevant = reject.length === 0 && icp.length > 0 && product.length > 0 && brazil.length > 0 && score >= threshold;
+  const reason = relevant
+    ? `ICP=${icp.slice(0,3).join(',')} · PRODUTO=${product.slice(0,3).join(',')} · BR=${brazil.slice(0,3).join(',')} · SCORE=${score}`
+    : reject.length
+      ? `DESCARTADO_CATEGORIA=${reject.slice(0,3).join(',')} · SCORE=${score}`
+      : `DESCARTADO_RELEVANCIA · ICP=${icp.length} · PRODUTO=${product.length} · BR=${brazil.length} · SCORE=${score}`;
+  return { relevant, score, threshold, reason };
+}
 
 function decodeXml(value: string) {
   return value
@@ -284,8 +457,8 @@ function extractTag(xml: string, tag: string) {
   return match ? decodeXml(match[1]) : '';
 }
 
-async function searchProspects(query: string): Promise<ProspectResult[]> {
-  const response = await fetch('https://www.bing.com/search?format=rss&q=' + encodeURIComponent(query), {
+export async function searchProspects(query: string): Promise<ProspectResult[]> {
+  const response = await fetch('https://www.bing.com/search?mkt=pt-BR&cc=br&setlang=pt-BR&format=rss&count=20&q=' + encodeURIComponent(query), {
     headers: {
       accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8',
       'user-agent': 'ZEVANORY-Commercial-Research/2026.09',
@@ -304,7 +477,7 @@ async function searchProspects(query: string): Promise<ProspectResult[]> {
     if (!title || !/^https?:\/\//i.test(url) || seen.has(url)) continue;
     seen.add(url);
     results.push({ title: title.slice(0, 180), url, description: description.slice(0, 1200), query });
-    if (results.length >= 4) break;
+    if (results.length >= 12) break;
   }
   return results;
 }
@@ -349,28 +522,44 @@ export async function commercialRobotTick() {
   robotTickRunning = true;
   const startedAt = new Date().toISOString();
   let discovered = 0;
+  let rejected = 0;
   let queryFailures = 0;
   try {
-    const configuredQueries = String(process.env.COMMERCIAL_PROSPECT_QUERIES || '')
-      .split('|')
-      .map(item => item.trim())
-      .filter(Boolean);
-    const queries = (configuredQueries.length ? configuredQueries : DEFAULT_PROSPECT_QUERIES).slice(0, 6);
+    const queries = M1_PROSPECTING.queries.map(item => String(item).trim()).filter(Boolean).slice(0, 24);
+    if (!queries.length) {
+      return { ok: false, skipped: true, reason: 'm1_queries_missing', discovered: 0, rejected: 0, queryFailures: 0, briefsCreated: 0, at: new Date().toISOString() };
+    }
 
     for (const query of queries) {
       try {
         const results = await searchProspects(query);
         for (const result of results) {
+          const review = scoreProspect(result);
+          if (!review.relevant) {
+            rejected += 1;
+            continue;
+          }
           await upsertBySourceKey({
             kind: 'evidence',
             title: result.title,
-            detail: result.description || 'Descoberta pública ainda não qualificada.',
+            detail: result.description || 'Descoberta pública qualificada por relevância.',
             status: 'raw-discovery',
             channel: 'web',
             product: 'ZEVANORY',
             source: 'public-search',
             sourceKey: ('bing:' + result.url).slice(0, 220),
-            evidence: [result.url, 'query:' + query, 'stage:raw-discovery', 'discovered-at:' + startedAt],
+            evidence: [
+              result.url,
+              'query-source:M1',
+              'query:' + query,
+              'locale:pt-BR',
+              'country:BR',
+              'score:' + review.score,
+              'relevance:' + review.reason,
+              'rule:no-cold-outreach',
+              'stage:reviewed-discovery',
+              'discovered-at:' + startedAt,
+            ],
           });
           discovered += 1;
         }
@@ -384,11 +573,11 @@ export async function commercialRobotTick() {
     await upsertBySourceKey({
       kind: 'event',
       title: 'Ciclo de prospecção concluído',
-      detail: `${discovered} resultado(s) processado(s) em ${queries.length} busca(s); ${queryFailures} busca(s) com falha; ${briefsCreated} brief(s) criado(s).`,
+      detail: `${discovered} resultado(s) relevantes persistidos; ${rejected} descartados; ${queries.length} consulta(s) M1; ${queryFailures} busca(s) com falha; ${briefsCreated} brief(s) criado(s).`,
       status: 'research',
       source: 'commercial-robot',
       sourceKey: 'research-cycle:' + hourKey,
-      evidence: ['public-search-only', 'no-auto-contact', 'no-auto-publish', startedAt],
+      evidence: ['query-source:M1', 'locale:pt-BR', 'country:BR', 'relevance-filter:enabled', 'no-cold-outreach', 'no-auto-contact', 'no-auto-publish', startedAt],
     });
     await upsertBySourceKey({
       kind: 'event',
@@ -399,7 +588,7 @@ export async function commercialRobotTick() {
       sourceKey: 'commercial-orchestrator-heartbeat',
       evidence: ['runtime-worker', 'public-search-only', 'approval-required', new Date().toISOString()],
     });
-    return { ok: true, discovered, queryFailures, briefsCreated, at: new Date().toISOString() };
+    return { ok: true, discovered, rejected, queryFailures, briefsCreated, at: new Date().toISOString() };
   } finally {
     robotTickRunning = false;
   }
