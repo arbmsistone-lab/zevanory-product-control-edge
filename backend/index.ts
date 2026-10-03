@@ -7,6 +7,7 @@ import type { ZevanorySalesAction } from '../src/zevanory-sales-model.ts';
 
 type SystemStatus = 'healthy' | 'attention' | 'integration';
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
+type CatalogLifecycleStatus = 'ATIVO' | 'EM_PREPARO' | 'APOSENTADO';
 
 type SystemRecord = {
   name: string;
@@ -523,7 +524,15 @@ const deprecatedVisibleSystems = new Set(['ARBM CONTROL', 'ARBM CONTROL App']);
 const retiredPublicSystemNames = new Set(['ARBM SIST']);
 const retiredPublicProductSlugs = new Set(['arbm-sist', 'zevanory-one']);
 
-const productCatalog = [
+const productCatalog: Array<{
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  publicUrl: string;
+  deliveryModel: string;
+  lifecycleStatus: CatalogLifecycleStatus;
+}> = [
   {
     name: 'ZEVANORY',
     slug: 'zevanory',
@@ -531,72 +540,101 @@ const productCatalog = [
     description: 'Plataforma central da operacao comercial, distribuicao, conteudo, checkout e governanca dos produtos ZEVANORY.',
     publicUrl: 'https://zevanory.api.br/',
     deliveryModel: 'Ecossistema comercial e operacional',
+    lifecycleStatus: 'ATIVO',
   },
   {
     name: 'ARBM SIST',
     slug: 'arbm-sist',
     category: 'Software e automacao',
-    description: 'Agente de desenvolvimento e automacao com IA, governanca e independencia de provedor.',
+    description: 'Produto retirado da superficie publica ZEVANORY; mantido somente para historico administrativo e rastreabilidade.',
     publicUrl: 'https://zevanory.api.br/arbm-sist',
     deliveryModel: 'Software / licenca digital',
+    lifecycleStatus: 'APOSENTADO',
   },
   {
     name: 'ZEVANORY IA na Pratica',
     slug: 'ia-na-pratica',
     category: 'Conteudo digital',
     description: 'Conteudo pratico para transformar IA em processos claros, repetiveis e uteis.',
-    publicUrl: 'https://zevanory.api.br/ia-na-pratica',
+    publicUrl: 'https://vendas.zevanory.api.br/ia-na-pratica',
     deliveryModel: 'Conteudo digital',
+    lifecycleStatus: 'EM_PREPARO',
   },
   {
     name: 'ZEVANORY Vendas na Pratica',
     slug: 'vendas-na-pratica',
     category: 'Conteudo digital',
     description: 'Metodo pratico para prospeccao, atendimento, oferta, follow-up e melhoria comercial.',
-    publicUrl: 'https://zevanory.api.br/vendas-na-pratica',
+    publicUrl: 'https://vendas.zevanory.api.br/vendas-na-pratica',
     deliveryModel: 'Conteudo digital',
+    lifecycleStatus: 'EM_PREPARO',
   },
   {
     name: 'ZEVANORY Combo IA + Vendas',
     slug: 'combo-ia-vendas',
     category: 'Combo digital',
     description: 'Combinacao dos metodos de IA e vendas para acelerar a execucao comercial.',
-    publicUrl: 'https://zevanory.api.br/combo-ia-vendas',
+    publicUrl: 'https://vendas.zevanory.api.br/combo-ia-vendas',
     deliveryModel: 'Combo digital',
+    lifecycleStatus: 'EM_PREPARO',
   },
   {
     name: 'ZEVANORY Lucro & Caixa',
     slug: 'lucro-e-caixa',
     category: 'Conteudo digital',
     description: 'Material pratico para acompanhar entradas, saidas, margem e caixa.',
-    publicUrl: 'https://zevanory.api.br/lucro-e-caixa',
+    publicUrl: 'https://vendas.zevanory.api.br/lucro-e-caixa',
     deliveryModel: 'Conteudo digital',
+    lifecycleStatus: 'EM_PREPARO',
   },
   {
     name: 'ZEVANORY Negocio Completo',
     slug: 'negocio-completo',
     category: 'Pacote digital',
     description: 'Pacote integrado de IA, vendas e gestao financeira.',
-    publicUrl: 'https://zevanory.api.br/negocio-completo',
+    publicUrl: 'https://vendas.zevanory.api.br/negocio-completo',
     deliveryModel: 'Pacote digital',
+    lifecycleStatus: 'EM_PREPARO',
   },
   {
     name: 'ZEVANORY ONE',
     slug: 'zevanory-one',
     category: 'Software comercial',
-    description: 'Plataforma comercial universal da ZEVANORY, com provisionamento isolado por cliente, onboarding e configuracao propria.',
+    description: 'Produto retirado da superficie publica ZEVANORY; mantido somente para historico administrativo e rastreabilidade.',
     publicUrl: 'https://zevanory.api.br/zevanory-one',
     deliveryModel: 'Licenca e instalacao global por cliente',
+    lifecycleStatus: 'APOSENTADO',
   },
   {
     name: 'ZEVANORY CFO',
     slug: 'zevanory-cfo',
     category: 'Software financeiro com IA',
     description: 'Camada de inteligencia financeira para caixa, recebiveis, cobranca, conciliacao, previsao e monitoramento.',
-    publicUrl: 'https://zevanory.api.br/zevanory-cfo',
+    publicUrl: 'https://vendas.zevanory.api.br/zevanory-cfo',
     deliveryModel: 'SaaS financeiro / integracao por adaptadores',
+    lifecycleStatus: 'EM_PREPARO',
+  },
+  {
+    name: 'ZEVANORY SALES',
+    slug: 'zevanory-sales',
+    category: 'Automacao comercial com IA',
+    description: 'Motor comercial autonomo com governanca para descoberta, qualificacao, oferta, follow-up, checkout e fulfillment.',
+    publicUrl: 'https://vendas.zevanory.api.br/zevanory-sales',
+    deliveryModel: 'SaaS comercial / automacao governada',
+    lifecycleStatus: 'EM_PREPARO',
+  },
+  {
+    name: 'ARBM Contador para Saloes',
+    slug: 'arbm-contador-saloes',
+    category: 'Software financeiro especializado',
+    description: 'Produto financeiro especializado para operacao de saloes, publicado na superficie comercial ZEVANORY.',
+    publicUrl: 'https://vendas.zevanory.api.br/arbm-contador-saloes',
+    deliveryModel: 'SaaS financeiro especializado',
+    lifecycleStatus: 'EM_PREPARO',
   },
 ];
+
+const canonicalLifecycleBySlug = new Map(productCatalog.map(item => [item.slug, item.lifecycleStatus] as const));
 
 function productTable() {
   return 'acs_products_admin';
@@ -646,6 +684,7 @@ function enrichProduct(product: ProductRecord & { id: string }) {
     auditOverall: overall,
     auditStatus: overall === null ? 'pending' : 'audited',
     commercialReady: blockers.length === 0,
+    lifecycleStatus: canonicalLifecycleBySlug.get(product.slug) ?? 'EM_PREPARO',
     blockers,
   };
 }
@@ -2067,9 +2106,9 @@ async function ensureProducts() {
     } }]);
   }
   const effectiveSlugs = new Set(current.items.map(item => item.id === zevanoryOneRecord?.id ? 'zevanory-one' : item.slug));
-  const missingCatalogItems = productCatalog.filter(item => !effectiveSlugs.has(item.slug));
+  const missingCatalogItems = productCatalog.filter(item => item.lifecycleStatus !== 'APOSENTADO' && !effectiveSlugs.has(item.slug));
   if (missingCatalogItems.length === 0) return;
-  const seed: ProductRecord[] = missingCatalogItems.map(item => ({
+  const seed: ProductRecord[] = missingCatalogItems.map(({ lifecycleStatus: _lifecycleStatus, ...item }) => ({
     ...item,
     priceCents: null,
     currency: 'BRL',
