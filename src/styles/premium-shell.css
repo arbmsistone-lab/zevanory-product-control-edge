@@ -672,3 +672,13 @@ html, body, button, input, select, textarea {
     height: 100%;
   }
 }
+
+/* Tablet/mobile degrade safely: below the desktop single-screen contract the
+   workspace scrolls instead of clipping (768x1024 clipped ownerQuickCards). */
+@media (max-width: 1100px) {
+  .zpcAppShell > main.shell {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
