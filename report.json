@@ -1,0 +1,38 @@
+[
+  {
+    "theme": "light",
+    "path": "premium-overview-preview/overview-light-1536x730@1.25.png",
+    "audit": {
+      "horizontalScroll": 0,
+      "verticalScroll": 0,
+      "clipped": [],
+      "fakeRevenueText": false,
+      "emptySaleState": true,
+      "testModeStatus": true,
+      "technicalTrustVisible": false,
+      "oldHeaderVisible": false,
+      "sidebarBrand": true,
+      "font": "Inter, \"Segoe UI\", system-ui, sans-serif",
+      "contrastFailures": [],
+      "blueUsages": []
+    }
+  },
+  {
+    "theme": "dark",
+    "path": "premium-overview-preview/overview-dark-1536x730@1.25.png",
+    "audit": {
+      "horizontalScroll": 0,
+      "verticalScroll": 0,
+      "clipped": [],
+      "fakeRevenueText": false,
+      "emptySaleState": true,
+      "testModeStatus": true,
+      "technicalTrustVisible": false,
+      "oldHeaderVisible": false,
+      "sidebarBrand": true,
+      "font": "Inter, \"Segoe UI\", system-ui, sans-serif",
+      "contrastFailures": [],
+      "blueUsages": []
+    }
+  }
+]
