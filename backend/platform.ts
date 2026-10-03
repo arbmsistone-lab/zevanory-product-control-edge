@@ -99,10 +99,10 @@ async function secondaryCall(payload: Record<string, unknown>) {
   return await response.json() as any;
 }
 
-async function primaryList<T>(bucket: string, limit: number): Promise<ListResult<T>> {
+async function primaryList<T>(bucket: string, limit: number, offset = 0): Promise<ListResult<T>> {
   const result = await primaryPool().query(
-    'select id::text, record from public.zpc_records where bucket=$1 order by updated_at desc limit $2',
-    [bucket, limit],
+    'select id::text, record from public.zpc_records where bucket=$1 order by updated_at desc, id desc limit $2 offset $3',
+    [bucket, limit, Math.max(0, offset)],
   );
   return { items: result.rows.map(row => ({ id: row.id, ...(row.record as T) })) as Row<T>[] };
 }
@@ -196,6 +196,12 @@ export async function reconcileReplication() {
 }
 
 export const db = {
+  async listPrimaryPage<T>(bucket: string, options: { limit?: number; offset?: number } = {}): Promise<ListResult<T>> {
+    const limit = Math.max(1, Math.min(options.limit || 250, 500));
+    const offset = Math.max(0, Number(options.offset || 0));
+    return primaryList<T>(bucket, limit, offset);
+  },
+
   async list<T>(bucket: string, options: { limit?: number } = {}): Promise<ListResult<T>> {
     const limit = Math.max(1, Math.min(options.limit || 100, 1000));
     try {

@@ -1,6 +1,6 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
-import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesLifecycle, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
+import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialCleanup, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesLifecycle, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
 import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
 import type { CommercialRecordKind } from '../src/commercial-model.ts';
 import type { ZevanorySalesAction } from '../src/zevanory-sales-model.ts';
@@ -3207,6 +3207,19 @@ export const handler = router({
       return json(await commercialAdminUpdate(String(body.id), body.kind, body as any));
     } catch (err) {
       return error(`Falha ao atualizar registro comercial: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/admin/commercial-cleanup': [async ctx => {
+    const body = ctx.body as { sessionToken?: string; mode?: 'dry-run' | 'apply'; confirm?: string };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    try {
+      return json(await commercialCleanup({ mode: body.mode, confirm: body.confirm }));
+    } catch (err) {
+      const message = String(err);
+      if (message.includes('commercial_cleanup_apply_confirmation_required')) {
+        return error('Apply exige confirmacao explicita do dono.', 409);
+      }
+      return error(`Falha no saneamento comercial: ${message}`, 400);
     }
   }],
   'POST /api/commercial/approval': [async ctx => {

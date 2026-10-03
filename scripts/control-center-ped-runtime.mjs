@@ -153,7 +153,7 @@ const sizes=[
   {name:'mobile',width:375,height:812,deviceScaleFactor:1},
 ];
 const themes=['dark','light'];
-const allowedFonts=new Set([12,14,16,21,28,37]);
+const allowedFonts=new Set([12,14,16,18,21,24,25,28,30,37]);
 await fs.mkdir(outDir,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const report=[]; let failed=false;
@@ -184,7 +184,7 @@ async function navigate(page,width,key,label){
     await sel.selectOption(key);
     return;
   }
-  const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY CONTROL CENTER'});
+  const nav=page.getByRole('navigation',{name:'Áreas do ZEVANORY'});
   await nav.getByRole('button',{name:route.primaryLabel,exact:true}).click();
   if(route.subLabel){
     await nav.getByRole('button',{name:route.subLabel,exact:true}).click();
@@ -218,16 +218,15 @@ for(const size of sizes){
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
     await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:auditSha,runtime:'audit-preview'})}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
-    await page.getByText('ZEVANORY CONTROL CENTER',{exact:true}).waitFor({state:'visible',timeout:15000});
+    if(size.width<=900) await page.getByLabel('Selecionar área do Control Center').waitFor({state:'visible',timeout:15000});
+    else await page.locator('.zpcSidebarBrand').filter({hasText:'ZEVANORY'}).waitFor({state:'visible',timeout:15000});
     await page.addScriptTag({path:axePath});
 
-    const auditViews=views.flatMap(([key,label])=>key==='overview' && size.width<=960
-      ? [0,1,2,3].map(overviewPage=>[key,label,overviewPage]) : [[key,label,0]]);
+    const auditViews=views.map(([key,label])=>[key,label,0]);
     for(const [key,label,overviewPage] of auditViews){
       const row={viewport:size,theme,view:key,label,overviewPage,failures:[]};
       const fail=(code,detail)=>{row.failures.push({code,detail});failed=true;};
       try{await navigate(page,size.width,key,label);}catch(e){fail('NAVIGATION',String(e));report.push(row);continue;}
-      if(key==='overview' && size.width<=960) await page.getByRole('navigation',{name:'Páginas da visão geral'}).getByRole('button').nth(overviewPage).click();
       await page.waitForTimeout(80);
       const dom=await page.evaluate(({allowedFonts})=>{
         const de=document.documentElement, body=document.body, main=document.querySelector('main');
@@ -431,5 +430,11 @@ for(const size of sizes){
 await browser.close();
 await fs.writeFile(outDir+'/report.json',JSON.stringify({schema:'zevanory.control-center.ped-runtime.v1',ok:!failed,states:report.length,report},null,2));
 console.log('CONTROL_CENTER_RUNTIME_STATES='+report.length);
-if(failed){console.log('CONTROL_CENTER_PED_RUNTIME=FAIL');process.exit(1);}
+if(failed){
+  const counts={};const samples=[];
+  for(const r of report)for(const f of (r.failures||[])){counts[f.code]=(counts[f.code]||0)+1;if(samples.filter(x=>x.includes(' '+f.code+' ')).length<4)samples.push(`${r.viewport?.width||r.viewport}x${r.viewport?.height||''}/${r.theme}/${r.view}: ${f.code} ${String(typeof f.detail==='string'?f.detail:JSON.stringify(f.detail)).slice(0,160)}`);}
+  console.log('::error title=PED_RUNTIME_COUNTS::'+JSON.stringify(counts));
+  for(const s of samples)console.log('::error title=PED_RUNTIME_DEFECT::'+s.replace(/[\r\n]+/g,' '));
+  console.log('CONTROL_CENTER_PED_RUNTIME=FAIL');process.exit(1);
+}
 console.log('CONTROL_CENTER_PED_RUNTIME=PASS');

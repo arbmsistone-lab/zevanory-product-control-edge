@@ -1,0 +1,72 @@
+name: Commercial Cleanup Dry Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Deployed Control Center base URL"
+        required: false
+        default: "https://controle.zevanory.api.br"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commercial-cleanup-dry-run
+  cancel-in-progress: true
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
+      TARGET_URL: ${{ inputs.target_url || 'https://controle.zevanory.api.br' }}
+    steps:
+      - name: Guard ADMIN_PIN
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${ADMIN_PIN}" || { echo "ADMIN_PIN_MISSING"; exit 2; }
+
+      - name: Authenticate with ADMIN_PIN
+        id: auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          auth_payload=$(jq -nc --arg pin "$ADMIN_PIN" '{pin:$pin}')
+          curl -fsS -X POST "${TARGET_URL}/api/pin/login"             -H "Content-Type: application/json"             -d "$auth_payload" > auth.json
+          token=$(jq -r '.sessionToken // empty' auth.json)
+          test -n "$token"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Commercial cleanup dry-run
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="${{ steps.auth.outputs.token }}"
+          body=$(jq -nc --arg sessionToken "$token" '{sessionToken:$sessionToken,mode:"dry-run"}')
+          curl -fsS -X POST "${TARGET_URL}/api/admin/commercial-cleanup"             -H "Content-Type: application/json"             -d "$body" > commercial-cleanup-dry-run.json
+          jq .
+          test "$(jq -r '.mode' commercial-cleanup-dry-run.json)" = "dry-run"
+          test "$(jq -r '.archived' commercial-cleanup-dry-run.json)" = "0"
+          test "$(jq -r '.deleteOperations' commercial-cleanup-dry-run.json)" = "0"
+          echo "COMMERCIAL_CLEANUP_DRY_RUN=PASS"
+          echo "INSPECTED_LEAD=$(jq -r '.inspected.lead // 0' commercial-cleanup-dry-run.json)"
+          echo "INSPECTED_PROSPECTING=$(jq -r '.inspected.prospecting // 0' commercial-cleanup-dry-run.json)"
+          echo "INSPECTED_EVIDENCE=$(jq -r '.inspected.evidence // 0' commercial-cleanup-dry-run.json)"
+          echo "INSPECTED_TOTAL=$(jq -r '.inspected.total // 0' commercial-cleanup-dry-run.json)"
+          echo "WOULD_ARCHIVE_LEAD=$(jq -r '.byType.lead // 0' commercial-cleanup-dry-run.json)"
+          echo "WOULD_ARCHIVE_PROSPECTING=$(jq -r '.byType.prospecting // 0' commercial-cleanup-dry-run.json)"
+          echo "WOULD_ARCHIVE_EVIDENCE=$(jq -r '.byType.evidence // 0' commercial-cleanup-dry-run.json)"
+          echo "WOULD_ARCHIVE_TOTAL=$(jq -r '.wouldArchive // 0' commercial-cleanup-dry-run.json)"
+
+      - name: Upload dry-run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commercial-cleanup-dry-run-${{ github.run_id }}
+          path: commercial-cleanup-dry-run.json
+          if-no-files-found: warn
+          retention-days: 30

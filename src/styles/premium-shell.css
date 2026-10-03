@@ -1,0 +1,683 @@
+/* Premium owner overview · Onyx & Champagne */
+:root {
+  --z-onix: #0E0F12;
+  --z-surface-dark: #16181D;
+  --z-surface-dark-2: #1D2027;
+  --z-ivory: #F7F5F0;
+  --z-surface-light: #FFFFFF;
+  --z-surface-light-2: #EFECE4;
+  --z-champagne: #C8A96A;
+  --z-champagne-soft: #D9C492;
+  --z-success: #3FA37A;
+  --z-warning: #D9A441;
+  --z-error: #D25C5C;
+  --z-action-ink: #17140E;
+  --z-text-light: #1A1A1A;
+  --z-muted-light: #514C43;
+  --z-border-light: #DED9CF;
+  --z-action-light: #5E4619;
+  --z-text-dark: #E9E4D8;
+  --z-muted-dark: #B0ABA1;
+  --z-border-dark: #2A2D34;
+}
+
+html, body, button, input, select, textarea {
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+}
+.metric strong,
+.overviewCard strong,
+.ownerKpis strong,
+.premiumCardHead > strong,
+.ownerRevenueBar {
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme="light"] .premiumOverview {
+  --owner-bg: var(--z-ivory);
+  --owner-surface: var(--z-surface-light);
+  --owner-surface-2: var(--z-surface-light-2);
+  --owner-text: var(--z-text-light);
+  --owner-muted: var(--z-muted-light);
+  --owner-line: var(--z-border-light);
+  --owner-action: var(--z-action-light);
+  --owner-shadow: var(--zpc-shadow-03);
+  --owner-soft-shadow: var(--zpc-shadow-01);
+}
+[data-theme="dark"] .premiumOverview {
+  --owner-bg: var(--z-onix);
+  --owner-surface: var(--z-surface-dark);
+  --owner-surface-2: var(--z-surface-dark-2);
+  --owner-text: var(--z-text-dark);
+  --owner-muted: var(--z-muted-dark);
+  --owner-line: var(--z-border-dark);
+  --owner-action: var(--z-champagne);
+  --owner-shadow: var(--zpc-shadow-05);
+  --owner-soft-shadow: var(--zpc-shadow-02);
+}
+
+.shell-overview {
+  padding: 0;
+}
+.premiumOverview {
+  display: grid;
+  grid-template-rows: auto auto minmax(220px, 1fr) auto;
+  gap: var(--zpc-space-3);
+  min-width: 0;
+  min-height: 100%;
+  height: 100%;
+  align-content: stretch;
+  color: var(--owner-text);
+  font-size: var(--zpc-font-sm);
+}
+.premiumOverviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zpc-space-4);
+  min-width: 0;
+}
+.premiumOverviewHeader > div {
+  min-width: 0;
+}
+.premiumOverviewHeader h2 {
+  margin: var(--zpc-space-1) 0;
+  font-size: var(--zpc-font-lg);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  font-weight: 700;
+  color: var(--owner-text);
+}
+.premiumOverviewHeader p:not(.premiumEyebrow) {
+  margin: 0;
+  color: var(--owner-muted);
+  font-size: var(--zpc-font-xs);
+  line-height: 1.4;
+}
+.premiumEyebrow {
+  margin: 0;
+  color: var(--owner-action);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+.ownerHealth {
+  appearance: none;
+  border: 1px solid var(--owner-line);
+  background: var(--owner-surface);
+  color: var(--owner-text);
+  border-radius: var(--zpc-radius-pill);
+  padding: var(--zpc-space-2) var(--zpc-space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--zpc-space-2);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  flex: 0 0 auto;
+}
+.ownerHealth:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--z-champagne) 55%, var(--owner-line)); }
+.ownerHealth:focus-visible { box-shadow: var(--zpc-shadow-06); outline: 0; }
+.ownerHealthDot {
+  width: var(--zpc-space-2);
+  height: var(--zpc-space-2);
+  border-radius: var(--zpc-radius-pill);
+  background: var(--z-warning);
+  box-shadow: var(--zpc-shadow-live-warning);
+}
+.ownerHealth.healthy .ownerHealthDot { background: var(--z-success); box-shadow: var(--zpc-shadow-live-success); }
+.ownerHealth.loading .ownerHealthDot { background: var(--owner-muted); }
+.ownerHealth b, .ownerHealth small { display: block; }
+.ownerHealth b { font-size: 12px; line-height: 1.2; }
+.ownerHealth small { color: var(--owner-muted); font-size: 12px; margin-top: var(--zpc-space-1); }
+
+.ownerKpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--zpc-space-2);
+}
+.ownerKpis article {
+  position: relative;
+  min-width: 0;
+  padding: var(--zpc-space-3);
+  border: 1px solid var(--owner-line);
+  border-radius: var(--zpc-radius-md);
+  background: var(--owner-surface);
+  box-shadow: var(--owner-soft-shadow);
+}
+.ownerKpis small, .ownerKpis span { display: block; overflow-wrap: anywhere; }
+.ownerKpis small { color: var(--owner-muted); font-size: 12px; line-height: 1.25; }
+.ownerKpis strong {
+  display: block;
+  margin: var(--zpc-space-2) 0 var(--zpc-space-1);
+  font-size: var(--zpc-font-md);
+  letter-spacing: -.03em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.ownerKpis span { color: var(--owner-muted); font-size: 12px; line-height: 1.3; }
+
+.ownerOverviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, .75fr);
+  gap: var(--zpc-space-3);
+  align-items: stretch;
+}
+.ownerRevenueCard,
+.ownerActionCard {
+  height: 100%;
+}
+.premiumCard {
+  position: relative;
+  min-width: 0;
+  padding: var(--zpc-space-4);
+  border: 1px solid var(--owner-line);
+  border-radius: var(--zpc-radius-lg);
+  background: var(--owner-surface);
+  box-shadow: var(--owner-shadow);
+}
+[data-theme="dark"] .premiumCard::before,
+[data-theme="dark"] .ownerQuickCard::before,
+[data-theme="dark"] .ownerKpis article::before {
+  content: "";
+  position: absolute;
+  left: var(--zpc-space-3);
+  right: var(--zpc-space-3);
+  top: -1px;
+  height: var(--zpc-space-1);
+  background: linear-gradient(90deg, transparent, var(--z-champagne), transparent);
+  opacity: .65;
+  pointer-events: none;
+}
+[data-theme="dark"] .ownerQuickCard { position: relative; }
+.premiumCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--zpc-space-4);
+}
+.premiumCardHead h3 {
+  margin: 0;
+  font-size: var(--zpc-font-xs);
+  letter-spacing: -.01em;
+}
+.premiumCardHead p {
+  margin: var(--zpc-space-1) 0 0;
+  color: var(--owner-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.premiumCardHead > strong {
+  font-size: var(--zpc-font-sm);
+  letter-spacing: -.025em;
+  white-space: nowrap;
+}
+.ownerRevenueChart {
+  width: 100%;
+  min-height: 148px;
+  margin-top: var(--zpc-space-3);
+  padding: var(--zpc-space-2) 0 0;
+  border-bottom: 1px solid var(--owner-line);
+  display: flex;
+  align-items: flex-end;
+  justify-content: stretch;
+  gap: var(--zpc-space-2);
+}
+.ownerRevenueBar {
+  height: 132px;
+  min-width: 0;
+  flex: 1 1 0;
+  display: flex;
+  align-items: flex-end;
+}
+.ownerRevenueBar i {
+  width: 100%;
+  height: var(--bar-height);
+  min-height: var(--zpc-space-1);
+  border-radius: var(--zpc-space-1) var(--zpc-space-1) 0 0;
+  background: linear-gradient(180deg, var(--z-champagne-soft), var(--z-champagne));
+  opacity: .92;
+  transition: height 180ms ease, opacity 180ms ease;
+}
+.ownerRevenueBar:hover i { opacity: 1; }
+
+.ownerApprovalList {
+  display: grid;
+  gap: var(--zpc-space-2);
+  margin-top: var(--zpc-space-2);
+}
+.ownerApprovalList > div {
+  padding: var(--zpc-space-2) var(--zpc-space-3);
+  border: 1px solid var(--owner-line);
+  border-radius: var(--zpc-radius-sm);
+  background: var(--owner-surface-2);
+}
+.ownerApprovalList b,
+.ownerApprovalList span { display: block; overflow-wrap: anywhere; }
+.ownerApprovalList b { font-size: 12px; line-height: 1.35; }
+.ownerApprovalList span { margin-top: var(--zpc-space-1); color: var(--owner-muted); font-size: 12px; line-height: 1.3; }
+.champagneAction,
+.ownerEmptyState button,
+.ownerQuickCard button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--owner-text);
+  font: inherit;
+  cursor: pointer;
+}
+.champagneAction {
+  justify-self: start;
+  margin-top: var(--zpc-space-1);
+  padding: var(--zpc-space-2) var(--zpc-space-3);
+  border-radius: var(--zpc-radius-sm);
+  background: var(--z-champagne);
+  color: var(--z-action-ink);
+  font-size: 12px;
+  font-weight: 750;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.champagneAction:hover { transform: translateY(-1px); filter: brightness(1.035); }
+.champagneAction:focus-visible,
+.ownerEmptyState button:focus-visible,
+.ownerQuickCard button:focus-visible { box-shadow: var(--zpc-shadow-06); outline: 0; }
+
+.ownerEmptyState {
+  margin-top: var(--zpc-space-3);
+  padding: var(--zpc-space-4);
+  border: 1px dashed var(--owner-line);
+  border-radius: var(--zpc-radius-md);
+  background: color-mix(in srgb, var(--owner-surface-2) 58%, transparent);
+}
+.ownerEmptyState.compact { padding: var(--zpc-space-3); }
+.ownerEmptyState b,
+.ownerEmptyState span { display: block; overflow-wrap: anywhere; }
+.ownerEmptyState b { font-size: 12px; }
+.ownerEmptyState span { margin-top: var(--zpc-space-1); color: var(--owner-muted); font-size: 12px; line-height: 1.4; }
+.ownerEmptyState button,
+.ownerQuickCard button { margin-top: var(--zpc-space-2); padding: 0; color: var(--owner-action); font-size: 12px; font-weight: 700; }
+
+.ownerQuickCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--zpc-space-2);
+  align-items: start;
+}
+.ownerQuickCard {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--zpc-space-2);
+  padding: var(--zpc-space-3);
+  border: 1px solid var(--owner-line);
+  border-radius: var(--zpc-radius-md);
+  background: var(--owner-surface);
+}
+.ownerQuickCard > svg { color: var(--owner-action); flex: 0 0 auto; margin-top: 0; }
+.ownerQuickCard div { min-width: 0; }
+.ownerQuickCard b,
+.ownerQuickCard span { display: block; overflow-wrap: anywhere; }
+.ownerQuickCard b { font-size: 12px; }
+.ownerQuickCard span { margin-top: var(--zpc-space-1); color: var(--owner-muted); font-size: 12px; line-height: 1.35; }
+.ownerQuickCard button { margin-top: var(--zpc-space-1); }
+
+@media (max-width: 1180px) {
+  .ownerKpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ownerOverviewGrid { grid-template-columns: minmax(0, 1fr) minmax(248px, .72fr); }
+}
+@media (max-width: 900px) {
+  .premiumOverviewHeader { align-items: flex-start; }
+  .ownerKpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ownerOverviewGrid { grid-template-columns: 1fr; }
+  .ownerQuickCards { grid-template-columns: 1fr; }
+  .ownerRevenueChart { min-height: 120px; }
+  .ownerRevenueBar { height: 104px; }
+}
+@media (max-width: 560px) {
+  .premiumOverviewHeader { display: grid; }
+  .ownerHealth { justify-self: start; }
+  .ownerKpis { grid-template-columns: 1fr 1fr; }
+  .ownerKpis article:nth-child(3) { grid-column: 1 / -1; }
+  .premiumCardHead { display: grid; gap: var(--zpc-space-2); }
+  .premiumCardHead > strong { white-space: normal; }
+  .ownerRevenueChart { gap: var(--zpc-space-1); }
+}
+
+
+
+/* Premium application frame */
+:root[data-theme='light'] {
+  --bg-primary: var(--z-ivory);
+  --bg-secondary: var(--z-surface-light-2);
+  --surface: var(--z-surface-light);
+  --surface-elevated: var(--z-surface-light-2);
+  --text-primary: var(--z-text-light);
+  --text-secondary: var(--z-muted-light);
+  --border: var(--z-border-light);
+  --action-primary: var(--z-action-light);
+  --action-primary-text: var(--z-surface-light);
+  --status-success: var(--z-success);
+  --status-error: var(--z-error);
+  --status-warning: var(--z-warning);
+  --status-info: var(--z-action-light);
+  --status-success-text: #1E523E;
+  --status-error-text: #7B2D2D;
+  --status-warning-text: #5E4619;
+  --status-info-text: #5E4619;
+  --focus-ring: var(--z-action-light);
+}
+:root[data-theme='dark'] {
+  --bg-primary: var(--z-onix);
+  --bg-secondary: var(--z-surface-dark-2);
+  --surface: var(--z-surface-dark);
+  --surface-elevated: var(--z-surface-dark-2);
+  --text-primary: var(--z-text-dark);
+  --text-secondary: var(--z-muted-dark);
+  --border: var(--z-border-dark);
+  --action-primary: var(--z-champagne);
+  --action-primary-text: var(--z-action-ink);
+  --status-success: var(--z-success);
+  --status-error: var(--z-error);
+  --status-warning: var(--z-warning);
+  --status-info: var(--z-champagne);
+  --status-success-text: #7BCFA9;
+  --status-error-text: #F09292;
+  --status-warning-text: var(--z-warning);
+  --status-info-text: var(--z-champagne);
+  --focus-ring: var(--z-champagne);
+}
+
+.zpcAppShell {
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.premiumShellTopbar {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 48px;
+  margin: 0;
+  padding: var(--zpc-space-2) var(--zpc-space-5);
+  align-items: center;
+  justify-content: flex-end;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
+}
+.zpcHeaderActions {
+  width: 100%;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--zpc-space-1);
+}
+.zpcHeaderActions .secondary,
+.zpcHeaderActions .adminChip {
+  min-height: 32px;
+  padding: var(--zpc-space-1) var(--zpc-space-2);
+  border: 0;
+  border-radius: var(--zpc-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+  font-size: 12px;
+}
+.zpcHeaderActions .secondary:hover {
+  background: var(--surface-elevated);
+  color: var(--action-primary);
+}
+.zpcHeaderActions .secondary svg,
+.zpcHeaderActions .adminChip svg {
+  color: var(--action-primary);
+}
+.zpcHeaderActions .linkButton {
+  color: var(--action-primary);
+}
+.zpcHeaderActions .primary {
+  min-height: 32px;
+  padding: var(--zpc-space-1) var(--zpc-space-2);
+  border-radius: var(--zpc-radius-sm);
+  background: var(--action-primary);
+  color: var(--action-primary-text);
+}
+
+.zpcNavigation {
+  grid-column: 1;
+  grid-row: 1 / 4;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--zpc-space-5) var(--zpc-space-3) var(--zpc-space-4);
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  box-shadow: none;
+  overflow: hidden;
+}
+.zpcSidebarBrand {
+  flex: 0 0 auto;
+  margin: 0 var(--zpc-space-2) var(--zpc-space-5);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .18em;
+}
+.zpcNavGroup {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--zpc-space-1);
+}
+.zpcNavigation .tab,
+.zpcNavSubitem {
+  width: 100%;
+  min-height: 40px;
+  justify-content: flex-start;
+  gap: var(--zpc-space-2);
+  padding: var(--zpc-space-2) var(--zpc-space-3);
+  border: 0;
+  border-left: 4px solid transparent;
+  border-radius: var(--zpc-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+  text-align: left;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+.zpcNavigation .tab:hover,
+.zpcNavSubitem:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.zpcNavigation .tab.active {
+  border-left-color: var(--action-primary);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  box-shadow: var(--zpc-shadow-01);
+}
+.zpcNavigation .tab.active svg {
+  color: var(--action-primary);
+}
+.zpcNavigation .tab svg {
+  flex: 0 0 auto;
+}
+.zpcNavSubmenu {
+  display: grid;
+  gap: var(--zpc-space-1);
+  padding-left: var(--zpc-space-4);
+}
+.zpcNavSubitem {
+  min-height: 32px;
+  font-size: 12px;
+}
+.zpcNavSubitem[aria-current='page'] {
+  color: var(--action-primary);
+  background: var(--bg-secondary);
+}
+.zpcAppShell > .trustStrip {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0 var(--zpc-space-5) var(--zpc-space-2);
+}
+.zpcAppShell > .areaSelectWrap {
+  grid-column: 2;
+  grid-row: 1;
+}
+.zpcAppShell > main.shell {
+  grid-column: 2;
+  grid-row: 3;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: var(--zpc-space-3) var(--zpc-space-5) var(--zpc-space-4);
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+.zpcAppShell > main.shell-overview {
+  display: block;
+}
+.ownerEventCard span + span {
+  margin-top: var(--zpc-space-1);
+}
+
+@media (max-width: 900px) {
+  .zpcAppShell {
+    grid-template-columns: 176px minmax(0, 1fr);
+  }
+  .premiumShellTopbar {
+    padding-left: var(--zpc-space-3);
+    padding-right: var(--zpc-space-3);
+  }
+  .zpcHeaderActions .secondary,
+  .zpcHeaderActions .adminChip {
+    font-size: 0;
+  }
+  .zpcHeaderActions .secondary svg,
+  .zpcHeaderActions .adminChip svg {
+    margin: 0;
+  }
+  .zpcAppShell > main.shell {
+    padding-left: var(--zpc-space-3);
+    padding-right: var(--zpc-space-3);
+  }
+}
+
+.ownerRevenueCard,
+.ownerActionCard {
+  display: flex;
+  flex-direction: column;
+}
+.ownerRevenueCard .ownerEmptyState,
+.ownerActionCard .ownerEmptyState {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.ownerRevenueCard .ownerEmptyState button,
+.ownerActionCard .ownerEmptyState button {
+  align-self: flex-start;
+}
+
+:root[data-theme='light'] .zpcNavigation .tab.active,
+:root[data-theme='light'] .premiumCard,
+:root[data-theme='light'] .ownerQuickCard,
+:root[data-theme='light'] .ownerKpis article,
+:root[data-theme='light'] .ownerApprovalList > div,
+:root[data-theme='light'] .ownerHealth {
+  border-color: var(--z-border-light);
+}
+:root[data-theme='light'] .zpcNavigation .tab.active {
+  border-left-color: var(--z-action-light);
+}
+
+
+/* Semantic text contrast: keep official status colors for borders, use AAA-safe text variants. */
+.commercialState.ok,
+.commercialValue,
+.approveBtn {
+  color: var(--status-success-text);
+}
+.commercialState.bad,
+.rejectBtn {
+  color: var(--status-error-text);
+}
+.commercialState.warn,
+.changeBtn {
+  color: var(--status-warning-text);
+}
+.commercialState.neutral {
+  color: var(--status-info-text);
+}
+
+/* Premium shell mobile/tablet: selector navigation replaces the desktop rail. */
+@media (max-width: 900px) {
+  .zpcAppShell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+  }
+  .premiumShellTopbar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .zpcNavigation {
+    display: none;
+  }
+  .zpcAppShell > .areaSelectWrap {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--zpc-space-2);
+    padding: var(--zpc-space-1) var(--zpc-space-3);
+  }
+  .zpcAppShell > .trustStrip {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 0 var(--zpc-space-3) var(--zpc-space-1);
+  }
+  .zpcAppShell > main.shell {
+    grid-column: 1;
+    grid-row: 4;
+    padding: var(--zpc-space-2) var(--zpc-space-3);
+  }
+}
+
+@media (max-width: 560px) {
+  .ownerQuickCards {
+    display: none;
+  }
+  .ownerRevenueCard {
+    display: none;
+  }
+  .ownerOverviewGrid {
+    display: block;
+  }
+  .premiumOverview {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  .ownerActionCard {
+    height: 100%;
+  }
+}
+
+
+/* Tablet uses the mobile selector shell (<=900px); like mobile, the quick-card
+   strip yields its space so the no-scroll overview never clips (768x1024). */
+@media (max-width: 900px) {
+  .ownerQuickCards {
+    display: none;
+  }
+}
