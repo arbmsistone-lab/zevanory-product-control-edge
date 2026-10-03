@@ -65,12 +65,17 @@ jobs:
           set -euo pipefail
           CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux*/chrome' | head -n1 || true)"
           test -n "$CHROME_PATH"
-          npx lighthouse http://127.0.0.1:4173 --chrome-path="$CHROME_PATH" --chrome-flags="--headless=new --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage" --only-categories=performance,accessibility,best-practices --output=json --output-path=modern-stack-lighthouse.json --quiet
+          for i in 1 2 3; do
+            npx lighthouse http://127.0.0.1:4173 --chrome-path="$CHROME_PATH" --chrome-flags="--headless=new --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage" --only-categories=performance,accessibility,best-practices --output=json --output-path="modern-stack-lighthouse-$i.json" --quiet
+          done
+          cp modern-stack-lighthouse-2.json modern-stack-lighthouse.json
           node - <<'NODE'
-          const r=require('./modern-stack-lighthouse.json');
-          const s=Object.fromEntries(Object.entries(r.categories).map(([k,v])=>[k,Math.round(v.score*100)]));
-          console.log(JSON.stringify(s));
-          if(s.performance<90||s.accessibility<100||s['best-practices']<95) process.exit(1);
+          const runs=[1,2,3].map(i=>require('./modern-stack-lighthouse-'+i+'.json'));
+          const scores=runs.map(r=>Object.fromEntries(Object.entries(r.categories).map(([k,v])=>[k,Math.round(v.score*100)])));
+          const med=k=>scores.map(x=>x[k]).sort((a,b)=>a-b)[1];
+          const s={performance:med('performance'),accessibility:med('accessibility'),'best-practices':med('best-practices')};
+          console.log(JSON.stringify({runs:scores,median:s}));
+          if(s.performance<90||s.accessibility<100||s['best-practices']<95){console.log('::error title=LIGHTHOUSE_MEDIAN::'+JSON.stringify({median:s,runs:scores}));process.exit(1);}
           NODE
       - name: Verify dependency tree
         run: |
