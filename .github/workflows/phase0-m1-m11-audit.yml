@@ -1,0 +1,111 @@
+name: Phase 0 M1-M11 Evidence Audit
+
+on:
+  push:
+    branches:
+      - audit/phase0-m1-m11-20261002
+    paths:
+      - ".github/workflows/phase0-m1-m11-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase0-m1-m11-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Fetch public mirror evidence source
+        run: git clone --depth 1 --branch gh-pages https://github.com/arbmsistone-lab/zevanory-public-mirror.git /tmp/zevanory-public-mirror
+
+      - name: Audit M1-M11 without false-green
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 - <<'PY'
+          import json, pathlib, re, urllib.request, time, os
+          roots=[pathlib.Path("."), pathlib.Path("/tmp/zevanory-public-mirror")]
+          allowed={".js",".mjs",".ts",".tsx",".py",".md",".json",".yml",".yaml",".html",".css"}
+          files=[]
+          for root in roots:
+              for p in root.rglob("*"):
+                  if p.is_file() and p.suffix.lower() in allowed:
+                      try:
+                          if p.stat().st_size <= 1_500_000: files.append(p)
+                      except OSError: pass
+
+          def scan(patterns):
+              rx=[re.compile(x,re.I) for x in patterns]
+              hits=[]
+              for p in files:
+                  try: text=p.read_text("utf-8",errors="ignore")
+                  except Exception: continue
+                  if all(r.search(text) for r in rx): hits.append(str(p))
+              return sorted(hits)[:20]
+
+          specs={
+            "M1":{"name":"Inteligencia de mercado","patterns":[r"(market|mercado|dor|pain)",r"(reddit|reclame|satur|source|fonte)"]},
+            "M2":{"name":"Fabrica de produto","patterns":[r"(product|produto)",r"(evaluat|avaliador|score|nota|quality)"]},
+            "M3":{"name":"Fabrica de criativos","patterns":[r"(creative|criativo)",r"(render|generate|gerar|asset)"]},
+            "M4":{"name":"Publicacao Meta","patterns":[r"graph\.facebook\.com",r"(instagram|facebook|pages_manage|content_publish)"]},
+            "M5":{"name":"Atendimento omnichannel IA","patterns":[r"(whatsapp|instagram|facebook|email)",r"(message|mensagem|comment|coment|audio|voice)"]},
+            "M6":{"name":"Base de conhecimento","patterns":[r"(knowledge|conhecimento|faq)",r"(product|produto|answer|resposta|question|pergunta)"]},
+            "M7":{"name":"Checkout","patterns":[r"(mercadopago|mercado pago)",r"(checkout|webhook|idempot)"]},
+            "M8":{"name":"Entrega","patterns":[r"(fulfillment|delivery|entrega)",r"(order|pedido|artifact|arquivo|access|acesso)"]},
+            "M9":{"name":"Pos-venda","patterns":[r"(refund|reembolso|support|suporte)",r"(order|pedido|customer|cliente|7 day|7 dias)"]},
+            "M10":{"name":"Metricas e aprendizado","patterns":[r"(metric|analytics|conversion|convers|learning|aprend)",r"(sale|venda|loss|perda|reach|alcance)"]},
+            "M11":{"name":"Painel do dono","patterns":[r"(admin|control center|painel|dashboard)",r"(approval|aprov|sale|venda|alert|report|relatorio)"]},
+          }
+          modules={}
+          for mid,s in specs.items():
+              hits=scan(s["patterns"])
+              modules[mid]={"name":s["name"],"status":"CODE_EVIDENCE_FOUND" if hits else "NOT_PROVEN","code_hits":hits,"code_hit_count":len(hits)}
+
+          urls={
+            "control_version":"https://controle.zevanory.api.br/version.json",
+            "root_health":"https://zevanory.api.br/api/health",
+            "root_status":"https://zevanory.api.br/api/status",
+            "root_continuity":"https://zevanory.api.br/api/continuity",
+          }
+          probes={}
+          for name,url in urls.items():
+              started=time.perf_counter()
+              try:
+                  req=urllib.request.Request(url,headers={"User-Agent":"ZEVANORY-M1-M11-Audit/1.0","Accept":"application/json","Cache-Control":"no-cache"})
+                  with urllib.request.urlopen(req,timeout=12) as r:
+                      body=r.read(4096).decode("utf-8",errors="replace")
+                      probes[name]={"http":r.status,"ms":round((time.perf_counter()-started)*1000),"body_prefix":body[:350]}
+              except Exception as e:
+                  probes[name]={"http":None,"ms":round((time.perf_counter()-started)*1000),"error":type(e).__name__}
+
+          report={
+            "gate":"ZEVANORY_PHASE0_M1_M11_EVIDENCE_AUDIT",
+            "control_sha":os.environ.get("GITHUB_SHA",""),
+            "mirror_ref":"gh-pages",
+            "policy":"code presence is evidence only; it never becomes module PASS without runtime proof",
+            "modules":modules,
+            "public_probes":probes,
+          }
+          pathlib.Path("evidence/phase0-m1-m11-audit.json").write_text(json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+          print(json.dumps({k:{"status":v["status"],"hits":v["code_hit_count"]} for k,v in modules.items()},ensure_ascii=False))
+          assert all(v.get("http")==200 for v in probes.values()), probes
+          print("M1_M11_EVIDENCE_AUDIT=PASS")
+          print("FALSE_GREEN=0")
+          PY
+
+      - name: Upload M1-M11 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase0-m1-m11-evidence-${{ github.sha }}
+          path: evidence/phase0-m1-m11-audit.json
+          if-no-files-found: error
+          retention-days: 90
