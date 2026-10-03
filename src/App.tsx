@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   AlertTriangle,
   Archive,
@@ -13,6 +13,11 @@ import {
   ShieldCheck,
   ShoppingBag,
   LayoutDashboard,
+  Megaphone,
+  Sparkles,
+  Headphones,
+  CircleDollarSign,
+  FileCheck2,
   Moon,
   Sun,
   X,
@@ -22,6 +27,8 @@ import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 import type { CfoWorkspaceData } from './cfo-model';
+
+type PrimaryArea = 'overview' | 'products' | 'commercial' | 'content' | 'support' | 'finance' | 'evidence' | 'system';
 
 type SystemItem = {
   id: string;
@@ -117,6 +124,16 @@ type Dashboard = {
   }>;
 };
 
+const EMPTY_DASHBOARD: Dashboard = {
+  systems: [],
+  audits: [],
+  improvements: [],
+  incidents: [],
+  policy: { zeroSpend: true, failClosed: true, destructiveActions: false, greenRule: 'Somente com evidencia reproduzivel' },
+  lastEngineRun: '',
+  certificationRuns: [],
+};
+
 type ProductStatus = 'draft' | 'validation' | 'ready' | 'blocked' | 'archived';
 
 type ProductAudit = {
@@ -179,6 +196,20 @@ type ProductSummary = {
   certified: number;
   inCertification: number;
   zeesBlocked: number;
+};
+
+type FastOverviewSource = { ok: boolean; elapsedMs: number; error: string | null };
+type FastOverview = {
+  elapsedMs: number;
+  sources: {
+    health: FastOverviewSource;
+    status: FastOverviewSource;
+    control: FastOverviewSource;
+    continuity: FastOverviewSource;
+    inventory: FastOverviewSource;
+  };
+  operations: OperationalSnapshot;
+  summary: Pick<ProductSummary, 'total' | 'salesEnabled' | 'commercialReady' | 'blocked'>;
 };
 
 type CertificationTarget = {
@@ -254,24 +285,6 @@ function certificationStatusLabel(status: CertificationStatus) {
 
 function certificationProfileLabel(profile: string) {
   return ({ AI_AGENTIC_PLATFORM: 'AI / AGENTIC PLATFORM', COMMERCE_CONTROL_PLANE: 'COMMERCE CONTROL PLANE', SAAS_TRANSACTIONAL: 'SAAS TRANSACIONAL', DIGITAL_CONTENT: 'PRODUTO DIGITAL' } as Record<string, string>)[profile] || profile;
-}
-
-function operationalLabel(value: string | null | undefined) {
-  const raw = String(value || 'unknown').trim().toLowerCase();
-  const labels: Record<string, string> = {
-    ready: 'READY',
-    pass: 'PASS',
-    fail: 'FAIL',
-    disabled: 'DESATIVADO',
-    enabled: 'ATIVO',
-    blocked: 'BLOQUEADO',
-    'globally-blocked': 'BLOQUEADO GLOBALMENTE',
-    active: 'ATIVO',
-    unknown: 'DESCONHECIDO',
-    unavailable: 'INDISPONÍVEL',
-    snapshot_unavailable: 'SNAPSHOT INDISPONÍVEL',
-  };
-  return labels[raw] || String(value || 'DESCONHECIDO').replaceAll('_', ' ').toUpperCase();
 }
 
 function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (token: string) => void; restoringSession?: boolean }) {
@@ -353,7 +366,11 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
-  const [operations, setOperations] = useState<OperationalSnapshot | null>(null);
+  const [globalTrustLoading, setGlobalTrustLoading] = useState(true);
+  const [canonicalSha, setCanonicalSha] = useState<string | null>(null);
+  const [canonicalShaLoading, setCanonicalShaLoading] = useState(true);
+  const [fastOverview, setFastOverview] = useState<FastOverview | null>(null);
+  const [fastOverviewLoading, setFastOverviewLoading] = useState(true);
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -362,7 +379,6 @@ function App() {
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [expandedPillarIds, setExpandedPillarIds] = useState<Set<string>>(() => new Set());
-  const [overviewPage, setOverviewPage] = useState(0);
   const [incidentPage, setIncidentPage] = useState(0);
   const [auditPage, setAuditPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
@@ -386,6 +402,31 @@ function App() {
   });
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
+  const shellDashboard = dashboard ?? EMPTY_DASHBOARD;
+  const bootstrapPending = dashboard === null;
+  const overviewOperations = fastOverview?.operations ?? null;
+  const surfacePending = view === 'overview' ? fastOverviewLoading : bootstrapPending;
+  const primaryArea: PrimaryArea =
+    view === 'overview' ? 'overview' :
+    view === 'products' ? 'products' :
+    (['commercial', 'prospecting', 'crm'] as const).includes(view as any) ? 'commercial' :
+    (['creatives', 'approvals', 'publications'] as const).includes(view as any) ? 'content' :
+    view === 'support' ? 'support' :
+    (['finance', 'cfo'] as const).includes(view as any) ? 'finance' :
+    view === 'evidence' ? 'evidence' : 'system';
+  const navigatePrimary = (area: PrimaryArea) => {
+    const defaults: Record<PrimaryArea, typeof view> = {
+      overview: 'overview',
+      products: 'products',
+      commercial: 'commercial',
+      content: 'creatives',
+      support: 'support',
+      finance: 'finance',
+      evidence: 'evidence',
+      system: 'operations',
+    };
+    setView(defaults[area]);
+  };
 
   useEffect(() => {
     const onResize = () => {
@@ -397,6 +438,7 @@ function App() {
   }, []);
 
   const loadGlobalTrustLive = async () => {
+    if (!globalTrust) setGlobalTrustLoading(true);
     try {
       const response = await fetch(`/global-trust.json?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`trust_http_${response.status}`);
@@ -405,6 +447,37 @@ function App() {
       return trust;
     } catch {
       return null;
+    } finally {
+      setGlobalTrustLoading(false);
+    }
+  };
+
+  const loadCanonicalVersion = async () => {
+    setCanonicalShaLoading(true);
+    try {
+      const response = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(`version_http_${response.status}`);
+      const payload = await response.json() as { sha?: string };
+      const sha = String(payload.sha || '').trim().toLowerCase();
+      if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error('version_sha_invalid');
+      setCanonicalSha(sha);
+    } catch {
+      setCanonicalSha(null);
+    } finally {
+      setCanonicalShaLoading(false);
+    }
+  };
+
+  const loadFastOverview = async (token = sessionToken) => {
+    if (!token) return;
+    setFastOverviewLoading(true);
+    try {
+      const response = await api.post('/api/admin/overview', { sessionToken: token });
+      setFastOverview(response.data as FastOverview);
+    } catch {
+      setFastOverview(null);
+    } finally {
+      setFastOverviewLoading(false);
     }
   };
 
@@ -422,14 +495,11 @@ function App() {
       const response = await api.post('/api/admin/bootstrap', { sessionToken: token }, { signal: controller.signal });
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       setDashboard(response.data.dashboard);
-      setGlobalTrust(response.data.globalTrust ?? null);
-      setOperations(response.data.operations ?? null);
       setCommercial(response.data.commercial ?? null);
       setCfo(response.data.cfo ?? null);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setAuthState('ready');
-      void loadGlobalTrustLive();
     } catch {
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       localStorage.removeItem('arbm_admin_session');
@@ -444,6 +514,11 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
+    if (sessionToken) {
+      void loadCanonicalVersion();
+      void loadGlobalTrustLive();
+      void loadFastOverview(sessionToken);
+    }
     void load(sessionToken);
     return () => {
       ++loadGeneration.current;
@@ -507,6 +582,11 @@ function App() {
     setAuthState('signedout');
     setDashboard(null);
     setGlobalTrust(null);
+    setGlobalTrustLoading(true);
+    setCanonicalSha(null);
+    setCanonicalShaLoading(true);
+    setFastOverview(null);
+    setFastOverviewLoading(true);
     setCommercial(null);
     setCfo(null);
   };
@@ -514,6 +594,9 @@ function App() {
   const handleLogin = (token: string) => {
     setSessionToken(token);
     setAuthState('ready');
+    void loadCanonicalVersion();
+    void loadGlobalTrustLive();
+    void loadFastOverview(token);
     void load(token);
   };
 
@@ -712,7 +795,58 @@ function App() {
     () => activeCertificationTargets.find(target => target.id === selectedTargetId) ?? activeCertificationTargets[0] ?? null,
     [activeCertificationTargets, selectedTargetId],
   );
-  const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 820;
+  const ownerOverview = useMemo(() => {
+    if (!commercial) return null;
+    const now = new Date();
+    const sameDay = (value: string | null | undefined, daysAgo = 0) => {
+      if (!value) return false;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return false;
+      const target = new Date(now);
+      target.setHours(0, 0, 0, 0);
+      target.setDate(target.getDate() - daysAgo);
+      return date.getFullYear() === target.getFullYear()
+        && date.getMonth() === target.getMonth()
+        && date.getDate() === target.getDate();
+    };
+    const sameMonth = (value: string | null | undefined) => {
+      if (!value) return false;
+      const date = new Date(value);
+      return !Number.isNaN(date.getTime())
+        && date.getFullYear() === now.getFullYear()
+        && date.getMonth() === now.getMonth();
+    };
+    const confirmed = new Set(['confirmed', 'paid', 'received', 'settled', 'done']);
+    const saleSources = new Set(['sale', 'payment', 'checkout', 'order', 'asaas']);
+    const isSale = (item: CommercialWorkspaceData['finance'][number]) =>
+      confirmed.has(String(item.status || '').toLowerCase().replaceAll('_', '-'))
+      && saleSources.has(String(item.source || '').toLowerCase().replaceAll('_', '-'))
+      && Number(item.valueCents || 0) > 0;
+    const sales = commercial.finance.filter(isSale);
+    const salesToday = sales.filter(item => sameDay(item.updatedAt || item.createdAt)).length;
+    const salesMonth = sales.filter(item => sameMonth(item.updatedAt || item.createdAt)).length;
+    const revenueMonth = sales
+      .filter(item => sameMonth(item.updatedAt || item.createdAt))
+      .reduce((sum, item) => sum + Number(item.valueCents || 0), 0);
+    const openConversationStates = new Set(['contacted','conversation','offer','follow-up','checkout','proposal','opportunity']);
+    const openConversations = commercial.leads.filter(item => openConversationStates.has(String(item.status || '').toLowerCase().replaceAll('_','-'))).length;
+    const approvalStates = new Set(['approval','pending-approval','awaiting-approval']);
+    const approvalItems = [...commercial.creatives, ...commercial.publications]
+      .filter(item => approvalStates.has(String(item.status || '').toLowerCase().replaceAll('_','-')))
+      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+    const revenueBars = Array.from({ length: 12 }, (_, index) => {
+      const daysAgo = 11 - index;
+      return sales
+        .filter(item => sameDay(item.updatedAt || item.createdAt, daysAgo))
+        .reduce((sum, item) => sum + Number(item.valueCents || 0), 0);
+    });
+    const latestEvents = [...commercial.events]
+      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 3);
+    return { salesToday, salesMonth, revenueMonth, openConversations, approvalItems, revenueBars, latestEvents };
+  }, [commercial]);
+
+  const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 900;
   const certTargetPageSize = compactGovernance ? 1 : 6;
   const certTargetPageCount = Math.max(1, Math.ceil(activeCertificationTargets.length / certTargetPageSize));
   const safeCertTargetPage = Math.min(certTargetPage, certTargetPageCount - 1);
@@ -733,19 +867,9 @@ function App() {
 
   // Session restoration never blocks PIN entry; protected content still requires ready.
   if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} restoringSession={authState === 'checking'} />;
-  if (!dashboard) {
-    return <main className='loading'><div className='loader' /><p>Inicializando ZEVANORY PRODUCT CONTROL...</p></main>;
-  }
-
   return (
     <div className='zpcAppShell'>
-      <header className='topbar'>
-        <div className='zpcBrandBlock'>
-          <p className='eyebrow'>ZEVANORY · ADMINISTRATIVO GERAL</p>
-          <h1>ZEVANORY CONTROL CENTER</h1>
-          <p className='subtitle'>Centro único de operação, produtos, canais, finanças, evidências e governança.</p>
-        </div>
-
+      <header className='topbar premiumShellTopbar' aria-label='Ações globais'>
         <div className='actions zpcHeaderActions'>
           <a
             className='secondary linkButton'
@@ -773,47 +897,47 @@ function App() {
         </div>
       </header>
 
-      <section className={globalTrust?.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked'} aria-label='Estado global ZEVANORY'>
+      {primaryArea === 'system' && <section className={globalTrust ? (globalTrust.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked') : 'trustStrip loading'} aria-label='Estado global ZEVANORY'>
         <div className='trustState'>
           <ShieldCheck size={16} />
           <span>TRUST CHAIN</span>
-          <strong>{globalTrust?.state ?? 'BLOCKED'}</strong>
+          <strong>{globalTrust ? globalTrust.state : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</strong>
         </div>
-        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : '0/3'}</b></div>
-        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : 'sem prova'}</b></div>
-        <div><small>SHA</small><b>{globalTrust?.sha ? globalTrust.sha.slice(0, 12) : 'SEM SHA'}</b></div>
-        <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : 'SEM MOTOR'}</b></div>
-      </section>
+        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>SHA</small><b>{canonicalSha ? canonicalSha.slice(0, 12) : canonicalShaLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+        <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
+      </section>}
 
-      <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY CONTROL CENTER'>
+      <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY'>
+        <div className='zpcSidebarBrand' aria-label='ZEVANORY'>ZEVANORY</div>
         <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Comando</p>
-          <button className={view === 'overview' ? 'tab active' : 'tab'} aria-pressed={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />Visão Geral</button>
-          <button className={view === 'products' ? 'tab active' : 'tab'} aria-pressed={view === 'products'} onClick={() => setView('products')}><ShoppingBag size={16} />Produtos</button>
-        </div>
-
-        <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Crescimento</p>
-          <button className={view === 'commercial' ? 'tab active' : 'tab'} aria-pressed={view === 'commercial'} onClick={() => setView('commercial')}>Comercial</button>
-          <button className={view === 'creatives' ? 'tab active' : 'tab'} aria-pressed={view === 'creatives'} onClick={() => setView('creatives')}>Criativos</button>
-          <button className={view === 'approvals' ? 'tab active' : 'tab'} aria-pressed={view === 'approvals'} onClick={() => setView('approvals')}>Aprovações</button>
-          <button className={view === 'publications' ? 'tab active' : 'tab'} aria-pressed={view === 'publications'} onClick={() => setView('publications')}>Publicações</button>
-          <button className={view === 'prospecting' ? 'tab active' : 'tab'} aria-pressed={view === 'prospecting'} onClick={() => setView('prospecting')}>Prospecção</button>
-          <button className={view === 'crm' ? 'tab active' : 'tab'} aria-pressed={view === 'crm'} onClick={() => setView('crm')}>CRM/Vendas</button>
-          <button className={view === 'support' ? 'tab active' : 'tab'} aria-pressed={view === 'support'} onClick={() => setView('support')}>Atendimento</button>
-        </div>
-
-        <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Gestão</p>
-          <button className={view === 'finance' ? 'tab active' : 'tab'} aria-pressed={view === 'finance'} onClick={() => setView('finance')}>Financeiro</button>
-          <button className={view === 'cfo' ? 'tab active' : 'tab'} aria-pressed={view === 'cfo'} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
-          <button className={view === 'evidence' ? 'tab active' : 'tab'} aria-pressed={view === 'evidence'} onClick={() => setView('evidence')}>Evidências</button>
-        </div>
-
-        <div className='zpcNavGroup'>
-          <p className='zpcNavLabel'>Sistema</p>
-          <button className={view === 'operations' ? 'tab active' : 'tab'} aria-pressed={view === 'operations'} onClick={() => setView('operations')}>Operações técnicas</button>
-          <button className={view === 'governance' ? 'tab active' : 'tab'} aria-pressed={view === 'governance'} onClick={() => setView('governance')}>ZEES-16 / Governança</button>
+          <button className={primaryArea === 'overview' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'overview'} onClick={() => navigatePrimary('overview')}><LayoutDashboard size={16} />Visão Geral</button>
+          <button className={primaryArea === 'products' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'products'} onClick={() => navigatePrimary('products')}><ShoppingBag size={16} />Produtos</button>
+          <button className={primaryArea === 'commercial' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'commercial'} onClick={() => navigatePrimary('commercial')}><Megaphone size={16} />Comercial</button>
+          {primaryArea === 'commercial' && <div className='zpcNavSubmenu' aria-label='Subáreas comerciais'>
+            <button className='zpcNavSubitem' aria-current={view === 'commercial' ? 'page' : undefined} onClick={() => setView('commercial')}>Resumo</button>
+            <button className='zpcNavSubitem' aria-current={view === 'prospecting' ? 'page' : undefined} onClick={() => setView('prospecting')}>Prospecção</button>
+            <button className='zpcNavSubitem' aria-current={view === 'crm' ? 'page' : undefined} onClick={() => setView('crm')}>CRM/Vendas</button>
+          </div>}
+          <button className={primaryArea === 'content' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'content'} onClick={() => navigatePrimary('content')}><Sparkles size={16} />Conteúdo</button>
+          {primaryArea === 'content' && <div className='zpcNavSubmenu' aria-label='Subáreas de conteúdo'>
+            <button className='zpcNavSubitem' aria-current={view === 'creatives' ? 'page' : undefined} onClick={() => setView('creatives')}>Criativos</button>
+            <button className='zpcNavSubitem' aria-current={view === 'approvals' ? 'page' : undefined} onClick={() => setView('approvals')}>Aprovações</button>
+            <button className='zpcNavSubitem' aria-current={view === 'publications' ? 'page' : undefined} onClick={() => setView('publications')}>Publicações</button>
+          </div>}
+          <button className={primaryArea === 'support' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'support'} onClick={() => navigatePrimary('support')}><Headphones size={16} />Atendimento</button>
+          <button className={primaryArea === 'finance' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'finance'} onClick={() => navigatePrimary('finance')}><CircleDollarSign size={16} />Financeiro</button>
+          {primaryArea === 'finance' && <div className='zpcNavSubmenu' aria-label='Subáreas financeiras'>
+            <button className='zpcNavSubitem' aria-current={view === 'finance' ? 'page' : undefined} onClick={() => setView('finance')}>Movimentações</button>
+            <button className='zpcNavSubitem' aria-current={view === 'cfo' ? 'page' : undefined} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
+          </div>}
+          <button className={primaryArea === 'evidence' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'evidence'} onClick={() => navigatePrimary('evidence')}><FileCheck2 size={16} />Evidências</button>
+          <button className={primaryArea === 'system' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'system'} onClick={() => navigatePrimary('system')}><RadioTower size={16} />Sistema</button>
+          {primaryArea === 'system' && <div className='zpcNavSubmenu' aria-label='Subáreas do sistema'>
+            <button className='zpcNavSubitem' aria-current={view === 'operations' ? 'page' : undefined} onClick={() => setView('operations')}>Saúde do sistema</button>
+            <button className='zpcNavSubitem' aria-current={view === 'governance' ? 'page' : undefined} onClick={() => setView('governance')}>Qualidade e certificação</button>
+          </div>}
         </div>
       </nav>
 
@@ -822,22 +946,69 @@ function App() {
         <select value={view} onChange={event => setView(event.target.value as typeof view)} aria-label='Selecionar área do Control Center'>
           <option value='overview'>Visão Geral</option>
           <option value='products'>Produtos</option>
-          <option value='commercial'>Comercial</option>
-          <option value='creatives'>Criativos</option>
-          <option value='approvals'>Aprovações</option>
-          <option value='publications'>Publicações</option>
-          <option value='prospecting'>Prospecção</option>
-          <option value='crm'>CRM/Vendas</option>
+          <optgroup label='Comercial'>
+            <option value='commercial'>Resumo comercial</option>
+            <option value='prospecting'>Prospecção</option>
+            <option value='crm'>CRM/Vendas</option>
+          </optgroup>
+          <optgroup label='Conteúdo'>
+            <option value='creatives'>Criativos</option>
+            <option value='approvals'>Aprovações</option>
+            <option value='publications'>Publicações</option>
+          </optgroup>
           <option value='support'>Atendimento</option>
-          <option value='finance'>Financeiro</option>
-          <option value='cfo'>ZEVANORY CFO</option>
+          <optgroup label='Financeiro'>
+            <option value='finance'>Movimentações</option>
+            <option value='cfo'>ZEVANORY CFO</option>
+          </optgroup>
           <option value='evidence'>Evidências</option>
-          <option value='operations'>Operações técnicas</option>
-          <option value='governance'>ZEES-16 / Governança</option>
+          <optgroup label='Sistema'>
+            <option value='operations'>Saúde do sistema</option>
+            <option value='governance'>Qualidade e certificação</option>
+          </optgroup>
         </select>
       </label>
 
-      <main className={`zpcWorkspace shell shell-${view}`} data-compact-governance={compactGovernance ? 'true' : 'false'}>
+      <main
+        className={`zpcWorkspace shell shell-${view}`}
+        data-compact-governance={compactGovernance ? 'true' : 'false'}
+        data-bootstrap-ready={surfacePending ? 'false' : 'true'}
+      >
+      {surfacePending && (
+        <section className='bootstrapSkeleton' role='status' aria-live='polite' aria-label='Carregando dados do painel'>
+          <div className='skeletonLine wide' />
+          <div className='skeletonLine medium' />
+          <div className='skeletonCards' aria-hidden='true'>
+            <span /><span /><span /><span />
+          </div>
+        </section>
+      )}
+      {primaryArea === 'commercial' && (
+        <nav className='workspaceSubnav' aria-label='Seções comerciais'>
+          <button className={view === 'commercial' ? 'filter active' : 'filter'} onClick={() => setView('commercial')}>Resumo comercial</button>
+          <button className={view === 'prospecting' ? 'filter active' : 'filter'} onClick={() => setView('prospecting')}>Prospecção</button>
+          <button className={view === 'crm' ? 'filter active' : 'filter'} onClick={() => setView('crm')}>CRM/Vendas</button>
+        </nav>
+      )}
+      {primaryArea === 'content' && (
+        <nav className='workspaceSubnav' aria-label='Seções de conteúdo'>
+          <button className={view === 'creatives' ? 'filter active' : 'filter'} onClick={() => setView('creatives')}>Criativos</button>
+          <button className={view === 'approvals' ? 'filter active' : 'filter'} onClick={() => setView('approvals')}>Aprovações</button>
+          <button className={view === 'publications' ? 'filter active' : 'filter'} onClick={() => setView('publications')}>Publicações</button>
+        </nav>
+      )}
+      {primaryArea === 'finance' && (
+        <nav className='workspaceSubnav' aria-label='Seções financeiras'>
+          <button className={view === 'finance' ? 'filter active' : 'filter'} onClick={() => setView('finance')}>Movimentações</button>
+          <button className={view === 'cfo' ? 'filter active' : 'filter'} onClick={() => setView('cfo')}>ZEVANORY CFO</button>
+        </nav>
+      )}
+      {primaryArea === 'system' && (
+        <nav className='workspaceSubnav' aria-label='Seções do sistema'>
+          <button className={view === 'operations' ? 'filter active' : 'filter'} onClick={() => setView('operations')}>Saúde do sistema</button>
+          <button className={view === 'governance' ? 'filter active' : 'filter'} onClick={() => setView('governance')}>Qualidade e certificação</button>
+        </nav>
+      )}
       {error && <div className='errorbox globalError'>{error}</div>}
 
       {(['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence'] as const).includes(view as CommercialSection) && (
@@ -852,47 +1023,71 @@ function App() {
       {view === 'cfo' && <CfoWorkspace data={cfo} />}
 
       {view === 'overview' && (
-        <section className='overviewStack' data-page={overviewPage}>
-          <section className='overviewHero panel'>
-            <div><p className='kicker'>CENTRAL ÚNICA</p><h2>Visão operacional executiva</h2></div>
-            <span className={operations?.health.ready ? 'certSeal ready' : 'certSeal blocked'}>{operations?.health.ready ? 'INFRA READY' : 'INFRA ATENÇÃO'}</span>
+        <section className='premiumOverview' aria-label='Visão Geral executiva'>
+          <header className='premiumOverviewHeader'>
+            <div>
+              <p className='premiumEyebrow'>VISÃO GERAL</p>
+              <h2>O negócio em uma tela.</h2>
+              <p>Vendas, receita, conversas e decisões que realmente precisam de você.</p>
+            </div>
+            <button
+              className={'ownerHealth ' + (fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'healthy' : fastOverviewLoading ? 'loading' : 'attention')}
+              type='button'
+              onClick={() => setView('operations')}
+              aria-label='Abrir detalhes de saúde do sistema'
+            >
+              <span className='ownerHealthDot' />
+              <span>
+                <b>{fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'Operação saudável' : fastOverviewLoading ? 'Verificando operação' : 'Atenção necessária'}</b>
+                <small>Ver detalhes</small>
+              </span>
+            </button>
+          </header>
+
+          <section className='ownerKpis' aria-label='Indicadores do negócio'>
+            <article><small>Vendas hoje</small><strong>{ownerOverview ? ownerOverview.salesToday : '—'}</strong><span>{ownerOverview?.salesToday ? 'confirmadas' : 'Nenhuma venda ainda'}</span></article>
+            <article><small>Vendas no mês</small><strong>{ownerOverview ? ownerOverview.salesMonth : '—'}</strong><span>{ownerOverview?.salesMonth ? 'confirmadas' : 'Sem vendas confirmadas'}</span></article>
+            <article><small>Receita no mês</small><strong>{ownerOverview ? new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ownerOverview.revenueMonth / 100) : '—'}</strong><span>{ownerOverview?.revenueMonth ? 'recebida e confirmada' : 'Nenhuma receita confirmada'}</span></article>
+            <article><small>Conversas abertas</small><strong>{ownerOverview ? ownerOverview.openConversations : '—'}</strong><span>{ownerOverview?.openConversations ? 'em andamento' : 'Nenhuma conversa aberta'}</span></article>
+            <article><small>Aprovações pendentes</small><strong>{ownerOverview ? ownerOverview.approvalItems.length : '—'}</strong><span>{ownerOverview?.approvalItems.length ? 'aguardam sua decisão' : 'Nada aguardando você'}</span></article>
           </section>
-          <nav className='overviewPager' aria-label='Páginas da visão geral'>
-            {['Operação', 'Certificação', 'Canais', 'Bloqueios'].map((label, index) => <button key={label} className={overviewPage === index ? 'filter active' : 'filter'} aria-pressed={overviewPage === index} onClick={() => setOverviewPage(index)}>{label}</button>)}
-          </nav>
 
-          {overviewPage === 0 && <section className='overviewCards'>
-            <article className='overviewCard'><span>Saúde</span><strong>{operations?.health.ready ? 'READY' : 'NOT READY'}</strong><small>DB {operations?.health.databaseReachable ? 'OK' : 'FAIL'} · schema {operations?.health.schemaReady ? 'OK' : 'FAIL'}</small></article>
-            <article className='overviewCard'><span>Vendas</span><strong>{operationalLabel(operations?.runtime.sales)}</strong><small>checkout {operations?.runtime.checkout ?? 'unknown'} · financeiro {operations?.runtime.financial ?? 'unknown'}</small></article>
-            <article className='overviewCard'><span>Produtos</span><strong>{activeSummary.total}</strong><small>{activeSummary.salesEnabled} em venda · {activeSummary.blocked} pendentes</small></article>
-            <article className='overviewCard'><span>Banco</span><strong>{operations?.health.requiredTables ?? 0} tabelas</strong><small>{operations?.health.requiredMigrations ?? 0} migrations · faltas {(operations?.health.missingTables ?? 0)+(operations?.health.missingMigrations ?? 0)}</small></article>
-          </section>}
-
-          {overviewPage === 1 && <section className='overviewCards overviewCardsCertification'>
-            <article className='overviewCard'><span>Quorum técnico</span><strong>{operations?.continuity.quorumOk ? 'PASS' : 'FAIL'}</strong><small>{operations?.continuity.channels.length ?? 0} canais técnicos disponíveis</small></article>
-            <article className='overviewCard'><span>ZEES-16</span><strong>{operations?.zees16.proven ?? 0}/16</strong><small>{operations?.zees16.partial ?? 0} parciais · {operations?.zees16.blocked ?? 0} bloqueados</small></article>
-            <article className='overviewCard'><span>ZEA-10</span><strong>{operations?.zea10.proven ?? 0}/10</strong><small>{operations?.zea10.partial ?? 0} parciais · {operations?.zea10.blocked ?? 0} bloqueados</small></article>
-          </section>}
-
-          {overviewPage === 2 && <section className='overviewCards overviewCardsChannels'>
-            <article className='overviewCard'><span>Canais configurados</span><strong>{operations?.channels.length ?? 0}</strong><small>detalhamento disponível em Comercial</small></article>
-            <article className='overviewCard'><span>WhatsApp</span><strong>{operationalLabel(operations?.runtime.whatsapp)}</strong><small>dependência obrigatória: {operations?.continuity.whatsappDependencyRequired ? 'sim' : 'não'}</small></article>
-            <article className='overviewCard'><span>Execução comercial</span><strong>{operations?.channels.filter(channel => channel.commercialExecution === 'enabled').length ?? 0}</strong><small>canais com execução habilitada</small></article>
-            <article className='overviewCard'><button className='secondary compact overviewJump' onClick={() => setView('commercial')}>Abrir Comercial</button></article>
-          </section>}
-
-          {overviewPage === 3 && <section className='overviewGrid overviewGridSingle'>
-            <article className='panel'>
-              <div className='panelhead'><div><p className='kicker'>ATENÇÃO EXECUTIVA</p><h2>O que está bloqueando</h2></div><AlertTriangle size={20} /></div>
-              <div className='executiveList'>
-                <div><span>Estado global</span><b>{operationalLabel(operations?.control.globalState)}</b></div>
-                <div><span>Bloqueador raiz</span><b>{operations?.control.rootBlocker ?? 'unknown'}</b></div>
-                <div><span>Decisão do core</span><b>{operationalLabel(operations?.control.decision)}</b></div>
-                <div><span>Produtos bloqueados</span><b>{activeSummary.blocked}</b></div>
-                <div><span>Incidentes</span><b>{dashboard.incidents.length}</b></div>
+          <section className='ownerOverviewGrid'>
+            <article className='ownerRevenueCard premiumCard'>
+              <div className='premiumCardHead'>
+                <div><h3>Receita</h3><p>Últimos 12 dias · somente pagamentos confirmados</p></div>
+                <strong>{ownerOverview ? new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ownerOverview.revenueBars.reduce((a,b)=>a+b,0)/100) : '—'}</strong>
               </div>
+              {ownerOverview && ownerOverview.revenueBars.some(value => value > 0) ? (
+                <div className='ownerRevenueChart' aria-label='Receita confirmada dos últimos 12 dias'>
+                  {ownerOverview.revenueBars.map((value,index) => {
+                    const max = Math.max(...ownerOverview.revenueBars, 1);
+                    return <span key={index} className='ownerRevenueBar' style={{'--bar-height': Math.max(5, Math.round((value/max)*100)) + '%'} as CSSProperties} title={new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value/100)}><i /></span>;
+                  })}
+                </div>
+              ) : (
+                <div className='ownerEmptyState'><b>Nenhuma receita confirmada ainda</b><span>O gráfico aparecerá quando houver pagamentos reais.</span><button onClick={() => setView('finance')}>Ver financeiro</button></div>
+              )}
             </article>
-          </section>}
+
+            <article className='ownerActionCard premiumCard'>
+              <div className='premiumCardHead'><div><h3>O que precisa de mim agora</h3><p>Só decisões que exigem sua ação.</p></div></div>
+              {ownerOverview?.approvalItems.length ? (
+                <div className='ownerApprovalList'>
+                  {ownerOverview.approvalItems.slice(0,4).map(item => <div key={item.kind+item.id}><b>{item.title}</b><span>{item.kind === 'creative' ? 'Criativo' : 'Publicação'} · aguardando aprovação</span></div>)}
+                  <button className='champagneAction' onClick={() => setView('approvals')}>Revisar aprovações</button>
+                </div>
+              ) : (
+                <div className='ownerEmptyState compact'><b>Nada exige sua aprovação agora</b><span>Novas decisões aparecerão aqui.</span><button onClick={() => setView('approvals')}>Ver aprovações</button></div>
+              )}
+            </article>
+          </section>
+
+          <section className='ownerQuickCards'>
+            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>Vendas pausadas · modo teste</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
+            <article className='ownerQuickCard'><Headphones size={18}/><div><b>Atendimento</b><span>{ownerOverview?.openConversations ? `${ownerOverview.openConversations} conversa(s) aberta(s).` : 'Nenhuma conversa aberta.'}</span><button onClick={() => setView('support')}>Abrir conversas</button></div></article>
+            <article className='ownerQuickCard ownerEventCard'><FileCheck2 size={18}/><div><b>Últimos eventos</b>{ownerOverview?.latestEvents.length ? ownerOverview.latestEvents.map(event => <span key={event.id}>{event.title}</span>) : <span>Nenhum evento recente.</span>}<button onClick={() => setView('evidence')}>Ver evidências</button></div></article>
+          </section>
         </section>
       )}
 
@@ -991,15 +1186,15 @@ function App() {
               </div>
             </div>
             <div className='operationSummary'>
-              <span>Incidentes <b>{dashboard.incidents.length}</b></span>
-              <span>Auditorias <b>{dashboard.audits.length}</b></span>
-              <span>Melhorias <b>{dashboard.improvements.length}</b></span>
+              <span>Incidentes <b>{shellDashboard.incidents.length}</b></span>
+              <span>Auditorias <b>{shellDashboard.audits.length}</b></span>
+              <span>Melhorias <b>{shellDashboard.improvements.length}</b></span>
             </div>
           </div>
           <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>INCIDENTES</p><h2>Fila operacional</h2></div><div className='opsPager'>{incidentPageCount > 1 && <><button className='secondary compact' onClick={() => setIncidentPage(Math.max(0, safeIncidentPage - 1))} disabled={safeIncidentPage === 0}>‹</button><strong>{safeIncidentPage + 1}/{incidentPageCount}</strong><button className='secondary compact' onClick={() => setIncidentPage(Math.min(incidentPageCount - 1, safeIncidentPage + 1))} disabled={safeIncidentPage >= incidentPageCount - 1}>›</button></>}<AlertTriangle size={20} /></div></div>
             <div className='feed'>
-              {dashboard.incidents.length === 0
+              {shellDashboard.incidents.length === 0
                 ? <div className='empty'>Nenhum incidente registrado.</div>
                 : pagedIncidents.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
@@ -1012,7 +1207,7 @@ function App() {
           <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>AUDITORIA</p><h2>Achados recentes</h2></div><div className='opsPager'>{auditPageCount > 1 && <><button className='secondary compact' onClick={() => setAuditPage(Math.max(0, safeAuditPage - 1))} disabled={safeAuditPage === 0}>‹</button><strong>{safeAuditPage + 1}/{auditPageCount}</strong><button className='secondary compact' onClick={() => setAuditPage(Math.min(auditPageCount - 1, safeAuditPage + 1))} disabled={safeAuditPage >= auditPageCount - 1}>›</button></>}<ShieldCheck size={20} /></div></div>
             <div className='feed'>
-              {dashboard.audits.length === 0
+              {shellDashboard.audits.length === 0
                 ? <div className='empty'>Execute uma auditoria para gerar novos achados.</div>
                 : pagedAudits.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
@@ -1095,8 +1290,8 @@ function App() {
                     <span><b>{selectedCertificationTarget.certification.evidenceCount}</b><small>Evidencias</small></span>
                     <span><b>{selectedCertificationTarget.certification.summary.provedControls}/{selectedCertificationTarget.certification.summary.applicableControls}</b><small>Controles provados</small></span>
                   </div>
-                  {dashboard.certificationRuns?.find(run => run.targetId === selectedCertificationTarget.id) && (() => {
-                    const run = dashboard.certificationRuns!.find(item => item.targetId === selectedCertificationTarget.id)!;
+                  {shellDashboard.certificationRuns?.find(run => run.targetId === selectedCertificationTarget.id) && (() => {
+                    const run = shellDashboard.certificationRuns!.find(item => item.targetId === selectedCertificationTarget.id)!;
                     return <div className='certRunStrip'><span><b>Última execução</b>{run.status.toUpperCase()}</span><span><b>Release</b>{run.releaseFingerprint}</span><span><b>SHA</b>{run.sourceSha.slice(0, 12)}</span><span><b>Pilares</b>{run.completedPillars}/16</span></div>;
                   })()}
                   {!selectedCertificationTarget.certification.ready && (compactGovernance
@@ -1154,7 +1349,7 @@ function App() {
             </div>
             <p className='productDescription'>Fonte operacional separada da certificacao: evidencias so promovem pilares quando explicitamente vinculadas ao produto e release.</p>
             <div className='systems'>
-              {dashboard.systems.map(system => (
+              {shellDashboard.systems.map(system => (
                 <article className='system' key={system.id}>
                   <div className='systemtop'>
                     <div><h3>{system.name}</h3><p>{system.domain}</p></div>

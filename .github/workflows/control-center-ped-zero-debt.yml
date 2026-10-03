@@ -3,11 +3,8 @@ name: Control Center PED-Versal Supreme Zero-Debt
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'scripts/ped_versal_zero_debt_audit.py'
-      - 'scripts/control-center-ped-runtime.mjs'
-      - '.github/workflows/control-center-ped-zero-debt.yml'
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -46,6 +43,9 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.55.0 axe-core@4.10.3 lighthouse@12
           npx playwright install --with-deps chromium
 
+      - name: Detector positive and negative self-test
+        run: node scripts/control-center-detector-selftest.mjs
+
       - name: Typecheck and production build
         run: |
           npm run typecheck
@@ -66,7 +66,7 @@ jobs:
           cat /tmp/zpc-vite-preview.log
           exit 1
 
-      - name: Audit 14 areas x 4 viewports x 2 themes
+      - name: Audit 14 areas x 5 viewports x 2 themes
         env:
           CONTROL_CENTER_AUDIT_URL: http://127.0.0.1:4173
         run: node scripts/control-center-ped-runtime.mjs

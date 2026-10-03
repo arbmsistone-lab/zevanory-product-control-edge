@@ -1,6 +1,6 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
-import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesLifecycle, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
+import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialCleanup, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesLifecycle, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
 import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
 import type { CommercialRecordKind } from '../src/commercial-model.ts';
 import type { ZevanorySalesAction } from '../src/zevanory-sales-model.ts';
@@ -2742,6 +2742,121 @@ async function loadOperationalSnapshot(): Promise<OperationalSnapshot> {
   }
 }
 
+
+type OverviewSourceResult<T> = {
+  ok: boolean;
+  data: T | null;
+  elapsedMs: number;
+  error: string | null;
+};
+
+async function overviewSource<T>(loader: () => Promise<T>): Promise<OverviewSourceResult<T>> {
+  const started = Date.now();
+  try {
+    return { ok: true, data: await loader(), elapsedMs: Date.now() - started, error: null };
+  } catch (err) {
+    return {
+      ok: false,
+      data: null,
+      elapsedMs: Date.now() - started,
+      error: err instanceof Error ? err.message : 'source_unavailable',
+    };
+  }
+}
+
+async function overviewJson(url: string) {
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json', 'user-agent': 'ZEVANORY-Control-Center-Overview/1.0' },
+    signal: AbortSignal.timeout(1800),
+  });
+  if (!response.ok) throw new Error(`http_${response.status}`);
+  return response.json() as Promise<any>;
+}
+
+async function fastOverviewData() {
+  const started = Date.now();
+  const [health, status, control, continuity, inventory] = await Promise.all([
+    overviewSource(() => overviewJson('https://zevanory.api.br/api/health')),
+    overviewSource(() => overviewJson('https://zevanory.api.br/api/status')),
+    overviewSource(() => overviewJson('https://zevanory.api.br/api/control-plane')),
+    overviewSource(() => overviewJson('https://zevanory.api.br/api/continuity')),
+    overviewSource(async () => {
+      await ensureProducts();
+      const rows = await db.list<ProductRecord>(productTable(), { limit: 100 });
+      const items = rows.items
+        .filter(item => !retiredPublicProductSlugs.has(item.slug))
+        .map(enrichProduct);
+      return {
+        total: items.length,
+        salesEnabled: items.filter(item => item.salesEnabled).length,
+        commercialReady: items.filter(item => item.commercialReady).length,
+        blocked: items.filter(item => !item.commercialReady && item.status !== 'archived').length,
+      };
+    }),
+  ]);
+
+  const h = health.ok ? (health.data as any) : {};
+  const s = status.ok ? (status.data as any) : {};
+  const c = control.ok ? (control.data as any) : {};
+  const q = continuity.ok ? (continuity.data as any) : {};
+  const channelReadiness = s?.channel_readiness || {};
+  const channels = Object.entries(channelReadiness).map(([name, value]: [string, any]) => ({
+    name,
+    scopeStatus: String(value?.scope_status || 'unknown'),
+    releaseGate: String(value?.release_gate || 'unknown'),
+    commercialExecution: String(value?.commercial_execution || 'unknown'),
+  }));
+
+  return {
+    elapsedMs: Date.now() - started,
+    sources: {
+      health: { ok: health.ok, elapsedMs: health.elapsedMs, error: health.error },
+      status: { ok: status.ok, elapsedMs: status.elapsedMs, error: status.error },
+      control: { ok: control.ok, elapsedMs: control.elapsedMs, error: control.error },
+      continuity: { ok: continuity.ok, elapsedMs: continuity.elapsedMs, error: continuity.error },
+      inventory: { ok: inventory.ok, elapsedMs: inventory.elapsedMs, error: inventory.error },
+    },
+    operations: {
+      available: health.ok || status.ok || control.ok || continuity.ok,
+      generatedAt: String(h?.generated_at || s?.generated_at || c?.generated_at || q?.generated_at || '') || null,
+      releaseSha: null,
+      health: {
+        ready: Boolean(h?.ready),
+        live: Boolean(h?.live ?? h?.ready),
+        databaseReachable: Boolean(h?.checks?.database_reachable),
+        schemaReady: Boolean(h?.checks?.schema_ready),
+        requiredTables: Number(h?.schema?.required_tables || 0),
+        requiredMigrations: Number(h?.schema?.required_migrations || 0),
+        missingTables: Number(h?.schema?.missing_tables_count || 0),
+        missingMigrations: Number(h?.schema?.missing_migrations_count || 0),
+      },
+      runtime: {
+        sales: String(s?.runtime?.sales || 'unknown'),
+        checkout: String(s?.runtime?.checkout || 'unknown'),
+        financial: String(s?.runtime?.financial || 'unknown'),
+        whatsapp: String(s?.runtime?.whatsapp || 'unknown'),
+      },
+      control: {
+        globalState: String(c?.global_state || 'unknown'),
+        rootBlocker: String(c?.root_blocker || 'none'),
+        decision: String(c?.decision || 'unknown'),
+      },
+      continuity: {
+        quorumOk: Boolean(q?.quorum_ok),
+        mode: String(q?.mode || 'unknown'),
+        channels: Array.isArray(q?.available_channels) ? q.available_channels.map(String) : [],
+        whatsappDependencyRequired: Boolean(q?.whatsapp_dependency_required),
+      },
+      channels,
+      zees16: { proven: 0, partial: 0, blocked: 0 },
+      zea10: { proven: 0, partial: 0, blocked: 0, unknown: 0 },
+    } satisfies OperationalSnapshot,
+    summary: inventory.ok
+      ? inventory.data
+      : { total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0 },
+  };
+}
+
 async function adminData() {
   await Promise.all([ensureSeed(), ensureProducts()]);
   const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns, globalTrust, operations] = await Promise.all([
@@ -2803,45 +2918,35 @@ async function adminData() {
       : item);
   }
 
-  const zevanoryCanonicalEvidence = zevanoryProduct
-    ? await canonicalZevanoryEvidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryP08Evidence = zevanoryProduct
-    ? await canonicalZevanoryP08Evidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryP09Evidence = zevanoryProduct
-    ? await canonicalZevanoryP09Evidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryP13Evidence = zevanoryProduct
-    ? await canonicalZevanoryP13Evidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryExactWorkflowEvidence = zevanoryProduct
-    ? await canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P07','P11','P12','P16'])
-    : [];
-  const zevanoryDirectExactEvidence = zevanoryProduct
-    ? await canonicalZevanoryDirectExactReleaseEvidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryDurableProtectedEvidence = zevanoryProduct
-    ? await canonicalZevanoryDurableProtectedEvidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const zevanoryDurableSecuritySupplyEvidence = zevanoryProduct
-    ? await canonicalZevanoryDurableSecuritySupplyEvidence(zevanoryProduct, zevanorySystem)
-    : [];
-  const digitalPortfolioTechnicalEvidence = (await Promise.all(
-    products.items.map(item => canonicalDigitalPortfolioTechnicalEvidence(item))
-  )).flat();
-  const digitalPortfolioP16Evidence = (await Promise.all(
-    products.items.map(item => canonicalDigitalPortfolioP16Evidence(item))
-  )).flat();
-  const zevanoryOneProtectedEvidence = (await Promise.all(
-    products.items.map(item => canonicalZevanoryOneProtectedEvidence(item))
-  )).flat();
-  const zevanoryOneDurableEvidence = (await Promise.all(
-    products.items.map(item => canonicalZevanoryOneDurableEvidence(item))
-  )).flat();
-  const portfolioExactWorkflowEvidence = (await Promise.all(
-    products.items.map(item => canonicalPortfolioExactVerifierEvidence(item, ['P03']))
-  )).flat();
+  const [
+    zevanoryCanonicalEvidence,
+    zevanoryP08Evidence,
+    zevanoryP09Evidence,
+    zevanoryP13Evidence,
+    zevanoryExactWorkflowEvidence,
+    zevanoryDirectExactEvidence,
+    zevanoryDurableProtectedEvidence,
+    zevanoryDurableSecuritySupplyEvidence,
+    digitalPortfolioTechnicalEvidence,
+    digitalPortfolioP16Evidence,
+    zevanoryOneProtectedEvidence,
+    zevanoryOneDurableEvidence,
+    portfolioExactWorkflowEvidence,
+  ] = await Promise.all([
+    zevanoryProduct ? canonicalZevanoryEvidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryP08Evidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryP09Evidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryP13Evidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryExactVerifierEvidence(zevanoryProduct, zevanorySystem, ['P03','P05','P07','P11','P12','P16']) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryDirectExactReleaseEvidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryDurableProtectedEvidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    zevanoryProduct ? canonicalZevanoryDurableSecuritySupplyEvidence(zevanoryProduct, zevanorySystem) : Promise.resolve([]),
+    Promise.all(products.items.map(item => canonicalDigitalPortfolioTechnicalEvidence(item))).then(rows => rows.flat()),
+    Promise.all(products.items.map(item => canonicalDigitalPortfolioP16Evidence(item))).then(rows => rows.flat()),
+    Promise.all(products.items.map(item => canonicalZevanoryOneProtectedEvidence(item))).then(rows => rows.flat()),
+    Promise.all(products.items.map(item => canonicalZevanoryOneDurableEvidence(item))).then(rows => rows.flat()),
+    Promise.all(products.items.map(item => canonicalPortfolioExactVerifierEvidence(item, ['P03']))).then(rows => rows.flat()),
+  ]);
   const effectiveCertificationEvidence = [...certificationEvidence.items, ...zevanoryCanonicalEvidence, ...zevanoryP08Evidence, ...zevanoryP09Evidence, ...zevanoryP13Evidence, ...zevanoryExactWorkflowEvidence, ...zevanoryDirectExactEvidence, ...zevanoryDurableProtectedEvidence, ...zevanoryDurableSecuritySupplyEvidence, ...digitalPortfolioTechnicalEvidence, ...digitalPortfolioP16Evidence, ...zevanoryOneProtectedEvidence, ...zevanoryOneDurableEvidence, ...portfolioExactWorkflowEvidence];
   const enriched = products.items.filter(product => !retiredPublicProductSlugs.has(product.slug)).map(product => {
     const base = enrichProduct(product);
@@ -2888,8 +2993,10 @@ async function adminData() {
     })),
   ];
 
-  const commercial = await commercialWorkspace(operations);
-  const cfo = await cfoWorkspace();
+  const [commercial, cfo] = await Promise.all([
+    commercialWorkspace(operations),
+    cfoWorkspace(),
+  ]);
 
   return {
     globalTrust,
@@ -3010,6 +3117,11 @@ export const handler = router({
     if (legacyMatch) await db.delete(PIN_SESSIONS, [legacyMatch.id]);
     return json({ ok: true });
   }],
+  'POST /api/admin/overview': [async ctx => {
+    const token = (ctx.body as { sessionToken?: string })?.sessionToken;
+    if (!await requirePinSession(token)) return error('Sessao invalida ou expirada.', 401);
+    return json(await fastOverviewData());
+  }],
   'POST /api/admin/bootstrap': [async ctx => {
     const token = (ctx.body as { sessionToken?: string })?.sessionToken;
     if (!await requirePinSession(token)) return error('Sessao invalida ou expirada.', 401);
@@ -3095,6 +3207,19 @@ export const handler = router({
       return json(await commercialAdminUpdate(String(body.id), body.kind, body as any));
     } catch (err) {
       return error(`Falha ao atualizar registro comercial: ${String(err)}`, 400);
+    }
+  }],
+  'POST /api/admin/commercial-cleanup': [async ctx => {
+    const body = ctx.body as { sessionToken?: string; mode?: 'dry-run' | 'apply'; confirm?: string };
+    if (!await requirePinSession(body.sessionToken)) return error('Sessao invalida ou expirada.', 401);
+    try {
+      return json(await commercialCleanup({ mode: body.mode, confirm: body.confirm }));
+    } catch (err) {
+      const message = String(err);
+      if (message.includes('commercial_cleanup_apply_confirmation_required')) {
+        return error('Apply exige confirmacao explicita do dono.', 409);
+      }
+      return error(`Falha no saneamento comercial: ${message}`, 400);
     }
   }],
   'POST /api/commercial/approval': [async ctx => {
