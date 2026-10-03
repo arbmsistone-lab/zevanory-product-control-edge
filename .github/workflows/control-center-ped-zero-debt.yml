@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: control-center-ped-zero-debt-${{ github.ref }}
@@ -70,6 +70,25 @@ jobs:
         env:
           CONTROL_CENTER_AUDIT_URL: http://127.0.0.1:4173
         run: node scripts/control-center-ped-runtime.mjs
+
+      - name: Publish runtime audit defects for review
+        if: failure()
+        env:
+          GH_PUSH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f control-center-audit/report.json || exit 0
+          rm -rf /tmp/defects && mkdir -p /tmp/defects
+          node -e 'const r=require("./control-center-audit/report.json");const fs=require("fs");const bad=r.report.filter(x=>(x.failures||[]).length);fs.writeFileSync("/tmp/defects/defects.json",JSON.stringify(bad,null,2));for(const x of bad){if(x.screenshot&&fs.existsSync(x.screenshot))fs.copyFileSync(x.screenshot,"/tmp/defects/"+require("path").basename(x.screenshot));}'
+          echo "${GITHUB_SHA}" > /tmp/defects/SOURCE_SHA
+          cd /tmp/defects
+          git init -q && git checkout -q -b review/control-center-audit
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -qm "audit defects for ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:review/control-center-audit
+          echo "REVIEW_BRANCH=review/control-center-audit"
 
       - name: Lighthouse production-candidate audit
         shell: bash
