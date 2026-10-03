@@ -360,7 +360,7 @@ html, body, button, input, select, textarea {
   --status-error: var(--z-error);
   --status-warning: var(--z-warning);
   --status-info: var(--z-action-light);
-  --status-success-text: #235D46;
+  --status-success-text: #1E523E;
   --status-error-text: #7B2D2D;
   --status-warning-text: #5E4619;
   --status-info-text: #5E4619;

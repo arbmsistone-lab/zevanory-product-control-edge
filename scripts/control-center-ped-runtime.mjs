@@ -432,7 +432,7 @@ await fs.writeFile(outDir+'/report.json',JSON.stringify({schema:'zevanory.contro
 console.log('CONTROL_CENTER_RUNTIME_STATES='+report.length);
 if(failed){
   const counts={};const samples=[];
-  for(const r of report)for(const f of (r.failures||[])){counts[f.code]=(counts[f.code]||0)+1;if(samples.length<12)samples.push(`${r.viewport?.width||r.viewport}x${r.viewport?.height||''}/${r.theme}/${r.view}: ${f.code} ${String(typeof f.detail==='string'?f.detail:JSON.stringify(f.detail)).slice(0,160)}`);}
+  for(const r of report)for(const f of (r.failures||[])){counts[f.code]=(counts[f.code]||0)+1;if(samples.filter(x=>x.includes(' '+f.code+' ')).length<4)samples.push(`${r.viewport?.width||r.viewport}x${r.viewport?.height||''}/${r.theme}/${r.view}: ${f.code} ${String(typeof f.detail==='string'?f.detail:JSON.stringify(f.detail)).slice(0,160)}`);}
   console.log('::error title=PED_RUNTIME_COUNTS::'+JSON.stringify(counts));
   for(const s of samples)console.log('::error title=PED_RUNTIME_DEFECT::'+s.replace(/[\r\n]+/g,' '));
   console.log('CONTROL_CENTER_PED_RUNTIME=FAIL');process.exit(1);
