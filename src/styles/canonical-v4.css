@@ -905,3 +905,17 @@ html,body,#root,.app-container{width:100%!important;max-width:100%!important;min
     color-scheme:light;
   }
 }
+
+/* Keep the compact governance summary within the mobile workspace.
+   Reduce decorative space while preserving text and 44px controls. */
+@media (max-width:620px) {
+  .shell-governance[data-compact-governance='true'] .governanceStack,
+  .shell-governance[data-compact-governance='true'] .certWorkspace,
+  .shell-governance[data-compact-governance='true'] .certDetail {
+    gap:var(--zpc-space-1)!important;
+  }
+  .shell-governance[data-compact-governance='true'] .governanceHero,
+  .shell-governance[data-compact-governance='true'] .certSummaryPanel {
+    padding-block:var(--zpc-space-1)!important;
+  }
+}
