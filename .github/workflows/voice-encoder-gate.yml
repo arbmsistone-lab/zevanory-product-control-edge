@@ -2,7 +2,7 @@ name: Voice reserve encoder gate
 on:
   pull_request:
     branches: [main]
-    paths: ['backend/voice-*.mjs', 'scripts/voice-encoder-test.mjs', 'server.ts', '.github/workflows/voice-encoder-gate.yml']
+    paths: ['backend/voice-*.mjs', 'scripts/voice-encoder-test.mjs', 'scripts/voice-synthesis-test.mjs', 'server.ts', '.github/workflows/voice-encoder-gate.yml']
 permissions:
   contents: read
 jobs:
@@ -13,4 +13,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - run: node scripts/voice-encoder-test.mjs
+      - run: |
+          node scripts/voice-encoder-test.mjs
+          node scripts/voice-synthesis-test.mjs
