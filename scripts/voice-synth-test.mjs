@@ -5,7 +5,7 @@ import {voiceSynthHandler} from '../backend/voice-synth.mjs';
 process.env.VOICE_ENCODE_SECRET='unit-test-secret-that-is-at-least-32-characters';
 const pcm=Buffer.alloc(24000*2);for(let i=0;i<24000;i++)pcm.writeInt16LE(Math.round(6000*Math.sin(2*Math.PI*220*i/24000)),i*2);
 let geminiCalls=[];
-const okGemini=async(url)=>{geminiCalls.push(url);return new Response(JSON.stringify({candidates:[{content:{parts:[{inlineData:{mimeType:'audio/L16;codec=pcm;rate=24000',data:pcm.toString('base64')}}]}}]}),{status:200});};
+const okGemini=async(url)=>{geminiCalls.push(url);return new Response(JSON.stringify({steps:[{type:'model_output',content:[{type:'audio',mime_type:'audio/l16',sample_rate:24000,data:pcm.toString('base64')}]}]}),{status:200});};
 const quotaGemini=async(url)=>{geminiCalls.push(url);return new Response('{}',{status:429});};
 function sign(raw,nonce,ts=String(Date.now())){const m=['zevanory-voice-synth-v1',ts,nonce,createHash('sha256').update(raw).digest('hex')].join('\n');return{'x-voice-timestamp':ts,'x-voice-nonce':nonce,'x-voice-signature':createHmac('sha256',process.env.VOICE_ENCODE_SECRET).update(m).digest('hex')};}
 async function run(raw,headers,fetchImpl=okGemini){let data,h={};const req=Readable.from([raw]);Object.assign(req,{url:'/api/voice/synthesize',method:'POST',headers});const res={statusCode:200,setHeader(k,v){h[k]=v;},end(v){data=v;}};await voiceSynthHandler(req,res,{fetchImpl});return{status:res.statusCode,data,h};}
@@ -24,3 +24,10 @@ assert.ok(!String(q.data).includes('AIza'),'key never echoed');
 const big=Buffer.from(JSON.stringify({text:'x'.repeat(20000),api_key:'k'}));
 assert.equal((await run(big,sign(big,'nonce-big-request-00001'))).status,413);
 console.log('VOICE_SYNTH_TEST=PASS');
+
+geminiCalls=[];const over=Buffer.from(JSON.stringify({text:'x'.repeat(351),api_key:'k'}));
+assert.equal((await run(over,sign(over,'nonce-over-limit-000001'))).status,400);
+assert.equal(geminiCalls.length,0);
+assert.ok(q.h['retry-after']);
+assert.ok(ok.data.length>100);
+console.log('CURRENT_GEMINI_INTERACTIONS_350_CHAR_QUOTA_HINT=PASS');
