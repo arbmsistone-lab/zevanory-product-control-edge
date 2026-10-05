@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { voiceEncodeHandler } from './backend/voice-encoder.mjs';
+import { voiceSynthHandler } from './backend/voice-synth.mjs';
 import { handler } from './backend/index';
 import { portableHealth } from './backend/platform';
 import { commercialRobotTick } from './backend/commercial';
@@ -23,6 +24,7 @@ function applyCors(req: http.IncomingMessage, res: http.ServerResponse) {
 const server = http.createServer(async (req, res) => {
   try {
     if (await voiceEncodeHandler(req, res)) return;
+    if (await voiceSynthHandler(req, res)) return;
     applyCors(req, res);
     if (req.method === 'OPTIONS') {
       res.statusCode = 204;
