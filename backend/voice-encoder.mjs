@@ -1,3 +1,4 @@
+import {pcmToMp3} from './voice-synth.mjs';
 import {createHmac,createHash,timingSafeEqual} from 'node:crypto';
 import lamejs from './voice-lame.mjs';
 const nonces=new Map();let active=0,windowAt=Date.now(),count=0;
@@ -21,11 +22,7 @@ export async function voiceEncodeHandler(req,res){
   if(!timingSafeEqual(expected,Buffer.from(sig,'hex'))){fail(401,'voice_encode_auth_required');return true;}
   for(const [k,at] of nonces)if(at<Date.now()-60000)nonces.delete(k);
   if(nonces.has(nonce)){fail(409,'voice_encode_replay');return true;}nonces.set(nonce,Date.now());
-  const samples=new Int16Array(Math.floor(size/2*8000/rate)),ratio=rate/8000;
-  for(let i=0;i<samples.length;i++){let sum=0;for(let j=i*ratio;j<(i+1)*ratio;j++)sum+=pcm.readInt16LE(j*2);samples[i]=Math.round(sum/ratio);}
-  const encoder=new lamejs.Mp3Encoder(1,8000,32),output=[];
-  for(let i=0;i<samples.length;i+=1152){const b=encoder.encodeBuffer(samples.subarray(i,i+1152));if(b.length)output.push(Buffer.from(b));}
-  output.push(Buffer.from(encoder.flush()));
-  res.statusCode=200;res.setHeader('content-type','audio/mpeg');res.setHeader('cache-control','no-store');res.end(Buffer.concat(output));return true;
+  const mp3=pcmToMp3(pcm,rate,64);
+  res.statusCode=200;res.setHeader('content-type','audio/mpeg');res.setHeader('cache-control','no-store');res.end(mp3);return true;
  }catch{fail(500,'voice_encode_failed');return true;}finally{active--;}
 }
