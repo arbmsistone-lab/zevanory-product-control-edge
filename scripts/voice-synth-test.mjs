@@ -5,7 +5,7 @@ import {voiceSynthHandler} from '../backend/voice-synth.mjs';
 process.env.VOICE_ENCODE_SECRET='unit-test-secret-that-is-at-least-32-characters';
 const pcm=Buffer.alloc(24000*2);for(let i=0;i<24000;i++)pcm.writeInt16LE(Math.round(6000*Math.sin(2*Math.PI*220*i/24000)),i*2);
 let geminiCalls=[];
-const okGemini=async(url)=>{geminiCalls.push(url);return new Response(JSON.stringify({candidates:[{content:{parts:[{inlineData:{mimeType:'audio/L16;codec=pcm;rate=24000',data:pcm.toString('base64')}}]}}]}),{status:200});};
+const okGemini=async(url,options)=>{const body=JSON.parse(options.body);assert.equal(body.contents[0].parts[0].text,'O Combo IA mais Vendas custa duzentos e noventa e sete reais.');assert.ok(body.contents[0].parts[0].speech_metadata.style);assert.equal(body.contents[0].parts[0].text.includes('Fale em'),false);geminiCalls.push(url);return new Response(JSON.stringify({candidates:[{content:{parts:[{inlineData:{mimeType:'audio/L16;codec=pcm;rate=24000',data:pcm.toString('base64')}}]}}]}),{status:200});};
 const quotaGemini=async(url)=>{geminiCalls.push(url);return new Response('{}',{status:429});};
 function sign(raw,nonce,ts=String(Date.now())){const m=['zevanory-voice-synth-v1',ts,nonce,createHash('sha256').update(raw).digest('hex')].join('\n');return{'x-voice-timestamp':ts,'x-voice-nonce':nonce,'x-voice-signature':createHmac('sha256',process.env.VOICE_ENCODE_SECRET).update(m).digest('hex')};}
 async function run(raw,headers,fetchImpl=okGemini){let data,h={};const req=Readable.from([raw]);Object.assign(req,{url:'/api/voice/synthesize',method:'POST',headers});const res={statusCode:200,setHeader(k,v){h[k]=v;},end(v){data=v;}};await voiceSynthHandler(req,res,{fetchImpl});return{status:res.statusCode,data,h};}

@@ -15,7 +15,7 @@ export function pcmToMp3(pcm,rate,kbps=48){
 export async function geminiSpeech({text,apiKey,voice='Achird',models=DEFAULT_MODELS,fetchImpl=fetch}){
  const errors=[];let quota=0;
  for(const model of models){
-  const r=await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'x-goog-api-key':apiKey,'content-type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`${STYLE}\n\n${text}`}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:voice}}}}}),signal:AbortSignal.timeout(30000)});
+  const r=await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'x-goog-api-key':apiKey,'content-type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text,speech_metadata:{style:STYLE}}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:voice}}}}}),signal:AbortSignal.timeout(30000)});
   const body=await r.json().catch(()=>({}));
   if(!r.ok){errors.push(`${model}:${r.status}`);if(r.status===429)quota++;continue;}
   const part=(body?.candidates?.[0]?.content?.parts||[]).find(p=>p?.inlineData?.data||p?.inline_data?.data);
