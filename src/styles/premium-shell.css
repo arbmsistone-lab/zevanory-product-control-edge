@@ -681,3 +681,64 @@ html, body, button, input, select, textarea {
     display: none;
   }
 }
+
+/* Layout integrity (2026-10-06): no-scroll pages must never overlap.
+   Overview: the middle row shrinks to its track; long lists scroll inside their own card. */
+.ownerOverviewGrid { min-height: 0; overflow: hidden; }
+.ownerOverviewGrid > .ownerRevenueCard,
+.ownerOverviewGrid > .ownerActionCard { height: 100%; min-height: 0; overflow: hidden; }
+.ownerActionCard .ownerApprovalList {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  align-content: start;
+}
+.ownerRevenueCard .ownerRevenueChart { flex: 1 1 auto; min-height: 64px; }
+.ownerRevenueCard .ownerRevenueBar { height: 100%; }
+.ownerRevenueCard .ownerEmptyState { min-height: 0; overflow: hidden; }
+
+/* Creative studio: the square creative sits beside its metadata; nothing is drawn on top of it. */
+.zpcWorkspace.shell-creatives .creativeLiveCard {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.zpcWorkspace.shell-creatives .creativePreview {
+  position: relative;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1;
+  width: auto;
+  overflow: hidden !important;
+}
+.zpcWorkspace.shell-creatives .creativePreview img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.zpcWorkspace.shell-creatives .creativeLiveBody {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.zpcWorkspace.shell-creatives .creativeLiveBody .creativeFacts {
+  display: grid;
+  gap: var(--zpc-space-1);
+  margin-top: var(--zpc-space-2);
+  color: var(--text-secondary);
+  font-size: var(--zpc-font-xs);
+  line-height: 1.3;
+}
+@media (max-width: 760px) {
+  .zpcWorkspace.shell-creatives .creativeLiveCard {
+    grid-template-columns: minmax(0, 46%) minmax(0, 1fr) !important;
+    align-items: start;
+  }
+  .zpcWorkspace.shell-creatives .creativePreview { width: 100%; height: auto !important; }
+}
