@@ -29,3 +29,8 @@ https://controle.zevanory.api.br/
 
 ## Automation rule
 The main branch is the single source of truth. Every relevant push must pass the free GitHub Actions canonical build gate before production promotion.
+
+## Render backend (auto-deploy)
+
+- Service `zevanory-product-control-edge` (Render, plano free) publica automaticamente a cada merge em `main` (GitHub App do Render instalado só neste repositório, 2026-10-06).
+- O painel não depende do Render para abrir: o Worker serve o último snapshot do bootstrap pela borda (KV) e revalida em segundo plano.
