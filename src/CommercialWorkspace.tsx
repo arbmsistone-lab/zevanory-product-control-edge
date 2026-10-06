@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from './api';
 import { assessMarketSignal } from './prospect-signal';
+import type { AdsReadiness } from './ads-readiness';
 import {
   commercialStatusLabel,
   type CommercialRecord,
@@ -47,6 +48,43 @@ function statusClass(status: string) {
   if (['rejected','failed','lost','blocked'].includes(key)) return 'bad';
   if (['approval','pending-approval','awaiting-approval','testing','scheduled','proposal','qualified'].includes(key)) return 'warn';
   return 'neutral';
+}
+
+
+function AdsReadinessPanel({ sessionToken, compact }: { sessionToken: string; compact: boolean }) {
+  const [state, setState] = useState<{ readiness: AdsReadiness; generatedAt: string | null } | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    api.post('/api/commercial/funnel', { sessionToken })
+      .then(response => { if (active) setState({ readiness: response.data.readiness, generatedAt: response.data.summary?.generatedAt || null }); })
+      .catch(() => { if (active) setFailed(true); });
+    return () => { active = false; };
+  }, [sessionToken]);
+  if (failed) return <div className='adsPanel'><b>Anúncios pagos</b><small>Funil indisponível agora; nenhuma métrica foi presumida.</small></div>;
+  if (!state) return <div className='adsPanel'><b>Anúncios pagos</b><small>Calculando com o funil dos últimos 30 dias…</small></div>;
+  const { readiness } = state;
+  const m = readiness.metrics;
+  const money = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+  return (
+    <div className={'adsPanel ' + readiness.status.toLowerCase()} aria-label='Prontidão para anúncios pagos'>
+      <div className='adsHead'>
+        <span className='adsStatus'>{readiness.status}</span>
+        <div><b>Anúncios pagos · {readiness.headline}</b><small>{readiness.nextMilestone}</small></div>
+      </div>
+      <div className='adsMetrics'>
+        <span>Visitantes <b>{m.visitors}</b></span>
+        <span>Vendas <b>{m.paid}</b></span>
+        <span>Conversão mín. <b>{(m.conversionLow * 100).toFixed(1).replace('.', ',')}%</b></span>
+        <span>CPC máx. <b>{money(m.maxCpc)}</b></span>
+      </div>
+      {!compact && (
+        <div className='adsCriteria'>
+          {readiness.criteria.map(item => <span key={item.id} className={item.ok ? 'ok' : 'wait'} title={item.detail}>{item.ok ? '✓' : '·'} {item.label}</span>)}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function RecordRow({ item }: { item: CommercialRecord }) {
@@ -255,7 +293,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['new','nurture','qualified','contact-ready','contacted','conversation','offer','follow-up','checkout','payment','customer','fulfillment','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-  const genericPageSize = viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4;
+  const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' ? 1 : 0));
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);
   const pagedItems = items.slice(safeListPage * genericPageSize, (safeListPage + 1) * genericPageSize);
@@ -371,6 +409,8 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           </div>
         </article>
       )}
+
+      {section === 'finance' && <AdsReadinessPanel sessionToken={sessionToken} compact={viewportWidth <= 700 || viewportHeight <= 700} />}
 
       {!['commercial','approvals','creatives'].includes(section) && (
         <article className='commercialPanel'>

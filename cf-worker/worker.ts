@@ -1,4 +1,5 @@
 import { handler, verifyEdgeSession } from './backend-index.ts';
+import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
@@ -1121,6 +1122,16 @@ export default {
           if (!success) return Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
         } catch {}
       }
+    }
+
+    if (normalizedPath === '/api/commercial/funnel' && request.method === 'POST') {
+      // Funnel + paid-ads readiness from the hourly summary published by the main Worker.
+      let token = '';
+      try { token = String((await request.clone().json() as any)?.sessionToken || ''); } catch {}
+      if (!token || !(await verifyEdgeSession(token))) return Response.json({ ok: false, error: 'unauthorized' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+      let summary: any = null;
+      try { summary = JSON.parse(String(await (env as any).T2_CREATIVE_ASSETS?.get?.('zpc-funnel:v1:summary') || 'null')); } catch {}
+      return Response.json({ ok: true, summary, readiness: assessAdsReadiness(summary), policy: ADS_POLICY }, { headers: { 'cache-control': 'no-store' } });
     }
 
     if (normalizedPath.startsWith('/api/')) {
