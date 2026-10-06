@@ -461,6 +461,6 @@
   inline-size: 100%;
   block-size: 88px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: var(--zpc-radius-sm);
   margin-block: var(--zpc-space-2);
 }
