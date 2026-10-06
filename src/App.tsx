@@ -496,13 +496,23 @@ function App() {
       const response = await api.post('/api/admin/bootstrap', { sessionToken: token }, { signal: controller.signal });
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       setDashboard(response.data.dashboard);
-      setCommercial(response.data.commercial ?? null);
-      setCfo(response.data.cfo ?? null);
+      // The edge fallback runtime does not carry commercial/CFO workspaces; keep the last good ones.
+      if (response.data.commercial) setCommercial(response.data.commercial);
+      if (response.data.cfo) setCfo(response.data.cfo);
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setAuthState('ready');
-    } catch {
+      if (Number(response.data.snapshotAgeMs || 0) > 60000) {
+        window.setTimeout(() => { if (generation === loadGeneration.current) void load(token); }, 20000);
+      }
+    } catch (cause) {
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
+      const status = Number((cause as { response?: { status?: number } })?.response?.status || 0);
+      if (status !== 401 && status !== 403) {
+        // Transient backend failure: keep the session and the last good data; retry shortly.
+        window.setTimeout(() => { if (generation === loadGeneration.current) void load(token); }, 10000);
+        return;
+      }
       localStorage.removeItem('arbm_admin_session');
       setSessionToken('');
       setAuthState('signedout');

@@ -3,7 +3,7 @@ import { createHmac } from 'node:crypto';
 import { verifyCommercialRobotTickRequest } from './backend/commercial-robot-auth';
 import { voiceEncodeHandler } from './backend/voice-encoder.mjs';
 import { voiceSynthHandler } from './backend/voice-synth.mjs';
-import { handler } from './backend/index';
+import { handler, invalidateAdminSnapshot, prewarmAdminSnapshot } from './backend/index';
 import { portableHealth } from './backend/platform';
 import { commercialRobotTick } from './backend/commercial';
 import { runDrReconcileDryRun } from './scripts/dr-reconcile-zpc';
@@ -75,7 +75,10 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ ok: false, error: auth.error }));
         return;
       }
+      invalidateAdminSnapshot();
       const result = await commercialRobotTick();
+      invalidateAdminSnapshot();
+      void prewarmAdminSnapshot();
       void triggerCreativeFactory()
         .then(factory => console.info('commercial_creative_factory_tick', JSON.stringify(factory)))
         .catch(error => console.error('commercial_creative_factory_failed', error instanceof Error ? error.message : String(error)));
@@ -131,11 +134,14 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(port, '0.0.0.0', () => {
   console.log('portable backend listening', port);
+  setTimeout(() => { void prewarmAdminSnapshot(); }, 3_000).unref();
 
   const runCommercialRobot = () => {
     void commercialRobotTick()
       .then(async result => {
         console.info('commercial_robot_tick', JSON.stringify(result));
+        invalidateAdminSnapshot();
+        void prewarmAdminSnapshot();
         const factory = await triggerCreativeFactory();
         console.info('commercial_creative_factory_tick', JSON.stringify(factory));
       })
