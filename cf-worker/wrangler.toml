@@ -19,5 +19,8 @@ SUPABASE_PUBLISHABLE_KEY = "sb_publishable_IAPNVvyZRbgLjiaEdArk_g_6qd3Dp_-"
 RENDER_BACKEND_URL = "https://zevanory-product-control-edge.onrender.com"
 BACKEND_INSTANCE_ID = "cloudflare"
 
+[ai]
+binding = "AI"
+
 [triggers]
 crons = ["*/15 * * * *"]
