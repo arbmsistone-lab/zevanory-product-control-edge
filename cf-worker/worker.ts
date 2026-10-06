@@ -223,7 +223,12 @@ async function runT2CreativeFactory(env: Record<string, any>) {
   );
   if (approvals.length < 5) throw new Error('t2_approval_count_' + approvals.length);
 
-  const briefs = current.filter((item: any) => item?.status === 'brief' && !item?.imageDataUrl);
+  const today = new Date().toISOString().slice(0, 10);
+  const briefs = current.filter((item: any) =>
+    item?.status === 'brief' &&
+    !item?.imageDataUrl &&
+    String(item?.createdAt || '').slice(0, 10) < today
+  );
   if (briefs.length) {
     const archivedAt = new Date().toISOString();
     const items = briefs.map((item: any) => ({
