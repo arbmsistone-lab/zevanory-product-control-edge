@@ -85,15 +85,21 @@ const T2_PRODUCT_SLUGS = ['ia-na-pratica','vendas-na-pratica','lucro-e-caixa','c
 const T2_CREATIVE_BUCKET = 'zpc_commercial_creatives';
 
 async function verifyFactoryRequest(request: Request, env: Record<string, unknown>) {
-  const secret = String(env.CERTIFICATION_E2E_TOKEN || '');
+  const secrets = [env.COMMERCIAL_ROBOT_TICK_SECRET, env.CERTIFICATION_E2E_TOKEN]
+    .map(value => String(value || ''))
+    .filter(value => value.length >= 32);
   const timestamp = String(request.headers.get('x-commercial-timestamp') || '');
   const nonce = String(request.headers.get('x-commercial-nonce') || '');
   const signature = String(request.headers.get('x-commercial-signature') || '').toLowerCase();
-  if (secret.length < 32 || !/^\d{13}$/.test(timestamp) || !/^[0-9a-f-]{36}$/i.test(nonce) || !/^[0-9a-f]{64}$/.test(signature)) return false;
+  if (!secrets.length || !/^\d{13}$/.test(timestamp) || !/^[0-9a-f-]{36}$/i.test(nonce) || !/^[0-9a-f]{64}$/.test(signature)) return false;
   if (Math.abs(Date.now() - Number(timestamp)) > 5 * 60 * 1000) return false;
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
   const bytes = Uint8Array.from(signature.match(/.{2}/g) || [], pair => parseInt(pair, 16));
-  return crypto.subtle.verify('HMAC', key, bytes, new TextEncoder().encode(['zevanory-commercial-creative-factory-v1', timestamp, nonce].join('\n')));
+  const message = new TextEncoder().encode(['zevanory-commercial-creative-factory-v1', timestamp, nonce].join('\n'));
+  for (const secret of secrets) {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    if (await crypto.subtle.verify('HMAC', key, bytes, message)) return true;
+  }
+  return false;
 }
 
 async function t2StoreCall(env: Record<string, unknown>, payload: Record<string, unknown>) {
