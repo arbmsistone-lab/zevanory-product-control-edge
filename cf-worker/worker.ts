@@ -201,7 +201,8 @@ async function runT2CreativeFactory(env: Record<string, any>) {
     const imageMime = imageDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
     if (!env.T2_CREATIVE_ASSETS?.put) throw new Error('t2_asset_kv_binding_missing');
     const imageBytes = Uint8Array.from(atob(imageBase64), ch => ch.charCodeAt(0));
-    await env.T2_CREATIVE_ASSETS.put(assetId, imageBytes, { metadata: { mime: imageMime, sourceKey, createdAt: now } });
+    const assetKey = 't2-creative/v1/' + assetId;
+    await env.T2_CREATIVE_ASSETS.put(assetKey, imageBytes, { metadata: { mime: imageMime, sourceKey, createdAt: now } });
     const imageUrl = 'https://controle.zevanory.api.br/api/commercial/creative/assets/' + assetId + (imageMime === 'image/png' ? '.png' : '.jpg');
     const record = {
       kind: 'creative',
@@ -300,7 +301,7 @@ export default {
       if (!match) return Response.json({ ok: false, error: 'creative_asset_invalid' }, { status: 400 });
       try {
         if (!env.T2_CREATIVE_ASSETS?.getWithMetadata) return Response.json({ ok: false, error: 'creative_asset_store_unavailable' }, { status: 503 });
-        const asset = await env.T2_CREATIVE_ASSETS.getWithMetadata(match[1], { type: 'arrayBuffer' }) as any;
+        const asset = await env.T2_CREATIVE_ASSETS.getWithMetadata('t2-creative/v1/' + match[1], { type: 'arrayBuffer' }) as any;
         if (!asset?.value) return Response.json({ ok: false, error: 'creative_asset_not_found' }, { status: 404 });
         const mime = String(asset?.metadata?.mime || (match[2].toLowerCase() === 'png' ? 'image/png' : 'image/jpeg'));
         return new Response(request.method === 'HEAD' ? null : asset.value, { headers: { 'content-type': mime, 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' } });
