@@ -184,7 +184,9 @@ async function runT2CreativeFactory(
   const existing = Array.isArray(listed?.items) ? listed.items : [];
   const generated: string[] = [];
   const skipped: string[] = [];
-  const targetSlugs = options.finalizeOnly ? [] : (onlySlug ? [onlySlug] : [...T2_PRODUCT_SLUGS]);
+  const readySourceKeys = new Set(existing.filter((item: any) => item?.status === 'approval' && /^https:\/\//.test(String(item?.imageUrl || ''))).map((item: any) => String(item?.sourceKey || '')));
+  const firstMissingSlug = T2_PRODUCT_SLUGS.find(slug => !readySourceKeys.has('t2-workers-ai:' + slug)) || null;
+  const targetSlugs = options.finalizeOnly ? [] : (onlySlug ? [onlySlug] : (firstMissingSlug ? [firstMissingSlug] : []));
 
   for (const slug of targetSlugs) {
     const index = T2_PRODUCT_SLUGS.indexOf(slug as any);
@@ -259,9 +261,10 @@ async function runT2CreativeFactory(
     ) approvalBySourceKey.set(sourceKey, item);
   }
   const approvals = [...approvalBySourceKey.values()];
-  if (options.finalizeOnly && approvals.length < 5) throw new Error('t2_approval_count_' + approvals.length);
+  const shouldFinalize = options.finalizeOnly || (!onlySlug && approvals.length >= 5);
+  if (shouldFinalize && approvals.length < 5) throw new Error('t2_approval_count_' + approvals.length);
 
-  if (options.finalizeOnly) {
+  if (shouldFinalize) {
     const today = new Date().toISOString().slice(0, 10);
     const briefs = current.filter((item: any) =>
       item?.status === 'brief' &&
