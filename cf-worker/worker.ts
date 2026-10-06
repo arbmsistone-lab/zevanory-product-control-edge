@@ -176,9 +176,10 @@ async function t2GenerateImage(env: Record<string, any>, prompt: string, seed: n
 
 async function runT2CreativeFactory(
   env: Record<string, any>,
-  options: { onlySlug?: string | null; finalizeOnly?: boolean } = {},
+  options: { onlySlug?: string | null; finalizeOnly?: boolean; forceRegenerate?: boolean } = {},
 ) {
   const onlySlug = options.onlySlug ? String(options.onlySlug) : null;
+  const forceRegenerate = options.forceRegenerate === true;
   if (onlySlug && !T2_PRODUCT_SLUGS.includes(onlySlug as any)) throw new Error('t2_product_slug_invalid_' + onlySlug);
   const listed = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
   const existing = Array.isArray(listed?.items) ? listed.items : [];
@@ -192,7 +193,7 @@ async function runT2CreativeFactory(
     const index = T2_PRODUCT_SLUGS.indexOf(slug as any);
     const sourceKey = 't2-workers-ai:' + slug;
     const ready = existing.find((item: any) => item?.sourceKey === sourceKey && item?.status === 'approval' && /^https:\/\//.test(String(item?.imageUrl || '')));
-    if (ready) { skipped.push(slug); continue; }
+    if (ready && !forceRegenerate) { skipped.push(slug); continue; }
 
     const [contentFact, priceFact] = await Promise.all([
       t2SupportFact(slug, 'conteúdo'),
@@ -210,7 +211,8 @@ async function runT2CreativeFactory(
       'Product theme: ' + name + '.',
       'Concept: ' + String(contentFact.answer).replace(/^[^:]+:\s*/, ''),
       'Elegant dark navy and electric blue visual language, cinematic studio lighting, polished commercial design.',
-      'No logos from other brands. No testimonials. No discount. No price text. No written text in the image.',
+      'Purely visual composition with abstract geometric light forms and business-tech atmosphere; no screens, signs, documents, packaging, labels or interfaces.',
+      'Absolutely no typography: no words, letters, numbers, symbols, logos, watermarks, captions, price text or written marks anywhere in the image.',
       'Leave clean visual breathing room for approved copy.',
     ].join(' ');
     const imageDataUrl = await t2GenerateImage(env, prompt, 2100 + index);
@@ -245,7 +247,11 @@ async function runT2CreativeFactory(
       publishedAt: null,
       imageUrl,
     };
-    await t2StoreCall(env, { op: 'add', bucket: T2_CREATIVE_BUCKET, items: [{ record }] });
+    if (ready && forceRegenerate) {
+      await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items: [{ id: ready.id, record: { ...record, id: ready.id } }] });
+    } else {
+      await t2StoreCall(env, { op: 'add', bucket: T2_CREATIVE_BUCKET, items: [{ record }] });
+    }
     generated.push(slug);
   }
 
@@ -367,7 +373,8 @@ export default {
       try {
         const product = url.searchParams.get('product');
         const finalizeOnly = url.searchParams.get('finalize') === '1';
-        const result = await runT2CreativeFactory(env as Record<string, any>, { onlySlug: product, finalizeOnly });
+        const forceRegenerate = url.searchParams.get('force') === '1';
+        const result = await runT2CreativeFactory(env as Record<string, any>, { onlySlug: product, finalizeOnly, forceRegenerate });
         return Response.json(result, { headers: { 'cache-control': 'no-store' } });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
