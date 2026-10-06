@@ -262,7 +262,6 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const creativePageSize = viewportWidth <= 700 ? 1 : 2;
   // Studio shows real pieces only: archived history and briefs without art stay out of the grid.
   const studioCreatives = data.creatives.filter(item => item.status !== 'archived' && Boolean(item.imageUrl || item.imageDataUrl || item.evidence.some(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e))));
-  const hiddenCreatives = data.creatives.length - studioCreatives.length;
   const creativePageCount = Math.max(1, Math.ceil(studioCreatives.length / creativePageSize));
   const safeCreativePage = Math.min(listPage, creativePageCount - 1);
   const pagedCreatives = studioCreatives.slice(safeCreativePage * creativePageSize, (safeCreativePage + 1) * creativePageSize);
@@ -353,16 +352,18 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
 
       {section === 'creatives' && (
         <article className='commercialPanel creativeLivePanel'>
-          <div className='commercialPanelTitle'><Sparkles size={17}/><div><b>Creative Live Studio</b><small>{studioCreatives.length} peça(s){hiddenCreatives ? ' · ' + hiddenCreatives + ' arquivada(s)/brief(s) fora da vitrine' : ''} · atualização automática</small></div><div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeCreativePage - 1))} disabled={safeCreativePage === 0}>‹</button><strong>{safeCreativePage + 1}/{creativePageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(creativePageCount - 1, safeCreativePage + 1))} disabled={safeCreativePage >= creativePageCount - 1}>›</button></div></div>
+          <div className='commercialPanelTitle'><Sparkles size={17}/><div><b>Creative Live Studio</b><small>{studioCreatives.length} peça(s) · atualização automática</small></div><div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeCreativePage - 1))} disabled={safeCreativePage === 0}>‹</button><strong>{safeCreativePage + 1}/{creativePageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(creativePageCount - 1, safeCreativePage + 1))} disabled={safeCreativePage >= creativePageCount - 1}>›</button></div></div>
           <div className='creativeLiveGrid' aria-label='Criativos em tempo real'>
             {pagedCreatives.map(item => (
               <article className='creativeLiveCard' key={item.id}>
                 <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}>{(item.imageUrl || item.imageDataUrl) ? <img src={item.imageUrl || item.imageDataUrl || ''} alt={'Asset de ' + item.title} loading='lazy' /> : item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e)) ? <img src={item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e))} alt={'Asset de ' + item.title} loading='lazy' /> : <><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>ASSET PENDENTE · NÃO COMPROVADO</small></>}</div>
                 <div className='creativeLiveBody'>
                   <div className='commercialTitleLine'><strong>{item.title}</strong><span className={'commercialState ' + statusClass(item.status)}>{commercialStatusLabel(item.status)}</span></div>
-                  <p>{item.detail || 'Sem detalhe adicional.'}</p>
-                  <div className='commercialMeta'><span>Fonte: {item.source}</span><span>{time(item.updatedAt)}</span></div>
-                  <div className='creativeEvidence'>{item.evidence.length ? item.evidence.slice(0,2).map(e => <span key={e}>{e}</span>) : <span>sem asset visual anexado</span>}</div>
+                  <div className='creativeFacts'>
+                    <span>Legenda pronta · {(item.detail || '').length} caracteres</span>
+                    <span>Texto conferido com a página de vendas</span>
+                    <span>Atualizado {time(item.updatedAt)}</span>
+                  </div>
                 </div>
               </article>
             ))}

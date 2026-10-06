@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   AlertTriangle,
   Archive,
@@ -806,6 +806,27 @@ function App() {
     () => activeCertificationTargets.find(target => target.id === selectedTargetId) ?? activeCertificationTargets[0] ?? null,
     [activeCertificationTargets, selectedTargetId],
   );
+  // No-scroll overview: render only the approval rows that fit the card; the rest is one click away.
+  const approvalListRef = useRef<HTMLDivElement | null>(null);
+  const [approvalFit, setApprovalFit] = useState(3);
+  useLayoutEffect(() => {
+    const el = approvalListRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const row = el.querySelector<HTMLElement>('.ownerApprovalRow');
+      const action = el.querySelector<HTMLElement>('.champagneAction');
+      const gap = parseFloat(getComputedStyle(el).rowGap || '8') || 8;
+      const rowH = row?.offsetHeight || 52;
+      const actionH = action?.offsetHeight || 32;
+      const fit = Math.max(1, Math.floor((el.clientHeight - actionH) / (rowH + gap)));
+      setApprovalFit(previous => (previous === fit ? previous : fit));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+
   const ownerOverview = useMemo(() => {
     if (!commercial) return null;
     const now = new Date();
@@ -1084,9 +1105,9 @@ function App() {
             <article className='ownerActionCard premiumCard'>
               <div className='premiumCardHead'><div><h3>O que precisa de mim agora</h3><p>Só decisões que exigem sua ação.</p></div></div>
               {ownerOverview?.approvalItems.length ? (
-                <div className='ownerApprovalList'>
-                  {ownerOverview.approvalItems.slice(0,4).map(item => <div key={item.kind+item.id}><b>{item.title}</b><span>{item.kind === 'creative' ? 'Criativo' : 'Publicação'} · aguardando aprovação</span></div>)}
-                  <button className='champagneAction' onClick={() => setView('approvals')}>Revisar aprovações</button>
+                <div className='ownerApprovalList' ref={approvalListRef}>
+                  {ownerOverview.approvalItems.slice(0, approvalFit).map(item => <div className='ownerApprovalRow' key={item.kind+item.id}><b>{item.title}</b><span>{item.kind === 'creative' ? 'Criativo' : 'Publicação'} · aguardando aprovação</span></div>)}
+                  <button className='champagneAction' onClick={() => setView('approvals')}>{ownerOverview.approvalItems.length > approvalFit ? `Revisar todas (${ownerOverview.approvalItems.length})` : 'Revisar aprovações'}</button>
                 </div>
               ) : (
                 <div className='ownerEmptyState compact'><b>Nada exige sua aprovação agora</b><span>Novas decisões aparecerão aqui.</span><button onClick={() => setView('approvals')}>Ver aprovações</button></div>
