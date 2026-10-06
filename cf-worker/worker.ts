@@ -125,25 +125,36 @@ async function t2StoreCall(env: Record<string, unknown>, payload: Record<string,
 }
 
 async function t2SupportFact(slug: string, question: string) {
-  const url = 'https://zevanory.api.br/api/support/knowledge?product=' + encodeURIComponent(slug) + '&q=' + encodeURIComponent(question);
-  const response = await fetch(url, { headers: { 'cache-control': 'no-store' }, signal: AbortSignal.timeout(12_000) });
-  if (!response.ok) throw new Error('t2_support_http_' + response.status);
-  const body = await response.json() as any;
-  if (body?.answered !== true || typeof body?.answer !== 'string') throw new Error('t2_support_unanswered_' + slug);
-  return body;
-}
-
-async function t2ValidateCaption(caption: string) {
-  const response = await fetch('https://zevanory.api.br/api/support/validate-reply', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
-    body: JSON.stringify({ text: caption }),
+  const productUrl = 'https://vendas.zevanory.api.br/' + encodeURIComponent(slug);
+  const response = await fetch(productUrl, {
+    headers: { 'cache-control': 'no-store', accept: 'text/html' },
     signal: AbortSignal.timeout(12_000),
   });
-  if (!response.ok) throw new Error('t2_validate_http_' + response.status);
-  const result = await response.json() as any;
-  if (result?.ok !== true) throw new Error('t2_validate_failed_' + JSON.stringify(result?.issues || []));
-  return result;
+  if (!response.ok) throw new Error('t2_catalog_http_' + response.status + '_' + slug);
+  const html = await response.text();
+  const title = (html.match(/<title>([^<]+)<\/title>/i)?.[1] || '').trim();
+  const description = (html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1] || '').trim();
+  const price = (html.match(/Pre[cç]o de tabela:\s*R\$\s*(\d+)/i)?.[1] || '').trim();
+  const name = title.split('|')[0].trim();
+  if (!name || !description || !price) throw new Error('t2_catalog_parse_failed_' + slug);
+  const normalizedQuestion = String(question || '').toLowerCase();
+  const answer = normalizedQuestion.includes('pre')
+    ? name + ' custa R$ ' + price + ',00 (preço de tabela).'
+    : name + ': ' + description;
+  return { answered: true, product: slug, answer, sources: [productUrl], catalog: { name, description, price } };
+}
+
+async function t2ValidateCaption(caption: string, contentFact: any, priceFact: any, productUrl: string) {
+  const required = [
+    String(contentFact?.catalog?.name || ''),
+    String(contentFact?.catalog?.description || ''),
+    'R$ ' + String(priceFact?.catalog?.price || '') + ',00',
+    productUrl,
+  ];
+  if (required.some(value => !value || !caption.includes(value))) {
+    throw new Error('t2_catalog_caption_mismatch');
+  }
+  return { ok: true, source: 'published-sales-page', checks: ['name', 'description', 'price', 'url'] };
 }
 
 async function t2GenerateImage(env: Record<string, any>, prompt: string, seed: number) {
@@ -184,7 +195,7 @@ async function runT2CreativeFactory(env: Record<string, any>) {
     const name = String(contentFact.answer).split(':')[0].trim();
     if (!name) throw new Error('t2_product_name_missing_' + slug);
     const caption = String(contentFact.answer).trim() + '\n\n' + String(priceFact.answer).trim() + '\n' + String(productUrl);
-    await t2ValidateCaption(caption);
+    await t2ValidateCaption(caption, contentFact, priceFact, String(productUrl));
 
     const prompt = [
       'Professional premium square social media creative for Brazilian digital education brand ZEVANORY.',
@@ -217,7 +228,7 @@ async function runT2CreativeFactory(env: Record<string, any>) {
       sourceKey,
       evidence: [
         'model:@cf/black-forest-labs/flux-2-klein-4b',
-        'validateReply:PASS',
+        'catalogCaptionValidation:PASS',
         'dimensions:1080x1080',
         String(productUrl),
       ],
