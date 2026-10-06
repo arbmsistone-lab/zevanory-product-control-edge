@@ -1,20 +1,29 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-const usedNonces = new Map();
+type HeaderMap = Record<string, string | string[] | undefined>;
+type AuthResult =
+  | { ok: true; status: 200 }
+  | { ok: false; status: 401 | 409 | 503; error: string };
 
-function cleanNonceCache(now) {
+const usedNonces = new Map<string, number>();
+
+function cleanNonceCache(now: number) {
   for (const [nonce, at] of usedNonces) {
     if (at < now - 120_000) usedNonces.delete(nonce);
   }
 }
 
-export function verifyCommercialRobotTickRequest(headers, now = Date.now()) {
+function headerValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? String(value[0] || '') : String(value || '');
+}
+
+export function verifyCommercialRobotTickRequest(headers: HeaderMap, now = Date.now()): AuthResult {
   const secret = String(process.env.COMMERCIAL_ROBOT_TICK_SECRET || '');
   if (secret.length < 32) return { ok: false, status: 503, error: 'commercial_robot_tick_secret_missing' };
 
-  const timestamp = String(headers['x-commercial-timestamp'] || '');
-  const nonce = String(headers['x-commercial-nonce'] || '');
-  const signature = String(headers['x-commercial-signature'] || '').toLowerCase();
+  const timestamp = headerValue(headers['x-commercial-timestamp']);
+  const nonce = headerValue(headers['x-commercial-nonce']);
+  const signature = headerValue(headers['x-commercial-signature']).toLowerCase();
   if (!/^\d{13}$/.test(timestamp) || Math.abs(now - Number(timestamp)) > 120_000) {
     return { ok: false, status: 401, error: 'commercial_robot_tick_auth_required' };
   }

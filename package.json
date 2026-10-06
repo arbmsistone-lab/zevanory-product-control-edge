@@ -16,7 +16,7 @@
     "audit:zevanory-sales-integration": "node scripts/zevanory-sales-integration-audit.mjs",
     "test:zevanory-sales-tenant": "tsx scripts/zevanory-sales-tenant-contract.ts",
     "test:commercial-cleanup": "tsx scripts/commercial-cleanup-contract.ts",
-    "test:commercial-robot-auth": "node scripts/commercial-robot-auth-test.mjs"
+    "test:commercial-robot-auth": "tsx scripts/commercial-robot-auth-test.ts"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",

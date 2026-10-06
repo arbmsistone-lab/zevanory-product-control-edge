@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { verifyCommercialRobotTickRequest } from './backend/commercial-robot-auth.mjs';
+import { verifyCommercialRobotTickRequest } from './backend/commercial-robot-auth';
 import { voiceEncodeHandler } from './backend/voice-encoder.mjs';
 import { voiceSynthHandler } from './backend/voice-synth.mjs';
 import { handler } from './backend/index';

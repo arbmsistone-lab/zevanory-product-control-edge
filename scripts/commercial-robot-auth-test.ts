@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { verifyCommercialRobotTickRequest } from '../backend/commercial-robot-auth.mjs';
+import { verifyCommercialRobotTickRequest } from '../backend/commercial-robot-auth';
 
 process.env.COMMERCIAL_ROBOT_TICK_SECRET = 'unit-test-commercial-robot-secret-32-chars-minimum';
 const now = 1791291600000;
