@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { db, error, json, secrets } from './platform.ts';
+import { assessMarketSignal } from '../src/prospect-signal.ts';
 import {
   computeCommercialMetrics,
   deriveCommercialRobotState,
@@ -434,8 +435,11 @@ export function scoreProspect(result: ProspectResult) {
   if (/https?:\/\/[^\s/]+\.br(?:[/:]|$)/i.test(result.url)) score += 1;
   if (reject.length) score -= 10;
   const threshold = Math.max(1, Number(M1_PROSPECTING.policy.min_score || 7));
-  const relevant = reject.length === 0 && icp.length > 0 && product.length > 0 && brazil.length > 0 && score >= threshold;
-  const reason = relevant
+  const signal = assessMarketSignal({ title: result.title, detail: result.description, url: result.url });
+  const relevant = signal.useful && reject.length === 0 && icp.length > 0 && product.length > 0 && brazil.length > 0 && score >= threshold;
+  const reason = !signal.useful
+    ? `DESCARTADO_SINAL=${signal.reason} · SCORE=${score}`
+    : relevant
     ? `ICP=${icp.slice(0,3).join(',')} · PRODUTO=${product.slice(0,3).join(',')} · BR=${brazil.slice(0,3).join(',')} · SCORE=${score}`
     : reject.length
       ? `DESCARTADO_CATEGORIA=${reject.slice(0,3).join(',')} · SCORE=${score}`
@@ -521,6 +525,8 @@ async function generateDailyBriefs() {
 
 let robotTickRunning = false;
 
+let lastNoiseSweepAt = 0;
+
 export async function commercialRobotTick() {
   if (robotTickRunning) return { ok: false, skipped: true, reason: 'tick_already_running' };
   robotTickRunning = true;
@@ -572,12 +578,24 @@ export async function commercialRobotTick() {
       }
     }
 
+    // Owner authorized (2026-10-06) continuous archival of web noise: archive-only, never delete.
+    let noiseArchived = 0;
+    if (Date.now() - lastNoiseSweepAt > 6 * 60 * 60 * 1000) {
+      lastNoiseSweepAt = Date.now();
+      try {
+        const sweep = await commercialCleanup({ mode: 'apply', confirm: 'AUTORIZO_ARQUIVAMENTO' });
+        noiseArchived = Number(sweep.archived || 0);
+      } catch (cause) {
+        console.error('commercial_noise_sweep_failed', cause instanceof Error ? cause.message : String(cause));
+      }
+    }
+
     const briefsCreated = await generateDailyBriefs();
     const hourKey = new Date().toISOString().slice(0, 13);
     await upsertBySourceKey({
       kind: 'event',
       title: 'Ciclo de prospecção concluído',
-      detail: `${discovered} resultado(s) relevantes persistidos; ${rejected} descartados; ${queries.length} consulta(s) M1; ${queryFailures} busca(s) com falha; ${briefsCreated} brief(s) criado(s).`,
+      detail: `${discovered} sinal(is) útil(eis) persistido(s); ${rejected} descartado(s) como ruído; ${noiseArchived} ruído(s) antigo(s) arquivado(s); ${queries.length} consulta(s) M1; ${queryFailures} busca(s) com falha; ${briefsCreated} brief(s) criado(s).`,
       status: 'research',
       source: 'commercial-robot',
       sourceKey: 'research-cycle:' + hourKey,
@@ -592,7 +610,7 @@ export async function commercialRobotTick() {
       sourceKey: 'commercial-orchestrator-heartbeat',
       evidence: ['runtime-worker', 'public-search-only', 'approval-required', new Date().toISOString()],
     });
-    return { ok: true, discovered, rejected, queryFailures, briefsCreated, at: new Date().toISOString() };
+    return { ok: true, discovered, rejected, noiseArchived, queryFailures, briefsCreated, at: new Date().toISOString() };
   } finally {
     robotTickRunning = false;
   }

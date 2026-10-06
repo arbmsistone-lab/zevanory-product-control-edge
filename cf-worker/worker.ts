@@ -558,6 +558,15 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
     };
     await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items: [{ id: item.id, record }] });
     published.push({ id: item.id, product: item.product, instagram: igPost.id, facebook: fbPost.post_id || fbPost.id });
+    await recordCommercialActivity(env, 'event', {
+      title: 'Publicado no Instagram e Facebook · ' + String(item.product || item.title || 'ZEVANORY'),
+      detail: caption.slice(0, 600),
+      status: 'published',
+      channel: 'instagram,facebook',
+      product: String(item.product || 'ZEVANORY'),
+      sourceKey: 'meta-publish:' + item.id,
+      evidence: ['instagram_media_id:' + igPost.id, 'facebook_post_id:' + (fbPost.post_id || fbPost.id), 'approved-by-owner', now],
+    });
   }
   return { ok: true, published, pending: items.length - published.length };
 }
@@ -582,17 +591,113 @@ async function metaVerifySignature(request: Request, raw: string, env: Record<st
   return diff === 0;
 }
 
-async function groundedReply(text: string) {
+async function groundedAnswer(text: string): Promise<{ text: string; grounded: boolean }> {
   const q = String(text || '').slice(0, 500);
   try {
     const r = await fetch('https://zevanory.api.br/api/support/knowledge?q=' + encodeURIComponent(q), { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
     const j = await r.json() as any;
     if (r.ok && j?.answered && j?.answer) {
       const link = Array.isArray(j.sources) ? String(j.sources[0] || '') : '';
-      return (String(j.answer) + (link ? '\n' + link : '')).slice(0, 900);
+      return { text: (String(j.answer) + (link ? '\n' + link : '')).slice(0, 900), grounded: true };
     }
   } catch {}
-  return 'Olá! Obrigado pelo contato com a ZEVANORY. Veja os produtos em https://vendas.zevanory.api.br/solucoes ou fale com o atendimento no WhatsApp: ' + WHATSAPP_LINK;
+  return { text: 'Olá! Obrigado pelo contato com a ZEVANORY. Veja os produtos em https://vendas.zevanory.api.br/solucoes ou fale com o atendimento no WhatsApp: ' + WHATSAPP_LINK, grounded: false };
+}
+
+// Panel visibility: every robot action on Meta becomes an auditable record in the commercial
+// workspace (Atendimento / CRM / Atividade). Best-effort: a logging failure never blocks a reply.
+const COMMERCIAL_BUCKETS = {
+  support: 'zpc_commercial_support',
+  event: 'zpc_commercial_events',
+  lead: 'zpc_commercial_leads',
+} as const;
+
+async function recordCommercialActivity(env: Record<string, any>, kind: keyof typeof COMMERCIAL_BUCKETS, input: {
+  title: string; detail: string; status: string; channel: string; sourceKey: string; evidence: string[]; product?: string | null;
+}) {
+  try {
+    const now = new Date().toISOString();
+    const record = {
+      kind,
+      title: input.title.slice(0, 180),
+      detail: input.detail.slice(0, 4000),
+      status: input.status,
+      channel: input.channel,
+      product: input.product ?? 'ZEVANORY',
+      productId: null,
+      valueCents: null,
+      source: 'meta-robot',
+      sourceKey: input.sourceKey.slice(0, 220),
+      evidence: input.evidence.map(item => String(item).slice(0, 1000)).slice(0, 20),
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: null,
+    };
+    await t2StoreCall(env, { op: 'add', bucket: COMMERCIAL_BUCKETS[kind], items: [{ record }] });
+    return true;
+  } catch (error) {
+    console.error('commercial_activity_record_failed', error instanceof Error ? error.message : String(error));
+    return false;
+  }
+}
+
+// Bridge for robots running in other Workers that share this KV namespace (e.g. the post-sale
+// robot in the main ZEVANORY Worker): they drop `zpc-activity:v1:<kind>:<ts>:<id>` entries and the
+// panel cron turns them into commercial records, then deletes the entries.
+async function syncSharedActivity(env: Record<string, any>) {
+  const kv = env.T2_CREATIVE_ASSETS;
+  if (!kv?.list) return { synced: 0 };
+  const listed = await kv.list({ prefix: 'zpc-activity:v1:', limit: 100 });
+  let synced = 0;
+  for (const key of listed.keys || []) {
+    const name = String(key.name);
+    const kind = name.split(':')[2];
+    if (kind !== 'event' && kind !== 'support' && kind !== 'lead') { await kv.delete(name); continue; }
+    const raw = await kv.get(name);
+    let data: any = null;
+    try { data = JSON.parse(String(raw || '')); } catch {}
+    if (data && typeof data.title === 'string' && data.title) {
+      const stored = await recordCommercialActivity(env, kind as keyof typeof COMMERCIAL_BUCKETS, {
+        title: String(data.title),
+        detail: String(data.detail || ''),
+        status: String(data.status || 'recorded').toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 80),
+        channel: String(data.channel || 'email').slice(0, 120),
+        product: data.product ? String(data.product) : 'ZEVANORY',
+        sourceKey: String(data.sourceKey || name),
+        evidence: Array.isArray(data.evidence) ? data.evidence.map(String) : [name],
+      });
+      if (!stored) continue; // keep the entry; next cron retries
+      synced += 1;
+    }
+    await kv.delete(name);
+  }
+  return { synced };
+}
+
+async function recordMetaConversation(env: Record<string, any>, input: {
+  channel: 'instagram' | 'facebook'; type: 'comentário' | 'mensagem'; eventId: string; authorId: string; authorName: string;
+  incoming: string; answer: { text: string; grounded: boolean };
+}) {
+  const who = input.authorName ? '@' + input.authorName.replace(/^@/, '') : 'pessoa ' + input.authorId.slice(-4);
+  await recordCommercialActivity(env, 'support', {
+    title: (input.channel === 'instagram' ? 'Instagram' : 'Facebook') + ' · ' + input.type + ' de ' + who + (input.answer.grounded ? ' respondido' : ' encaminhado ao WhatsApp'),
+    detail: 'Cliente: ' + input.incoming.slice(0, 600) + '\n\nRobô: ' + input.answer.text,
+    status: input.answer.grounded ? 'answered' : 'routed-whatsapp',
+    channel: input.channel,
+    sourceKey: 'meta:' + input.eventId,
+    evidence: ['meta-event:' + input.eventId, 'grounded:' + input.answer.grounded, 'inbound-only', new Date().toISOString()],
+  });
+  // Someone who wrote to ZEVANORY first is a warm inbound lead (never cold outreach).
+  if (input.authorId && !(await seenOnce(env, 'lead:' + input.channel + ':' + input.authorId))) {
+    await recordCommercialActivity(env, 'lead', {
+      title: who + ' (' + (input.channel === 'instagram' ? 'Instagram' : 'Facebook') + ')',
+      detail: 'Lead inbound: iniciou contato por ' + input.type + '. Primeira mensagem: ' + input.incoming.slice(0, 300),
+      status: 'conversation',
+      channel: input.channel,
+      sourceKey: 'meta-lead:' + input.channel + ':' + input.authorId,
+      evidence: ['inbound-first-contact', 'meta-author:' + input.authorId, 'no-cold-outreach', new Date().toISOString()],
+    });
+  }
 }
 
 async function seenOnce(env: Record<string, any>, id: string) {
@@ -627,26 +732,33 @@ async function handleMetaWebhook(request: Request, env: Record<string, any>) {
         const v = change?.value || {};
         if (body.object === 'instagram' && change.field === 'comments' && v.id && v.text && !own.has(String(v.from?.id || ''))) {
           if (await seenOnce(env, 'igc:' + v.id)) continue;
-          await metaCall(env, String(v.id) + '/replies', { message: await groundedReply(v.text) }, 'POST', targets.pageToken);
+          const answer = await groundedAnswer(v.text);
+          await metaCall(env, String(v.id) + '/replies', { message: answer.text }, 'POST', targets.pageToken);
           handled.push('ig_comment');
+          await recordMetaConversation(env, { channel: 'instagram', type: 'comentário', eventId: 'igc:' + v.id, authorId: String(v.from?.id || ''), authorName: String(v.from?.username || ''), incoming: String(v.text), answer });
         }
         if (body.object === 'page' && change.field === 'feed' && v.item === 'comment' && v.verb === 'add' && v.comment_id && v.message && !own.has(String(v.from?.id || ''))) {
           if (await seenOnce(env, 'fbc:' + v.comment_id)) continue;
-          await metaCall(env, String(v.comment_id) + '/comments', { message: await groundedReply(v.message) }, 'POST', targets.pageToken);
+          const answer = await groundedAnswer(v.message);
+          await metaCall(env, String(v.comment_id) + '/comments', { message: answer.text }, 'POST', targets.pageToken);
           handled.push('fb_comment');
+          await recordMetaConversation(env, { channel: 'facebook', type: 'comentário', eventId: 'fbc:' + v.comment_id, authorId: String(v.from?.id || ''), authorName: String(v.from?.name || ''), incoming: String(v.message), answer });
         }
       }
       for (const m of Array.isArray(entry?.messaging) ? entry.messaging : []) {
         const sender = String(m?.sender?.id || '');
         const text = String(m?.message?.text || '');
         if (!sender || !text || m?.message?.is_echo || own.has(sender)) continue;
-        if (await seenOnce(env, 'dm:' + String(m?.message?.mid || sender + ':' + m?.timestamp))) continue;
+        const dmId = 'dm:' + String(m?.message?.mid || sender + ':' + m?.timestamp);
+        if (await seenOnce(env, dmId)) continue;
+        const answer = await groundedAnswer(text);
         await metaCall(env, targets.pageId + '/messages', {
           recipient: JSON.stringify({ id: sender }),
           messaging_type: 'RESPONSE',
-          message: JSON.stringify({ text: await groundedReply(text) }),
+          message: JSON.stringify({ text: answer.text }),
         }, 'POST', targets.pageToken);
         handled.push(body.object === 'instagram' ? 'ig_dm' : 'fb_dm');
+        await recordMetaConversation(env, { channel: body.object === 'instagram' ? 'instagram' : 'facebook', type: 'mensagem', eventId: dmId, authorId: sender, authorName: '', incoming: text, answer });
       }
     } catch (error) {
       console.error('meta_webhook_entry_failed', error instanceof Error ? error.message : String(error));
@@ -684,6 +796,12 @@ export default {
       }
     } catch (error) {
       console.error('commercial_meta_publisher_cron_failed', error instanceof Error ? error.message : String(error));
+    }
+    try {
+      const bridge = await syncSharedActivity(env as Record<string, any>);
+      if (bridge.synced) console.info('shared_activity_synced', JSON.stringify(bridge));
+    } catch (error) {
+      console.error('shared_activity_sync_failed', error instanceof Error ? error.message : String(error));
     }
     // Creatives are produced by the deterministic compositor (model background + exact catalog typography);
     // the cron never generates images with model-rendered text.

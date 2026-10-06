@@ -4,6 +4,7 @@ import {
   Megaphone, MessageSquareText, Search, Send, ShieldCheck, Sparkles, X, RotateCcw,
 } from 'lucide-react';
 import { api } from './api';
+import { assessMarketSignal } from './prospect-signal';
 import {
   commercialStatusLabel,
   type CommercialRecord,
@@ -23,7 +24,7 @@ const SECTION_META: Record<CommercialSection, { title: string; subtitle: string 
   creatives: { title: 'Estúdio de Criativos', subtitle: 'Briefs, peças, testes e versões com rastreabilidade de origem.' },
   approvals: { title: 'Fila de Aprovações', subtitle: 'Nada é publicado por automação sem passar pelo estado de aprovação aplicável.' },
   publications: { title: 'Publicações', subtitle: 'Fila multicanal, agendamentos, publicação e readback comprovado.' },
-  prospecting: { title: 'Prospecção', subtitle: 'Leads e atividade do robô comercial, sem contagem cenográfica.' },
+  prospecting: { title: 'Sinais de mercado', subtitle: 'Só demanda real do público ZEVANORY. Ruído da web é descartado; ninguém recebe contato frio.' },
   crm: { title: 'CRM / Vendas', subtitle: 'Lead → qualificação → contato → oportunidade → proposta → ganho.' },
   support: { title: 'Atendimento', subtitle: 'Demandas, respostas, pendências e resolução por canal.' },
   finance: { title: 'Financeiro', subtitle: 'Recebimentos e vendas confirmadas; valores não confirmados não entram na receita.' },
@@ -236,10 +237,17 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
     return <section className='commercialPanel'><div className='commercialEmpty'>Workspace comercial indisponível. Nenhuma métrica foi presumida.</div></section>;
   }
 
+  const rawDiscoveries = data.evidence.filter(item => item.status === 'raw-discovery');
+  const usefulSignals = rawDiscoveries.filter(item => assessMarketSignal({
+    title: item.title,
+    detail: item.detail,
+    url: item.evidence.find(entry => /^https?:\/\//i.test(entry)) || '',
+  }).useful);
+  const discardedSignals = rawDiscoveries.length - usefulSignals.length;
   const genericMap: Partial<Record<CommercialSection, CommercialRecord[]>> = {
     creatives: data.creatives,
     publications: data.publications,
-    prospecting: data.evidence.filter(item => item.status === 'raw-discovery'),
+    prospecting: usefulSignals,
     crm: data.leads,
     support: data.support,
     finance: data.finance,
@@ -370,7 +378,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             {section === 'support' && <Headphones size={17}/>}
             {section === 'finance' && <CircleDollarSign size={17}/>}
             {section === 'evidence' && <ShieldCheck size={17}/>}
-            <div><b>{meta.title}</b><small>{items.length} registro(s)</small></div>
+            <div><b>{meta.title}</b><small>{items.length} registro(s){section === 'prospecting' && discardedSignals > 0 ? ' · ' + discardedSignals + ' resultado(s) de ruído descartado(s)' : ''}</small></div>
             <div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeListPage - 1))} disabled={safeListPage === 0}>‹</button><strong>{safeListPage + 1}/{genericPageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(genericPageCount - 1, safeListPage + 1))} disabled={safeListPage >= genericPageCount - 1}>›</button></div>
           </div>
           {actionError && <div className='errorbox'>{actionError}</div>}

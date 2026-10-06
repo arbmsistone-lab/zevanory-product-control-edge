@@ -247,6 +247,12 @@ export function commercialStatusLabel(value: string) {
     active: 'ATIVO',
     standby: 'STANDBY',
     blocked: 'BLOQUEADO',
+    answered: 'RESPONDIDO PELO ROBÔ',
+    'routed-whatsapp': 'ENCAMINHADO AO WHATSAPP',
+    conversation: 'EM CONVERSA',
+    'raw-discovery': 'SINAL DE MERCADO',
+    'post-sale-sent': 'PÓS-VENDA ENVIADO',
+    'post-sale-opt-out': 'DESCADASTRADO',
   };
   return labels[key] || String(value || 'SEM ESTADO').replaceAll('_', ' ').toUpperCase();
 }
