@@ -83,6 +83,7 @@ async function wakeCommercialRobot(env: Record<string, unknown>) {
 
 const T2_PRODUCT_SLUGS = ['ia-na-pratica','vendas-na-pratica','lucro-e-caixa','combo-ia-vendas','negocio-completo'] as const;
 const T2_CREATIVE_BUCKET = 'zpc_commercial_creatives';
+const T2_ASSET_BUCKET = 'zpc_commercial_assets';
 
 async function verifyFactoryRequest(request: Request, env: Record<string, unknown>) {
   const secret = String(env.COMMERCIAL_ROBOT_TICK_SECRET || '');
@@ -102,10 +103,12 @@ async function t2StoreCall(env: Record<string, unknown>, payload: Record<string,
   const token = String(env.ZPC_REPLICATION_SECRET || '');
   if (!url || !key || !token) throw new Error('t2_store_unconfigured');
   const op = String(payload.op || '');
-  const rpc = op === 'list' ? 'zpc_worker_list' : 'zpc_worker_upsert';
+  const rpc = op === 'list' ? 'zpc_worker_list' : op === 'get' ? 'zpc_worker_get' : 'zpc_worker_upsert';
   const body: Record<string, unknown> = op === 'list'
     ? { p_token: token, p_bucket: payload.bucket, p_limit: payload.limit || 1000 }
-    : { p_token: token, p_bucket: payload.bucket, p_items: payload.items || [], p_operation: op, p_queue_primary: true };
+    : op === 'get'
+      ? { p_token: token, p_bucket: payload.bucket, p_ids: payload.ids || [] }
+      : { p_token: token, p_bucket: payload.bucket, p_items: payload.items || [], p_operation: op, p_queue_primary: true };
   const response = await fetch(url + '/rest/v1/rpc/' + rpc, {
     method: 'POST',
     headers: { 'content-type': 'application/json', apikey: key, authorization: 'Bearer ' + key },
@@ -164,7 +167,7 @@ async function runT2CreativeFactory(env: Record<string, any>) {
   for (let index = 0; index < T2_PRODUCT_SLUGS.length; index += 1) {
     const slug = T2_PRODUCT_SLUGS[index];
     const sourceKey = 't2-workers-ai:' + slug;
-    const ready = existing.find((item: any) => item?.sourceKey === sourceKey && item?.status === 'approval' && String(item?.imageDataUrl || '').startsWith('data:image/'));
+    const ready = existing.find((item: any) => item?.sourceKey === sourceKey && item?.status === 'approval' && /^https:\/\//.test(String(item?.imageUrl || '')));
     if (ready) { skipped.push(slug); continue; }
 
     const [contentFact, priceFact] = await Promise.all([
@@ -188,6 +191,15 @@ async function runT2CreativeFactory(env: Record<string, any>) {
     ].join(' ');
     const imageDataUrl = await t2GenerateImage(env, prompt, 2100 + index);
     const now = new Date().toISOString();
+    const assetId = crypto.randomUUID();
+    const imageBase64 = imageDataUrl.replace(/^data:image\/(?:jpeg|png);base64,/, '');
+    const imageMime = imageDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+    await t2StoreCall(env, {
+      op: 'add',
+      bucket: T2_ASSET_BUCKET,
+      items: [{ id: assetId, record: { mime: imageMime, base64: imageBase64, createdAt: now, sourceKey } }],
+    });
+    const imageUrl = 'https://controle.zevanory.api.br/api/commercial/creative/assets/' + assetId + (imageMime === 'image/png' ? '.png' : '.jpg');
     const record = {
       kind: 'creative',
       title: 'Criativo · ' + name,
@@ -208,7 +220,7 @@ async function runT2CreativeFactory(env: Record<string, any>) {
       createdAt: now,
       updatedAt: now,
       publishedAt: null,
-      imageDataUrl,
+      imageUrl,
     };
     await t2StoreCall(env, { op: 'add', bucket: T2_CREATIVE_BUCKET, items: [{ record }] });
     generated.push(slug);
@@ -219,7 +231,7 @@ async function runT2CreativeFactory(env: Record<string, any>) {
   const approvals = current.filter((item: any) =>
     String(item?.sourceKey || '').startsWith('t2-workers-ai:') &&
     item?.status === 'approval' &&
-    String(item?.imageDataUrl || '').startsWith('data:image/'),
+    /^https:\/\//.test(String(item?.imageUrl || '')),
   );
   if (approvals.length < 5) throw new Error('t2_approval_count_' + approvals.length);
 
@@ -278,6 +290,21 @@ export default {
   async fetch(request: Request, env: Record<string, unknown>) {
     setWorkerEnv(env);
     const url = new URL(request.url);
+
+    if (url.pathname.startsWith('/api/commercial/creative/assets/')) {
+      if (request.method !== 'GET' && request.method !== 'HEAD') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
+      const match = url.pathname.match(/^\/api\/commercial\/creative\/assets\/([0-9a-f-]{36})\.(jpg|png)$/i);
+      if (!match) return Response.json({ ok: false, error: 'creative_asset_invalid' }, { status: 400 });
+      try {
+        const found = await t2StoreCall(env, { op: 'get', bucket: T2_ASSET_BUCKET, ids: [match[1]] });
+        const asset = Array.isArray(found?.items) ? found.items[0] : null;
+        if (!asset?.base64 || !asset?.mime) return Response.json({ ok: false, error: 'creative_asset_not_found' }, { status: 404 });
+        const bytes = Uint8Array.from(atob(String(asset.base64)), c => c.charCodeAt(0));
+        return new Response(request.method === 'HEAD' ? null : bytes, { headers: { 'content-type': String(asset.mime), 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' } });
+      } catch (error) {
+        return Response.json({ ok: false, error: 'creative_asset_read_failed' }, { status: 500, headers: { 'cache-control': 'no-store' } });
+      }
+    }
 
     if (url.pathname === '/api/commercial/creative/factory/tick') {
       if (request.method !== 'POST') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
