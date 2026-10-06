@@ -40,6 +40,46 @@ qs('reload').onclick=async()=>{try{await load();qs('state').textContent='Atualiz
 qs('run').onclick=async()=>{qs('run').disabled=true;qs('state').innerHTML='<span class="warn">Executando P01–P16...</span>';try{const j=await api('/api/certification/run?runtime=cloudflare',{sessionToken,targetId:qs('target').value});qs('output').textContent=JSON.stringify(j,null,2);qs('state').innerHTML=j.certification?.ready?'<span class="ok">CERTIFICADO integralmente.</span>':'<span class="warn">Execução concluída; gate permanece fail-closed.</span>';await load()}catch(e){qs('state').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('run').disabled=false}}
 </script></body></html>`;
 
+async function commercialRobotTickSignature(secret: string, timestamp: string, nonce: string) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(['zevanory-commercial-robot-tick-v1', timestamp, nonce].join('\n')),
+  );
+  return Array.from(new Uint8Array(signature), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function wakeCommercialRobot(env: Record<string, unknown>) {
+  const secret = String(env.COMMERCIAL_ROBOT_TICK_SECRET || '');
+  const renderBase = String(env.RENDER_BACKEND_URL || '').replace(/\/$/, '');
+  if (secret.length < 32 || !renderBase) throw new Error('commercial_robot_tick_unconfigured');
+  const timestamp = String(Date.now());
+  const nonce = crypto.randomUUID();
+  const signature = await commercialRobotTickSignature(secret, timestamp, nonce);
+  const response = await fetch(renderBase + '/api/commercial/robot/tick', {
+    method: 'POST',
+    headers: {
+      'x-commercial-timestamp': timestamp,
+      'x-commercial-nonce': nonce,
+      'x-commercial-signature': signature,
+      'cache-control': 'no-store',
+    },
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 240);
+    throw new Error('commercial_robot_tick_http_' + response.status + '_' + detail);
+  }
+  return await response.json();
+}
+
 async function fetchPagesOrigin(pathname: string) {
   const target = PAGES_ORIGIN + (pathname === '/' ? '/' : pathname);
   const response = await fetch(target, {
@@ -54,6 +94,15 @@ async function fetchPagesOrigin(pathname: string) {
 }
 
 export default {
+  async scheduled(_controller: ScheduledController, env: Record<string, unknown>) {
+    try {
+      const result = await wakeCommercialRobot(env);
+      console.info('commercial_robot_cron_tick', JSON.stringify(result));
+    } catch (error) {
+      console.error('commercial_robot_cron_tick_failed', error instanceof Error ? error.message : String(error));
+    }
+  },
+
   async fetch(request: Request, env: Record<string, unknown>) {
     setWorkerEnv(env);
     const url = new URL(request.url);

@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { verifyCommercialRobotTickRequest } from './backend/commercial-robot-auth';
 import { voiceEncodeHandler } from './backend/voice-encoder.mjs';
 import { voiceSynthHandler } from './backend/voice-synth.mjs';
 import { handler } from './backend/index';
@@ -36,6 +37,28 @@ const server = http.createServer(async (req, res) => {
     const rawBody = Buffer.concat(chunks);
     const host = req.headers.host || 'localhost';
     const url = new URL(req.url || '/', `http://${host}`);
+
+    if (url.pathname === '/api/commercial/robot/tick') {
+      if (req.method !== 'POST') {
+        res.statusCode = 405;
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ ok: false, error: 'method_not_allowed' }));
+        return;
+      }
+      const auth = verifyCommercialRobotTickRequest(req.headers);
+      if (!auth.ok) {
+        res.statusCode = auth.status;
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ ok: false, error: auth.error }));
+        return;
+      }
+      const result = await commercialRobotTick();
+      res.statusCode = result.ok ? 200 : 409;
+      res.setHeader('content-type', 'application/json; charset=utf-8');
+      res.setHeader('cache-control', 'no-store');
+      res.end(JSON.stringify(result));
+      return;
+    }
 
     if (url.pathname === '/api/commercial/stream' || url.pathname === '/control/api/commercial/stream') {
       res.statusCode = 200;
