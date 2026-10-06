@@ -818,7 +818,7 @@ function App() {
       const gap = parseFloat(getComputedStyle(el).rowGap || '8') || 8;
       const rowH = row?.offsetHeight || 52;
       const actionH = action?.offsetHeight || 32;
-      const fit = Math.max(1, Math.floor((el.clientHeight - actionH) / (rowH + gap)));
+      const fit = Math.max(0, Math.floor((el.clientHeight - actionH) / (rowH + gap)));
       setApprovalFit(previous => (previous === fit ? previous : fit));
     };
     measure();
@@ -1107,7 +1107,7 @@ function App() {
               {ownerOverview?.approvalItems.length ? (
                 <div className='ownerApprovalList' ref={approvalListRef}>
                   {ownerOverview.approvalItems.slice(0, approvalFit).map(item => <div className='ownerApprovalRow' key={item.kind+item.id}><b>{item.title}</b><span>{item.kind === 'creative' ? 'Criativo' : 'Publicação'} · aguardando aprovação</span></div>)}
-                  <button className='champagneAction' onClick={() => setView('approvals')}>{ownerOverview.approvalItems.length > approvalFit ? `Revisar todas (${ownerOverview.approvalItems.length})` : 'Revisar aprovações'}</button>
+                  <button className='champagneAction' onClick={() => setView('approvals')}>{approvalFit === 0 ? `Revisar ${ownerOverview.approvalItems.length} aprovação(ões)` : ownerOverview.approvalItems.length > approvalFit ? `Revisar todas (${ownerOverview.approvalItems.length})` : 'Revisar aprovações'}</button>
                 </div>
               ) : (
                 <div className='ownerEmptyState compact'><b>Nada exige sua aprovação agora</b><span>Novas decisões aparecerão aqui.</span><button onClick={() => setView('approvals')}>Ver aprovações</button></div>
