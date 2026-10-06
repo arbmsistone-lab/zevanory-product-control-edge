@@ -114,8 +114,7 @@ jobs:
                  passed: (if $s.continuity.quorum_ok == true then $required else 0 end),
                  total: $required,
                  required: $required,
-                 conflicts: 0,
-                 independentKeys: 0
+                 conflicts: 0
                },
                zea10: {
                  proven: ($s.zea10.counts.proven // 0),
@@ -163,6 +162,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: dist
 
   publish:
@@ -176,3 +176,5 @@ jobs:
       - name: Deploy automatic origin
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
