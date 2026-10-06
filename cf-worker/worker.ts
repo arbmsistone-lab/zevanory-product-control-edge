@@ -174,6 +174,111 @@ async function t2GenerateImage(env: Record<string, any>, prompt: string, seed: n
   return 'data:' + mime + ';base64,' + image;
 }
 
+async function t2Sha256Hex(bytes: ArrayBuffer) {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyCreativeUploadRequest(request: Request, env: Record<string, unknown>, slug: string, bodyHash: string) {
+  const secrets = [env.COMMERCIAL_ROBOT_TICK_SECRET, env.CERTIFICATION_E2E_TOKEN]
+    .map(value => String(value || ''))
+    .filter(value => value.length >= 32);
+  const timestamp = String(request.headers.get('x-commercial-timestamp') || '');
+  const nonce = String(request.headers.get('x-commercial-nonce') || '');
+  const signature = String(request.headers.get('x-commercial-signature') || '').toLowerCase();
+  if (!secrets.length || !/^\d{13}$/.test(timestamp) || !/^[0-9a-f-]{36}$/i.test(nonce) || !/^[0-9a-f]{64}$/.test(signature)) return false;
+  if (Math.abs(Date.now() - Number(timestamp)) > 5 * 60 * 1000) return false;
+  const bytes = Uint8Array.from(signature.match(/.{2}/g) || [], pair => parseInt(pair, 16));
+  const message = new TextEncoder().encode(['zevanory-commercial-creative-upload-v1', timestamp, nonce, slug, bodyHash].join('\n'));
+  for (const secret of secrets) {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    if (await crypto.subtle.verify('HMAC', key, bytes, message)) return true;
+  }
+  return false;
+}
+
+function t2JpegSize(bytes: Uint8Array) {
+  if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return null;
+  let i = 2;
+  while (i + 9 < bytes.length) {
+    if (bytes[i] !== 0xff) { i += 1; continue; }
+    const marker = bytes[i + 1];
+    const length = (bytes[i + 2] << 8) | bytes[i + 3];
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      return { height: (bytes[i + 5] << 8) | bytes[i + 6], width: (bytes[i + 7] << 8) | bytes[i + 8] };
+    }
+    i += 2 + length;
+  }
+  return null;
+}
+
+// Text-free AI background for the deterministic compositor. Typography is never produced by the model.
+async function t2Background(env: Record<string, any>, slug: string, seed: number) {
+  const fact = await t2SupportFact(slug, 'conteúdo');
+  const concept = String(fact.answer).replace(/^[^:]+:\s*/, '');
+  const prompt = [
+    'Abstract premium background texture for a Brazilian digital education brand.',
+    'Theme mood: ' + concept,
+    'Dark navy and electric blue light, soft volumetric glow, smooth gradients, subtle geometric light trails, cinematic depth of field.',
+    'Pure abstract shapes and light only. Absolutely no text, letters, numbers, words, logos, screens, documents, signs or interfaces.',
+  ].join(' ');
+  const dataUrl = await t2GenerateImage(env, prompt, seed);
+  const base64 = dataUrl.replace(/^data:image\/(?:jpeg|png);base64,/, '');
+  return { bytes: Uint8Array.from(atob(base64), ch => ch.charCodeAt(0)), mime: dataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg' };
+}
+
+async function t2StoreComposedCreative(env: Record<string, any>, slug: string, image: ArrayBuffer, bodyHash: string) {
+  const bytes = new Uint8Array(image);
+  const size = t2JpegSize(bytes);
+  if (!size || size.width !== 1080 || size.height !== 1080) throw new Error('t2_composed_image_must_be_1080_jpeg');
+  const [contentFact, priceFact] = await Promise.all([t2SupportFact(slug, 'conteúdo'), t2SupportFact(slug, 'preço')]);
+  const productUrl = 'https://vendas.zevanory.api.br/' + slug;
+  const name = String(contentFact.catalog.name);
+  const caption = String(contentFact.answer).trim() + '\n\n' + String(priceFact.answer).trim() + '\n' + productUrl;
+  await t2ValidateCaption(caption, contentFact, priceFact, productUrl);
+  if (!env.T2_CREATIVE_ASSETS?.put) throw new Error('t2_asset_kv_binding_missing');
+  const now = new Date().toISOString();
+  const assetId = crypto.randomUUID();
+  const sourceKey = 't2-workers-ai:' + slug;
+  await env.T2_CREATIVE_ASSETS.put('t2-creative/v1/' + assetId, bytes, { metadata: { mime: 'image/jpeg', sourceKey, createdAt: now, sha256: bodyHash } });
+  const imageUrl = 'https://controle.zevanory.api.br/api/commercial/creative/assets/' + assetId + '.jpg';
+  const listed = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
+  const existing = (Array.isArray(listed?.items) ? listed.items : []).filter((item: any) => item?.sourceKey === sourceKey && item?.status === 'approval');
+  const record = {
+    kind: 'creative',
+    title: 'Criativo · ' + name,
+    detail: caption,
+    status: 'approval',
+    channel: 'instagram-facebook',
+    product: name,
+    productId: null,
+    valueCents: null,
+    source: 'workers-ai',
+    sourceKey,
+    evidence: [
+      'composer:deterministic-typography-v1',
+      'background:@cf/black-forest-labs/flux-2-klein-4b',
+      'catalogCaptionValidation:PASS',
+      'dimensions:1080x1080',
+      'sha256:' + bodyHash,
+      productUrl,
+    ],
+    createdAt: now,
+    updatedAt: now,
+    publishedAt: null,
+    imageUrl,
+  };
+  if (existing.length) {
+    const [keep, ...duplicates] = existing;
+    const items = [{ id: keep.id, record: { ...record, id: keep.id, createdAt: keep.createdAt || now } }];
+    for (const dup of duplicates) items.push({ id: dup.id, record: { ...dup, status: 'archived', updatedAt: now, evidence: [...(Array.isArray(dup.evidence) ? dup.evidence : []), 'archived-by:t2-compose-dedupe', now].slice(-20) } });
+    await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items });
+  } else {
+    await t2StoreCall(env, { op: 'add', bucket: T2_CREATIVE_BUCKET, items: [{ record }] });
+  }
+  return { ok: true, product: slug, imageUrl, caption, sha256: bodyHash, replaced: existing.length };
+}
+
 async function runT2CreativeFactory(
   env: Record<string, any>,
   options: { onlySlug?: string | null; finalizeOnly?: boolean; forceRegenerate?: boolean } = {},
@@ -346,12 +451,8 @@ export default {
     } catch (error) {
       console.error('commercial_robot_cron_tick_failed', error instanceof Error ? error.message : String(error));
     }
-    try {
-      const factory = await runT2CreativeFactory(env as Record<string, any>);
-      console.info('commercial_creative_factory_cron', JSON.stringify(factory));
-    } catch (error) {
-      console.error('commercial_creative_factory_cron_failed', error instanceof Error ? error.message : String(error));
-    }
+    // Creatives are produced by the deterministic compositor (model background + exact catalog typography);
+    // the cron never generates images with model-rendered text.
   },
 
   async fetch(request: Request, env: Record<string, unknown>) {
@@ -390,6 +491,38 @@ export default {
         return new Response(request.method === 'HEAD' ? null : transformed.body, { status: transformed.status, headers });
       } catch {
         return Response.json({ ok: false, error: 'creative_asset_transform_failed' }, { status: 500, headers: { 'cache-control': 'no-store' } });
+      }
+    }
+
+    if (url.pathname === '/api/commercial/creative/background') {
+      if (request.method !== 'POST') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
+      if (!await verifyFactoryRequest(request, env)) return Response.json({ ok: false, error: 'commercial_creative_factory_auth_required' }, { status: 401 });
+      const slug = String(url.searchParams.get('product') || '');
+      if (!T2_PRODUCT_SLUGS.includes(slug as any)) return Response.json({ ok: false, error: 'product_invalid' }, { status: 400 });
+      try {
+        const seed = Number(url.searchParams.get('seed')) || (Date.now() % 100000);
+        const bg = await t2Background(env as Record<string, any>, slug, seed);
+        return new Response(bg.bytes, { headers: { 'content-type': bg.mime, 'cache-control': 'no-store' } });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return Response.json({ ok: false, error: message }, { status: 500, headers: { 'cache-control': 'no-store' } });
+      }
+    }
+
+    if (url.pathname === '/api/commercial/creative/upload') {
+      if (request.method !== 'POST') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
+      const slug = String(url.searchParams.get('product') || '');
+      if (!T2_PRODUCT_SLUGS.includes(slug as any)) return Response.json({ ok: false, error: 'product_invalid' }, { status: 400 });
+      const body = await request.arrayBuffer();
+      if (body.byteLength < 20_000 || body.byteLength > 5_000_000) return Response.json({ ok: false, error: 'creative_size_invalid' }, { status: 400 });
+      const bodyHash = await t2Sha256Hex(body);
+      if (!await verifyCreativeUploadRequest(request, env, slug, bodyHash)) return Response.json({ ok: false, error: 'commercial_creative_upload_auth_required' }, { status: 401 });
+      try {
+        const result = await t2StoreComposedCreative(env as Record<string, any>, slug, body, bodyHash);
+        return Response.json(result, { headers: { 'cache-control': 'no-store' } });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return Response.json({ ok: false, error: message }, { status: 500, headers: { 'cache-control': 'no-store' } });
       }
     }
 
