@@ -38,6 +38,7 @@ export type CommercialRecord = {
   updatedAt: string;
   publishedAt: string | null;
   imageDataUrl?: string | null;
+  imageUrl?: string | null;
 };
 
 export type CommercialRobotState = {
