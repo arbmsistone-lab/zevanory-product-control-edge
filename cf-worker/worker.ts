@@ -458,10 +458,14 @@ async function metaPublishStatus(env: Record<string, any>) {
   try {
     const t = await metaTargets(env);
     let inbound = 'not_subscribed';
-    try {
-      await metaCall(env, t.pageId + '/subscribed_apps', { subscribed_fields: 'feed,messages' }, 'POST', t.pageToken);
-      inbound = String(env.META_APP_SECRET || '').length >= 16 ? 'subscribed' : 'subscribed_missing_app_secret';
-    } catch (error) { inbound = 'subscribe_failed:' + (error instanceof Error ? error.message : String(error)).slice(0, 80); }
+    const subscribed: string[] = [];
+    for (const field of ['feed', 'messages']) {
+      try {
+        await metaCall(env, t.pageId + '/subscribed_apps', { subscribed_fields: [...subscribed, field].join(',') }, 'POST', t.pageToken);
+        subscribed.push(field);
+      } catch {}
+    }
+    inbound = subscribed.length ? 'subscribed:' + subscribed.join(',') + (String(env.META_APP_SECRET || '').length >= 16 ? '' : ':missing_app_secret') : 'subscribe_failed';
     return { ready: true, page: t.pageName, instagram: t.igUsername, inbound };
   } catch (error) {
     return { ready: false, reason: error instanceof Error ? error.message : String(error) };
