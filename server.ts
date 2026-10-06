@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { createHmac } from 'node:crypto';
 import { verifyCommercialRobotTickRequest } from './backend/commercial-robot-auth';
 import { voiceEncodeHandler } from './backend/voice-encoder.mjs';
 import { voiceSynthHandler } from './backend/voice-synth.mjs';
@@ -10,6 +11,28 @@ import { runDrReconcileDryRun } from './scripts/dr-reconcile-zpc';
 const port = Number(process.env.PORT || 3000);
 
 const allowedCorsOrigins = new Set(['https://controle.zevanory.api.br']);
+
+async function triggerCreativeFactory() {
+  const secret = String(process.env.COMMERCIAL_ROBOT_TICK_SECRET || '');
+  if (secret.length < 32) return { ok: false, skipped: true, reason: 'commercial_robot_tick_secret_missing' };
+  const timestamp = String(Date.now());
+  const nonce = crypto.randomUUID();
+  const message = ['zevanory-commercial-creative-factory-v1', timestamp, nonce].join('\n');
+  const signature = createHmac('sha256', secret).update(message).digest('hex');
+  const response = await fetch('https://controle.zevanory.api.br/api/commercial/creative/factory/tick', {
+    method: 'POST',
+    headers: {
+      'x-commercial-timestamp': timestamp,
+      'x-commercial-nonce': nonce,
+      'x-commercial-signature': signature,
+      'cache-control': 'no-store',
+    },
+    signal: AbortSignal.timeout(90_000),
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error('commercial_creative_factory_http_' + response.status + '_' + text.slice(0, 240));
+  return JSON.parse(text);
+}
 
 function applyCors(req: http.IncomingMessage, res: http.ServerResponse) {
   const origin = String(req.headers.origin || '');
@@ -53,6 +76,9 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const result = await commercialRobotTick();
+      void triggerCreativeFactory()
+        .then(factory => console.info('commercial_creative_factory_tick', JSON.stringify(factory)))
+        .catch(error => console.error('commercial_creative_factory_failed', error instanceof Error ? error.message : String(error)));
       res.statusCode = result.ok ? 200 : 409;
       res.setHeader('content-type', 'application/json; charset=utf-8');
       res.setHeader('cache-control', 'no-store');
@@ -108,7 +134,11 @@ server.listen(port, '0.0.0.0', () => {
 
   const runCommercialRobot = () => {
     void commercialRobotTick()
-      .then(result => console.info('commercial_robot_tick', JSON.stringify(result)))
+      .then(async result => {
+        console.info('commercial_robot_tick', JSON.stringify(result));
+        const factory = await triggerCreativeFactory();
+        console.info('commercial_creative_factory_tick', JSON.stringify(factory));
+      })
       .catch(error => console.error('commercial_robot_tick_failed', error instanceof Error ? error.message : String(error)));
   };
 

@@ -455,3 +455,12 @@
     line-height: 1.2;
   }
 }
+
+.zpcWorkspace .approvalImage {
+  display: block;
+  inline-size: 100%;
+  block-size: 88px;
+  object-fit: cover;
+  border-radius: var(--zpc-radius-sm);
+  margin-block: var(--zpc-space-2);
+}

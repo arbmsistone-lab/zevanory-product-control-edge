@@ -80,6 +80,167 @@ async function wakeCommercialRobot(env: Record<string, unknown>) {
   return await response.json();
 }
 
+
+const T2_PRODUCT_SLUGS = ['ia-na-pratica','vendas-na-pratica','lucro-e-caixa','combo-ia-vendas','negocio-completo'] as const;
+const T2_CREATIVE_BUCKET = 'zpc_commercial_creatives';
+
+async function verifyFactoryRequest(request: Request, env: Record<string, unknown>) {
+  const secret = String(env.COMMERCIAL_ROBOT_TICK_SECRET || '');
+  const timestamp = String(request.headers.get('x-commercial-timestamp') || '');
+  const nonce = String(request.headers.get('x-commercial-nonce') || '');
+  const signature = String(request.headers.get('x-commercial-signature') || '').toLowerCase();
+  if (secret.length < 32 || !/^\d{13}$/.test(timestamp) || !/^[0-9a-f-]{36}$/i.test(nonce) || !/^[0-9a-f]{64}$/.test(signature)) return false;
+  if (Math.abs(Date.now() - Number(timestamp)) > 5 * 60 * 1000) return false;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+  const bytes = Uint8Array.from(signature.match(/.{2}/g) || [], pair => parseInt(pair, 16));
+  return crypto.subtle.verify('HMAC', key, bytes, new TextEncoder().encode(['zevanory-commercial-creative-factory-v1', timestamp, nonce].join('\n')));
+}
+
+async function t2StoreCall(env: Record<string, unknown>, payload: Record<string, unknown>) {
+  const url = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const key = String(env.SUPABASE_PUBLISHABLE_KEY || '');
+  const token = String(env.ZPC_REPLICATION_SECRET || '');
+  if (!url || !key || !token) throw new Error('t2_store_unconfigured');
+  const op = String(payload.op || '');
+  const rpc = op === 'list' ? 'zpc_worker_list' : 'zpc_worker_upsert';
+  const body: Record<string, unknown> = op === 'list'
+    ? { p_token: token, p_bucket: payload.bucket, p_limit: payload.limit || 1000 }
+    : { p_token: token, p_bucket: payload.bucket, p_items: payload.items || [], p_operation: op, p_queue_primary: true };
+  const response = await fetch(url + '/rest/v1/rpc/' + rpc, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', apikey: key, authorization: 'Bearer ' + key },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw new Error('t2_store_http_' + response.status + '_' + (await response.text()).slice(0, 180));
+  return response.json() as Promise<any>;
+}
+
+async function t2SupportFact(slug: string, question: string) {
+  const url = 'https://zevanory.api.br/api/support/knowledge?product=' + encodeURIComponent(slug) + '&q=' + encodeURIComponent(question);
+  const response = await fetch(url, { headers: { 'cache-control': 'no-store' }, signal: AbortSignal.timeout(12_000) });
+  if (!response.ok) throw new Error('t2_support_http_' + response.status);
+  const body = await response.json() as any;
+  if (body?.answered !== true || typeof body?.answer !== 'string') throw new Error('t2_support_unanswered_' + slug);
+  return body;
+}
+
+async function t2ValidateCaption(caption: string) {
+  const response = await fetch('https://zevanory.api.br/api/support/validate-reply', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+    body: JSON.stringify({ text: caption }),
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!response.ok) throw new Error('t2_validate_http_' + response.status);
+  const result = await response.json() as any;
+  if (result?.ok !== true) throw new Error('t2_validate_failed_' + JSON.stringify(result?.issues || []));
+  return result;
+}
+
+async function t2GenerateImage(env: Record<string, any>, prompt: string, seed: number) {
+  if (!env.AI?.run) throw new Error('t2_ai_binding_missing');
+  const form = new FormData();
+  form.append('prompt', prompt);
+  form.append('width', '1080');
+  form.append('height', '1080');
+  form.append('seed', String(seed));
+  const serialized = new Response(form);
+  const result = await env.AI.run('@cf/black-forest-labs/flux-2-klein-4b', {
+    multipart: { body: serialized.body, contentType: serialized.headers.get('content-type') },
+  }) as any;
+  const image = String(result?.image || '');
+  if (image.length < 1000) throw new Error('t2_ai_image_missing');
+  const mime = image.startsWith('iVBOR') ? 'image/png' : 'image/jpeg';
+  return 'data:' + mime + ';base64,' + image;
+}
+
+async function runT2CreativeFactory(env: Record<string, any>) {
+  const listed = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
+  const existing = Array.isArray(listed?.items) ? listed.items : [];
+  const generated: string[] = [];
+  const skipped: string[] = [];
+
+  for (let index = 0; index < T2_PRODUCT_SLUGS.length; index += 1) {
+    const slug = T2_PRODUCT_SLUGS[index];
+    const sourceKey = 't2-workers-ai:' + slug;
+    const ready = existing.find((item: any) => item?.sourceKey === sourceKey && item?.status === 'approval' && String(item?.imageDataUrl || '').startsWith('data:image/'));
+    if (ready) { skipped.push(slug); continue; }
+
+    const [contentFact, priceFact] = await Promise.all([
+      t2SupportFact(slug, 'conteúdo'),
+      t2SupportFact(slug, 'preço'),
+    ]);
+    const productUrl = [...(contentFact.sources || []), ...(priceFact.sources || [])].find((value: unknown) => typeof value === 'string' && String(value).includes('/' + slug));
+    if (!productUrl) throw new Error('t2_product_url_missing_' + slug);
+    const name = String(contentFact.answer).split(':')[0].trim();
+    if (!name) throw new Error('t2_product_name_missing_' + slug);
+    const caption = String(contentFact.answer).trim() + '\n\n' + String(priceFact.answer).trim() + '\n' + String(productUrl);
+    await t2ValidateCaption(caption);
+
+    const prompt = [
+      'Professional premium square social media creative for Brazilian digital education brand ZEVANORY.',
+      'Product theme: ' + name + '.',
+      'Concept: ' + String(contentFact.answer).replace(/^[^:]+:\s*/, ''),
+      'Elegant dark navy and electric blue visual language, cinematic studio lighting, polished commercial design.',
+      'No logos from other brands. No testimonials. No discount. No price text. No written text in the image.',
+      'Leave clean visual breathing room for approved copy.',
+    ].join(' ');
+    const imageDataUrl = await t2GenerateImage(env, prompt, 2100 + index);
+    const now = new Date().toISOString();
+    const record = {
+      kind: 'creative',
+      title: 'Criativo · ' + name,
+      detail: caption,
+      status: 'approval',
+      channel: 'instagram-facebook',
+      product: name,
+      productId: null,
+      valueCents: null,
+      source: 'workers-ai',
+      sourceKey,
+      evidence: [
+        'model:@cf/black-forest-labs/flux-2-klein-4b',
+        'validateReply:PASS',
+        'dimensions:1080x1080',
+        String(productUrl),
+      ],
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: null,
+      imageDataUrl,
+    };
+    await t2StoreCall(env, { op: 'add', bucket: T2_CREATIVE_BUCKET, items: [{ record }] });
+    generated.push(slug);
+  }
+
+  const after = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
+  const current = Array.isArray(after?.items) ? after.items : [];
+  const approvals = current.filter((item: any) =>
+    String(item?.sourceKey || '').startsWith('t2-workers-ai:') &&
+    item?.status === 'approval' &&
+    String(item?.imageDataUrl || '').startsWith('data:image/'),
+  );
+  if (approvals.length < 5) throw new Error('t2_approval_count_' + approvals.length);
+
+  const briefs = current.filter((item: any) => item?.status === 'brief' && !item?.imageDataUrl);
+  if (briefs.length) {
+    const archivedAt = new Date().toISOString();
+    const items = briefs.map((item: any) => ({
+      id: item.id,
+      record: {
+        ...item,
+        status: 'archived',
+        updatedAt: archivedAt,
+        evidence: [...(Array.isArray(item.evidence) ? item.evidence : []), 'archived-by:t2-creative-factory', archivedAt].slice(-20),
+      },
+    }));
+    await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items });
+  }
+
+  return { ok: true, generated, skipped, approvals: approvals.length, archivedBriefs: briefs.length, at: new Date().toISOString() };
+}
+
 async function fetchPagesOrigin(pathname: string) {
   const target = PAGES_ORIGIN + (pathname === '/' ? '/' : pathname);
   const response = await fetch(target, {
@@ -101,11 +262,30 @@ export default {
     } catch (error) {
       console.error('commercial_robot_cron_tick_failed', error instanceof Error ? error.message : String(error));
     }
+    try {
+      const factory = await runT2CreativeFactory(env as Record<string, any>);
+      console.info('commercial_creative_factory_cron', JSON.stringify(factory));
+    } catch (error) {
+      console.error('commercial_creative_factory_cron_failed', error instanceof Error ? error.message : String(error));
+    }
   },
 
   async fetch(request: Request, env: Record<string, unknown>) {
     setWorkerEnv(env);
     const url = new URL(request.url);
+
+    if (url.pathname === '/api/commercial/creative/factory/tick') {
+      if (request.method !== 'POST') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
+      if (!await verifyFactoryRequest(request, env)) return Response.json({ ok: false, error: 'commercial_creative_factory_auth_required' }, { status: 401 });
+      try {
+        const result = await runT2CreativeFactory(env as Record<string, any>);
+        return Response.json(result, { headers: { 'cache-control': 'no-store' } });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('commercial_creative_factory_failed', message);
+        return Response.json({ ok: false, error: message }, { status: 500, headers: { 'cache-control': 'no-store' } });
+      }
+    }
     if (url.hostname === 'zevanory.api.br') {
       const suffix = url.pathname === '/control'
         ? '/'

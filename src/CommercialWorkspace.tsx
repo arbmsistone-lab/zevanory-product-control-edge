@@ -325,6 +325,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             {approvalItems.map(item => (
               <article className='approvalCard' key={item.kind + item.id}>
                 <div><span className='commercialState warn'>AGUARDANDO APROVAÇÃO</span><small>{item.kind === 'creative' ? 'CRIATIVO' : 'PUBLICAÇÃO'} · {item.channel || 'sem canal'}</small></div>
+                {item.kind === 'creative' && item.imageDataUrl && <img className='approvalImage' src={item.imageDataUrl} alt={'Criativo de ' + (item.product || 'ZEVANORY')} />}
                 <h3>{item.title}</h3>
                 <p>{item.detail || 'Sem detalhe adicional.'}</p>
                 <div className='approvalActions'>
@@ -345,7 +346,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <div className='creativeLiveGrid' aria-label='Criativos em tempo real'>
             {pagedCreatives.map(item => (
               <article className='creativeLiveCard' key={item.id}>
-                <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}>{item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e)) ? <img src={item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e))} alt={'Asset de ' + item.title} loading='lazy' /> : <><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>ASSET PENDENTE · NÃO COMPROVADO</small></>}</div>
+                <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}>{item.imageDataUrl ? <img src={item.imageDataUrl} alt={'Asset de ' + item.title} loading='lazy' /> : item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e)) ? <img src={item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e))} alt={'Asset de ' + item.title} loading='lazy' /> : <><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>ASSET PENDENTE · NÃO COMPROVADO</small></>}</div>
                 <div className='creativeLiveBody'>
                   <div className='commercialTitleLine'><strong>{item.title}</strong><span className={'commercialState ' + statusClass(item.status)}>{commercialStatusLabel(item.status)}</span></div>
                   <p>{item.detail || 'Sem detalhe adicional.'}</p>
