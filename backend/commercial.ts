@@ -104,7 +104,11 @@ function normalizeCommercialRecord(
     createdAt: existing?.createdAt ?? (cleanString(raw.createdAt, 64) || now),
     updatedAt: now,
     publishedAt,
-  };
+    imageUrl: (() => {
+      const value = cleanNullable((raw as any).imageUrl ?? (existing as any)?.imageUrl, 400);
+      return value && /^https:\/\/controle\.zevanory\.api\.br\/api\/commercial\/creative\/assets\/[0-9a-f-]{36}\.(jpg|png)$/i.test(value) ? value : null;
+    })(),
+  } as Omit<CommercialRecord, 'id'>;
 }
 
 async function listKind(kind: CommercialRecordKind, limit = 200): Promise<CommercialRecord[]> {
