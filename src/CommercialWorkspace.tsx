@@ -260,9 +260,12 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const safeListPage = Math.min(listPage, genericPageCount - 1);
   const pagedItems = items.slice(safeListPage * genericPageSize, (safeListPage + 1) * genericPageSize);
   const creativePageSize = viewportWidth <= 700 ? 1 : 2;
-  const creativePageCount = Math.max(1, Math.ceil(data.creatives.length / creativePageSize));
+  // Studio shows real pieces only: archived history and briefs without art stay out of the grid.
+  const studioCreatives = data.creatives.filter(item => item.status !== 'archived' && Boolean(item.imageUrl || item.imageDataUrl || item.evidence.some(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e))));
+  const hiddenCreatives = data.creatives.length - studioCreatives.length;
+  const creativePageCount = Math.max(1, Math.ceil(studioCreatives.length / creativePageSize));
   const safeCreativePage = Math.min(listPage, creativePageCount - 1);
-  const pagedCreatives = data.creatives.slice(safeCreativePage * creativePageSize, (safeCreativePage + 1) * creativePageSize);
+  const pagedCreatives = studioCreatives.slice(safeCreativePage * creativePageSize, (safeCreativePage + 1) * creativePageSize);
 
   return (
     <section className='commercialWorkspace'>
@@ -350,7 +353,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
 
       {section === 'creatives' && (
         <article className='commercialPanel creativeLivePanel'>
-          <div className='commercialPanelTitle'><Sparkles size={17}/><div><b>Creative Live Studio</b><small>{data.creatives.length} peça(s) · atualização automática</small></div><div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeCreativePage - 1))} disabled={safeCreativePage === 0}>‹</button><strong>{safeCreativePage + 1}/{creativePageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(creativePageCount - 1, safeCreativePage + 1))} disabled={safeCreativePage >= creativePageCount - 1}>›</button></div></div>
+          <div className='commercialPanelTitle'><Sparkles size={17}/><div><b>Creative Live Studio</b><small>{studioCreatives.length} peça(s){hiddenCreatives ? ' · ' + hiddenCreatives + ' arquivada(s)/brief(s) fora da vitrine' : ''} · atualização automática</small></div><div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeCreativePage - 1))} disabled={safeCreativePage === 0}>‹</button><strong>{safeCreativePage + 1}/{creativePageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(creativePageCount - 1, safeCreativePage + 1))} disabled={safeCreativePage >= creativePageCount - 1}>›</button></div></div>
           <div className='creativeLiveGrid' aria-label='Criativos em tempo real'>
             {pagedCreatives.map(item => (
               <article className='creativeLiveCard' key={item.id}>
@@ -363,7 +366,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
                 </div>
               </article>
             ))}
-            {!data.creatives.length && <div className='commercialEmpty'>Nenhum criativo comprovado no stream operacional.</div>}
+            {!studioCreatives.length && <div className='commercialEmpty'>Nenhum criativo comprovado no stream operacional.</div>}
           </div>
         </article>
       )}
