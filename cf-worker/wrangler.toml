@@ -22,5 +22,9 @@ BACKEND_INSTANCE_ID = "cloudflare"
 [ai]
 binding = "AI"
 
+[[kv_namespaces]]
+binding = "T2_CREATIVE_ASSETS"
+id = "728a45738e4047f29bcb89934fd533c1"
+
 [triggers]
 crons = ["*/15 * * * *"]
