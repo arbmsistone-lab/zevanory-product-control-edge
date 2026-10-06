@@ -117,7 +117,7 @@ async function t2StoreCall(env: Record<string, unknown>, payload: Record<string,
 }
 
 async function t2SupportFact(slug: string, question: string) {
-  const url = 'https://zevanory.api.br/api/support/knowledge?product=' + encodeURIComponent(slug) + '&q=' + encodeURIComponent(question);
+  const url = 'https://zevanory.girolocal-rb.workers.dev/api/support/knowledge?product=' + encodeURIComponent(slug) + '&q=' + encodeURIComponent(question);
   const response = await fetch(url, { headers: { 'cache-control': 'no-store' }, signal: AbortSignal.timeout(12_000) });
   if (!response.ok) throw new Error('t2_support_http_' + response.status);
   const body = await response.json() as any;
@@ -126,7 +126,7 @@ async function t2SupportFact(slug: string, question: string) {
 }
 
 async function t2ValidateCaption(caption: string) {
-  const response = await fetch('https://zevanory.api.br/api/support/validate-reply', {
+  const response = await fetch('https://zevanory.girolocal-rb.workers.dev/api/support/validate-reply', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
     body: JSON.stringify({ text: caption }),
