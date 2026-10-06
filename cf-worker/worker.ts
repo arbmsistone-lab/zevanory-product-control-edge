@@ -1,4 +1,4 @@
-import { handler } from './backend-index.ts';
+import { handler, verifyEdgeSession } from './backend-index.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
@@ -54,6 +54,62 @@ async function commercialRobotTickSignature(secret: string, timestamp: string, n
     new TextEncoder().encode(['zevanory-commercial-robot-tick-v1', timestamp, nonce].join('\n')),
   );
   return Array.from(new Uint8Array(signature), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// Edge snapshot of the admin bootstrap (Render adminData takes 6-10s+, more when cold).
+// Session is verified at the edge first; the snapshot is shared by all valid admin sessions,
+// served fresh for 60s, stale-while-revalidate up to 15min, and dropped on any mutating call.
+const BOOTSTRAP_SNAPSHOT_KEY = 'zpc-admin-bootstrap-snapshot:v1';
+const BOOTSTRAP_FRESH_MS = 60_000;
+const BOOTSTRAP_STALE_MS = 15 * 60_000;
+const BOOTSTRAP_READ_ONLY = new Set(['/api/admin/bootstrap', '/api/admin/overview', '/api/_session_verify', '/api/pin/login', '/api/pin/logout']);
+
+async function fetchRenderBootstrap(renderBase: string, body: string) {
+  const response = await fetch(renderBase + '/api/admin/bootstrap', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+    body,
+    signal: AbortSignal.timeout(45_000),
+  });
+  if (!response.ok) return null;
+  const text = await response.text();
+  try {
+    const parsed = JSON.parse(text);
+    if (!parsed || !parsed.dashboard || !parsed.commercial) return null;
+  } catch { return null; }
+  return text;
+}
+
+async function storeBootstrapSnapshot(store: any, text: string) {
+  try {
+    await store.put(BOOTSTRAP_SNAPSHOT_KEY, text, { metadata: { at: Date.now() }, expirationTtl: 3600 });
+  } catch {}
+}
+
+async function edgeBootstrap(request: Request, env: Record<string, any>, ctx: any, renderBase: string): Promise<Response | null> {
+  const store = env.T2_CREATIVE_ASSETS;
+  if (!store?.getWithMetadata || !renderBase) return null;
+  const body = await request.clone().text();
+  let token = '';
+  try { token = String(JSON.parse(body)?.sessionToken || ''); } catch {}
+  if (!token || !(await verifyEdgeSession(token))) return null; // let the normal path answer 401
+  const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
+  try {
+    const cached = await store.getWithMetadata(BOOTSTRAP_SNAPSHOT_KEY, { type: 'text' }) as any;
+    const at = Number(cached?.metadata?.at || 0);
+    const age = Date.now() - at;
+    if (cached?.value && at && age < BOOTSTRAP_STALE_MS) {
+      if (age >= BOOTSTRAP_FRESH_MS) {
+        ctx?.waitUntil?.(fetchRenderBootstrap(renderBase, body).then(text => text ? storeBootstrapSnapshot(store, text) : undefined).catch(() => undefined));
+      }
+      const payload = String(cached.value).replace(/\}\s*$/, ',"snapshotAgeMs":' + Math.max(0, age) + '}');
+      return new Response(payload, { headers: { ...headers, 'x-zpc-bootstrap': age < BOOTSTRAP_FRESH_MS ? 'edge-fresh' : 'edge-stale' } });
+    }
+  } catch {}
+  const text = await fetchRenderBootstrap(renderBase, body).catch(() => null);
+  if (!text) return null;
+  ctx?.waitUntil?.(storeBootstrapSnapshot(store, text));
+  return new Response(text, { headers: { ...headers, 'x-zpc-bootstrap': 'origin' } });
 }
 
 async function wakeCommercialRobot(env: Record<string, unknown>) {
@@ -633,7 +689,7 @@ export default {
     // the cron never generates images with model-rendered text.
   },
 
-  async fetch(request: Request, env: Record<string, unknown>) {
+  async fetch(request: Request, env: Record<string, unknown>, ctx?: any) {
     setWorkerEnv(env);
     const url = new URL(request.url);
 
@@ -882,6 +938,12 @@ export default {
       const edgeAuthPath = normalizedPath === '/api/_auth_diagnostic' || normalizedPath === '/api/_session_verify' || normalizedPath === '/api/pin/login' || normalizedPath === '/api/pin/logout';
       const forceDirect = edgeAuthPath || url.searchParams.get('runtime') === 'cloudflare';
       const renderBase = forceDirect ? '' : String(env.RENDER_BACKEND_URL || '').replace(/\/$/, '');
+      if (renderBase && normalizedPath === '/api/admin/bootstrap' && request.method === 'POST') {
+        const fast = await edgeBootstrap(normalizedRequest, env as Record<string, any>, ctx, renderBase).catch(() => null);
+        if (fast) return fast;
+      } else if (request.method !== 'GET' && request.method !== 'HEAD' && !BOOTSTRAP_READ_ONLY.has(normalizedPath)) {
+        try { await (env as any).T2_CREATIVE_ASSETS?.delete?.(BOOTSTRAP_SNAPSHOT_KEY); } catch {}
+      }
       if (renderBase) {
         try {
           const target = renderBase + normalizedPath + url.search;
