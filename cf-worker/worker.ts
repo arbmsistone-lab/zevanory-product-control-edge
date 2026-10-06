@@ -61,7 +61,7 @@ async function commercialRobotTickSignature(secret: string, timestamp: string, n
 // served fresh for 60s, stale-while-revalidate up to 15min, and dropped on any mutating call.
 const BOOTSTRAP_SNAPSHOT_KEY = 'zpc-admin-bootstrap-snapshot:v1';
 const BOOTSTRAP_FRESH_MS = 60_000;
-const BOOTSTRAP_STALE_MS = 15 * 60_000;
+const BOOTSTRAP_STALE_MS = 6 * 60 * 60_000;
 const BOOTSTRAP_READ_ONLY = new Set(['/api/admin/bootstrap', '/api/admin/overview', '/api/_session_verify', '/api/pin/login', '/api/pin/logout']);
 
 async function fetchRenderBootstrap(renderBase: string, body: string) {
@@ -82,7 +82,7 @@ async function fetchRenderBootstrap(renderBase: string, body: string) {
 
 async function storeBootstrapSnapshot(store: any, text: string) {
   try {
-    await store.put(BOOTSTRAP_SNAPSHOT_KEY, text, { metadata: { at: Date.now() }, expirationTtl: 3600 });
+    await store.put(BOOTSTRAP_SNAPSHOT_KEY, text, { metadata: { at: Date.now() }, expirationTtl: 6 * 3600 });
   } catch {}
 }
 
