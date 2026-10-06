@@ -1321,7 +1321,7 @@ async function createEdgeSession() {
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
 
-async function verifyEdgeSession(token: string) {
+export async function verifyEdgeSession(token: string) {
   const parts = token.split('.');
   if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
   const secret = await sessionSigningKey();
