@@ -501,6 +501,9 @@ function App() {
       setProducts(response.data.products);
       setCertificationTargets(response.data.certificationTargets ?? []);
       setAuthState('ready');
+      if (Number(response.data.snapshotAgeMs || 0) > 60000) {
+        window.setTimeout(() => { if (generation === loadGeneration.current) void load(token); }, 20000);
+      }
     } catch {
       if (controller.signal.aborted || generation !== loadGeneration.current) return;
       localStorage.removeItem('arbm_admin_session');

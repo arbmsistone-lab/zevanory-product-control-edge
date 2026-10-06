@@ -3076,7 +3076,58 @@ export const dailyAuditHandler = async () => {
   return { statusCode: 200 };
 };
 
-export const handler = router({
+// Admin snapshot cache: adminData() fans out to many lists and remote evidence checks
+// (often 20s+). The panel bootstrap reads a recent snapshot instantly; any mutating
+// request invalidates it so writes are always reflected on the next load.
+type AdminSnapshot = Awaited<ReturnType<typeof adminData>>;
+const ADMIN_SNAPSHOT_FRESH_MS = 60_000;
+const ADMIN_SNAPSHOT_STALE_MS = 15 * 60_000;
+let adminSnapshot: { at: number; generation: number; data: AdminSnapshot } | null = null;
+let adminSnapshotGeneration = 0;
+let adminSnapshotInflight: Promise<AdminSnapshot> | null = null;
+
+export function invalidateAdminSnapshot() {
+  adminSnapshotGeneration += 1;
+}
+
+function refreshAdminSnapshot(): Promise<AdminSnapshot> {
+  if (adminSnapshotInflight) return adminSnapshotInflight;
+  const generation = adminSnapshotGeneration;
+  adminSnapshotInflight = adminData()
+    .then(data => {
+      if (generation === adminSnapshotGeneration) adminSnapshot = { at: Date.now(), generation, data };
+      return data;
+    })
+    .finally(() => { adminSnapshotInflight = null; });
+  return adminSnapshotInflight;
+}
+
+export function prewarmAdminSnapshot() {
+  return refreshAdminSnapshot().then(() => true).catch(() => false);
+}
+
+async function cachedAdminData(): Promise<AdminSnapshot & { snapshotAgeMs: number }> {
+  const current = adminSnapshot;
+  if (current && current.generation === adminSnapshotGeneration) {
+    const age = Date.now() - current.at;
+    if (age < ADMIN_SNAPSHOT_FRESH_MS) return { ...current.data, snapshotAgeMs: age };
+    if (age < ADMIN_SNAPSHOT_STALE_MS) {
+      void refreshAdminSnapshot().catch(() => undefined);
+      return { ...current.data, snapshotAgeMs: age };
+    }
+  }
+  return { ...(await refreshAdminSnapshot()), snapshotAgeMs: 0 };
+}
+
+const ADMIN_SNAPSHOT_READ_ONLY = new Set([
+  'POST /api/admin/bootstrap',
+  'POST /api/admin/overview',
+  'POST /api/_session_verify',
+  'POST /api/pin/login',
+  'POST /api/pin/logout',
+]);
+
+const routedHandler = router({
   'GET /api/_auth_diagnostic': [async () => {
     let stage = 'secret';
     let tempSessionId = '';
@@ -3164,7 +3215,7 @@ export const handler = router({
   'POST /api/admin/bootstrap': [async ctx => {
     const token = (ctx.body as { sessionToken?: string })?.sessionToken;
     if (!await requirePinSession(token)) return error('Sessao invalida ou expirada.', 401);
-    return json(await adminData());
+    return json(await cachedAdminData());
   }],
   'POST /api/products/create': [async ctx => {
     const body = ctx.body as { sessionToken?: string } & Partial<ProductRecord>;
@@ -3392,3 +3443,12 @@ export const handler = router({
   'GET /api/_healthcheck': [async () => json({ ok: true, name: 'ZEVANORY PRODUCT CONTROL', mode: 'four-digit-pin-admin-control' })],
   'GET /api/_portable_health': [async () => json(await portableHealth())],
 });
+
+export const handler = async (request: Request) => {
+  const key = `${request.method.toUpperCase()} ${new URL(request.url).pathname}`;
+  const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase()) && !ADMIN_SNAPSHOT_READ_ONLY.has(key);
+  if (mutating) invalidateAdminSnapshot();
+  const response = await routedHandler(request);
+  if (mutating) invalidateAdminSnapshot();
+  return response;
+};
