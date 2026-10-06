@@ -457,7 +457,12 @@ async function metaTargets(env: Record<string, any>) {
 async function metaPublishStatus(env: Record<string, any>) {
   try {
     const t = await metaTargets(env);
-    return { ready: true, page: t.pageName, instagram: t.igUsername };
+    let inbound = 'not_subscribed';
+    try {
+      await metaCall(env, t.pageId + '/subscribed_apps', { subscribed_fields: 'feed,messages' }, 'POST', t.pageToken);
+      inbound = String(env.META_APP_SECRET || '').length >= 16 ? 'subscribed' : 'subscribed_missing_app_secret';
+    } catch (error) { inbound = 'subscribe_failed:' + (error instanceof Error ? error.message : String(error)).slice(0, 80); }
+    return { ready: true, page: t.pageName, instagram: t.igUsername, inbound };
   } catch (error) {
     return { ready: false, reason: error instanceof Error ? error.message : String(error) };
   }
@@ -495,6 +500,100 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
     published.push({ id: item.id, product: item.product, instagram: igPost.id, facebook: fbPost.post_id || fbPost.id });
   }
   return { ok: true, published, pending: items.length - published.length };
+}
+
+// T4 — Inbound capture on Instagram/Facebook: grounded replies to comments and DMs. No cold outreach:
+// the bot only answers people who wrote to ZEVANORY first. Answers come from the published support
+// knowledge (zevanory.api.br/api/support/knowledge); anything else is routed to WhatsApp.
+const META_WEBHOOK_VERIFY_TOKEN = 'zevanory-meta-webhook-v1';
+const WHATSAPP_LINK = 'https://wa.me/5588992545413';
+
+async function metaVerifySignature(request: Request, raw: string, env: Record<string, any>) {
+  const secret = String(env.META_APP_SECRET || '');
+  const header = String(request.headers.get('x-hub-signature-256') || '');
+  if (secret.length < 16 || !header.startsWith('sha256=')) return false;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(raw)));
+  const hex = [...mac].map(b => b.toString(16).padStart(2, '0')).join('');
+  const given = header.slice(7).toLowerCase();
+  if (given.length !== hex.length) return false;
+  let diff = 0;
+  for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ given.charCodeAt(i);
+  return diff === 0;
+}
+
+async function groundedReply(text: string) {
+  const q = String(text || '').slice(0, 500);
+  try {
+    const r = await fetch('https://zevanory.api.br/api/support/knowledge?q=' + encodeURIComponent(q), { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+    const j = await r.json() as any;
+    if (r.ok && j?.answered && j?.answer) {
+      const link = Array.isArray(j.sources) ? String(j.sources[0] || '') : '';
+      return (String(j.answer) + (link ? '\n' + link : '')).slice(0, 900);
+    }
+  } catch {}
+  return 'Olá! Obrigado pelo contato com a ZEVANORY. Veja os produtos em https://vendas.zevanory.api.br/solucoes ou fale com o atendimento no WhatsApp: ' + WHATSAPP_LINK;
+}
+
+async function seenOnce(env: Record<string, any>, id: string) {
+  const kv = env.T2_CREATIVE_ASSETS;
+  if (!kv?.get || !id) return false;
+  const key = 't4-meta-seen:' + id;
+  if (await kv.get(key)) return true;
+  await kv.put(key, '1', { expirationTtl: 7 * 24 * 3600 });
+  return false;
+}
+
+async function handleMetaWebhook(request: Request, env: Record<string, any>) {
+  const url = new URL(request.url);
+  if (request.method === 'GET') {
+    if (url.searchParams.get('hub.mode') === 'subscribe' && url.searchParams.get('hub.verify_token') === META_WEBHOOK_VERIFY_TOKEN) {
+      return new Response(String(url.searchParams.get('hub.challenge') || ''), { headers: { 'content-type': 'text/plain' } });
+    }
+    return new Response('forbidden', { status: 403 });
+  }
+  if (request.method !== 'POST') return new Response('method_not_allowed', { status: 405 });
+  const raw = await request.text();
+  if (!await metaVerifySignature(request, raw, env)) return new Response('invalid_signature', { status: 401 });
+  let body: any = {};
+  try { body = JSON.parse(raw); } catch { return new Response('ok'); }
+  let targets: any = null;
+  const handled: string[] = [];
+  for (const entry of Array.isArray(body?.entry) ? body.entry : []) {
+    try {
+      targets = targets || await metaTargets(env);
+      const own = new Set([targets.igId, targets.pageId]);
+      for (const change of Array.isArray(entry?.changes) ? entry.changes : []) {
+        const v = change?.value || {};
+        if (body.object === 'instagram' && change.field === 'comments' && v.id && v.text && !own.has(String(v.from?.id || ''))) {
+          if (await seenOnce(env, 'igc:' + v.id)) continue;
+          await metaCall(env, String(v.id) + '/replies', { message: await groundedReply(v.text) }, 'POST', targets.pageToken);
+          handled.push('ig_comment');
+        }
+        if (body.object === 'page' && change.field === 'feed' && v.item === 'comment' && v.verb === 'add' && v.comment_id && v.message && !own.has(String(v.from?.id || ''))) {
+          if (await seenOnce(env, 'fbc:' + v.comment_id)) continue;
+          await metaCall(env, String(v.comment_id) + '/comments', { message: await groundedReply(v.message) }, 'POST', targets.pageToken);
+          handled.push('fb_comment');
+        }
+      }
+      for (const m of Array.isArray(entry?.messaging) ? entry.messaging : []) {
+        const sender = String(m?.sender?.id || '');
+        const text = String(m?.message?.text || '');
+        if (!sender || !text || m?.message?.is_echo || own.has(sender)) continue;
+        if (await seenOnce(env, 'dm:' + String(m?.message?.mid || sender + ':' + m?.timestamp))) continue;
+        await metaCall(env, targets.pageId + '/messages', {
+          recipient: JSON.stringify({ id: sender }),
+          messaging_type: 'RESPONSE',
+          message: JSON.stringify({ text: await groundedReply(text) }),
+        }, 'POST', targets.pageToken);
+        handled.push(body.object === 'instagram' ? 'ig_dm' : 'fb_dm');
+      }
+    } catch (error) {
+      console.error('meta_webhook_entry_failed', error instanceof Error ? error.message : String(error));
+    }
+  }
+  if (handled.length) console.info('meta_webhook_handled', JSON.stringify(handled));
+  return new Response('ok');
 }
 
 async function fetchPagesOrigin(pathname: string) {
@@ -600,6 +699,8 @@ export default {
         return Response.json({ ok: false, error: message }, { status: 500, headers: { 'cache-control': 'no-store' } });
       }
     }
+
+    if (url.pathname === '/api/meta/webhook') return handleMetaWebhook(request, env as Record<string, any>);
 
     if (url.pathname === '/api/commercial/publish/status' && request.method === 'GET') {
       return Response.json(await metaPublishStatus(env as Record<string, any>), { headers: { 'cache-control': 'no-store' } });
