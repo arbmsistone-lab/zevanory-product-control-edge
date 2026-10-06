@@ -817,7 +817,8 @@ function App() {
       const action = el.querySelector<HTMLElement>('.champagneAction');
       const gap = parseFloat(getComputedStyle(el).rowGap || '8') || 8;
       const rowH = row?.offsetHeight || 52;
-      const actionH = action?.offsetHeight || 32;
+      const actionStyle = action ? getComputedStyle(action) : null;
+      const actionH = (action?.offsetHeight || 32) + (parseFloat(actionStyle?.marginTop || '0') || 0) + (parseFloat(actionStyle?.marginBottom || '0') || 0) + 2;
       const fit = Math.max(0, Math.floor((el.clientHeight - actionH) / (rowH + gap)));
       setApprovalFit(previous => (previous === fit ? previous : fit));
     };
