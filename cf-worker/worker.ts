@@ -174,14 +174,20 @@ async function t2GenerateImage(env: Record<string, any>, prompt: string, seed: n
   return 'data:' + mime + ';base64,' + image;
 }
 
-async function runT2CreativeFactory(env: Record<string, any>) {
+async function runT2CreativeFactory(
+  env: Record<string, any>,
+  options: { onlySlug?: string | null; finalizeOnly?: boolean } = {},
+) {
+  const onlySlug = options.onlySlug ? String(options.onlySlug) : null;
+  if (onlySlug && !T2_PRODUCT_SLUGS.includes(onlySlug as any)) throw new Error('t2_product_slug_invalid_' + onlySlug);
   const listed = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
   const existing = Array.isArray(listed?.items) ? listed.items : [];
   const generated: string[] = [];
   const skipped: string[] = [];
+  const targetSlugs = options.finalizeOnly ? [] : (onlySlug ? [onlySlug] : [...T2_PRODUCT_SLUGS]);
 
-  for (let index = 0; index < T2_PRODUCT_SLUGS.length; index += 1) {
-    const slug = T2_PRODUCT_SLUGS[index];
+  for (const slug of targetSlugs) {
+    const index = T2_PRODUCT_SLUGS.indexOf(slug as any);
     const sourceKey = 't2-workers-ai:' + slug;
     const ready = existing.find((item: any) => item?.sourceKey === sourceKey && item?.status === 'approval' && /^https:\/\//.test(String(item?.imageUrl || '')));
     if (ready) { skipped.push(slug); continue; }
@@ -241,36 +247,67 @@ async function runT2CreativeFactory(env: Record<string, any>) {
     generated.push(slug);
   }
 
-  const after = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
-  const current = Array.isArray(after?.items) ? after.items : [];
-  const approvals = current.filter((item: any) =>
-    String(item?.sourceKey || '').startsWith('t2-workers-ai:') &&
-    item?.status === 'approval' &&
-    /^https:\/\//.test(String(item?.imageUrl || '')),
-  );
-  if (approvals.length < 5) throw new Error('t2_approval_count_' + approvals.length);
+  let after = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
+  let current = Array.isArray(after?.items) ? after.items : [];
+  const approvalBySourceKey = new Map<string, any>();
+  for (const item of current) {
+    const sourceKey = String(item?.sourceKey || '');
+    if (
+      sourceKey.startsWith('t2-workers-ai:') &&
+      item?.status === 'approval' &&
+      /^https:\/\//.test(String(item?.imageUrl || ''))
+    ) approvalBySourceKey.set(sourceKey, item);
+  }
+  const approvals = [...approvalBySourceKey.values()];
+  if (options.finalizeOnly && approvals.length < 5) throw new Error('t2_approval_count_' + approvals.length);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const briefs = current.filter((item: any) =>
-    item?.status === 'brief' &&
-    !item?.imageDataUrl &&
-    String(item?.createdAt || '').slice(0, 10) < today
-  );
-  if (briefs.length) {
-    const archivedAt = new Date().toISOString();
-    const items = briefs.map((item: any) => ({
-      id: item.id,
-      record: {
-        ...item,
-        status: 'archived',
-        updatedAt: archivedAt,
-        evidence: [...(Array.isArray(item.evidence) ? item.evidence : []), 'archived-by:t2-creative-factory', archivedAt].slice(-20),
-      },
-    }));
-    await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items });
+  if (options.finalizeOnly) {
+    const today = new Date().toISOString().slice(0, 10);
+    const briefs = current.filter((item: any) =>
+      item?.status === 'brief' &&
+      !item?.imageDataUrl &&
+      String(item?.createdAt || '').slice(0, 10) < today
+    );
+    if (briefs.length) {
+      const archivedAt = new Date().toISOString();
+      const items = briefs.map((item: any) => ({
+        id: item.id,
+        record: {
+          ...item,
+          status: 'archived',
+          updatedAt: archivedAt,
+          evidence: [...(Array.isArray(item.evidence) ? item.evidence : []), 'archived-by:t2-creative-factory', archivedAt].slice(-20),
+        },
+      }));
+      await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items });
+      after = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
+      current = Array.isArray(after?.items) ? after.items : [];
+    }
   }
 
-  return { ok: true, generated, skipped, approvals: approvals.length, archivedBriefs: briefs.length, at: new Date().toISOString() };
+  const archivedBriefs = current.filter((item: any) =>
+    item?.status === 'archived' &&
+    Array.isArray(item?.evidence) &&
+    item.evidence.includes('archived-by:t2-creative-factory')
+  ).length;
+
+  return {
+    ok: true,
+    generated,
+    skipped,
+    approvals: approvals.length,
+    archivedBriefs,
+    creativeProof: approvals.map((item: any) => ({
+      id: item.id,
+      product: item.product,
+      sourceKey: item.sourceKey,
+      status: item.status,
+      imageUrl: item.imageUrl,
+      caption: item.detail,
+      evidence: item.evidence,
+    })),
+    at: new Date().toISOString(),
+  };
 }
 
 async function fetchPagesOrigin(pathname: string) {
@@ -325,7 +362,9 @@ export default {
       if (request.method !== 'POST') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
       if (!await verifyFactoryRequest(request, env)) return Response.json({ ok: false, error: 'commercial_creative_factory_auth_required' }, { status: 401 });
       try {
-        const result = await runT2CreativeFactory(env as Record<string, any>);
+        const product = url.searchParams.get('product');
+        const finalizeOnly = url.searchParams.get('finalize') === '1';
+        const result = await runT2CreativeFactory(env as Record<string, any>, { onlySlug: product, finalizeOnly });
         return Response.json(result, { headers: { 'cache-control': 'no-store' } });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
