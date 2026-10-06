@@ -430,6 +430,73 @@ async function runT2CreativeFactory(
   };
 }
 
+// T3 — Meta publisher. Publishes ONLY creatives the owner approved in the panel (status "approved").
+// One secret: META_SYSTEM_TOKEN (Business system-user token). IDs are discovered at runtime.
+const META_GRAPH = 'https://graph.facebook.com/';
+const META_PAGE_ID = '1249902628211703';
+
+async function metaCall(env: Record<string, any>, path: string, params: Record<string, string> = {}, method: 'GET' | 'POST' = 'GET', token?: string) {
+  const version = String(env.META_GRAPH_VERSION || 'v23.0');
+  const body = new URLSearchParams({ ...params, access_token: String(token || env.META_SYSTEM_TOKEN || '') });
+  const url = META_GRAPH + version + '/' + path + (method === 'GET' ? '?' + body.toString() : '');
+  const response = await fetch(url, method === 'GET' ? { signal: AbortSignal.timeout(15_000) } : { method: 'POST', body, signal: AbortSignal.timeout(30_000) });
+  const json = await response.json().catch(() => ({})) as any;
+  if (!response.ok || json?.error) throw new Error('meta_' + path.split('?')[0].replace(/[^a-z0-9_]/gi, '_') + '_' + (json?.error?.code || response.status) + '_' + String(json?.error?.message || '').slice(0, 120));
+  return json;
+}
+
+async function metaTargets(env: Record<string, any>) {
+  if (!String(env.META_SYSTEM_TOKEN || '')) throw new Error('meta_token_missing');
+  const page = await metaCall(env, META_PAGE_ID, { fields: 'id,name,access_token,instagram_business_account{id,username}' });
+  if (!page?.access_token) throw new Error('meta_page_token_unavailable');
+  const ig = page?.instagram_business_account;
+  if (!ig?.id) throw new Error('meta_instagram_not_linked');
+  return { pageId: String(page.id), pageName: String(page.name || ''), pageToken: String(page.access_token), igId: String(ig.id), igUsername: String(ig.username || '') };
+}
+
+async function metaPublishStatus(env: Record<string, any>) {
+  try {
+    const t = await metaTargets(env);
+    return { ready: true, page: t.pageName, instagram: t.igUsername };
+  } catch (error) {
+    return { ready: false, reason: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function runT3Publisher(env: Record<string, any>, limit = 1) {
+  const listed = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
+  const items = (Array.isArray(listed?.items) ? listed.items : [])
+    .filter((item: any) => item?.kind === 'creative' && item?.status === 'approved' && !item?.publishedAt && /^https:\/\//.test(String(item?.imageUrl || '')));
+  if (!items.length) return { ok: true, published: [], pending: 0 };
+  const targets = await metaTargets(env);
+  const published: any[] = [];
+  for (const item of items.slice(0, limit)) {
+    const caption = String(item.detail || '').slice(0, 2100);
+    const container = await metaCall(env, targets.igId + '/media', { image_url: String(item.imageUrl), caption }, 'POST', targets.pageToken);
+    let ready = false;
+    for (let i = 0; i < 10 && !ready; i++) {
+      const st = await metaCall(env, String(container.id), { fields: 'status_code' }, 'GET', targets.pageToken);
+      if (st?.status_code === 'FINISHED') ready = true;
+      else if (st?.status_code === 'ERROR' || st?.status_code === 'EXPIRED') throw new Error('meta_ig_container_' + st.status_code);
+      else await new Promise(r => setTimeout(r, 3000));
+    }
+    if (!ready) throw new Error('meta_ig_container_timeout');
+    const igPost = await metaCall(env, targets.igId + '/media_publish', { creation_id: String(container.id) }, 'POST', targets.pageToken);
+    const fbPost = await metaCall(env, targets.pageId + '/photos', { url: String(item.imageUrl), message: caption, published: 'true' }, 'POST', targets.pageToken);
+    const now = new Date().toISOString();
+    const record = {
+      ...item,
+      status: 'published',
+      publishedAt: now,
+      updatedAt: now,
+      evidence: [...(Array.isArray(item.evidence) ? item.evidence : []), 'instagram_media_id:' + igPost.id, 'facebook_post_id:' + (fbPost.post_id || fbPost.id), 'published-by:t3-meta-publisher', now].slice(-20),
+    };
+    await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items: [{ id: item.id, record }] });
+    published.push({ id: item.id, product: item.product, instagram: igPost.id, facebook: fbPost.post_id || fbPost.id });
+  }
+  return { ok: true, published, pending: items.length - published.length };
+}
+
 async function fetchPagesOrigin(pathname: string) {
   const target = PAGES_ORIGIN + (pathname === '/' ? '/' : pathname);
   const response = await fetch(target, {
@@ -450,6 +517,14 @@ export default {
       console.info('commercial_robot_cron_tick', JSON.stringify(result));
     } catch (error) {
       console.error('commercial_robot_cron_tick_failed', error instanceof Error ? error.message : String(error));
+    }
+    try {
+      if (String((env as any).META_SYSTEM_TOKEN || '')) {
+        const publish = await runT3Publisher(env as Record<string, any>, 1);
+        console.info('commercial_meta_publisher_cron', JSON.stringify(publish));
+      }
+    } catch (error) {
+      console.error('commercial_meta_publisher_cron_failed', error instanceof Error ? error.message : String(error));
     }
     // Creatives are produced by the deterministic compositor (model background + exact catalog typography);
     // the cron never generates images with model-rendered text.
@@ -523,6 +598,20 @@ export default {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return Response.json({ ok: false, error: message }, { status: 500, headers: { 'cache-control': 'no-store' } });
+      }
+    }
+
+    if (url.pathname === '/api/commercial/publish/status' && request.method === 'GET') {
+      return Response.json(await metaPublishStatus(env as Record<string, any>), { headers: { 'cache-control': 'no-store' } });
+    }
+
+    if (url.pathname === '/api/commercial/publish/tick') {
+      if (request.method !== 'POST') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
+      if (!await verifyFactoryRequest(request, env)) return Response.json({ ok: false, error: 'commercial_publish_auth_required' }, { status: 401 });
+      try {
+        return Response.json(await runT3Publisher(env as Record<string, any>, 1), { headers: { 'cache-control': 'no-store' } });
+      } catch (error) {
+        return Response.json({ ok: false, error: error instanceof Error ? error.message : String(error) }, { status: 500, headers: { 'cache-control': 'no-store' } });
       }
     }
 
