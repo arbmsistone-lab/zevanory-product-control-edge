@@ -206,16 +206,22 @@ async function runT2CreativeFactory(
     const caption = String(contentFact.answer).trim() + '\n\n' + String(priceFact.answer).trim() + '\n' + String(productUrl);
     await t2ValidateCaption(caption, contentFact, priceFact, String(productUrl));
 
+    const visualConceptBySlug: Record<string, string> = {
+      'ia-na-pratica': 'abstract luminous neural network made only of glowing blue nodes, flowing light paths and geometric depth',
+      'vendas-na-pratica': 'abstract commercial momentum shown only through converging blue light paths, forward motion and geometric depth',
+      'lucro-e-caixa': 'abstract financial flow shown only through balanced blue light streams, layered geometric forms and calm depth',
+      'combo-ia-vendas': 'abstract fusion of two luminous blue systems joining into one coherent geometric network',
+      'negocio-completo': 'abstract integrated business ecosystem shown only through connected luminous modules and deep geometric space',
+    };
     const prompt = [
-      'Professional premium square social media creative for Brazilian digital education brand ZEVANORY.',
-      'Product theme: ' + name + '.',
-      'Concept: ' + String(contentFact.answer).replace(/^[^:]+:\s*/, ''),
-      'Elegant dark navy and electric blue visual language, cinematic studio lighting, polished commercial design.',
-      'Purely visual composition with abstract geometric light forms and business-tech atmosphere; no screens, signs, documents, packaging, labels or interfaces.',
-      'Absolutely no typography: no words, letters, numbers, symbols, logos, watermarks, captions, price text or written marks anywhere in the image.',
-      'Leave clean visual breathing room for approved copy.',
+      'Square abstract premium technology artwork.',
+      visualConceptBySlug[slug] || 'abstract blue geometric technology composition',
+      'Dark navy background, electric blue light, cinematic depth, elegant minimal composition, generous negative space.',
+      'No people. No products. No screens. No signs. No documents. No packaging. No labels. No interface elements.',
+      'No branding and absolutely no typography or text-like marks: no words, letters, numbers, symbols, logos, watermarks or captions.',
+      'The image must be purely abstract geometry and light.',
     ].join(' ');
-    const imageDataUrl = await t2GenerateImage(env, prompt, 2100 + index);
+    const imageDataUrl = await t2GenerateImage(env, prompt, (forceRegenerate ? 12100 : 2100) + index);
     const now = new Date().toISOString();
     const assetId = crypto.randomUUID();
     const imageBase64 = imageDataUrl.replace(/^data:image\/(?:jpeg|png);base64,/, '');
@@ -352,9 +358,9 @@ export default {
     setWorkerEnv(env);
     const url = new URL(request.url);
 
-    if (url.pathname.startsWith('/api/commercial/creative/assets/')) {
+    if (url.pathname.startsWith('/api/commercial/creative/assets-raw/')) {
       if (request.method !== 'GET' && request.method !== 'HEAD') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
-      const match = url.pathname.match(/^\/api\/commercial\/creative\/assets\/([0-9a-f-]{36})\.(jpg|png)$/i);
+      const match = url.pathname.match(/^\/api\/commercial\/creative\/assets-raw\/([0-9a-f-]{36})\.(jpg|png)$/i);
       if (!match) return Response.json({ ok: false, error: 'creative_asset_invalid' }, { status: 400 });
       try {
         if (!env.T2_CREATIVE_ASSETS?.getWithMetadata) return Response.json({ ok: false, error: 'creative_asset_store_unavailable' }, { status: 503 });
@@ -362,8 +368,28 @@ export default {
         if (!asset?.value) return Response.json({ ok: false, error: 'creative_asset_not_found' }, { status: 404 });
         const mime = String(asset?.metadata?.mime || (match[2].toLowerCase() === 'png' ? 'image/png' : 'image/jpeg'));
         return new Response(request.method === 'HEAD' ? null : asset.value, { headers: { 'content-type': mime, 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' } });
-      } catch (error) {
+      } catch {
         return Response.json({ ok: false, error: 'creative_asset_read_failed' }, { status: 500, headers: { 'cache-control': 'no-store' } });
+      }
+    }
+
+    if (url.pathname.startsWith('/api/commercial/creative/assets/')) {
+      if (request.method !== 'GET' && request.method !== 'HEAD') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
+      const match = url.pathname.match(/^\/api\/commercial\/creative\/assets\/([0-9a-f-]{36})\.(jpg|png)$/i);
+      if (!match) return Response.json({ ok: false, error: 'creative_asset_invalid' }, { status: 400 });
+      try {
+        const rawUrl = new URL('/api/commercial/creative/assets-raw/' + match[1] + '.' + match[2].toLowerCase(), request.url);
+        const transformed = await fetch(rawUrl.toString(), {
+          cf: { image: { width: 1080, height: 1080, fit: 'cover', format: match[2].toLowerCase() === 'png' ? 'png' : 'jpeg', quality: 95 } },
+        } as any);
+        if (!transformed.ok) return transformed;
+        const headers = new Headers(transformed.headers);
+        headers.set('cache-control', 'public, max-age=31536000, immutable');
+        headers.set('x-content-type-options', 'nosniff');
+        headers.set('x-zpc-image-size', '1080x1080');
+        return new Response(request.method === 'HEAD' ? null : transformed.body, { status: transformed.status, headers });
+      } catch {
+        return Response.json({ ok: false, error: 'creative_asset_transform_failed' }, { status: 500, headers: { 'cache-control': 'no-store' } });
       }
     }
 
