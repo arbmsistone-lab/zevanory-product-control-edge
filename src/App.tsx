@@ -389,6 +389,7 @@ function App() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
@@ -1152,7 +1153,7 @@ function App() {
                 <button
                   className='productDisclosureToggle secondary compact'
                   type='button'
-                  onClick={() => openCertification(product)}
+                  onClick={() => setDetailProduct(product)}
                 >
                   <span>ZEES {product.certification.summary.proved}/{product.certification.summary.applicable} · {product.certification.summary.blocked} bloqueados</span>
                   <strong>Ver detalhes</strong>
@@ -1363,6 +1364,41 @@ function App() {
             </div>
           </section>}
         </section>
+      )}
+
+      {detailProduct && (
+        <div className='modalBackdrop' role='presentation' onMouseDown={event => { if (event.target === event.currentTarget) setDetailProduct(null); }}>
+          <section className='modal' role='dialog' aria-modal='true' aria-labelledby='product-detail-title'>
+            <div className='modalHead'>
+              <div>
+                <p className='kicker'>{detailProduct.category || 'PRODUTO'}</p>
+                <h2 id='product-detail-title'>{detailProduct.name}</h2>
+              </div>
+              <button className='iconButton' onClick={() => setDetailProduct(null)} aria-label='Fechar'><X size={20} /></button>
+            </div>
+            <p className='productDescription'>{detailProduct.description || 'Sem descricao administrativa.'}</p>
+            <div className='productFacts'>
+              <span><b>{formatMoney(detailProduct.priceCents)}</b><small>Preco</small></span>
+              <span><b>{statusLabel(detailProduct.status)}</b><small>Status</small></span>
+              <span><b>{detailProduct.deliveryModel || 'N/D'}</b><small>Entrega</small></span>
+              <span><b>{detailProduct.salesEnabled ? 'Ativa' : 'Desligada'}</b><small>Venda</small></span>
+            </div>
+            <div className='gateRow'>
+              <span className={detailProduct.gates.legal ? 'gate ok' : 'gate'}>Legal</span>
+              <span className={detailProduct.gates.payment ? 'gate ok' : 'gate'}>Pagamento</span>
+              <span className={detailProduct.gates.fulfillment ? 'gate ok' : 'gate'}>Entrega</span>
+              <span className={detailProduct.gates.support ? 'gate ok' : 'gate'}>Suporte</span>
+            </div>
+            {detailProduct.channels.length > 0 && <p><small>Canais: {detailProduct.channels.join(', ')}</small></p>}
+            {detailProduct.blockers.length > 0 && <p><small>Pendencias: {detailProduct.blockers.slice(0, 6).join(' · ')}</small></p>}
+            <p><small>Qualidade ZEES: {detailProduct.certification.summary.proved}/{detailProduct.certification.summary.applicable} provados · {detailProduct.certification.summary.blocked} bloqueados</small></p>
+            <div className='modalActions'>
+              {detailProduct.publicUrl && <a className='secondary linkButton' href={detailProduct.publicUrl} target='_blank' rel='noreferrer'><ExternalLink size={14} />Pagina publica</a>}
+              <button className='secondary' onClick={() => { const p = detailProduct; setDetailProduct(null); openCertification(p); }}><ShieldCheck size={14} />Certificação</button>
+              <button className='primary' onClick={() => { const p = detailProduct; setDetailProduct(null); openEdit(p); }}><Pencil size={14} />Editar</button>
+            </div>
+          </section>
+        </div>
       )}
 
       {formOpen && (
