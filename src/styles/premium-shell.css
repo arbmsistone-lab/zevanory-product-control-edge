@@ -762,3 +762,9 @@ html, body, button, input, select, textarea {
 .adsCriteria span { min-width: 0; font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
 .adsCriteria span.ok { color: var(--status-success-text); }
 @media (max-width: 700px) { .adsMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (max-width: 700px), (max-height: 700px) {
+  .adsPanel { padding: var(--zpc-space-2); gap: var(--zpc-space-1); margin-bottom: var(--zpc-space-1); }
+  .adsPanel small { margin-top: 2px; }
+  .adsPanel .approvalActions { margin-top: 0; }
+}

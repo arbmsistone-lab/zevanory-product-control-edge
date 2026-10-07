@@ -124,14 +124,14 @@ function AdsReadinessPanel({ sessionToken, compact }: { sessionToken: string; co
     <div className={'adsPanel ' + readiness.status.toLowerCase()} aria-label='Prontidão para anúncios pagos'>
       <div className='adsHead'>
         <span className='adsStatus'>{readiness.status}</span>
-        <div><b>Anúncios pagos · {readiness.headline}</b><small>{readiness.nextMilestone}</small></div>
+        <div><b>Anúncios pagos · {readiness.headline}</b>{!compact && <small>{readiness.nextMilestone}</small>}</div>
       </div>
-      <div className='adsMetrics'>
+      {!compact && <div className='adsMetrics'>
         <span>Visitantes <b>{m.visitors}</b></span>
         <span>Vendas <b>{m.paid}</b></span>
         <span>Conversão mín. <b>{(m.conversionLow * 100).toFixed(1).replace('.', ',')}%</b></span>
         <span>CPC máx. <b>{money(m.maxCpc)}</b></span>
-      </div>
+      </div>}
       {!compact && (
         <div className='adsCriteria'>
           {readiness.criteria.map(item => <span key={item.id} className={item.ok ? 'ok' : 'wait'} title={item.detail}>{item.ok ? '✓' : '·'} {item.label}</span>)}
