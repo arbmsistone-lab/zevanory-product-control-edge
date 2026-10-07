@@ -1,0 +1,26 @@
+name: Probe public-owner Cloudflare authority
+on:
+  push:
+    branches:
+      - ops/probe-public-owner-auth-20261007
+    paths:
+      - '.github/workflows/probe-public-owner-auth.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PUBLIC_OWNER_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: "1b26415802588185a86c1d4d3ebf5bdb"
+    steps:
+      - name: Verify authority without exposing token
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}"
+          code="$(curl -sS -o /tmp/account.json -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID" || true)"
+          test "$code" = "200"
+          test "$(jq -r '.success' /tmp/account.json)" = "true"
+          echo "CLOUDFLARE_PUBLIC_OWNER_AUTHORITY=PASS"
