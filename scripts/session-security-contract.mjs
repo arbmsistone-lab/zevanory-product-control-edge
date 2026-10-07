@@ -4,7 +4,7 @@ const backend=fs.readFileSync(new URL('../cf-worker/backend-index.ts',import.met
 const worker=fs.readFileSync(new URL('../cf-worker/worker.ts',import.meta.url),'utf8');
 assert.match(backend,/const SESSION_HOURS = 8;/);
 assert.match(backend,/SESSION_SIGNING_KEY_PREVIOUS/);
-assert.match(backend,/zpc-session-revoked:\\${payload\.jti}/);
+assert.ok(backend.includes('zpc-session-revoked:${payload.jti}'));
 assert.match(backend,/expirationTtl: remainingSeconds/);
 assert.match(backend,/payload\.jti \|\| payload\.nonce/);
 assert.match(backend,/if \(await SESSION_REVOCATION_STORE\.get/);
