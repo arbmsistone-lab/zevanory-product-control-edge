@@ -38,5 +38,5 @@ jobs:
       - name: Promote exact main SHA and verify production
         env:
           EXPECTED_ZPC_SHA: ${{ github.sha }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PUBLIC_OWNER_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
         run: node scripts/cloudflare-authoritative-repair.mjs
