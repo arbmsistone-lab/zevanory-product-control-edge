@@ -1,4 +1,4 @@
-import { handler, verifyEdgeSession } from './backend-index.ts';
+import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
@@ -886,6 +886,7 @@ export default {
 
   async fetch(request: Request, env: Record<string, unknown>, ctx?: any) {
     setWorkerEnv(env);
+    setSessionRevocationStore((env as any).T2_CREATIVE_ASSETS || null);
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/api/commercial/creative/assets-raw/')) {
@@ -1210,6 +1211,8 @@ export default {
         return response;
       };
       if (renderBase) {
+        const sessionGuard = await guardProxiedEdgeSession(request);
+        if (sessionGuard) return sessionGuard;
         try {
           const target = renderBase + normalizedPath + url.search;
           const primaryResponse = await fetch(new Request(target, normalizedRequest.clone()));

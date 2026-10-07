@@ -2468,7 +2468,7 @@ type PinSecurityRecord = { failedAttempts: number; lockedUntil: string | null; u
 const PIN_SESSIONS = 'acs_pin_sessions';
 const PIN_CURRENT_SESSION = 'acs_pin_current_session';
 const PIN_SECURITY = 'acs_pin_security';
-const SESSION_HOURS = 12;
+const SESSION_HOURS = 8;
 const MAX_PIN_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
@@ -2515,16 +2515,28 @@ async function createEdgeSession() {
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
 
+async function sessionVerificationKeys() {
+  const [current, previous] = await Promise.all([
+    sessionSigningKey(),
+    secrets.readSecret('SESSION_SIGNING_KEY_PREVIOUS').then(value => String(value || '').trim()),
+  ]);
+  return [...new Set([current, previous].filter(Boolean))];
+}
+
 async function verifyEdgeSession(token: string) {
   const parts = token.split('.');
   if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
-  const secret = await sessionSigningKey();
-  if (!secret) return false;
-  const expected = await signEdgeSessionPayload(parts[1], secret);
-  if (expected.length !== parts[2].length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ parts[2].charCodeAt(i);
-  if (mismatch !== 0) return false;
+  const keys = await sessionVerificationKeys();
+  if (!keys.length) return false;
+  let verified = false;
+  for (const secret of keys) {
+    const expected = await signEdgeSessionPayload(parts[1], secret);
+    if (expected.length !== parts[2].length) continue;
+    let mismatch = 0;
+    for (let i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ parts[2].charCodeAt(i);
+    if (mismatch === 0) { verified = true; break; }
+  }
+  if (!verified) return false;
   try {
     const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((parts[1].length + 3) % 4);
     const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
