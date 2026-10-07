@@ -1342,7 +1342,7 @@ function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string }
   }
 }
 
-async function createEdgeSession() {
+export async function createEdgeSession() {
   const secret = await sessionSigningKey();
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
@@ -1377,7 +1377,18 @@ export async function verifyEdgeSession(token: string) {
   return true;
 }
 
-async function revokeEdgeSession(token: string) {
+export async function guardProxiedEdgeSession(request: Request) {
+  const authorization = String(request.headers.get('authorization') || '');
+  const bearer = authorization.replace(/^Bearer\s+/i, '').trim();
+  if (!bearer.startsWith('zpc1.')) return null;
+  if (await verifyEdgeSession(bearer)) return null;
+  return Response.json(
+    { ok: false, error: 'session_revoked_or_invalid' },
+    { status: 401, headers: { 'cache-control': 'no-store' } },
+  );
+}
+
+export async function revokeEdgeSession(token: string) {
   const parts = token.split('.');
   if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
   const payload = decodeEdgeSessionPayload(parts[1]);

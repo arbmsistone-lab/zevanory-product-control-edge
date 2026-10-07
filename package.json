@@ -19,7 +19,7 @@
     "test:commercial-robot-auth": "tsx scripts/commercial-robot-auth-test.ts",
     "test:prospect-signal": "tsx scripts/prospect-signal-contract.ts",
     "test:ads-readiness": "tsx scripts/ads-readiness-contract.ts",
-    "test:session-security": "node scripts/session-security-contract.mjs"
+    "test:session-security": "tsx scripts/session-security-contract.ts"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",

@@ -1,4 +1,4 @@
-import { handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
+import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
@@ -1211,11 +1211,8 @@ export default {
         return response;
       };
       if (renderBase) {
-        const authorization = String(request.headers.get('authorization') || '');
-        const bearer = authorization.replace(/^Bearer\s+/i, '').trim();
-        if (bearer.startsWith('zpc1.') && !(await verifyEdgeSession(bearer))) {
-          return Response.json({ ok: false, error: 'session_revoked_or_invalid' }, { status: 401, headers: { 'cache-control': 'no-store' } });
-        }
+        const sessionGuard = await guardProxiedEdgeSession(request);
+        if (sessionGuard) return sessionGuard;
         try {
           const target = renderBase + normalizedPath + url.search;
           const primaryResponse = await fetch(new Request(target, normalizedRequest.clone()));
