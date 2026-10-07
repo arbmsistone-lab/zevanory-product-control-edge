@@ -1274,9 +1274,18 @@ type PinSecurityRecord = { failedAttempts: number; lockedUntil: string | null; u
 const PIN_SESSIONS = 'acs_pin_sessions';
 const PIN_CURRENT_SESSION = 'acs_pin_current_session';
 const PIN_SECURITY = 'acs_pin_security';
-const SESSION_HOURS = 12;
+const SESSION_HOURS = 8;
 const MAX_PIN_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
+type SessionRevocationStore = {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options: { expirationTtl: number }): Promise<void>;
+};
+let SESSION_REVOCATION_STORE: SessionRevocationStore | null = null;
+
+export function setSessionRevocationStore(store: SessionRevocationStore | null) {
+  SESSION_REVOCATION_STORE = store;
+}
 
 function base64UrlEncode(value: string) {
   const bytes = new TextEncoder().encode(value);
@@ -1300,6 +1309,14 @@ async function sessionSigningKey(fallback = '') {
   return cluster || fallback;
 }
 
+async function sessionVerificationKeys() {
+  const [current, previous] = await Promise.all([
+    sessionSigningKey(),
+    secrets.readSecret('SESSION_SIGNING_KEY_PREVIOUS').then(value => String(value || '').trim()),
+  ]);
+  return [...new Set([current, previous].filter(Boolean))];
+}
+
 async function signEdgeSessionPayload(payload: string, secret: string) {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -1312,11 +1329,24 @@ async function signEdgeSessionPayload(payload: string, secret: string) {
   return base64UrlBytes(new Uint8Array(signature));
 }
 
+function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string } | null {
+  try {
+    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((encoded.length + 3) % 4);
+    const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
+    const payload = JSON.parse(json) as { exp?: number; jti?: string; nonce?: string };
+    const exp = Number(payload.exp || 0);
+    const jti = String(payload.jti || payload.nonce || '').trim();
+    return exp > 0 && jti ? { exp, jti } : null;
+  } catch {
+    return null;
+  }
+}
+
 async function createEdgeSession() {
   const secret = await sessionSigningKey();
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
-  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID() }));
+  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), jti: crypto.randomUUID() }));
   const signature = await signEdgeSessionPayload(payload, secret);
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
@@ -1324,21 +1354,39 @@ async function createEdgeSession() {
 export async function verifyEdgeSession(token: string) {
   const parts = token.split('.');
   if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
-  const secret = await sessionSigningKey();
-  if (!secret) return false;
-  const expected = await signEdgeSessionPayload(parts[1], secret);
-  if (expected.length !== parts[2].length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ parts[2].charCodeAt(i);
-  if (mismatch !== 0) return false;
-  try {
-    const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((parts[1].length + 3) % 4);
-    const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
-    const payload = JSON.parse(json) as { exp?: number };
-    return Number(payload.exp || 0) > Date.now();
-  } catch {
-    return false;
+  const payload = decodeEdgeSessionPayload(parts[1]);
+  if (!payload || payload.exp <= Date.now()) return false;
+  const keys = await sessionVerificationKeys();
+  if (!keys.length) return false;
+  let verified = false;
+  for (const secret of keys) {
+    const expected = await signEdgeSessionPayload(parts[1], secret);
+    if (expected.length !== parts[2].length) continue;
+    let mismatch = 0;
+    for (let i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ parts[2].charCodeAt(i);
+    if (mismatch === 0) { verified = true; break; }
   }
+  if (!verified) return false;
+  if (SESSION_REVOCATION_STORE?.get) {
+    try {
+      if (await SESSION_REVOCATION_STORE.get(`zpc-session-revoked:${payload.jti}`)) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+async function revokeEdgeSession(token: string) {
+  const parts = token.split('.');
+  if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
+  const payload = decodeEdgeSessionPayload(parts[1]);
+  if (!payload || payload.exp <= Date.now()) return true;
+  if (!await verifyEdgeSession(token)) return false;
+  if (!SESSION_REVOCATION_STORE?.put) return false;
+  const remainingSeconds = Math.max(1, Math.ceil((payload.exp - Date.now()) / 1000));
+  await SESSION_REVOCATION_STORE.put(`zpc-session-revoked:${payload.jti}`, '1', { expirationTtl: remainingSeconds });
+  return true;
 }
 
 async function securityState(fingerprint: string) {
@@ -1598,7 +1646,13 @@ export const handler = router({
   }],
   'POST /api/pin/logout': [async ctx => {
     const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
-    if (token.startsWith('zpc1.')) return json({ ok: true });
+    if (token.startsWith('zpc1.')) {
+      try {
+        return (await revokeEdgeSession(token)) ? json({ ok: true }) : error('Sessao invalida ou nao revogavel.', 401);
+      } catch {
+        return error('Nao foi possivel revogar a sessao.', 503);
+      }
+    }
     const [current, legacy] = await Promise.all([
       db.list<PinSessionRecord>(PIN_CURRENT_SESSION, { limit: 10 }),
       db.list<PinSessionRecord>(PIN_SESSIONS, { limit: 50 }),

@@ -1,4 +1,4 @@
-import { handler, verifyEdgeSession } from './backend-index.ts';
+import { handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
@@ -886,6 +886,7 @@ export default {
 
   async fetch(request: Request, env: Record<string, unknown>, ctx?: any) {
     setWorkerEnv(env);
+    setSessionRevocationStore((env as any).T2_CREATIVE_ASSETS || null);
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/api/commercial/creative/assets-raw/')) {

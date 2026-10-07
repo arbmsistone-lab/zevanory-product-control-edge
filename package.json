@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run audit:runtime && npm run audit:commercial && npm run test:commercial-robot-auth && npm run test:commercial-contract && npm run test:commercial-cleanup && npm run test:prospect-signal && npm run test:ads-readiness && npm run test:zevanory-sales-contract && npm run test:zevanory-sales-tenant && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
+    "build": "npm run audit:runtime && npm run test:session-security && npm run audit:commercial && npm run test:commercial-robot-auth && npm run test:commercial-contract && npm run test:commercial-cleanup && npm run test:prospect-signal && npm run test:ads-readiness && npm run test:zevanory-sales-contract && npm run test:zevanory-sales-tenant && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
     "start": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "audit:commercial": "node scripts/ped-commercial-audit.mjs",
@@ -18,7 +18,8 @@
     "test:commercial-cleanup": "tsx scripts/commercial-cleanup-contract.ts",
     "test:commercial-robot-auth": "tsx scripts/commercial-robot-auth-test.ts",
     "test:prospect-signal": "tsx scripts/prospect-signal-contract.ts",
-    "test:ads-readiness": "tsx scripts/ads-readiness-contract.ts"
+    "test:ads-readiness": "tsx scripts/ads-readiness-contract.ts",
+    "test:session-security": "node scripts/session-security-contract.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
