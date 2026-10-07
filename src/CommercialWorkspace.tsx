@@ -64,7 +64,7 @@ const PREFLIGHT_LABELS: Record<string, string> = {
 
 type SalesState = { requested: boolean; open: boolean; switchedAt: string | null; preflightFresh: boolean; preflight: { ok: boolean; at: string; checks: { id: string; ok: boolean; detail: string }[] } | null };
 
-function SalesSwitchPanel({ sessionToken }: { sessionToken: string }) {
+function SalesSwitchPanel({ sessionToken, compact = false }: { sessionToken: string; compact?: boolean }) {
   const [state, setState] = useState<SalesState | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -91,7 +91,7 @@ function SalesSwitchPanel({ sessionToken }: { sessionToken: string }) {
         <span className='adsStatus'>{state.open ? 'ABERTAS' : 'FECHADAS'}</span>
         <div>
           <b>Vendas · {state.open ? 'checkout real ativo' : ready ? 'tudo verificado para abrir' : 'verificação de produção pendente'}</b>
-          <small>{message || (state.open ? `Abertas em ${new Date(String(state.switchedAt)).toLocaleString('pt-BR')}.` : ready ? 'Mercado Pago, entrega, e-mail e arquivos conferidos na última hora.' : failing.length ? 'Falta: ' + failing.slice(0, 3).map(c => (PREFLIGHT_LABELS[c.id] || c.id) + (c.detail ? ' (' + c.detail + ')' : '')).join(' · ') : 'Aguardando a próxima verificação automática (de hora em hora).')}</small>
+          <small>{message || (state.open ? `Abertas em ${new Date(String(state.switchedAt)).toLocaleString('pt-BR')}.` : ready ? 'Mercado Pago, entrega, e-mail e arquivos conferidos na última hora.' : failing.length ? 'Falta: ' + failing.slice(0, compact ? 1 : 3).map(c => (PREFLIGHT_LABELS[c.id] || c.id) + (!compact && c.detail ? ' (' + c.detail + ')' : '')).join(' · ') : 'Aguardando a próxima verificação automática (de hora em hora).')}</small>
         </div>
       </div>
       <div className='approvalActions'>
@@ -171,6 +171,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const [dashboardPage, setDashboardPage] = useState(0);
   const [listPage, setListPage] = useState(0);
+  const [financeRecords, setFinanceRecords] = useState(false);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const meta = SECTION_META[section];
@@ -347,7 +348,8 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['new','nurture','qualified','contact-ready','contacted','conversation','offer','follow-up','checkout','payment','customer','fulfillment','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-  const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' ? 2 : 0));
+  const compactFinance = viewportWidth <= 700 || viewportHeight <= 700;
+  const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' && !compactFinance ? 2 : 0));
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);
   const pagedItems = items.slice(safeListPage * genericPageSize, (safeListPage + 1) * genericPageSize);
@@ -464,10 +466,16 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
         </article>
       )}
 
-      {section === 'finance' && <SalesSwitchPanel sessionToken={sessionToken} />}
-      {section === 'finance' && <AdsReadinessPanel sessionToken={sessionToken} compact={viewportWidth <= 700 || viewportHeight <= 700} />}
+      {section === 'finance' && (!compactFinance || !financeRecords) && <SalesSwitchPanel sessionToken={sessionToken} compact={compactFinance} />}
+      {section === 'finance' && (!compactFinance || !financeRecords) && <AdsReadinessPanel sessionToken={sessionToken} compact={compactFinance} />}
+      {section === 'finance' && compactFinance && !financeRecords && (
+        <div className='approvalActions'><button className='changeBtn' onClick={() => setFinanceRecords(true)}><CircleDollarSign size={15}/>Ver recebimentos ({data.finance.length})</button></div>
+      )}
+      {section === 'finance' && compactFinance && financeRecords && (
+        <div className='approvalActions'><button className='changeBtn' onClick={() => setFinanceRecords(false)}><RotateCcw size={15}/>Voltar para vendas e anúncios</button></div>
+      )}
 
-      {!['commercial','approvals','creatives'].includes(section) && (
+      {!['commercial','approvals','creatives'].includes(section) && !(section === 'finance' && compactFinance && !financeRecords) && (
         <article className='commercialPanel'>
           <div className='commercialPanelTitle'>
             {section === 'creatives' && <Sparkles size={17}/>}
