@@ -1211,6 +1211,11 @@ export default {
         return response;
       };
       if (renderBase) {
+        const authorization = String(request.headers.get('authorization') || '');
+        const bearer = authorization.replace(/^Bearer\s+/i, '').trim();
+        if (bearer.startsWith('zpc1.') && !(await verifyEdgeSession(bearer))) {
+          return Response.json({ ok: false, error: 'session_revoked_or_invalid' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+        }
         try {
           const target = renderBase + normalizedPath + url.search;
           const primaryResponse = await fetch(new Request(target, normalizedRequest.clone()));
