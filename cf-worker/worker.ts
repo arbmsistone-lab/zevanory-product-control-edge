@@ -150,6 +150,24 @@ async function wakeCommercialRobot(env: Record<string, unknown>) {
 
 
 const T2_PRODUCT_SLUGS = ['ia-na-pratica','vendas-na-pratica','lucro-e-caixa','combo-ia-vendas','negocio-completo'] as const;
+// Content calendar angles: owner-controlled hook copy (no invented facts). The caption always ends
+// with the facts validated against the published sales page (name, description, price, URL).
+const T2_PAIN_HOOKS: Record<string, string> = {
+  'ia-na-pratica': 'Você usa IA no trabalho, mas toda vez começa do zero?',
+  'vendas-na-pratica': 'Seus contatos esfriam porque falta um processo de follow-up?',
+  'lucro-e-caixa': 'Vende bem, mas não sabe para onde vai o dinheiro do caixa?',
+  'combo-ia-vendas': 'Quer organizar o atendimento e usar IA nas vendas ao mesmo tempo?',
+  'negocio-completo': 'IA, vendas e caixa organizados em uma rotina só?',
+};
+const T2_ANGLES = ['oferta', 'dor', 'garantia', 'entrega'] as const;
+type T2Angle = typeof T2_ANGLES[number];
+function t2AngleHook(slug: string, angle: T2Angle) {
+  if (angle === 'dor') return { kicker: 'Para quem tem esse problema', hook: T2_PAIN_HOOKS[slug] || '' };
+  if (angle === 'garantia') return { kicker: 'Garantia de 7 dias', hook: 'Teste por 7 dias. Se não servir para você, o reembolso é integral.' };
+  if (angle === 'entrega') return { kicker: 'Produto 100% digital', hook: 'O link de download chega no seu e-mail logo após a confirmação do pagamento.' };
+  return { kicker: 'Produto 100% digital', hook: '' };
+}
+
 const T2_CREATIVE_BUCKET = 'zpc_commercial_creatives';
 
 async function verifyFactoryRequest(request: Request, env: Record<string, unknown>) {
@@ -295,14 +313,15 @@ async function t2Background(env: Record<string, any>, slug: string, seed: number
   return { bytes: Uint8Array.from(atob(base64), ch => ch.charCodeAt(0)), mime: dataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg' };
 }
 
-async function t2StoreComposedCreative(env: Record<string, any>, slug: string, image: ArrayBuffer, bodyHash: string) {
+async function t2StoreComposedCreative(env: Record<string, any>, slug: string, image: ArrayBuffer, bodyHash: string, angle: T2Angle = 'oferta') {
   const bytes = new Uint8Array(image);
   const size = t2JpegSize(bytes);
   if (!size || size.width !== 1080 || size.height !== 1080) throw new Error('t2_composed_image_must_be_1080_jpeg');
   const [contentFact, priceFact] = await Promise.all([t2SupportFact(slug, 'conteúdo'), t2SupportFact(slug, 'preço')]);
   const productUrl = 'https://vendas.zevanory.api.br/' + slug;
   const name = String(contentFact.catalog.name);
-  const caption = String(contentFact.answer).trim() + '\n\n' + String(priceFact.answer).trim() + '\n' + productUrl;
+  const hook = t2AngleHook(slug, angle).hook;
+  const caption = (hook ? hook + '\n\n' : '') + String(contentFact.answer).trim() + '\n\n' + String(priceFact.answer).trim() + '\n' + productUrl;
   await t2ValidateCaption(caption, contentFact, priceFact, productUrl);
   if (!env.T2_CREATIVE_ASSETS?.put) throw new Error('t2_asset_kv_binding_missing');
   const now = new Date().toISOString();
@@ -314,7 +333,7 @@ async function t2StoreComposedCreative(env: Record<string, any>, slug: string, i
   const existing = (Array.isArray(listed?.items) ? listed.items : []).filter((item: any) => item?.sourceKey === sourceKey && item?.status === 'approval');
   const record = {
     kind: 'creative',
-    title: 'Criativo · ' + name,
+    title: 'Criativo · ' + name + (angle !== 'oferta' ? ' · ' + angle : ''),
     detail: caption,
     status: 'approval',
     channel: 'instagram-facebook',
@@ -327,6 +346,7 @@ async function t2StoreComposedCreative(env: Record<string, any>, slug: string, i
       'composer:deterministic-typography-v1',
       'background:@cf/black-forest-labs/flux-2-klein-4b',
       'catalogCaptionValidation:PASS',
+      'angle:' + angle,
       'dimensions:1080x1080',
       'sha256:' + bodyHash,
       productUrl,
@@ -918,6 +938,12 @@ export default {
       }
     }
 
+    if (url.pathname === '/api/commercial/creative/angles' && request.method === 'GET') {
+      const out: Record<string, Record<string, { kicker: string; hook: string }>> = {};
+      for (const slug of T2_PRODUCT_SLUGS) { out[slug] = {}; for (const angle of T2_ANGLES) out[slug][angle] = t2AngleHook(slug, angle); }
+      return Response.json({ ok: true, angles: T2_ANGLES, copy: out }, { headers: { 'cache-control': 'public, max-age=300' } });
+    }
+
     if (url.pathname === '/api/commercial/creative/upload') {
       if (request.method !== 'POST') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
       const slug = String(url.searchParams.get('product') || '');
@@ -927,7 +953,9 @@ export default {
       const bodyHash = await t2Sha256Hex(body);
       if (!await verifyCreativeUploadRequest(request, env, slug, bodyHash)) return Response.json({ ok: false, error: 'commercial_creative_upload_auth_required' }, { status: 401 });
       try {
-        const result = await t2StoreComposedCreative(env as Record<string, any>, slug, body, bodyHash);
+        const angleParam = String(url.searchParams.get('angle') || 'oferta');
+        if (!(T2_ANGLES as readonly string[]).includes(angleParam)) return Response.json({ ok: false, error: 'angle_invalid' }, { status: 400 });
+        const result = await t2StoreComposedCreative(env as Record<string, any>, slug, body, bodyHash, angleParam as T2Angle);
         return Response.json(result, { headers: { 'cache-control': 'no-store' } });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
