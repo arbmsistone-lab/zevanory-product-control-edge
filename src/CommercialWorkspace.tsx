@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from './api';
 import { assessMarketSignal } from './prospect-signal';
+import type { AdsReadiness } from './ads-readiness';
 import {
   commercialStatusLabel,
   type CommercialRecord,
@@ -49,6 +50,97 @@ function statusClass(status: string) {
   return 'neutral';
 }
 
+
+const PREFLIGHT_LABELS: Record<string, string> = {
+  mercadopago_production_token: 'Mercado Pago de produção',
+  mercadopago_webhook_secret: 'Aviso de pagamento (webhook)',
+  checkout_enabled: 'Checkout habilitado',
+  payment_public_base: 'Endereço de notificação',
+  mailer: 'E-mail de entrega',
+  database: 'Banco de pedidos',
+  product_files: 'Arquivos dos 5 produtos',
+  delivery_recovery: 'Reenvio de link',
+};
+
+type SalesState = { requested: boolean; open: boolean; switchedAt: string | null; preflightFresh: boolean; preflight: { ok: boolean; at: string; checks: { id: string; ok: boolean; detail: string }[] } | null };
+
+function SalesSwitchPanel({ sessionToken, compact = false }: { sessionToken: string; compact?: boolean }) {
+  const [state, setState] = useState<SalesState | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const load = () => api.post('/api/sales/state', { sessionToken }).then(r => setState(r.data as SalesState)).catch(() => setMessage('Estado das vendas indisponível agora.'));
+  useEffect(() => { void load(); }, [sessionToken]);
+  const toggle = async (open: boolean) => {
+    setBusy(true); setMessage('');
+    try {
+      const r = await api.post('/api/sales/switch', { sessionToken, open });
+      setState(r.data as SalesState);
+      setMessage(open ? 'Vendas abertas. O botão Comprar agora já leva ao Mercado Pago.' : 'Vendas fechadas. Pedidos já pagos continuam sendo entregues.');
+    } catch {
+      setMessage('Não abriu: a verificação de produção ainda não está toda verde.');
+      void load();
+    } finally { setBusy(false); setConfirming(false); }
+  };
+  if (!state) return <div className='adsPanel'><b>Vendas</b><small>{message || 'Verificando…'}</small></div>;
+  const failing = (state.preflight?.checks || []).filter(c => !c.ok);
+  const ready = Boolean(state.preflight?.ok && state.preflightFresh);
+  return (
+    <div className={'adsPanel ' + (state.open ? 'escalar' : ready ? 'testar' : '')} aria-label='Abertura de vendas'>
+      <div className='adsHead'>
+        <span className='adsStatus'>{state.open ? 'ABERTAS' : 'FECHADAS'}</span>
+        <div>
+          <b>Vendas · {state.open ? 'checkout real ativo' : ready ? 'tudo verificado para abrir' : 'verificação de produção pendente'}</b>
+          <small>{message || (state.open ? `Abertas em ${new Date(String(state.switchedAt)).toLocaleString('pt-BR')}.` : ready ? 'Mercado Pago, entrega, e-mail e arquivos conferidos na última hora.' : failing.length ? 'Falta: ' + failing.slice(0, compact ? 1 : 3).map(c => (PREFLIGHT_LABELS[c.id] || c.id) + (!compact && c.detail ? ' (' + c.detail + ')' : '')).join(' · ') : 'Aguardando a próxima verificação automática (de hora em hora).')}</small>
+        </div>
+      </div>
+      <div className='approvalActions'>
+        {state.open
+          ? <button className='rejectBtn' disabled={busy} onClick={() => void toggle(false)}><X size={15}/>Fechar vendas</button>
+          : confirming
+            ? <><button className='approveBtn' disabled={busy || !ready} onClick={() => void toggle(true)}><Check size={15}/>Confirmar abertura</button><button className='changeBtn' disabled={busy} onClick={() => setConfirming(false)}><RotateCcw size={15}/>Cancelar</button></>
+            : <button className='approveBtn' disabled={busy || !ready} onClick={() => setConfirming(true)}><Check size={15}/>Abrir vendas</button>}
+      </div>
+    </div>
+  );
+}
+
+function AdsReadinessPanel({ sessionToken, compact }: { sessionToken: string; compact: boolean }) {
+  const [state, setState] = useState<{ readiness: AdsReadiness; generatedAt: string | null } | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    api.post('/api/commercial/funnel', { sessionToken })
+      .then(response => { if (active) setState({ readiness: response.data.readiness, generatedAt: response.data.summary?.generatedAt || null }); })
+      .catch(() => { if (active) setFailed(true); });
+    return () => { active = false; };
+  }, [sessionToken]);
+  if (failed) return <div className='adsPanel'><b>Anúncios pagos</b><small>Funil indisponível agora; nenhuma métrica foi presumida.</small></div>;
+  if (!state) return <div className='adsPanel'><b>Anúncios pagos</b><small>Calculando com o funil dos últimos 30 dias…</small></div>;
+  const { readiness } = state;
+  const m = readiness.metrics;
+  const money = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+  return (
+    <div className={'adsPanel ' + readiness.status.toLowerCase()} aria-label='Prontidão para anúncios pagos'>
+      <div className='adsHead'>
+        <span className='adsStatus'>{readiness.status}</span>
+        <div><b>Anúncios pagos · {readiness.headline}</b>{!compact && <small>{readiness.nextMilestone}</small>}</div>
+      </div>
+      {!compact && <div className='adsMetrics'>
+        <span>Visitantes <b>{m.visitors}</b></span>
+        <span>Vendas <b>{m.paid}</b></span>
+        <span>Conversão mín. <b>{(m.conversionLow * 100).toFixed(1).replace('.', ',')}%</b></span>
+        <span>CPC máx. <b>{money(m.maxCpc)}</b></span>
+      </div>}
+      {!compact && (
+        <div className='adsCriteria'>
+          {readiness.criteria.map(item => <span key={item.id} className={item.ok ? 'ok' : 'wait'} title={item.detail}>{item.ok ? '✓' : '·'} {item.label}</span>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RecordRow({ item }: { item: CommercialRecord }) {
   return (
     <article className='commercialRow'>
@@ -79,6 +171,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const [dashboardPage, setDashboardPage] = useState(0);
   const [listPage, setListPage] = useState(0);
+  const [financeRecords, setFinanceRecords] = useState(false);
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const meta = SECTION_META[section];
@@ -255,7 +348,8 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['new','nurture','qualified','contact-ready','contacted','conversation','offer','follow-up','checkout','payment','customer','fulfillment','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-  const genericPageSize = viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4;
+  const compactFinance = viewportWidth <= 700 || viewportHeight <= 700;
+  const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' && !compactFinance ? 2 : 0));
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);
   const pagedItems = items.slice(safeListPage * genericPageSize, (safeListPage + 1) * genericPageSize);
@@ -372,7 +466,16 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
         </article>
       )}
 
-      {!['commercial','approvals','creatives'].includes(section) && (
+      {section === 'finance' && (!compactFinance || !financeRecords) && <SalesSwitchPanel sessionToken={sessionToken} compact={compactFinance} />}
+      {section === 'finance' && (!compactFinance || !financeRecords) && <AdsReadinessPanel sessionToken={sessionToken} compact={compactFinance} />}
+      {section === 'finance' && compactFinance && !financeRecords && (
+        <div className='approvalActions'><button className='changeBtn' onClick={() => setFinanceRecords(true)}><CircleDollarSign size={15}/>Ver recebimentos ({data.finance.length})</button></div>
+      )}
+      {section === 'finance' && compactFinance && financeRecords && (
+        <div className='approvalActions'><button className='changeBtn' onClick={() => setFinanceRecords(false)}><RotateCcw size={15}/>Voltar para vendas e anúncios</button></div>
+      )}
+
+      {!['commercial','approvals','creatives'].includes(section) && !(section === 'finance' && compactFinance && !financeRecords) && (
         <article className='commercialPanel'>
           <div className='commercialPanelTitle'>
             {section === 'creatives' && <Sparkles size={17}/>}

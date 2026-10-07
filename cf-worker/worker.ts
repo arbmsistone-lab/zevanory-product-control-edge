@@ -1,4 +1,5 @@
 import { handler, verifyEdgeSession } from './backend-index.ts';
+import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
@@ -1121,6 +1122,46 @@ export default {
           if (!success) return Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
         } catch {}
       }
+    }
+
+    if (normalizedPath === '/api/commercial/funnel' && request.method === 'POST') {
+      // Funnel + paid-ads readiness from the hourly summary published by the main Worker.
+      let token = '';
+      try { token = String((await request.clone().json() as any)?.sessionToken || ''); } catch {}
+      if (!token || !(await verifyEdgeSession(token))) return Response.json({ ok: false, error: 'unauthorized' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+      let summary: any = null;
+      try { summary = JSON.parse(String(await (env as any).T2_CREATIVE_ASSETS?.get?.('zpc-funnel:v1:summary') || 'null')); } catch {}
+      return Response.json({ ok: true, summary, readiness: assessAdsReadiness(summary), policy: ADS_POLICY }, { headers: { 'cache-control': 'no-store' } });
+    }
+
+    if ((normalizedPath === '/api/sales/state' || normalizedPath === '/api/sales/switch') && request.method === 'POST') {
+      // Owner's open/close sales switch. Opening requires a fresh green production preflight
+      // (computed hourly by the main Worker); the main Worker re-checks it on every request.
+      let body: any = {};
+      try { body = await request.clone().json(); } catch {}
+      const token = String(body?.sessionToken || '');
+      if (!token || !(await verifyEdgeSession(token))) return Response.json({ ok: false, error: 'unauthorized' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+      const kv = (env as any).T2_CREATIVE_ASSETS;
+      const read = async (key: string) => { try { return JSON.parse(String(await kv?.get?.(key) || 'null')); } catch { return null; } };
+      const preflight = await read('zpc-sales-preflight:v1');
+      const fresh = Boolean(preflight?.at) && Date.now() - Date.parse(String(preflight.at)) < 3 * 3600 * 1000;
+      if (normalizedPath === '/api/sales/switch') {
+        const open = body?.open === true;
+        if (open && !(preflight?.ok === true && fresh)) {
+          return Response.json({ ok: false, error: 'preflight_not_green', preflight }, { status: 409, headers: { 'cache-control': 'no-store' } });
+        }
+        await kv.put('sales:open:v1', JSON.stringify({ enabled: open, at: new Date().toISOString(), by: 'owner-panel' }));
+        await recordCommercialActivity(env as Record<string, any>, 'event', {
+          title: open ? 'Vendas ABERTAS pelo dono' : 'Vendas FECHADAS pelo dono',
+          detail: open ? 'Checkout real liberado nas páginas de venda (Mercado Pago produção).' : 'Botão de compra volta a mostrar "vendas abrem em breve". Pedidos já pagos continuam sendo entregues.',
+          status: open ? 'active' : 'blocked',
+          channel: 'checkout',
+          sourceKey: 'sales-switch:' + Date.now(),
+          evidence: ['owner-panel', new Date().toISOString()],
+        });
+      }
+      const sw = await read('sales:open:v1');
+      return Response.json({ ok: true, requested: sw?.enabled === true, open: sw?.enabled === true && preflight?.ok === true && fresh, switchedAt: sw?.at || null, preflight, preflightFresh: fresh }, { headers: { 'cache-control': 'no-store' } });
     }
 
     if (normalizedPath.startsWith('/api/')) {
