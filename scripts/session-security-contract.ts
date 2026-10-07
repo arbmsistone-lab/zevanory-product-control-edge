@@ -43,6 +43,30 @@ assert.equal(proxyDenied?.status,401);
 assert.equal(proxyDenied?.headers.get('cache-control'),'no-store');
 assert.deepEqual(await proxyDenied?.json(),{ok:false,error:'session_revoked_or_invalid'});
 
+const originalFetch=globalThis.fetch;
+let renderCalls=0;
+globalThis.fetch=(async()=>{renderCalls++;return new Response('render-called',{status:200});}) as typeof fetch;
+try {
+  const {default:worker}=await import('../cf-worker/worker.ts');
+  const env={
+    SESSION_SIGNING_KEY:current,
+    SESSION_SIGNING_KEY_PREVIOUS:previous,
+    RENDER_BACKEND_URL:'https://render.invalid',
+    T2_CREATIVE_ASSETS:store,
+  };
+  const bodyDenied=await worker.fetch(new Request('https://controle.zevanory.api.br/api/proxied',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({sessionToken:session.token,preserved:'original-body'}),
+  }),env);
+  assert.equal(bodyDenied.status,401);
+  assert.equal(bodyDenied.headers.get('cache-control'),'no-store');
+  assert.deepEqual(await bodyDenied.json(),{ok:false,error:'session_revoked_or_invalid'});
+  assert.equal(renderCalls,0);
+} finally {
+  globalThis.fetch=originalFetch;
+}
+
 setWorkerEnv({SESSION_SIGNING_KEY:previous});
 const oldSession=await createEdgeSession();
 setWorkerEnv({SESSION_SIGNING_KEY:current,SESSION_SIGNING_KEY_PREVIOUS:previous});
@@ -69,6 +93,8 @@ console.log(JSON.stringify({
   previous_key_accepted:true,
   unknown_key_rejected:true,
   proxied_revoked_bearer_401:true,
+  proxied_revoked_body_401:true,
+  render_fake_calls:renderCalls,
   proxy_cache_control:'no-store',
   kv_revocation_read_uncached:true,
   session_hours:8,

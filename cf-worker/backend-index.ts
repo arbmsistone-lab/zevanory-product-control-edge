@@ -1378,14 +1378,25 @@ export async function verifyEdgeSession(token: string) {
 }
 
 export async function guardProxiedEdgeSession(request: Request) {
+  const tokens: string[] = [];
   const authorization = String(request.headers.get('authorization') || '');
   const bearer = authorization.replace(/^Bearer\s+/i, '').trim();
-  if (!bearer.startsWith('zpc1.')) return null;
-  if (await verifyEdgeSession(bearer)) return null;
-  return Response.json(
-    { ok: false, error: 'session_revoked_or_invalid' },
-    { status: 401, headers: { 'cache-control': 'no-store' } },
-  );
+  if (bearer.startsWith('zpc1.')) tokens.push(bearer);
+  if (!['GET', 'HEAD'].includes(request.method.toUpperCase())) {
+    try {
+      const rawBody = await request.clone().text();
+      const sessionToken = String(rawBody ? JSON.parse(rawBody)?.sessionToken || '' : '').trim();
+      if (sessionToken.startsWith('zpc1.')) tokens.push(sessionToken);
+    } catch {}
+  }
+  for (const token of new Set(tokens)) {
+    if (await verifyEdgeSession(token)) continue;
+    return Response.json(
+      { ok: false, error: 'session_revoked_or_invalid' },
+      { status: 401, headers: { 'cache-control': 'no-store' } },
+    );
+  }
+  return null;
 }
 
 export async function revokeEdgeSession(token: string) {
