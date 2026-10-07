@@ -26,5 +26,10 @@ binding = "AI"
 binding = "T2_CREATIVE_ASSETS"
 id = "728a45738e4047f29bcb89934fd533c1"
 
+[[ratelimits]]
+name = "PIN_LIMITER"
+namespace_id = "1701"
+simple = { limit = 5, period = 60 }
+
 [triggers]
 crons = ["*/15 * * * *"]

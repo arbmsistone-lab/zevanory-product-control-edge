@@ -112,6 +112,17 @@ async function edgeBootstrap(request: Request, env: Record<string, any>, ctx: an
   return new Response(text, { headers: { ...headers, 'x-zpc-bootstrap': 'origin' } });
 }
 
+function applyPanelSecurityHeaders(headers: Headers) {
+  // Anti-clickjacking + transport hardening for the admin UI (no inline-script restrictions that
+  // could break the SPA).
+  headers.set('content-security-policy', "frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
+  headers.set('x-frame-options', 'DENY');
+  headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+  headers.set('x-content-type-options', 'nosniff');
+  headers.set('referrer-policy', 'no-referrer');
+  return headers;
+}
+
 async function wakeCommercialRobot(env: Record<string, unknown>) {
   const secret = String(env.COMMERCIAL_ROBOT_TICK_SECRET || '');
   const renderBase = String(env.RENDER_BACKEND_URL || '').replace(/\/$/, '');
@@ -537,26 +548,43 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
   const published: any[] = [];
   for (const item of items.slice(0, limit)) {
     const caption = String(item.detail || '').slice(0, 2100);
-    const container = await metaCall(env, targets.igId + '/media', { image_url: String(item.imageUrl), caption }, 'POST', targets.pageToken);
-    let ready = false;
-    for (let i = 0; i < 10 && !ready; i++) {
-      const st = await metaCall(env, String(container.id), { fields: 'status_code' }, 'GET', targets.pageToken);
-      if (st?.status_code === 'FINISHED') ready = true;
-      else if (st?.status_code === 'ERROR' || st?.status_code === 'EXPIRED') throw new Error('meta_ig_container_' + st.status_code);
-      else await new Promise(r => setTimeout(r, 3000));
+    const evidence: string[] = Array.isArray(item.evidence) ? item.evidence.map(String) : [];
+    const findEvidence = (prefix: string) => evidence.find(e => e.startsWith(prefix))?.slice(prefix.length) || '';
+    // Each network is published at most once: its id is persisted immediately, so a failure on the
+    // other network never causes a duplicate post on retry.
+    let igId = findEvidence('instagram_media_id:');
+    if (!igId) {
+      const container = await metaCall(env, targets.igId + '/media', { image_url: String(item.imageUrl), caption }, 'POST', targets.pageToken);
+      let ready = false;
+      for (let i = 0; i < 10 && !ready; i++) {
+        const st = await metaCall(env, String(container.id), { fields: 'status_code' }, 'GET', targets.pageToken);
+        if (st?.status_code === 'FINISHED') ready = true;
+        else if (st?.status_code === 'ERROR' || st?.status_code === 'EXPIRED') throw new Error('meta_ig_container_' + st.status_code);
+        else await new Promise(r => setTimeout(r, 3000));
+      }
+      if (!ready) throw new Error('meta_ig_container_timeout');
+      const igPost = await metaCall(env, targets.igId + '/media_publish', { creation_id: String(container.id) }, 'POST', targets.pageToken);
+      igId = String(igPost.id);
+      evidence.push('instagram_media_id:' + igId);
+      await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items: [{ id: item.id, record: { ...item, evidence: evidence.slice(-20), updatedAt: new Date().toISOString() } }] });
     }
-    if (!ready) throw new Error('meta_ig_container_timeout');
-    const igPost = await metaCall(env, targets.igId + '/media_publish', { creation_id: String(container.id) }, 'POST', targets.pageToken);
-    const fbPost = await metaCall(env, targets.pageId + '/photos', { url: String(item.imageUrl), message: caption, published: 'true' }, 'POST', targets.pageToken);
+    let fbId = findEvidence('facebook_post_id:');
+    if (!fbId) {
+      const fbPost = await metaCall(env, targets.pageId + '/photos', { url: String(item.imageUrl), message: caption, published: 'true' }, 'POST', targets.pageToken);
+      fbId = String(fbPost.post_id || fbPost.id);
+      evidence.push('facebook_post_id:' + fbId);
+    }
     const now = new Date().toISOString();
     const record = {
       ...item,
       status: 'published',
       publishedAt: now,
       updatedAt: now,
-      evidence: [...(Array.isArray(item.evidence) ? item.evidence : []), 'instagram_media_id:' + igPost.id, 'facebook_post_id:' + (fbPost.post_id || fbPost.id), 'published-by:t3-meta-publisher', now].slice(-20),
+      evidence: [...evidence, 'published-by:t3-meta-publisher', now].slice(-20),
     };
     await t2StoreCall(env, { op: 'update', bucket: T2_CREATIVE_BUCKET, items: [{ id: item.id, record }] });
+    const igPost = { id: igId };
+    const fbPost = { id: fbId, post_id: fbId };
     published.push({ id: item.id, product: item.product, instagram: igPost.id, facebook: fbPost.post_id || fbPost.id });
     await recordCommercialActivity(env, 'event', {
       title: 'Publicado no Instagram e Facebook · ' + String(item.product || item.title || 'ZEVANORY'),
@@ -700,13 +728,35 @@ async function recordMetaConversation(env: Record<string, any>, input: {
   }
 }
 
-async function seenOnce(env: Record<string, any>, id: string) {
+async function seenBefore(env: Record<string, any>, id: string) {
   const kv = env.T2_CREATIVE_ASSETS;
   if (!kv?.get || !id) return false;
-  const key = 't4-meta-seen:' + id;
-  if (await kv.get(key)) return true;
-  await kv.put(key, '1', { expirationTtl: 7 * 24 * 3600 });
+  return Boolean(await kv.get('t4-meta-seen:' + id));
+}
+
+async function markSeen(env: Record<string, any>, id: string) {
+  const kv = env.T2_CREATIVE_ASSETS;
+  if (!kv?.put || !id) return;
+  try { await kv.put('t4-meta-seen:' + id, '1', { expirationTtl: 7 * 24 * 3600 }); } catch {}
+}
+
+// Back-compat helper (lead dedupe): read-then-mark.
+async function seenOnce(env: Record<string, any>, id: string) {
+  if (await seenBefore(env, id)) return true;
+  await markSeen(env, id);
   return false;
+}
+
+const ESCALATION_RE = /golpe|fraude|procon|advogad|processo|absurdo|n[aã]o recebi|cad[eê] (meu|o) (produto|acesso|link)|reembols|estorno|cancelar|humano|atendente|pessoa real|reclame aqui/i;
+
+// Owner alert through the shared KV bridge; the main Worker emails a digest to the owner.
+async function alertOwner(env: Record<string, any>, input: { channel: string; reason: string; excerpt: string; eventId: string }) {
+  const kv = env.T2_CREATIVE_ASSETS;
+  if (!kv?.put) return;
+  const excerpt = input.excerpt.replace(/\b\d{6,}\b/g, '***').replace(/[^\s@]+@[^\s@]+/g, '***@***').slice(0, 280);
+  try {
+    await kv.put('zpc-alert:v1:' + Date.now() + ':' + input.eventId.replace(/[^a-zA-Z0-9:_-]/g, '').slice(0, 60), JSON.stringify({ channel: input.channel, reason: input.reason, excerpt, at: new Date().toISOString() }), { expirationTtl: 7 * 24 * 3600 });
+  } catch {}
 }
 
 async function handleMetaWebhook(request: Request, env: Record<string, any>) {
@@ -731,17 +781,21 @@ async function handleMetaWebhook(request: Request, env: Record<string, any>) {
       for (const change of Array.isArray(entry?.changes) ? entry.changes : []) {
         const v = change?.value || {};
         if (body.object === 'instagram' && change.field === 'comments' && v.id && v.text && !own.has(String(v.from?.id || ''))) {
-          if (await seenOnce(env, 'igc:' + v.id)) continue;
+          if (await seenBefore(env, 'igc:' + v.id)) continue;
           const answer = await groundedAnswer(v.text);
           await metaCall(env, String(v.id) + '/replies', { message: answer.text }, 'POST', targets.pageToken);
+          await markSeen(env, 'igc:' + v.id);
           handled.push('ig_comment');
+          if (!answer.grounded || ESCALATION_RE.test(String(v.text))) await alertOwner(env, { channel: 'instagram', reason: answer.grounded ? 'atencao' : 'sem-resposta-na-base', excerpt: String(v.text), eventId: 'igc:' + v.id });
           await recordMetaConversation(env, { channel: 'instagram', type: 'comentário', eventId: 'igc:' + v.id, authorId: String(v.from?.id || ''), authorName: String(v.from?.username || ''), incoming: String(v.text), answer });
         }
         if (body.object === 'page' && change.field === 'feed' && v.item === 'comment' && v.verb === 'add' && v.comment_id && v.message && !own.has(String(v.from?.id || ''))) {
-          if (await seenOnce(env, 'fbc:' + v.comment_id)) continue;
+          if (await seenBefore(env, 'fbc:' + v.comment_id)) continue;
           const answer = await groundedAnswer(v.message);
           await metaCall(env, String(v.comment_id) + '/comments', { message: answer.text }, 'POST', targets.pageToken);
+          await markSeen(env, 'fbc:' + v.comment_id);
           handled.push('fb_comment');
+          if (!answer.grounded || ESCALATION_RE.test(String(v.message))) await alertOwner(env, { channel: 'facebook', reason: answer.grounded ? 'atencao' : 'sem-resposta-na-base', excerpt: String(v.message), eventId: 'fbc:' + v.comment_id });
           await recordMetaConversation(env, { channel: 'facebook', type: 'comentário', eventId: 'fbc:' + v.comment_id, authorId: String(v.from?.id || ''), authorName: String(v.from?.name || ''), incoming: String(v.message), answer });
         }
       }
@@ -750,14 +804,16 @@ async function handleMetaWebhook(request: Request, env: Record<string, any>) {
         const text = String(m?.message?.text || '');
         if (!sender || !text || m?.message?.is_echo || own.has(sender)) continue;
         const dmId = 'dm:' + String(m?.message?.mid || sender + ':' + m?.timestamp);
-        if (await seenOnce(env, dmId)) continue;
+        if (await seenBefore(env, dmId)) continue;
         const answer = await groundedAnswer(text);
         await metaCall(env, targets.pageId + '/messages', {
           recipient: JSON.stringify({ id: sender }),
           messaging_type: 'RESPONSE',
           message: JSON.stringify({ text: answer.text }),
         }, 'POST', targets.pageToken);
+        await markSeen(env, dmId);
         handled.push(body.object === 'instagram' ? 'ig_dm' : 'fb_dm');
+        if (!answer.grounded || ESCALATION_RE.test(text)) await alertOwner(env, { channel: body.object === 'instagram' ? 'instagram-dm' : 'facebook-dm', reason: answer.grounded ? 'atencao' : 'sem-resposta-na-base', excerpt: text, eventId: dmId });
         await recordMetaConversation(env, { channel: body.object === 'instagram' ? 'instagram' : 'facebook', type: 'mensagem', eventId: dmId, authorId: sender, authorName: '', incoming: text, answer });
       }
     } catch (error) {
@@ -881,6 +937,8 @@ export default {
     if (url.pathname === '/api/meta/webhook') return handleMetaWebhook(request, env as Record<string, any>);
 
     if (url.pathname === '/api/commercial/publish/status' && request.method === 'GET') {
+      // Has side effects on Meta (subscribed_apps) and reveals account wiring: HMAC-authenticated only.
+      if (!await verifyFactoryRequest(request, env)) return Response.json({ ok: false, error: 'commercial_publish_auth_required' }, { status: 401, headers: { 'cache-control': 'no-store' } });
       return Response.json(await metaPublishStatus(env as Record<string, any>), { headers: { 'cache-control': 'no-store' } });
     }
 
@@ -1052,6 +1110,19 @@ export default {
       );
     }
 
+    if (normalizedPath === '/api/pin/login') {
+      // Per-IP throttle (Cloudflare rate-limit binding, free): 5 attempts/minute per address, on top
+      // of the global progressive lock inside pinLogin.
+      const limiter = (env as any).PIN_LIMITER;
+      if (limiter?.limit) {
+        const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+        try {
+          const { success } = await limiter.limit({ key: 'pin:' + ip });
+          if (!success) return Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
+        } catch {}
+      }
+    }
+
     if (normalizedPath.startsWith('/api/')) {
       const edgeAuthPath = normalizedPath === '/api/_auth_diagnostic' || normalizedPath === '/api/_session_verify' || normalizedPath === '/api/pin/login' || normalizedPath === '/api/pin/logout';
       const forceDirect = edgeAuthPath || url.searchParams.get('runtime') === 'cloudflare';
@@ -1059,17 +1130,24 @@ export default {
       if (renderBase && normalizedPath === '/api/admin/bootstrap' && request.method === 'POST') {
         const fast = await edgeBootstrap(normalizedRequest, env as Record<string, any>, ctx, renderBase).catch(() => null);
         if (fast) return fast;
-      } else if (request.method !== 'GET' && request.method !== 'HEAD' && !BOOTSTRAP_READ_ONLY.has(normalizedPath)) {
-        try { await (env as any).T2_CREATIVE_ASSETS?.delete?.(BOOTSTRAP_SNAPSHOT_KEY); } catch {}
       }
+      // A successful authenticated mutation invalidates the edge snapshot (anonymous or failed
+      // requests never touch it).
+      const mutating = request.method !== 'GET' && request.method !== 'HEAD' && !BOOTSTRAP_READ_ONLY.has(normalizedPath);
+      const invalidate = async (response: Response) => {
+        if (mutating && response.status < 400) {
+          try { await (env as any).T2_CREATIVE_ASSETS?.delete?.(BOOTSTRAP_SNAPSHOT_KEY); } catch {}
+        }
+        return response;
+      };
       if (renderBase) {
         try {
           const target = renderBase + normalizedPath + url.search;
           const primaryResponse = await fetch(new Request(target, normalizedRequest.clone()));
-          if (primaryResponse.status < 500) return primaryResponse;
+          if (primaryResponse.status < 500) return invalidate(primaryResponse);
         } catch {}
       }
-      return handler(normalizedRequest);
+      return invalidate(await handler(normalizedRequest));
     }
 
     // Trust/lineage files are generated by the canonical Pages build and must never be shadowed
@@ -1091,6 +1169,7 @@ export default {
           headers.set('cache-control', 'no-store, max-age=0');
         }
         headers.set('x-zpc-ui-origin', 'cloudflare-assets');
+        applyPanelSecurityHeaders(headers);
         return new Response(assetResponse.body, { status: assetResponse.status, headers });
       }
       const spaResponse = await (env.ASSETS as any).fetch(new Request(new URL('/', request.url).toString(), request));
@@ -1098,6 +1177,7 @@ export default {
         const headers = new Headers(spaResponse.headers);
         headers.set('cache-control', 'no-store, max-age=0');
         headers.set('x-zpc-ui-origin', 'cloudflare-assets');
+        applyPanelSecurityHeaders(headers);
         return new Response(spaResponse.body, { status: spaResponse.status, headers });
       }
     }
