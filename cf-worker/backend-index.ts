@@ -1467,7 +1467,13 @@ async function adminData() {
     loadGlobalTrust(),
   ]);
   const visibleSystems = systems.items.filter(item => !deprecatedVisibleSystems.has(item.name));
-  const enriched = products.items.filter(product => !retiredPublicProductSlugs.has(product.slug)).map(product => {
+  const uniqueProducts = Array.from(products.items.reduce((acc, item) => {
+    const previous = acc.get(item.slug);
+    const rank = (p: typeof item) => (p.status === 'archived' ? 0 : 1);
+    if (!previous || rank(item) > rank(previous) || (rank(item) === rank(previous) && String(item.updatedAt || '') > String(previous.updatedAt || ''))) acc.set(item.slug, item);
+    return acc;
+  }, new Map<string, (typeof products.items)[number]>()).values());
+  const enriched = uniqueProducts.filter(product => !retiredPublicProductSlugs.has(product.slug)).map(product => {
     const base = enrichProduct(product);
     const certification = buildProductCertification(product, visibleSystems, certificationEvidence.items);
     return { ...base, certification, commercialReady: base.commercialReady && certification.ready, blockers: [...base.blockers, ...(certification.ready ? [] : ['certificacao ZEES-16 incompleta'])] };
