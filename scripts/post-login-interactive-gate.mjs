@@ -38,6 +38,8 @@ async function sample(base, bucket) {
     await page.route('**/api/_auth_diagnostic', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ secretValid: true, locked: false, sessionRoundtrip: true, bootstrapOk: true }) }));
     await page.route('**/global-trust.json*', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixture.globalTrust) }));
     await page.route('**/api/pin/login', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, sessionToken: 'zpc1.test.signature', expiresAt: new Date(Date.now()+3600000).toISOString() }) }));
+    await page.route('**/api/commercial/funnel',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,summary:null,readiness:{status:'AGUARDAR',headline:'Ainda não é hora de pagar anúncios.',nextMilestone:'Vendas abertas em produção: vendas ainda fechadas (modo teste).',criteria:[{id:'sales-open',label:'Vendas abertas em produção',ok:false,detail:''}],metrics:{visitors:0,paid:0,conversion:0,conversionLow:0,aov:0,refundRate:0,maxCpa:0,maxCpc:0,breakEvenRoas:0},plan:null}})}));
+    await page.route(/\/api\/sales\/(state|switch)$/,r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,requested:false,open:false,switchedAt:null,preflightFresh:true,preflight:{ok:false,at:'2026-09-26T16:00:00.000Z',checks:[{id:'mercadopago_production_token',ok:false,detail:'credencial de teste'}]}})}));
     await page.route('**/api/admin/bootstrap', async r => {
       await new Promise(resolve => setTimeout(resolve, delayMs));
       bootstrapCompleted = true;

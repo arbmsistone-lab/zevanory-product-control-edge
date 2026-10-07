@@ -51,6 +51,60 @@ function statusClass(status: string) {
 }
 
 
+const PREFLIGHT_LABELS: Record<string, string> = {
+  mercadopago_production_token: 'Mercado Pago de produção',
+  mercadopago_webhook_secret: 'Aviso de pagamento (webhook)',
+  checkout_enabled: 'Checkout habilitado',
+  payment_public_base: 'Endereço de notificação',
+  mailer: 'E-mail de entrega',
+  database: 'Banco de pedidos',
+  product_files: 'Arquivos dos 5 produtos',
+  delivery_recovery: 'Reenvio de link',
+};
+
+type SalesState = { requested: boolean; open: boolean; switchedAt: string | null; preflightFresh: boolean; preflight: { ok: boolean; at: string; checks: { id: string; ok: boolean; detail: string }[] } | null };
+
+function SalesSwitchPanel({ sessionToken }: { sessionToken: string }) {
+  const [state, setState] = useState<SalesState | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const load = () => api.post('/api/sales/state', { sessionToken }).then(r => setState(r.data as SalesState)).catch(() => setMessage('Estado das vendas indisponível agora.'));
+  useEffect(() => { void load(); }, [sessionToken]);
+  const toggle = async (open: boolean) => {
+    setBusy(true); setMessage('');
+    try {
+      const r = await api.post('/api/sales/switch', { sessionToken, open });
+      setState(r.data as SalesState);
+      setMessage(open ? 'Vendas abertas. O botão Comprar agora já leva ao Mercado Pago.' : 'Vendas fechadas. Pedidos já pagos continuam sendo entregues.');
+    } catch {
+      setMessage('Não abriu: a verificação de produção ainda não está toda verde.');
+      void load();
+    } finally { setBusy(false); setConfirming(false); }
+  };
+  if (!state) return <div className='adsPanel'><b>Vendas</b><small>{message || 'Verificando…'}</small></div>;
+  const failing = (state.preflight?.checks || []).filter(c => !c.ok);
+  const ready = Boolean(state.preflight?.ok && state.preflightFresh);
+  return (
+    <div className={'adsPanel ' + (state.open ? 'escalar' : ready ? 'testar' : '')} aria-label='Abertura de vendas'>
+      <div className='adsHead'>
+        <span className='adsStatus'>{state.open ? 'ABERTAS' : 'FECHADAS'}</span>
+        <div>
+          <b>Vendas · {state.open ? 'checkout real ativo' : ready ? 'tudo verificado para abrir' : 'verificação de produção pendente'}</b>
+          <small>{message || (state.open ? `Abertas em ${new Date(String(state.switchedAt)).toLocaleString('pt-BR')}.` : ready ? 'Mercado Pago, entrega, e-mail e arquivos conferidos na última hora.' : failing.length ? 'Falta: ' + failing.slice(0, 3).map(c => (PREFLIGHT_LABELS[c.id] || c.id) + (c.detail ? ' (' + c.detail + ')' : '')).join(' · ') : 'Aguardando a próxima verificação automática (de hora em hora).')}</small>
+        </div>
+      </div>
+      <div className='approvalActions'>
+        {state.open
+          ? <button className='rejectBtn' disabled={busy} onClick={() => void toggle(false)}><X size={15}/>Fechar vendas</button>
+          : confirming
+            ? <><button className='approveBtn' disabled={busy || !ready} onClick={() => void toggle(true)}><Check size={15}/>Confirmar abertura</button><button className='changeBtn' disabled={busy} onClick={() => setConfirming(false)}><RotateCcw size={15}/>Cancelar</button></>
+            : <button className='approveBtn' disabled={busy || !ready} onClick={() => setConfirming(true)}><Check size={15}/>Abrir vendas</button>}
+      </div>
+    </div>
+  );
+}
+
 function AdsReadinessPanel({ sessionToken, compact }: { sessionToken: string; compact: boolean }) {
   const [state, setState] = useState<{ readiness: AdsReadiness; generatedAt: string | null } | null>(null);
   const [failed, setFailed] = useState(false);
@@ -293,7 +347,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['new','nurture','qualified','contact-ready','contacted','conversation','offer','follow-up','checkout','payment','customer','fulfillment','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-  const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' ? 1 : 0));
+  const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' ? 2 : 0));
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);
   const pagedItems = items.slice(safeListPage * genericPageSize, (safeListPage + 1) * genericPageSize);
@@ -410,6 +464,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
         </article>
       )}
 
+      {section === 'finance' && <SalesSwitchPanel sessionToken={sessionToken} />}
       {section === 'finance' && <AdsReadinessPanel sessionToken={sessionToken} compact={viewportWidth <= 700 || viewportHeight <= 700} />}
 
       {!['commercial','approvals','creatives'].includes(section) && (
