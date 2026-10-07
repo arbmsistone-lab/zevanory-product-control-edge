@@ -3186,7 +3186,12 @@ const routedHandler = router({
     const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
     return json({ valid: await verifyCanonicalEdgeSession(token) });
   }],
-  'POST /api/pin/login': [async ctx => {
+  'POST /api/pin/login': [async () => {
+    // Login is edge-only (Cloudflare Worker: lock + per-IP limit). The origin never accepts PINs,
+    // so the public Render URL cannot be used to brute-force the admin PIN.
+    return error('Login disponivel apenas pelo painel oficial.', 404);
+  }],
+  'POST /api/pin/login-origin-disabled': [async ctx => {
     try {
       const result = await pinLogin((ctx.body as { pin?: string })?.pin);
       if (!result.ok || !('token' in result)) return error(result.message || 'Acesso negado.', result.status);

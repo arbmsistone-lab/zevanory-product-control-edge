@@ -1270,7 +1270,7 @@ async function executeAudit() {
 }
 
 type PinSessionRecord = { token: string; expiresAt: string; createdAt: string };
-type PinSecurityRecord = { failedAttempts: number; lockedUntil: string | null; updatedAt: string; pinFingerprint?: string };
+type PinSecurityRecord = { failedAttempts: number; lockedUntil: string | null; updatedAt: string; pinFingerprint?: string; locks?: number };
 const PIN_SESSIONS = 'acs_pin_sessions';
 const PIN_CURRENT_SESSION = 'acs_pin_current_session';
 const PIN_SECURITY = 'acs_pin_security';
@@ -1377,19 +1377,23 @@ async function pinLogin(pin: unknown) {
   if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
   const verification = await verifyAdminPin(candidate);
   const fingerprint = verification.fingerprint;
-  if (verification.valid) {
-    return { ok: true, status: 200, ...(await createEdgeSession()) };
-  }
-
   const state = await securityState(fingerprint);
+  // The lock applies to every attempt, including the correct PIN (no brute force through the lock).
   if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
     return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
   }
+  if (verification.valid) {
+    if (state.failedAttempts || state.locks) await updateSecurity(state.id, { failedAttempts: 0, lockedUntil: null, locks: 0, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
+    return { ok: true, status: 200, ...(await createEdgeSession()) };
+  }
   const failedAttempts = state.failedAttempts + 1;
-  const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
-    ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
-    : null;
-  await updateSecurity(state.id, { failedAttempts: lockedUntil ? 0 : failedAttempts, lockedUntil, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
+  const locking = failedAttempts >= MAX_PIN_ATTEMPTS;
+  const locks = Number(state.locks || 0) + (locking ? 1 : 0);
+  // Progressive lock: 15, 30, 60, 120 min (cap). With the per-IP edge throttle this keeps a
+  // 4-digit space impractical while an attacker can never lock the owner out for more than 2h.
+  const lockMinutes = Math.min(120, LOCK_MINUTES * 2 ** Math.max(0, locks - 1));
+  const lockedUntil = locking ? new Date(Date.now() + lockMinutes * 60 * 1000).toISOString() : null;
+  await updateSecurity(state.id, { failedAttempts: locking ? 0 : failedAttempts, lockedUntil, locks, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
   return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
 }
 
