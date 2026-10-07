@@ -1,0 +1,150 @@
+[
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 812,
+      "deviceScaleFactor": 1
+    },
+    "theme": "dark",
+    "view": "finance",
+    "label": "Financeiro",
+    "overviewPage": 0,
+    "failures": [
+      {
+        "code": "CONTENT_CLIPPED",
+        "detail": "[{\"tag\":\"SECTION\",\"cls\":\"commercialWorkspace\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-finance\",\"x\":false,\"y\":true},{\"tag\":\"DIV\",\"cls\":\"approvalActions\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-finance\",\"x\":false,\"y\":true},{\"tag\":\"BUTTON\",\"cls\":\"changeBtn\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-finance\",\"x\":false,\"y\":true}]"
+      }
+    ],
+    "dom": {
+      "docScrollX": 0,
+      "docScrollY": 0,
+      "localScroll": [],
+      "horizontal": [],
+      "clips": [
+        {
+          "tag": "SECTION",
+          "cls": "commercialWorkspace",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-finance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "DIV",
+          "cls": "approvalActions",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-finance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "changeBtn",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-finance",
+          "x": false,
+          "y": true
+        }
+      ],
+      "textClips": [],
+      "textDebt": [],
+      "direct": [
+        {
+          "tag": "SECTION",
+          "cls": "commercialWorkspace",
+          "top": 109,
+          "bottom": 825.09375,
+          "left": 20,
+          "right": 355
+        }
+      ],
+      "theme": "dark",
+      "bg": "#0e0f12",
+      "mainClass": "zpcWorkspace shell shell-finance"
+    },
+    "contrast": [],
+    "axe": [],
+    "focus": {
+      "active": "true",
+      "outlineWidth": "4px",
+      "outlineStyle": "solid",
+      "outlineColor": "rgb(200, 169, 106)"
+    },
+    "screenshot": "control-center-audit/mobile-dark-finance.png"
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 812,
+      "deviceScaleFactor": 1
+    },
+    "theme": "light",
+    "view": "finance",
+    "label": "Financeiro",
+    "overviewPage": 0,
+    "failures": [
+      {
+        "code": "CONTENT_CLIPPED",
+        "detail": "[{\"tag\":\"SECTION\",\"cls\":\"commercialWorkspace\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-finance\",\"x\":false,\"y\":true},{\"tag\":\"DIV\",\"cls\":\"approvalActions\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-finance\",\"x\":false,\"y\":true},{\"tag\":\"BUTTON\",\"cls\":\"changeBtn\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-finance\",\"x\":false,\"y\":true}]"
+      }
+    ],
+    "dom": {
+      "docScrollX": 0,
+      "docScrollY": 0,
+      "localScroll": [],
+      "horizontal": [],
+      "clips": [
+        {
+          "tag": "SECTION",
+          "cls": "commercialWorkspace",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-finance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "DIV",
+          "cls": "approvalActions",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-finance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "changeBtn",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-finance",
+          "x": false,
+          "y": true
+        }
+      ],
+      "textClips": [],
+      "textDebt": [],
+      "direct": [
+        {
+          "tag": "SECTION",
+          "cls": "commercialWorkspace",
+          "top": 109,
+          "bottom": 825.09375,
+          "left": 20,
+          "right": 355
+        }
+      ],
+      "theme": "light",
+      "bg": "#f7f5f0",
+      "mainClass": "zpcWorkspace shell shell-finance"
+    },
+    "contrast": [],
+    "axe": [],
+    "focus": {
+      "active": "true",
+      "outlineWidth": "4px",
+      "outlineStyle": "solid",
+      "outlineColor": "rgb(94, 70, 25)"
+    },
+    "screenshot": "control-center-audit/mobile-light-finance.png"
+  }
+]
