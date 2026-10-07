@@ -765,6 +765,6 @@ html, body, button, input, select, textarea {
 
 @media (max-width: 700px), (max-height: 700px) {
   .adsPanel { padding: var(--zpc-space-2); gap: var(--zpc-space-1); margin-bottom: var(--zpc-space-1); }
-  .adsPanel small { margin-top: 2px; }
+  .adsPanel small { margin-top: var(--zpc-space-1); }
   .adsPanel .approvalActions { margin-top: 0; }
 }
