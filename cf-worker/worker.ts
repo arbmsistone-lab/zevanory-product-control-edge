@@ -704,9 +704,13 @@ async function syncSharedActivity(env: Record<string, any>) {
   // deleting it would silently disable deduplication.
   const buckets = ["event", "support", "lead", "finance"];
   let synced = 0;
+  let processed = 0;
+  const maxPerTick = 4; // Workers Free: preserve CPU/subrequest budget for the existing robot.
   for (const bucket of buckets) {
-    const listed = await kv.list({ prefix: 'zpc-activity:v1:' + bucket + ':', limit: 100 });
+    if (processed >= maxPerTick) break;
+    const listed = await kv.list({ prefix: 'zpc-activity:v1:' + bucket + ':', limit: maxPerTick - processed });
     for (const key of listed.keys || []) {
+      processed += 1;
       const name = String(key.name);
       const raw = await kv.get(name);
       if (!raw) { await kv.delete(name); continue; }
