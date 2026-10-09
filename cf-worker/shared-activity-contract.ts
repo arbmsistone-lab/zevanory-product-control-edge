@@ -10,7 +10,13 @@ const ACTIVITY_TYPES = new Set([
 const HEX64 = /^[a-f0-9]{64}$/;
 const BASIC = /^[a-z0-9_-]{1,64}$/;
 export const SHARED_ACTIVITY_TTL_SECONDS = 90*24*60*60;
-export function normalizeSharedActivity(name: string, data: any) {
+export type SharedActivityKind = "event" | "support" | "lead" | "finance";
+export type SharedActivityRecord = {
+  kind: SharedActivityKind; title: string; detail: string; status: string;
+  channel: string; product: string; source: string; sourceKey: string;
+  valueCents: number | null; evidence: string[];
+};
+export function normalizeSharedActivity(name: string, data: any): SharedActivityRecord | null {
   if (!name.startsWith("zpc-activity:v1:") ||
       /^(?:zpc-activity:v1:ref:|zpc-activity:v1:processed:)/.test(name)) return null;
   const kindInKey=name.split(":")[2];
@@ -46,7 +52,7 @@ export function normalizeSharedActivity(name: string, data: any) {
   // finance or reintroducing raw IDs into deduplication markers.
   if (kindInKey==="finance") return null;
   return {
-    kind:kindInKey,
+    kind:kindInKey as SharedActivityKind,
     title:data.title,
     detail:String(data.detail||""),
     status:String(data.status||"recorded").toLowerCase().replace(/[^a-z0-9-]/g,"-").slice(0,80),
