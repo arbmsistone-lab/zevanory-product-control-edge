@@ -1117,7 +1117,11 @@ function App() {
           </section>
 
           <section className='ownerQuickCards'>
-            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>Vendas pausadas · modo teste</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
+            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>{fastOverview?.sources.status.ok && overviewOperations?.available
+              ? overviewOperations.runtime.sales === 'enabled' ? 'Vendas habilitadas'
+                : overviewOperations.runtime.sales === 'globally-blocked' ? 'Vendas bloqueadas'
+                : 'Estado não verificado'
+              : 'Estado não verificado'}</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
             <article className='ownerQuickCard'><Headphones size={18}/><div><b>Atendimento</b><span>{ownerOverview?.openConversations ? `${ownerOverview.openConversations} conversa(s) aberta(s).` : 'Nenhuma conversa aberta.'}</span><button onClick={() => setView('support')}>Abrir conversas</button></div></article>
             <article className='ownerQuickCard ownerEventCard'><FileCheck2 size={18}/><div><b>Últimos eventos</b>{ownerOverview?.latestEvents.length ? ownerOverview.latestEvents.map(event => <span key={event.id}>{event.title}</span>) : <span>Nenhum evento recente.</span>}<button onClick={() => setView('evidence')}>Ver evidências</button></div></article>
           </section>
