@@ -62,6 +62,19 @@ const PREFLIGHT_LABELS: Record<string, string> = {
   delivery_recovery: 'Reenvio de link',
 };
 
+type RealFunnel = {
+  generatedAt: string;
+  windowDays: number;
+  salesMode: string;
+  pages: Record<string, { views?: number; visitors?: number }>;
+  products: Record<string, { checkouts?: number; paid?: number }>;
+};
+function sumVerified(values: unknown[]): number | null {
+  if (!values.length) return null;
+  if (!values.every(value => Number.isInteger(value) && Number(value) >= 0)) return null;
+  return values.reduce<number>((total, value) => total + Number(value), 0);
+}
+
 type SalesState = { requested: boolean; open: boolean; switchedAt: string | null; preflightFresh: boolean; preflight: { ok: boolean; at: string; checks: { id: string; ok: boolean; detail: string }[] } | null };
 
 function SalesSwitchPanel({ sessionToken, compact = false }: { sessionToken: string; compact?: boolean }) {
@@ -172,6 +185,31 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [dashboardPage, setDashboardPage] = useState(0);
   const [listPage, setListPage] = useState(0);
   const [financeRecords, setFinanceRecords] = useState(false);
+  const [realFunnel, setRealFunnel] = useState<RealFunnel | null>(null);
+  const [funnelError, setFunnelError] = useState(false);
+  useEffect(() => {
+    if (section !== 'commercial' || !sessionToken) return;
+    let active = true;
+    setFunnelError(false);
+    api.post('/api/commercial/funnel', { sessionToken }).then(({ data: response }) => {
+      if (!active) return;
+      const value = response?.summary;
+      const timestamp = Date.parse(String(value?.generatedAt || ''));
+      // Expired or undocumented aggregates must never become live commercial numbers.
+      if (value?.windowDays !== 30 || value?.salesMode !== 'production' ||
+        !Number.isFinite(timestamp) || timestamp > Date.now() + 60_000 ||
+        Date.now() - timestamp > 3 * 3600_000 ||
+        typeof value.pages !== 'object' || !value.pages ||
+        typeof value.products !== 'object' || !value.products) {
+        setRealFunnel(null);
+        setFunnelError(true);
+        return;
+      }
+      setRealFunnel(value as RealFunnel);
+    }).catch(() => { if (active) { setRealFunnel(null); setFunnelError(true); } });
+    return () => { active = false; };
+  }, [section, sessionToken]);
+
   const refreshRef = useRef(onRefresh);
   refreshRef.current = onRefresh;
   const meta = SECTION_META[section];
@@ -360,6 +398,10 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const safeCreativePage = Math.min(listPage, creativePageCount - 1);
   const pagedCreatives = studioCreatives.slice(safeCreativePage * creativePageSize, (safeCreativePage + 1) * creativePageSize);
 
+  const totalViews = realFunnel ? sumVerified(Object.values(realFunnel.pages).map(page => page.views)) : null;
+  const totalCheckouts = realFunnel ? sumVerified(Object.values(realFunnel.products).map(product => product.checkouts)) : null;
+  const funnelProvenance = realFunnel ? 'Fonte: funil real · últimos 30 dias · ' + time(realFunnel.generatedAt)
+    : funnelError ? 'Medição ausente, antiga ou não certificada' : 'Consultando funil real';
   return (
     <section className='commercialWorkspace'>
       <header className='commercialHeader'>
@@ -386,13 +428,13 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
               ))}
             </nav>
           )}
-          {(!pagedDashboard || dashboardPage === 0) && <div className='commercialMetrics'>
-            <article><Search/><span>Leads encontrados hoje</span><strong>{data.metrics.leadsToday}</strong></article>
-            <article><MessageSquareText/><span>Contatos hoje</span><strong>{data.metrics.contactsToday}</strong></article>
-            <article><Sparkles/><span>Criativos em produção</span><strong>{data.metrics.creativesInProduction}</strong></article>
-            <article><FileCheck2/><span>Aguardando aprovação</span><strong>{data.metrics.pendingApproval}</strong></article>
-            <article><Send/><span>Publicados hoje</span><strong>{data.metrics.publishedToday}</strong></article>
-            <article><CircleDollarSign/><span>Vendas hoje</span><strong>{brl(data.metrics.salesCentsToday)}</strong></article>
+          {(!pagedDashboard || dashboardPage === 0) && <div className='commercialMetrics' aria-label='Métricas comerciais auditáveis'>
+            <article title={funnelProvenance}><Search/><span>Visitas às páginas · 30 dias</span><strong>{totalViews ?? 'N/D'}</strong></article>
+            <article title={'Fonte: leads persistidos · ' + time(data.generatedAt)}><MessageSquareText/><span>Leads de hoje</span><strong>{data.metrics.leadsToday}</strong></article>
+            <article title={funnelProvenance}><Activity/><span>Checkouts iniciados · 30 dias</span><strong>{totalCheckouts ?? 'N/D'}</strong></article>
+            <article title={'Fonte: financeiro confirmado · ' + time(data.generatedAt)}><CircleDollarSign/><span>Vendas confirmadas hoje</span><strong>{brl(data.metrics.salesCentsToday)}</strong></article>
+            <article title={'Fonte: publicações comprovadas · ' + time(data.generatedAt)}><Send/><span>Posts publicados hoje</span><strong>{data.metrics.publishedToday}</strong></article>
+            <article title={'Fonte: eventos comerciais persistidos · ' + time(data.generatedAt)}><MessageSquareText/><span>Contatos hoje</span><strong>{data.metrics.contactsToday}</strong></article>
           </div>}
 
           {(!pagedDashboard || dashboardPage === 1 || dashboardPage === 2) && <div className='commercialDashboardGrid'>

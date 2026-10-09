@@ -142,8 +142,8 @@ for (const size of sizes) {
 
   const audit = await page.evaluate(() => {
     const expected = [
-      'Leads encontrados hoje','Contatos hoje','Criativos em produção',
-      'Aguardando aprovação','Publicados hoje','Vendas hoje',
+      'Visitas às páginas · 30 dias','Leads de hoje','Checkouts iniciados · 30 dias',
+      'Vendas confirmadas hoje','Posts publicados hoje','Contatos hoje',
     ];
     const root = document.documentElement;
     const body = document.body;
