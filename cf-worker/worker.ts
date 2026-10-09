@@ -677,7 +677,7 @@ async function recordCommercialActivity(env: Record<string, any>, kind: keyof ty
       channel: input.channel,
       product: input.product ?? 'ZEVANORY',
       productId: null,
-      valueCents: kind === 'finance' && Number.isSafeInteger(input.valueCents) && (input.valueCents ?? -1) >= 0
+      valueCents: kind === 'finance' && typeof input.valueCents === 'number' && Number.isSafeInteger(input.valueCents) && input.valueCents >= 0
         ? input.valueCents : null,
       source: input.source || 'meta-robot',
       sourceKey: input.sourceKey.slice(0, 220),
