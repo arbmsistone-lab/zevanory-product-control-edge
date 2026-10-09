@@ -1,3 +1,4 @@
+import { normalizeSharedActivity, SHARED_ACTIVITY_TTL_SECONDS } from "./shared-activity-contract";
 import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
@@ -659,10 +660,12 @@ const COMMERCIAL_BUCKETS = {
   support: 'zpc_commercial_support',
   event: 'zpc_commercial_events',
   lead: 'zpc_commercial_leads',
+  finance: 'zpc_commercial_finance',
 } as const;
 
 async function recordCommercialActivity(env: Record<string, any>, kind: keyof typeof COMMERCIAL_BUCKETS, input: {
   title: string; detail: string; status: string; channel: string; sourceKey: string; evidence: string[]; product?: string | null;
+  source?: string; valueCents?: number | null;
 }) {
   try {
     const now = new Date().toISOString();
@@ -674,8 +677,9 @@ async function recordCommercialActivity(env: Record<string, any>, kind: keyof ty
       channel: input.channel,
       product: input.product ?? 'ZEVANORY',
       productId: null,
-      valueCents: null,
-      source: 'meta-robot',
+      valueCents: kind === 'finance' && typeof input.valueCents === 'number' && Number.isSafeInteger(input.valueCents) && input.valueCents >= 0
+        ? input.valueCents : null,
+      source: input.source || 'meta-robot',
       sourceKey: input.sourceKey.slice(0, 220),
       evidence: input.evidence.map(item => String(item).slice(0, 1000)).slice(0, 20),
       createdAt: now,
@@ -695,30 +699,63 @@ async function recordCommercialActivity(env: Record<string, any>, kind: keyof ty
 // panel cron turns them into commercial records, then deletes the entries.
 async function syncSharedActivity(env: Record<string, any>) {
   const kv = env.T2_CREATIVE_ASSETS;
-  if (!kv?.list) return { synced: 0 };
-  const listed = await kv.list({ prefix: 'zpc-activity:v1:', limit: 100 });
+  if (!kv?.list || !kv?.get || !kv?.put || !kv?.delete) return { synced: 0 };
+  // Iterate ONLY queued entries. Metadata (ref/processed) is retained for 90d;
+  // deleting it would silently disable deduplication.
+  const buckets = ["event", "support", "lead", "finance"];
   let synced = 0;
-  for (const key of listed.keys || []) {
-    const name = String(key.name);
-    const kind = name.split(':')[2];
-    if (kind !== 'event' && kind !== 'support' && kind !== 'lead') { await kv.delete(name); continue; }
-    const raw = await kv.get(name);
-    let data: any = null;
-    try { data = JSON.parse(String(raw || '')); } catch {}
-    if (data && typeof data.title === 'string' && data.title) {
-      const stored = await recordCommercialActivity(env, kind as keyof typeof COMMERCIAL_BUCKETS, {
-        title: String(data.title),
-        detail: String(data.detail || ''),
-        status: String(data.status || 'recorded').toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 80),
-        channel: String(data.channel || 'email').slice(0, 120),
-        product: data.product ? String(data.product) : 'ZEVANORY',
-        sourceKey: String(data.sourceKey || name),
-        evidence: Array.isArray(data.evidence) ? data.evidence.map(String) : [name],
-      });
-      if (!stored) continue; // keep the entry; next cron retries
-      synced += 1;
+  let processed = 0;
+  const maxPerTick = 4; // Workers Free: preserve CPU/subrequest budget for the existing robot.
+  for (const bucket of buckets) {
+    if (processed >= maxPerTick) break;
+    const listed = await kv.list({ prefix: 'zpc-activity:v1:' + bucket + ':', limit: maxPerTick - processed });
+    for (const key of listed.keys || []) {
+      processed += 1;
+      const name = String(key.name);
+      const raw = await kv.get(name);
+      if (!raw) { await kv.delete(name); continue; }
+      let data: any = null;
+      try { data = JSON.parse(String(raw)); } catch {}
+      const event = normalizeSharedActivity(name, data);
+      if (!event) {
+        // Malformed activity is not a valid finance record. Keep it for review
+        // until its KV TTL expires; never reinterpret it as a confirmed sale.
+        console.warn('shared_activity_invalid_record', bucket);
+        continue;
+      }
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(event.sourceKey));
+      const refHash = Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      const doneKey = 'zpc-activity:v1:processed:' + refHash;
+      if (await kv.get(doneKey)) { await kv.delete(name); continue; }
+      // If a prior RPC succeeded but a marker write failed, read back its
+      // sourceKey before retrying to avoid recording payment twice.
+      let duplicate = false;
+      try {
+        const existing = await t2StoreCall(env, { op: 'list', bucket: COMMERCIAL_BUCKETS[event.kind], limit: 1000 });
+        duplicate = Array.isArray(existing?.items) && existing.items.some((x:any)=>x?.sourceKey===event.sourceKey);
+      } catch {
+        // Fail closed: leave queued event intact if deduplication cannot run.
+        console.warn('shared_activity_dedupe_unavailable', event.kind);
+        continue;
+      }
+      if (!duplicate) {
+        const stored = await recordCommercialActivity(env, event.kind, {
+          title: event.title,
+          detail: event.detail,
+          status: event.status,
+          channel: event.channel,
+          product: event.product,
+          source: event.source,
+          valueCents: event.valueCents,
+          sourceKey: event.sourceKey,
+          evidence: event.evidence,
+        });
+        if (!stored) continue;
+        synced += 1;
+      }
+      await kv.put(doneKey, "1", { expirationTtl: SHARED_ACTIVITY_TTL_SECONDS });
+      await kv.delete(name);
     }
-    await kv.delete(name);
   }
   return { synced };
 }
