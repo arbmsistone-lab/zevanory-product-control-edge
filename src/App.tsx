@@ -365,6 +365,21 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
 
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [salesStateLabel, setSalesStateLabel] = useState('Estado indisponível');
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const { data } = await api.get('/api/sales/state');
+        if (!active) return;
+        const state = String(data?.state ?? data?.sales_state ?? '').toLowerCase();
+        setSalesStateLabel(state === 'open' || state === 'enabled' || state === 'active' ? 'Vendas abertas' : state === 'closed' || state === 'paused' || state === 'disabled' ? 'Vendas pausadas' : 'Estado indisponível');
+      } catch { if (active) setSalesStateLabel('Estado indisponível'); }
+    };
+    void load();
+    const refresh = window.setInterval(() => { void load(); }, 60000);
+    return () => { active = false; window.clearInterval(refresh); };
+  }, []);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
   const [globalTrustLoading, setGlobalTrustLoading] = useState(true);
   const [canonicalSha, setCanonicalSha] = useState<string | null>(null);
@@ -1117,7 +1132,7 @@ function App() {
           </section>
 
           <section className='ownerQuickCards'>
-            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>Vendas pausadas · modo teste</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
+            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>{salesStateLabel}</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
             <article className='ownerQuickCard'><Headphones size={18}/><div><b>Atendimento</b><span>{ownerOverview?.openConversations ? `${ownerOverview.openConversations} conversa(s) aberta(s).` : 'Nenhuma conversa aberta.'}</span><button onClick={() => setView('support')}>Abrir conversas</button></div></article>
             <article className='ownerQuickCard ownerEventCard'><FileCheck2 size={18}/><div><b>Últimos eventos</b>{ownerOverview?.latestEvents.length ? ownerOverview.latestEvents.map(event => <span key={event.id}>{event.title}</span>) : <span>Nenhum evento recente.</span>}<button onClick={() => setView('evidence')}>Ver evidências</button></div></article>
           </section>
