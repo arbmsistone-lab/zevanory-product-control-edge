@@ -13,8 +13,10 @@ const assert = (condition, message) => { if (!condition) failures.push(message);
 const requiredTabs = ['Visão Geral','Produtos','Comercial','Criativos','Aprovações','Publicações','Prospecção','CRM/Vendas','Atendimento','Financeiro','Evidências'];
 for (const tab of requiredTabs) assert(app.includes(tab), 'missing_tab:' + tab);
 
-const requiredKpis = ['Leads encontrados hoje','Contatos hoje','Criativos em produção','Aguardando aprovação','Publicados hoje','Vendas hoje'];
+const requiredKpis = ['Visitas às páginas · 30 dias','Leads de hoje','Checkouts iniciados · 30 dias','Vendas confirmadas hoje','Posts publicados hoje','Contatos hoje'];
 for (const kpi of requiredKpis) assert(workspace.includes(kpi), 'missing_kpi:' + kpi);
+assert(workspace.includes('sumVerified') && workspace.includes("totalViews ?? 'N/D'") && workspace.includes("totalCheckouts ?? 'N/D'"), 'real_funnel_must_fail_closed_without_evidence');
+assert(workspace.includes('sessionToken') && workspace.includes('/api/commercial/funnel'), 'funnel_must_be_authenticated');
 
 for (const section of ['commercial','creatives','approvals','publications','prospecting','crm','support','finance','evidence']) {
   assert(model.includes("'" + section + "'"), 'missing_section:' + section);
