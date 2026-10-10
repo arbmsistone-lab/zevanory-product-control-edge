@@ -79,21 +79,21 @@ type SalesState = { requested: boolean; open: boolean; switchedAt: string | null
 
 function SalesSwitchPanel({ sessionToken, compact = false }: { sessionToken: string; compact?: boolean }) {
   const [state, setState] = useState<SalesState | null>(null);
-  const [confirming, setConfirming] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const load = () => api.post('/api/sales/state', { sessionToken }).then(r => setState(r.data as SalesState)).catch(() => setMessage('Estado das vendas indisponível agora.'));
   useEffect(() => { void load(); }, [sessionToken]);
-  const toggle = async (open: boolean) => {
+  const closeSales = async () => {
     setBusy(true); setMessage('');
     try {
-      const r = await api.post('/api/sales/switch', { sessionToken, open });
+      const r = await api.post('/api/sales/switch', { sessionToken, open: false, closeConfirmation: 'FECHAR VENDAS' });
       setState(r.data as SalesState);
-      setMessage(open ? 'Vendas abertas. O botão Comprar agora já leva ao Mercado Pago.' : 'Vendas fechadas. Pedidos já pagos continuam sendo entregues.');
+      setMessage('Vendas fechadas. Pedidos já pagos continuam sendo entregues.');
     } catch {
-      setMessage('Não abriu: a verificação de produção ainda não está toda verde.');
+      setMessage('Não foi possível confirmar o fechamento. Consulte o status das vendas.');
       void load();
-    } finally { setBusy(false); setConfirming(false); }
+    } finally { setBusy(false); setConfirmingClose(false); }
   };
   if (!state) return <div className='adsPanel'><b>Vendas</b><small>{message || 'Verificando…'}</small></div>;
   const failing = (state.preflight?.checks || []).filter(c => !c.ok);
@@ -109,10 +109,10 @@ function SalesSwitchPanel({ sessionToken, compact = false }: { sessionToken: str
       </div>
       <div className='approvalActions'>
         {state.open
-          ? <button className='rejectBtn' disabled={busy} onClick={() => void toggle(false)}><X size={15}/>Fechar vendas</button>
-          : confirming
-            ? <><button className='approveBtn' disabled={busy || !ready} onClick={() => void toggle(true)}><Check size={15}/>Confirmar abertura</button><button className='changeBtn' disabled={busy} onClick={() => setConfirming(false)}><RotateCcw size={15}/>Cancelar</button></>
-            : <button className='approveBtn' disabled={busy || !ready} onClick={() => setConfirming(true)}><Check size={15}/>Abrir vendas</button>}
+          ? confirmingClose
+            ? <><button className='rejectBtn' disabled={busy} onClick={() => void closeSales()}><X size={15}/>Confirmar fechamento</button><button className='changeBtn' disabled={busy} onClick={() => setConfirmingClose(false)}><RotateCcw size={15}/>Cancelar</button></>
+            : <button className='rejectBtn' disabled={busy} onClick={() => setConfirmingClose(true)}><X size={15}/>Fechar vendas</button>
+          : <small>Reabertura exclusiva pelo workflow oficial após auditoria aprovada e ordem escrita do dono.</small>}
       </div>
     </div>
   );
