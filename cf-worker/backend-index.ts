@@ -1536,12 +1536,24 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
   }
 }
 
+// Owner view must reflect the present, not historical rows: newest first, only
+// the last 72 h, one row per system+title (the newest), capped at 20.
+const RECENT_WINDOW_MS = 72 * 3600 * 1000;
+function recentUnique<T extends { system: string; title: string; createdAt: string }>(items: T[], now = Date.now()): T[] {
+  const seen = new Set<string>();
+  return items
+    .filter(item => { const at = Date.parse(String(item.createdAt || '')); return Number.isFinite(at) && now - at <= RECENT_WINDOW_MS; })
+    .sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)))
+    .filter(item => { const key = item.system + '\u0000' + item.title; if (seen.has(key)) return false; seen.add(key); return true; })
+    .slice(0, 20);
+}
+
 async function adminData() {
   const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns, globalTrust] = await Promise.all([
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
-    db.list<AuditRecord>(AUDITS, { limit: 20 }),
-    db.list<ImprovementRecord>(IMPROVEMENTS, { limit: 20 }),
-    db.list<IncidentRecord>(INCIDENTS, { limit: 20 }),
+    db.list<AuditRecord>(AUDITS, { limit: 500 }),
+    db.list<ImprovementRecord>(IMPROVEMENTS, { limit: 500 }),
+    db.list<IncidentRecord>(INCIDENTS, { limit: 500 }),
     db.list<{ lastRun: string }>(ENGINE, { limit: 1 }),
     db.list<ProductRecord>(productTable(), { limit: 100 }),
     db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
@@ -1605,9 +1617,9 @@ async function adminData() {
     certificationTargets,
     dashboard: {
       systems: visibleSystems.filter(item => !retiredPublicSystemNames.has(item.name)),
-      audits: audits.items.filter(item => !deprecatedVisibleSystems.has(item.system)).sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
-      improvements: improvements.items.filter(item => !deprecatedVisibleSystems.has(item.system)),
-      incidents: incidents.items.filter(item => !deprecatedVisibleSystems.has(item.system)).sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
+      audits: recentUnique(audits.items.filter(item => !deprecatedVisibleSystems.has(item.system))),
+      improvements: Array.from(new Map(improvements.items.filter(item => !deprecatedVisibleSystems.has(item.system)).map(item => [item.system + '\u0000' + item.title, item] as const)).values()).slice(0, 20),
+      incidents: recentUnique(incidents.items.filter(item => !deprecatedVisibleSystems.has(item.system))),
       policy: { zeroSpend: true, failClosed: true, destructiveActions: false, greenRule: 'Somente com evidencia reproduzivel' },
       telemetrySource: 'telemetria privada interna v1',
       lastEngineRun: engine.items[0]?.lastRun ?? new Date().toISOString(),
@@ -1771,11 +1783,13 @@ export const handler = router({
   }],
   'POST /api/audit/run': [async ctx => {
     if (!await requirePinSession((ctx.body as { sessionToken?: string })?.sessionToken)) return error('Sessao invalida ou expirada.', 401);
-    return json(await executeAudit());
+    try { return json(await executeAudit()); }
+    catch { return error('auditoria_fonte_externa_indisponivel', 503); }
   }],
   'POST /api/telemetry/refresh': [async ctx => {
     if (!await requirePinSession((ctx.body as { sessionToken?: string })?.sessionToken)) return error('Sessao invalida ou expirada.', 401);
-    return json(await refreshTelemetry());
+    try { return json(await refreshTelemetry()); }
+    catch { return error('telemetria_fonte_externa_indisponivel', 503); }
   }],
   'GET /api/_healthcheck': [async () => json({ ok: true, name: 'ZEVANORY PRODUCT CONTROL', mode: 'four-digit-pin-admin-control' })],
   'GET /api/_portable_health': [async () => json(await portableHealth())],

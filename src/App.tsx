@@ -683,8 +683,11 @@ function App() {
     try {
       await api.post(path, { sessionToken });
       await load();
-    } catch {
-      setError('A operação não foi concluída. O sistema permaneceu fail-closed.');
+    } catch (err: any) {
+      const reason = String(err?.message || '');
+      setError(/fonte_externa_indisponivel/.test(reason)
+        ? 'A telemetria externa (ARBM) não respondeu agora. Nada foi alterado; o estado real da ZEVANORY é o da faixa Trust Chain no topo.'
+        : 'A operação não foi concluída. O sistema permaneceu fail-closed.');
     } finally {
       setBusy(false);
     }
