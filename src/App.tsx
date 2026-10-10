@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { api } from './api';
 import CommercialWorkspace from './CommercialWorkspace';
+import './acquisition-strip.css';
 import CfoWorkspace from './CfoWorkspace';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 import type { CfoWorkspaceData } from './cfo-model';
