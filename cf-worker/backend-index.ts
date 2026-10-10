@@ -1517,8 +1517,8 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
     const message = error instanceof Error ? error.message : '';
     const source_error: NonNullable<GlobalTrust['source_error']> =
       name === 'TimeoutError' || name === 'AbortError' ? 'timeout'
-      : /^control_plane_http_5\\d\\d$/.test(message) ? 'http_5xx'
-      : /^control_plane_http_4\\d\\d$/.test(message) ? 'http_4xx'
+      : /^control_plane_http_5\d\d$/.test(message) ? 'http_5xx'
+      : /^control_plane_http_4\d\d$/.test(message) ? 'http_4xx'
       : name === 'SyntaxError' ? 'parse'
       : name === 'TypeError' ? 'network' : 'unknown';
     console.error('global_trust_source_error', source_error);
