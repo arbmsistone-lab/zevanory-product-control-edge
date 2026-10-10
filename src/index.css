@@ -3968,4 +3968,4 @@ main.shell-commercial > .commercialWorkspace > .commercialDashboardGrid {
 .ownerChannelCard h3,.ownerChannelCard p{flex-basis:100%;color:inherit}
 .ownerChannelCard button{max-width:100%;font-size:var(--zpc-font-xs)}
 @media(max-width:720px){.ownerChannelCards{grid-template-columns:1fr}.ownerChannels{gap:var(--zpc-space-2)}.ownerChannelCard{padding:var(--zpc-space-2)}}
-@media(max-height:730px){.ownerChannels,.ownerChannelCards{gap:var(--zpc-space-1)}.ownerChannelCard{padding:var(--zpc-space-1)}}
+@media(max-height:728px){.ownerChannels,.ownerChannelCards{gap:var(--zpc-space-1)}.ownerChannelCard{padding:var(--zpc-space-1)}}
