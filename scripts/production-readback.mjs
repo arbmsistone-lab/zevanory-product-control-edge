@@ -6,15 +6,36 @@ const expected=process.env.EXPECTED_DEPLOY_SHA || '';
 const evidence={at:new Date().toISOString(),observer:'github-actions',expectedDeploySha:expected,checks:[]};
 const record=(name,ok,detail={})=>{evidence.checks.push({name,ok,...detail}); if(!ok) process.exitCode=1;};
 
+// Render free instances may be cold. Every retry still requires HTTP 2xx and a real {ok:true}
+// response from BOTH independent health origins; exhaustion remains a hard failure.
+const HEALTH_TIMEOUT_MS = 45000;
+const HEALTH_ATTEMPTS = 3;
+const HEALTH_RETRY_DELAY_MS = 3000;
 async function fetchTimed(url,opts={}){
-  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),12000);
-  try { const r=await fetch(url,{...opts,signal:controller.signal,headers:{'user-agent':'ZEVANORY-Production-Readback/1.0',...(opts.headers||{})}}); return r; }
-  finally { clearTimeout(timer); }
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),HEALTH_TIMEOUT_MS);
+  try {
+    const response=await fetch(url,{...opts,signal:controller.signal,headers:{'user-agent':'ZEVANORY-Production-Readback/1.0',...(opts.headers||{})}});
+    const bodyText=await response.text(); // Keep timeout active until the complete body is read.
+    return {response,bodyText};
+  } finally { clearTimeout(timer); }
 }
 async function checkHealth(origin,label){
-  try { const r=await fetchTimed(origin+'/portable-health'); const text=await r.text(); let body=null; try{body=JSON.parse(text)}catch{}
-    record(label,r.ok&&!!body&&body.ok===true,{status:r.status,contentType:r.headers.get('content-type'),body});
-  } catch(e){ record(label,false,{error:String(e)}); }
+  let last={error:'health_unverified'};
+  for(let attempt=1; attempt<=HEALTH_ATTEMPTS; attempt++){
+    try {
+      const {response,bodyText}=await fetchTimed(origin+'/portable-health');
+      let body=null; try{body=JSON.parse(bodyText)}catch{}
+      const detail={status:response.status,contentType:response.headers.get('content-type'),body,attempt};
+      if(response.ok && body && body.ok===true){
+        record(label,true,detail);
+        return;
+      }
+      last=detail;
+    } catch(e){last={error:String(e),attempt};}
+    if(attempt<HEALTH_ATTEMPTS) await new Promise(resolve=>setTimeout(resolve,HEALTH_RETRY_DELAY_MS));
+  }
+  record(label,false,{...last,attempts:HEALTH_ATTEMPTS});
 }
 async function checkSse(path,label){
   const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),9000);
