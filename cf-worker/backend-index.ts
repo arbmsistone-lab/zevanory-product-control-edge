@@ -1510,7 +1510,12 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
         : [],
       checkedAt: String(trust?.ledger?.checked_at || '') || null,
     };
-  } catch {
+  } catch (cause) {
+    // Diagnostic only: never log a URL, response body, credentials, or customer data.
+    const code = cause instanceof Error && /^control_plane_http_[1-5][0-9]{2}$/.test(cause.message)
+      ? cause.message : cause instanceof Error && cause.name === 'TimeoutError'
+        ? 'control_plane_timeout' : 'control_plane_transport_or_parse_failure';
+    console.warn('GLOBAL_TRUST_READBACK_FAILED', code);
     return {
       state: 'BLOCKED',
       sha: null,
