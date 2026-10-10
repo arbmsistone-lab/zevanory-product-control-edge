@@ -43,3 +43,6 @@ export const api = {
     return request<T>('POST', path, body ?? {}, options);
   },
 };
+
+// Dedicated owner OAuth callback host, distinct from retired public/sales origins.
+export const OWNER_OAUTH_BASE = 'https://zevanory.api.br/api/owner/oauth/';
