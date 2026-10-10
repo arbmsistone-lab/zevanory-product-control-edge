@@ -1,0 +1,16 @@
+/* Read-only owner activity: compact, paginated, no global or internal scroll. */
+.ownerActivityStrip{display:grid;grid-template-columns:minmax(190px,1fr) minmax(0,2fr) auto;align-items:center;gap:10px;padding:5px 10px;min-height:54px;max-height:54px;min-width:0;overflow:hidden;border:1px solid rgba(150,150,150,.2);border-radius:10px}
+.ownerActivityHeading{display:flex;gap:5px;align-items:center;flex-wrap:wrap;min-width:0}
+.ownerActivityHeading>strong{font-size:13px;white-space:nowrap}
+.ownerActivityHeading>small{font-size:10px;white-space:nowrap}
+.ownerActivityHeading label{display:flex;gap:4px;align-items:center;font-size:10px}
+.ownerActivityHeading select{max-width:84px;font-size:11px;min-height:24px;padding:1px}
+.ownerActivityItems{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0;overflow:hidden}
+.ownerActivityItems a,.ownerActivityItems span{font-size:11px;display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:inherit}
+.ownerActivityItems a b{font-weight:700;text-transform:capitalize}
+.ownerActivityItems a svg{flex:none}
+.ownerActivityPager{display:flex;gap:4px;align-items:center}
+.ownerActivityPager button{min-width:24px;min-height:24px;padding:2px 4px}
+.ownerActivityPager small{font-size:11px;white-space:nowrap}
+@media(max-width:1000px){.ownerActivityStrip{grid-template-columns:minmax(105px,1fr) minmax(0,2fr) auto;gap:4px}.ownerActivityHeading>small{display:none}.ownerActivityItems{grid-template-columns:1fr}.ownerActivityItems a:nth-child(2){display:none}}
+@media(max-width:550px){.ownerActivityStrip{grid-template-columns:minmax(120px,1fr) minmax(0,1.2fr) auto;gap:3px;padding:3px 5px;min-height:50px;max-height:50px}.ownerActivityHeading{gap:1px}.ownerActivityHeading strong{font-size:10px}.ownerActivityHeading label{font-size:9px}.ownerActivityItems a,.ownerActivityItems span{font-size:10px}.ownerActivityPager small{display:none}}

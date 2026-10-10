@@ -1697,6 +1697,33 @@ export const handler = router({
     if (legacyMatch) await db.delete(PIN_SESSIONS, [legacyMatch.id]);
     return json({ ok: true });
   }],
+  'POST /api/admin/acquisition/evidence': [async ctx => {
+    const token = (ctx.body as { sessionToken?: string })?.sessionToken;
+    if (!await requirePinSession(token)) return error('Sessao invalida ou expirada.', 401);
+    try {
+      const response = await fetch('https://zevanory.api.br/api/autonomy/evidence', {
+        method: 'GET', headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000)
+      });
+      if (!response.ok) return json({ available: false, reason: 'upstream_unavailable', evidence: [] });
+      const raw = await response.json() as { evidence?: unknown };
+      const rows = Array.isArray(raw.evidence) ? raw.evidence : [];
+      const accepted = rows.flatMap((row: any) => {
+        if (!row || typeof row !== 'object') return [];
+        const channel = String(row.channel || '');
+        if (!['blog','telegram','bluesky','pinterest','youtube','instagram','facebook'].includes(channel)) return [];
+        const id = String(row.provider_post_id || '');
+        const at = String(row.published_at || row.publishedAt || '');
+        let link: URL;
+        try { link = new URL(String(row.url || '')); } catch { return []; }
+        if (link.protocol !== 'https:' || !['zevanory.api.br','t.me','bsky.app','www.pinterest.com','www.youtube.com','youtube.com','www.instagram.com','www.facebook.com'].includes(link.hostname)) return [];
+        if (!id || !at || !Number.isFinite(Date.parse(at))) return [];
+        return [{ id: id.slice(0, 100), channel, url: link.toString(), at }];
+      }).sort((a,b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 30);
+      return json({ available: true, evidence: accepted });
+    } catch {
+      return json({ available: false, reason: 'upstream_unavailable', evidence: [] });
+    }
+  }],
   'POST /api/admin/bootstrap': [async ctx => {
     const token = (ctx.body as { sessionToken?: string })?.sessionToken;
     if (!await requirePinSession(token)) return error('Sessao invalida ou expirada.', 401);

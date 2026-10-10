@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { api } from './api';
 import CommercialWorkspace from './CommercialWorkspace';
+import './acquisition-strip.css';
 import CfoWorkspace from './CfoWorkspace';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 import type { CfoWorkspaceData } from './cfo-model';
@@ -198,6 +199,7 @@ type ProductSummary = {
   zeesBlocked: number;
 };
 
+type AcquisitionReadback = { available: boolean; evidence: Array<{ id: string; channel: string; url: string; at: string }> };
 type FastOverviewSource = { ok: boolean; elapsedMs: number; error: string | null };
 type FastOverview = {
   elapsedMs: number;
@@ -366,6 +368,10 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [salesStateLabel, setSalesStateLabel] = useState('Estado indisponível');
+  const [acquisitionReadback, setAcquisitionReadback] = useState<AcquisitionReadback | null>(null);
+  const [activityWindow, setActivityWindow] = useState<1 | 7 | 30>(1);
+  const [activityPage, setActivityPage] = useState(0);
+
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -380,6 +386,12 @@ function App() {
     const refresh = window.setInterval(() => { void load(); }, 60000);
     return () => { active = false; window.clearInterval(refresh); };
   }, []);
+  const activityRows = (acquisitionReadback?.evidence || []).filter(item =>
+    Number.isFinite(Date.parse(item.at)) && Date.now() - Date.parse(item.at) >= 0 &&
+    Date.now() - Date.parse(item.at) < activityWindow * 24 * 60 * 60 * 1000
+  );
+  const activityPages = Math.max(1, Math.ceil(activityRows.length / 2));
+  const activitySafePage = Math.min(activityPage, activityPages - 1);
   const [globalTrust, setGlobalTrust] = useState<GlobalTrust | null>(null);
   const [globalTrustLoading, setGlobalTrustLoading] = useState(true);
   const [canonicalSha, setCanonicalSha] = useState<string | null>(null);
@@ -409,6 +421,22 @@ function App() {
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
   const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>(sessionToken ? 'checking' : 'signedout');
+  useEffect(() => {
+    if (authState !== 'ready' || !sessionToken) return;
+    let alive = true;
+    const loadEvidence = async () => {
+      try {
+        const { data } = await api.post('/api/admin/acquisition/evidence', { sessionToken });
+        if (alive) setAcquisitionReadback(data as AcquisitionReadback);
+      } catch {
+        if (alive) setAcquisitionReadback({ available: false, evidence: [] });
+      }
+    };
+    void loadEvidence();
+    const refresh = window.setInterval(() => { void loadEvidence(); }, 60000);
+    return () => { alive = false; window.clearInterval(refresh); };
+  }, [authState, sessionToken]);
+
   const loadGeneration = useRef(0);
   const bootstrapController = useRef<AbortController | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -1091,6 +1119,32 @@ function App() {
               </span>
             </button>
           </header>
+
+          <section className='ownerActivityStrip' aria-label='O que a ZEVANORY fez' aria-live='polite'>
+            <div className='ownerActivityHeading'>
+              <strong>O que a ZEVANORY fez</strong>
+              <small>Publicações confirmadas · atualização a cada 60 s</small>
+              <label>Período
+                <select value={activityWindow} onChange={event => { setActivityWindow(Number(event.target.value) as 1 | 7 | 30); setActivityPage(0); }}>
+                  <option value={1}>Hoje</option><option value={7}>7 dias</option><option value={30}>30 dias</option>
+                </select>
+              </label>
+            </div>
+            <div className='ownerActivityItems'>
+              {!acquisitionReadback?.available ? <span>Sem dados de publicações verificados.</span> :
+                !activityRows.length ? <span>Sem publicações comprovadas no período.</span> :
+                activityRows.slice(activitySafePage * 2, activitySafePage * 2 + 2).map(item =>
+                  <a key={item.channel + ':' + item.id} href={item.url} rel='noopener noreferrer' target='_blank' title={item.url}>
+                    <b>{item.channel}</b> · {new Date(item.at).toLocaleString('pt-BR')} <ExternalLink size={12} />
+                  </a>
+                )}
+            </div>
+            <div className='ownerActivityPager'>
+              <button className='secondary compact' aria-label='Eventos anteriores' onClick={() => setActivityPage(Math.max(0, activitySafePage - 1))} disabled={activitySafePage === 0}>‹</button>
+              <small>{activitySafePage + 1}/{activityPages}</small>
+              <button className='secondary compact' aria-label='Próximos eventos' onClick={() => setActivityPage(Math.min(activityPages - 1, activitySafePage + 1))} disabled={activitySafePage >= activityPages - 1}>›</button>
+            </div>
+          </section>
 
           <section className='ownerKpis' aria-label='Indicadores do negócio'>
             <article><small>Vendas hoje</small><strong>{ownerOverview ? ownerOverview.salesToday : '—'}</strong><span>{ownerOverview?.salesToday ? 'confirmadas' : 'Nenhuma venda ainda'}</span></article>
