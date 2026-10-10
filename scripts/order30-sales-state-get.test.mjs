@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const worker=readFileSync(new URL('../cf-worker/worker.ts',import.meta.url),'utf8');
+const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+assert.match(worker,/normalizedPath === '\/api\/sales\/state' && request.method === 'GET'/);
+assert.match(worker,/typeof sw\?\.enabled !== 'boolean'/);
+assert.match(worker,/state: open \? 'open' : 'closed'/);
+assert.match(worker,/error: 'state_unavailable'/);
+assert.match(app,/api\.get\('\/api\/sales\/state'\)/);
+assert.match(app,/Estado indisponível/);
+assert.doesNotMatch(app,/Vendas pausadas · modo teste/);
+console.log('CONTROL_SALES_GET_READONLY=PASS');
