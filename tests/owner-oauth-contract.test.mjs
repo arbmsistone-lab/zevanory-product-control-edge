@@ -17,7 +17,7 @@ test('panel offers connect and local disconnect and never asks for refresh token
  assert.match(view,/Conectar \{channel === 'youtube'/);
  assert.match(view,/action: 'status'/);
  assert.match(view,/window.location.assign\(target.toString\(\)\)/);
- assert.match(view,/target.origin !== 'https:\/\/zevanory.api.br'/);
+ assert.match(view,/target.origin !== new URL\(OWNER_OAUTH_BASE\)\.origin/);
  assert.match(view,/sessionToken, channel, action/);
  assert.doesNotMatch(view,/localStorage\.setItem\(['"]oauth/i);
 });
