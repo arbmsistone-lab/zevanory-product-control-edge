@@ -22,7 +22,7 @@ import {
   Sun,
   X,
 } from 'lucide-react';
-import { api } from './api';
+import { api, OWNER_OAUTH_BASE } from './api';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
@@ -386,7 +386,7 @@ function OwnerChannelConnections({ sessionToken }: { sessionToken: string }) {
       const { data } = await api.post('/api/owner/oauth/ticket', { sessionToken, channel, action });
       if (action === 'start') {
         const target = new URL(String(data.url || ''));
-        if (target.origin !== 'https://zevanory.api.br' || target.pathname !== '/api/owner/oauth/' + channel + '/start')
+        if (target.origin !== new URL(OWNER_OAUTH_BASE).origin || target.pathname !== new URL(OWNER_OAUTH_BASE + channel + '/start').pathname)
           throw Error('Redirecionamento não autorizado');
         window.location.assign(target.toString());
         return;
