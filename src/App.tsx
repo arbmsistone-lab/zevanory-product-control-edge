@@ -339,7 +339,7 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
       <section className='loginCard'>
         <ShieldCheck size={34} />
         <p className='eyebrow'>ZEVANORY · ACESSO ADMINISTRATIVO</p>
-        <h1>ZEVANORY PRODUCT CONTROL</h1>
+        <h1>ZEVANORY</h1>
         <p>Controle de produtos, governanca e certificacao. Digite seu PIN de 4 numeros.</p>
         <input
           className='pinInput'
@@ -958,7 +958,7 @@ function App() {
       </section>}
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY'>
-        <div className='zpcSidebarBrand' aria-label='ZEVANORY'>ZEVANORY</div>
+        <div className='zpcSidebarBrand' aria-label='ZEVANORY'><img src='/brand/zevanory-logo-dark.svg' alt='' width={64} height={28} style={{ maxWidth: '64px', objectFit: 'contain', verticalAlign: 'middle', marginRight: 8 }} />ZEVANORY</div>
         <div className='zpcNavGroup'>
           <button className={primaryArea === 'overview' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'overview'} onClick={() => navigatePrimary('overview')}><LayoutDashboard size={16} />Visão Geral</button>
           <button className={primaryArea === 'products' ? 'tab active' : 'tab'} aria-pressed={primaryArea === 'products'} onClick={() => navigatePrimary('products')}><ShoppingBag size={16} />Produtos</button>
