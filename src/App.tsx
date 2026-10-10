@@ -385,21 +385,6 @@ function App() {
     const refresh = window.setInterval(() => { void load(); }, 60000);
     return () => { active = false; window.clearInterval(refresh); };
   }, []);
-  useEffect(() => {
-    if (authState !== 'ready' || !sessionToken) return;
-    let alive = true;
-    const loadEvidence = async () => {
-      try {
-        const { data } = await api.post('/api/admin/acquisition/evidence', { sessionToken });
-        if (alive) setAcquisitionReadback(data as AcquisitionReadback);
-      } catch {
-        if (alive) setAcquisitionReadback({ available: false, evidence: [] });
-      }
-    };
-    void loadEvidence();
-    const refresh = window.setInterval(() => { void loadEvidence(); }, 60000);
-    return () => { alive = false; window.clearInterval(refresh); };
-  }, [authState, sessionToken]);
   const activityRows = (acquisitionReadback?.evidence || []).filter(item =>
     Number.isFinite(Date.parse(item.at)) && Date.now() - Date.parse(item.at) >= 0 &&
     Date.now() - Date.parse(item.at) < activityWindow * 24 * 60 * 60 * 1000
@@ -435,6 +420,22 @@ function App() {
   const [error, setError] = useState('');
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
   const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>(sessionToken ? 'checking' : 'signedout');
+  useEffect(() => {
+    if (authState !== 'ready' || !sessionToken) return;
+    let alive = true;
+    const loadEvidence = async () => {
+      try {
+        const { data } = await api.post('/api/admin/acquisition/evidence', { sessionToken });
+        if (alive) setAcquisitionReadback(data as AcquisitionReadback);
+      } catch {
+        if (alive) setAcquisitionReadback({ available: false, evidence: [] });
+      }
+    };
+    void loadEvidence();
+    const refresh = window.setInterval(() => { void loadEvidence(); }, 60000);
+    return () => { alive = false; window.clearInterval(refresh); };
+  }, [authState, sessionToken]);
+
   const loadGeneration = useRef(0);
   const bootstrapController = useRef<AbortController | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
