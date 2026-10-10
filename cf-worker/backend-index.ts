@@ -1476,6 +1476,7 @@ type GlobalTrust = {
   zea10: { proven: number; partial: number; blocked: number };
   engines: Array<{ id: string; state: string }>;
   checkedAt: string | null;
+  source_error?: 'timeout' | 'http_4xx' | 'http_5xx' | 'parse' | 'network' | 'unknown' | null;
 };
 
 async function loadGlobalTrust(): Promise<GlobalTrust> {
@@ -1509,10 +1510,21 @@ async function loadGlobalTrust(): Promise<GlobalTrust> {
         ? trust.engines.map((item:any)=>({ id:String(item?.id||''), state:String(item?.state||'UNKNOWN') })).filter((item:any)=>item.id)
         : [],
       checkedAt: String(trust?.ledger?.checked_at || '') || null,
+      source_error: null,
     };
-  } catch {
+  } catch (error) {
+    const name = error instanceof Error ? error.name : '';
+    const message = error instanceof Error ? error.message : '';
+    const source_error: NonNullable<GlobalTrust['source_error']> =
+      name === 'TimeoutError' || name === 'AbortError' ? 'timeout'
+      : /^control_plane_http_5\\d\\d$/.test(message) ? 'http_5xx'
+      : /^control_plane_http_4\\d\\d$/.test(message) ? 'http_4xx'
+      : name === 'SyntaxError' ? 'parse'
+      : name === 'TypeError' ? 'network' : 'unknown';
+    console.error('global_trust_source_error', source_error);
     return {
       state: 'BLOCKED',
+      source_error,
       sha: null,
       evidenceRoot: null,
       policyVersion: null,
