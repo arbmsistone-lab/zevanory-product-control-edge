@@ -1247,6 +1247,26 @@ export default {
       const assetUrl = new URL(request.url);
       assetUrl.pathname = normalizedPath === '/' ? '/' : normalizedPath;
       const assetResponse = await (env.ASSETS as any).fetch(new Request(assetUrl.toString(), request));
+      if (exactDeployArtifact) {
+        // Wrangler's SPA not_found_handling may respond HTTP 200 with index.html.
+        // Never return that HTML under a JSON proof URL, even if ASSETS exists.
+        if (!assetResponse.ok || !String(assetResponse.headers.get('content-type') || '').toLowerCase().includes('application/json')) {
+          return Response.json({ error: 'exact_deploy_artifact_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+        }
+        try {
+          const payload = await assetResponse.clone().json() as Record<string, any>;
+          if (normalizedPath === '/global-trust.json' &&
+              (payload.state !== 'GREEN' || !Array.isArray(payload.engines) || payload.engines.length !== 3 ||
+               payload.engines.some((x: any) => x.state !== 'GREEN'))) {
+            return Response.json({ error: 'trust_artifact_invalid' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+          }
+          if (normalizedPath === '/zpc-build.json' && !/^[0-9a-f]{40}$/.test(String(payload.sha || ''))) {
+            return Response.json({ error: 'build_artifact_invalid' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+          }
+        } catch {
+          return Response.json({ error: 'exact_deploy_artifact_invalid_json' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+        }
+      }
       if (assetResponse.status !== 404) {
         const headers = new Headers(assetResponse.headers);
         if (String(headers.get('content-type') || '').includes('text/html')) {
