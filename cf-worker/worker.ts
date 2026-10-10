@@ -1163,6 +1163,23 @@ export default {
       return Response.json({ ok: true, summary, readiness: assessAdsReadiness(summary), policy: ADS_POLICY }, { headers: { 'cache-control': 'no-store' } });
     }
 
+    if (normalizedPath === '/api/sales/state' && request.method === 'GET') {
+      // Mirror the established owner-switch status without mutating KV or inferring a state.
+      const kv = (env as any).T2_CREATIVE_ASSETS;
+      try {
+        if (!kv?.get) throw new Error('kv_unavailable');
+        const [switchRaw, preflightRaw] = await Promise.all([kv.get('sales:open:v1'), kv.get('zpc-sales-preflight:v1')]);
+        const sw = switchRaw ? JSON.parse(String(switchRaw)) : null;
+        const preflight = preflightRaw ? JSON.parse(String(preflightRaw)) : null;
+        const fresh = Boolean(preflight?.at) && Number.isFinite(Date.parse(String(preflight.at))) && Date.now() - Date.parse(String(preflight.at)) < 3 * 3600 * 1000;
+        if (typeof sw?.enabled !== 'boolean' || typeof preflight?.ok !== 'boolean' || !fresh) throw new Error('state_unverified');
+        const open = sw.enabled === true && preflight.ok === true;
+        return Response.json({ ok: true, state: open ? 'open' : 'closed', open }, { headers: { 'cache-control': 'no-store' } });
+      } catch {
+        return Response.json({ ok: false, error: 'state_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+      }
+    }
+
     if ((normalizedPath === '/api/sales/state' || normalizedPath === '/api/sales/switch') && request.method === 'POST') {
       // Owner's open/close sales switch. Opening requires a fresh green production preflight
       // (computed hourly by the main Worker); the main Worker re-checks it on every request.
