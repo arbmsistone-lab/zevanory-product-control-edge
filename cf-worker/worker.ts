@@ -1164,6 +1164,39 @@ export default {
       return Response.json({ ok: true, summary, readiness: assessAdsReadiness(summary), policy: ADS_POLICY }, { headers: { 'cache-control': 'no-store' } });
     }
 
+    if (normalizedPath === '/api/owner/oauth/ticket' && request.method === 'POST') {
+      // Session PIN checked by this authoritative Cloudflare edge. The browser
+      // receives a 60-second HMAC ticket, never the PIN session or shared key.
+      let input: any = {};
+      try { input = await request.clone().json(); } catch {}
+      const token = String(input?.sessionToken || '');
+      if (!token || !(await verifyEdgeSession(token))) return Response.json({ error: 'owner_pin_required' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+      const channel = String(input?.channel || '');
+      const action = String(input?.action || 'start');
+      if (!['youtube', 'pinterest'].includes(channel) || !['start', 'status', 'disconnect'].includes(action))
+        return Response.json({ error: 'invalid_channel_or_action' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+      const master = String((env as any).OWNER_OAUTH_BRIDGE_SECRET || '');
+      if (master.length < 32) return Response.json({ error: 'oauth_bridge_not_configured' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+      const ts = String(Date.now());
+      const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const purpose = ['zpc-oauth-v1', action, channel, ts, nonce].join('\n');
+      const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(master), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(purpose));
+      const sig = btoa(String.fromCharCode(...new Uint8Array(mac))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const destination = new URL('https://zevanory.api.br/api/owner/oauth/' + channel + '/' + action);
+      for (const [k, v] of Object.entries({ ts, nonce, sig })) destination.searchParams.set(k, v);
+      const safeHeaders = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' };
+      if (action === 'start') return Response.json({ url: destination.toString() }, { headers: safeHeaders });
+      try {
+        const remote = await fetch(destination.toString(), { method: 'POST', signal: AbortSignal.timeout(12000) });
+        const data = await remote.json() as Record<string, unknown>;
+        if (!remote.ok) return Response.json({ error: 'oauth_provider_unavailable' }, { status: remote.status, headers: safeHeaders });
+        return Response.json({ channel, connected: data.connected === true, connectedAt: typeof data.connectedAt === 'string' ? data.connectedAt : null, providerRevocation: data.providerRevocation === 'not_confirmed' ? 'not_confirmed' : undefined }, { headers: safeHeaders });
+      } catch {
+        return Response.json({ error: 'oauth_provider_unavailable' }, { status: 503, headers: safeHeaders });
+      }
+    }
+
     if (normalizedPath === '/api/sales/state' && request.method === 'GET') {
       // Mirror the established owner-switch status without mutating KV or inferring a state.
       const kv = (env as any).T2_CREATIVE_ASSETS;

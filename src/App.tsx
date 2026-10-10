@@ -22,7 +22,7 @@ import {
   Sun,
   X,
 } from 'lucide-react';
-import { api } from './api';
+import { api, OWNER_OAUTH_BASE } from './api';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
@@ -363,6 +363,57 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
   );
 }
 
+function OwnerChannelConnections({ sessionToken }: { sessionToken: string }) {
+  type Channel = 'youtube' | 'pinterest';
+  type Status = { connected: boolean; connectedAt: string | null };
+  const [status, setStatus] = useState<Record<Channel, Status | null>>({ youtube: null, pinterest: null });
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const refresh = async (channel: Channel) => {
+    try {
+      const { data } = await api.post('/api/owner/oauth/ticket', { sessionToken, channel, action: 'status' });
+      setStatus(previous => ({ ...previous, [channel]: { connected: data.connected === true, connectedAt: data.connectedAt || null } }));
+    } catch { setStatus(previous => ({ ...previous, [channel]: null })); }
+  };
+  useEffect(() => {
+    void refresh('youtube'); void refresh('pinterest');
+    // The panel is never considered connected merely because a redirect returned.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionToken]);
+  const perform = async (channel: Channel, action: 'start' | 'disconnect') => {
+    setBusy(channel); setMessage('');
+    try {
+      const { data } = await api.post('/api/owner/oauth/ticket', { sessionToken, channel, action });
+      if (action === 'start') {
+        const target = new URL(String(data.url || ''));
+        if (target.origin !== new URL(OWNER_OAUTH_BASE).origin || target.pathname !== new URL(OWNER_OAUTH_BASE + channel + '/start').pathname)
+          throw Error('Redirecionamento não autorizado');
+        window.location.assign(target.toString());
+        return;
+      }
+      setMessage('Vínculo local desconectado. A revogação no provedor deve ser feita nas configurações da conta.');
+      await refresh(channel);
+    } catch { setMessage('A ação não foi confirmada. Verifique a configuração da conexão e a sessão administrativa.'); }
+    finally { setBusy(null); }
+  };
+  const notice = new URLSearchParams(window.location.search).get('oauth_result');
+  return <section className='ownerChannels' aria-label='Conectar canais'>
+    <header><h2>Conectar canais</h2><p>Autorize diretamente no provedor. O painel nunca recebe tokens.</p></header>
+    <div className='ownerChannelCards'>
+      {(['youtube', 'pinterest'] as const).map(channel => <article className='ownerChannelCard' key={channel}>
+        <h3>{channel === 'youtube' ? 'YouTube' : 'Pinterest'}</h3>
+        <p role='status'>{status[channel] === null ? 'Estado não verificado' : status[channel]?.connected ? 'Conectado em ' + new Date(status[channel]!.connectedAt || '').toLocaleString('pt-BR') : 'Não conectado'}</p>
+        <button className='primary' disabled={busy !== null} onClick={() => void perform(channel, 'start')}>Conectar {channel === 'youtube' ? 'YouTube' : 'Pinterest'}</button>
+        {status[channel]?.connected && <button className='secondary' disabled={busy !== null} onClick={() => void perform(channel, 'disconnect')}>Desconectar</button>}
+        <button className='secondary' disabled={busy !== null} onClick={() => void refresh(channel)}>Atualizar status</button>
+      </article>)}
+    </div>
+    {notice === 'connected' && <p role='status'>Consentimento recebido. Confirme o estado atualizado de cada canal.</p>}
+    {notice === 'provider_unverified' && <p role='alert'>O provedor não confirmou a conexão. Nenhum canal foi marcado como conectado.</p>}
+    {message && <p role='status'>{message}</p>}
+  </section>;
+}
+
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [salesStateLabel, setSalesStateLabel] = useState('Estado indisponível');
@@ -390,7 +441,7 @@ function App() {
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
-  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'cfo' | CommercialSection>('overview');
+  const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'channels' | 'cfo' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   const [expandedPillarIds, setExpandedPillarIds] = useState<Set<string>>(() => new Set());
@@ -985,6 +1036,7 @@ function App() {
           {primaryArea === 'system' && <div className='zpcNavSubmenu' aria-label='Subáreas do sistema'>
             <button className='zpcNavSubitem' aria-current={view === 'operations' ? 'page' : undefined} onClick={() => setView('operations')}>Saúde do sistema</button>
             <button className='zpcNavSubitem' aria-current={view === 'governance' ? 'page' : undefined} onClick={() => setView('governance')}>Qualidade e certificação</button>
+            <button className='zpcNavSubitem' aria-current={view === 'channels' ? 'page' : undefined} onClick={() => setView('channels')}>Conectar canais</button>
           </div>}
         </div>
       </nav>
@@ -1013,6 +1065,7 @@ function App() {
           <optgroup label='Sistema'>
             <option value='operations'>Saúde do sistema</option>
             <option value='governance'>Qualidade e certificação</option>
+            <option value='channels'>Conectar canais</option>
           </optgroup>
         </select>
       </label>
@@ -1055,6 +1108,7 @@ function App() {
         <nav className='workspaceSubnav' aria-label='Seções do sistema'>
           <button className={view === 'operations' ? 'filter active' : 'filter'} onClick={() => setView('operations')}>Saúde do sistema</button>
           <button className={view === 'governance' ? 'filter active' : 'filter'} onClick={() => setView('governance')}>Qualidade e certificação</button>
+          <button className={view === 'channels' ? 'filter active' : 'filter'} onClick={() => setView('channels')}>Conectar canais</button>
         </nav>
       )}
       {error && <div className='errorbox globalError'>{error}</div>}
@@ -1069,6 +1123,7 @@ function App() {
       )}
 
       {view === 'cfo' && <CfoWorkspace data={cfo} />}
+      {view === 'channels' && <OwnerChannelConnections sessionToken={sessionToken} />}
 
       {view === 'overview' && (
         <section className='premiumOverview' aria-label='Visão Geral executiva'>
