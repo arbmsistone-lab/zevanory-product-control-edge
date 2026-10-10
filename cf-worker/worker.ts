@@ -1,6 +1,7 @@
 import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
+import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
 const CANONICAL_PUBLIC_ORIGIN = 'https://controle.zevanory.api.br';
@@ -1192,11 +1193,14 @@ export default {
       const preflight = await read('zpc-sales-preflight:v1');
       const fresh = Boolean(preflight?.at) && Date.now() - Date.parse(String(preflight.at)) < 3 * 3600 * 1000;
       if (normalizedPath === '/api/sales/switch') {
-        const open = body?.open === true;
-        if (open && !(preflight?.ok === true && fresh)) {
-          return Response.json({ ok: false, error: 'preflight_not_green', preflight }, { status: 409, headers: { 'cache-control': 'no-store' } });
+        const decision = assessOwnerSalesSwitchRequest(body);
+        if (!decision.ok) {
+          return Response.json({ ok: false, error: decision.error }, { status: decision.status, headers: { 'cache-control': 'no-store' } });
         }
-        await kv.put('sales:open:v1', JSON.stringify({ enabled: open, at: new Date().toISOString(), by: 'owner-panel' }));
+        // Owner-controlled manual closure is explicit, audited and never inferred from missing fields.
+        // Opening is exclusively performed by the official GitHub workflow after written owner order.
+        const open = false;
+        await kv.put('sales:open:v1', JSON.stringify({ enabled: false, at: new Date().toISOString(), by: 'owner-panel', reason: decision.reason }));
         await recordCommercialActivity(env as Record<string, any>, 'event', {
           title: open ? 'Vendas ABERTAS pelo dono' : 'Vendas FECHADAS pelo dono',
           detail: open ? 'Checkout real liberado nas páginas de venda (Mercado Pago produção).' : 'Botão de compra volta a mostrar "vendas abrem em breve". Pedidos já pagos continuam sendo entregues.',
