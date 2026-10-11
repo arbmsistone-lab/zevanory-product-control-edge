@@ -3976,7 +3976,7 @@ main.shell-commercial > .commercialWorkspace > .commercialDashboardGrid {
 .liveEngine { display: grid; gap: var(--zpc-space-1); border: 1px solid var(--border); border-radius: var(--zpc-radius-sm); background: var(--surface); padding: var(--zpc-space-2); }
 .liveEngine span, .liveEngine small { color: var(--text-secondary); font-size: var(--zpc-font-xs); }
 .liveEngine strong { color: var(--text-primary); font-size: var(--zpc-font-md); font-variant-numeric: tabular-nums; }
-.liveRows { display: grid; gap: var(--zpc-space-1); max-height: 60vh; overflow-y: auto; }
+.liveRows { display: grid; gap: var(--zpc-space-1); max-height: 38vh; overflow-y: auto; }
 .liveRow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 3fr) minmax(0, 1.2fr); gap: var(--zpc-space-2); align-items: center; border-bottom: 1px solid var(--border); padding: var(--zpc-space-1); font-size: var(--zpc-font-xs); color: var(--text-secondary); }
 .liveRow strong { color: var(--text-primary); font-weight: 600; overflow-wrap: anywhere; }
 .liveRow time { font-variant-numeric: tabular-nums; }
