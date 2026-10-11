@@ -364,9 +364,10 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
 }
 
 function OwnerChannelConnections({ sessionToken }: { sessionToken: string }) {
-  type Channel = 'youtube' | 'pinterest';
+  type Channel = 'youtube' | 'pinterest' | 'tiktok';
+  const LABEL: Record<Channel, string> = { youtube: 'YouTube', pinterest: 'Pinterest', tiktok: 'TikTok' };
   type Status = { connected: boolean; connectedAt: string | null; lastFailure?: string | null };
-  const [status, setStatus] = useState<Record<Channel, Status | null>>({ youtube: null, pinterest: null });
+  const [status, setStatus] = useState<Record<Channel, Status | null>>({ youtube: null, pinterest: null, tiktok: null });
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const refresh = async (channel: Channel) => {
@@ -376,7 +377,7 @@ function OwnerChannelConnections({ sessionToken }: { sessionToken: string }) {
     } catch { setStatus(previous => ({ ...previous, [channel]: null })); }
   };
   useEffect(() => {
-    void refresh('youtube'); void refresh('pinterest');
+    void refresh('youtube'); void refresh('pinterest'); void refresh('tiktok');
     // The panel is never considered connected merely because a redirect returned.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionToken]);
@@ -400,10 +401,10 @@ function OwnerChannelConnections({ sessionToken }: { sessionToken: string }) {
   return <section className='ownerChannels' aria-label='Conectar canais'>
     <header><h2>Conectar canais</h2><p>Autorize diretamente no provedor. O painel nunca recebe tokens.</p></header>
     <div className='ownerChannelCards'>
-      {(['youtube', 'pinterest'] as const).map(channel => <article className='ownerChannelCard' key={channel}>
-        <h3>{channel === 'youtube' ? 'YouTube' : 'Pinterest'}</h3>
+      {(['youtube', 'pinterest', 'tiktok'] as const).map(channel => <article className='ownerChannelCard' key={channel}>
+        <h3>{LABEL[channel]}</h3>
         <p role='status'>{status[channel] === null ? 'Estado não verificado' : status[channel]?.connected ? 'Conectado em ' + new Date(status[channel]!.connectedAt || '').toLocaleString('pt-BR') : 'Não conectado' + (status[channel]?.lastFailure ? ' · última falha: ' + status[channel]!.lastFailure : '')}</p>
-        <button className='primary' disabled={busy !== null} onClick={() => void perform(channel, 'start')}>Conectar {channel === 'youtube' ? 'YouTube' : 'Pinterest'}</button>
+        <button className='primary' disabled={busy !== null} onClick={() => void perform(channel, 'start')}>Conectar {LABEL[channel]}</button>
         {status[channel]?.connected && <button className='secondary' disabled={busy !== null} onClick={() => void perform(channel, 'disconnect')}>Desconectar</button>}
         <button className='secondary' disabled={busy !== null} onClick={() => void refresh(channel)}>Atualizar status</button>
       </article>)}

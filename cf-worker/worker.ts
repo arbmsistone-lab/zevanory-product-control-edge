@@ -1175,7 +1175,7 @@ export default {
       if (!token || !(await verifyEdgeSession(token))) return Response.json({ error: 'owner_pin_required' }, { status: 401, headers: { 'cache-control': 'no-store' } });
       const channel = String(input?.channel || '');
       const action = String(input?.action || 'start');
-      if (!['youtube', 'pinterest'].includes(channel) || !['start', 'status', 'disconnect'].includes(action))
+      if (!['youtube', 'pinterest', 'tiktok'].includes(channel) || !['start', 'status', 'disconnect'].includes(action))
         return Response.json({ error: 'invalid_channel_or_action' }, { status: 400, headers: { 'cache-control': 'no-store' } });
       // status/disconnect: this Worker shares the private KV namespace with the L
       // Worker (728a…). A same-zone fetch to zevanory.api.br does not reach the

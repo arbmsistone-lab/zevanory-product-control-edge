@@ -10,11 +10,11 @@ test('owner bridge requires a verified PIN session and fails closed without an i
  assert.match(worker,/master.length < 32/);
  assert.match(worker,/zpc-oauth-v1/);
  assert.match(worker,/crypto.subtle.sign\('HMAC'/);
- assert.match(worker,/if \(!\['youtube', 'pinterest'\].includes\(channel\)/);
+ assert.match(worker,/if \(!\['youtube', 'pinterest', 'tiktok'\].includes\(channel\)/);
 });
 test('panel offers connect and local disconnect and never asks for refresh tokens',()=>{
  assert.match(view,/Conectar canais/);
- assert.match(view,/Conectar \{channel === 'youtube'/);
+ assert.match(view,/Conectar \{LABEL\[channel\]\}/);
  assert.match(view,/action: 'status'/);
  assert.match(view,/window.location.assign\(target.toString\(\)\)/);
  assert.match(view,/target.origin !== new URL\(OWNER_OAUTH_BASE\)\.origin/);
