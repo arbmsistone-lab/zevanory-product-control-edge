@@ -122,6 +122,8 @@ function applyPanelSecurityHeaders(headers: Headers) {
   headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   headers.set('x-content-type-options', 'nosniff');
   headers.set('referrer-policy', 'no-referrer');
+  // The owner panel must never appear in search results.
+  headers.set('x-robots-tag', 'noindex, nofollow');
   return headers;
 }
 
