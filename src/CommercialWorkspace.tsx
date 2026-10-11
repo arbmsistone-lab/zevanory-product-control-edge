@@ -12,6 +12,7 @@ import {
   type CommercialSection,
   type CommercialWorkspaceData,
 } from './commercial-model';
+import { LiveTape } from './LiveTape';
 
 type Props = {
   section: CommercialSection;
@@ -423,7 +424,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
         <>
           {pagedDashboard && (
             <nav className='commercialPager' aria-label='Páginas da Central Comercial'>
-              {['KPIs','Atividade','Pipeline','Provas'].map((label,index) => (
+              {['KPIs','Atividade','Pipeline','Provas','Ao vivo'].map((label,index) => (
                 <button key={label} className={dashboardPage === index ? 'filter active' : 'filter'} aria-pressed={dashboardPage === index} onClick={() => setDashboardPage(index)}>{label}</button>
               ))}
             </nav>
@@ -454,6 +455,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             </article>}
           </div>}
 
+          {(!pagedDashboard || dashboardPage === 4) && <LiveTape data={data} onRefresh={onRefresh}/>}
           {(!pagedDashboard || dashboardPage === 3) && <div className='commercialProofStrip'>
             <span><ShieldCheck/>Canais ativos <b>{data.robot.activeChannels.length ? data.robot.activeChannels.join(', ') : 'nenhum comprovado'}</b></span>
             <span><Bot/>Prospecção externa <b>{data.robot.externalProspecting ? 'LIBERADA' : 'NÃO COMPROVADA'}</b></span>
