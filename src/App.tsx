@@ -365,14 +365,14 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
 
 function OwnerChannelConnections({ sessionToken }: { sessionToken: string }) {
   type Channel = 'youtube' | 'pinterest';
-  type Status = { connected: boolean; connectedAt: string | null };
+  type Status = { connected: boolean; connectedAt: string | null; lastFailure?: string | null };
   const [status, setStatus] = useState<Record<Channel, Status | null>>({ youtube: null, pinterest: null });
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const refresh = async (channel: Channel) => {
     try {
       const { data } = await api.post('/api/owner/oauth/ticket', { sessionToken, channel, action: 'status' });
-      setStatus(previous => ({ ...previous, [channel]: { connected: data.connected === true, connectedAt: data.connectedAt || null } }));
+      setStatus(previous => ({ ...previous, [channel]: { connected: data.connected === true, connectedAt: data.connectedAt || null, lastFailure: data.lastFailure?.reason || null } }));
     } catch { setStatus(previous => ({ ...previous, [channel]: null })); }
   };
   useEffect(() => {
@@ -402,7 +402,7 @@ function OwnerChannelConnections({ sessionToken }: { sessionToken: string }) {
     <div className='ownerChannelCards'>
       {(['youtube', 'pinterest'] as const).map(channel => <article className='ownerChannelCard' key={channel}>
         <h3>{channel === 'youtube' ? 'YouTube' : 'Pinterest'}</h3>
-        <p role='status'>{status[channel] === null ? 'Estado não verificado' : status[channel]?.connected ? 'Conectado em ' + new Date(status[channel]!.connectedAt || '').toLocaleString('pt-BR') : 'Não conectado'}</p>
+        <p role='status'>{status[channel] === null ? 'Estado não verificado' : status[channel]?.connected ? 'Conectado em ' + new Date(status[channel]!.connectedAt || '').toLocaleString('pt-BR') : 'Não conectado' + (status[channel]?.lastFailure ? ' · última falha: ' + status[channel]!.lastFailure : '')}</p>
         <button className='primary' disabled={busy !== null} onClick={() => void perform(channel, 'start')}>Conectar {channel === 'youtube' ? 'YouTube' : 'Pinterest'}</button>
         {status[channel]?.connected && <button className='secondary' disabled={busy !== null} onClick={() => void perform(channel, 'disconnect')}>Desconectar</button>}
         <button className='secondary' disabled={busy !== null} onClick={() => void refresh(channel)}>Atualizar status</button>
