@@ -12,6 +12,7 @@ import {
   type CommercialSection,
   type CommercialWorkspaceData,
 } from './commercial-model';
+import { LiveTape } from './LiveTape';
 
 type Props = {
   section: CommercialSection;
@@ -183,6 +184,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const [dashboardPage, setDashboardPage] = useState(0);
+  const [liveMode, setLiveMode] = useState(false);
   const [listPage, setListPage] = useState(0);
   const [financeRecords, setFinanceRecords] = useState(false);
   const [realFunnel, setRealFunnel] = useState<RealFunnel | null>(null);
@@ -411,6 +413,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <p>{meta.subtitle}</p>
           <div className={'liveTelemetry ' + liveState.toLowerCase()} aria-live='polite'>
             <span className='liveDot' /><b>{liveState}</b><small>sincronização operacional · {Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000))}s</small>
+            {section === 'commercial' && <button className={liveMode ? 'filter active' : 'filter'} aria-pressed={liveMode} onClick={() => setLiveMode(v => !v)}>{liveMode ? 'Voltar ao painel' : 'Ver ao vivo'}</button>}
           </div>
         </div>
         <div className={'robotBadge ' + data.robot.state.toLowerCase()}>
@@ -421,14 +424,15 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
 
       {section === 'commercial' && (
         <>
-          {pagedDashboard && (
+          {liveMode && <LiveTape data={data} onRefresh={onRefresh}/>}
+          {!liveMode && pagedDashboard && (
             <nav className='commercialPager' aria-label='Páginas da Central Comercial'>
               {['KPIs','Atividade','Pipeline','Provas'].map((label,index) => (
                 <button key={label} className={dashboardPage === index ? 'filter active' : 'filter'} aria-pressed={dashboardPage === index} onClick={() => setDashboardPage(index)}>{label}</button>
               ))}
             </nav>
           )}
-          {(!pagedDashboard || dashboardPage === 0) && <div className='commercialMetrics' aria-label='Métricas comerciais auditáveis'>
+          {!liveMode && (!pagedDashboard || dashboardPage === 0) && <div className='commercialMetrics' aria-label='Métricas comerciais auditáveis'>
             <article title={funnelProvenance}><Search/><span>Visitas às páginas · 30 dias</span><strong>{totalViews ?? 'N/D'}</strong></article>
             <article title={'Fonte: leads persistidos · ' + time(data.generatedAt)}><MessageSquareText/><span>Leads de hoje</span><strong>{data.metrics.leadsToday}</strong></article>
             <article title={funnelProvenance}><Activity/><span>Checkouts iniciados · 30 dias</span><strong>{totalCheckouts ?? 'N/D'}</strong></article>
@@ -437,15 +441,15 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             <article title={'Fonte: eventos comerciais persistidos · ' + time(data.generatedAt)}><MessageSquareText/><span>Contatos hoje</span><strong>{data.metrics.contactsToday}</strong></article>
           </div>}
 
-          {(!pagedDashboard || dashboardPage === 1 || dashboardPage === 2) && <div className='commercialDashboardGrid'>
-            {(!pagedDashboard || dashboardPage === 1) && <article className='commercialPanel'>
+          {!liveMode && (!pagedDashboard || dashboardPage === 1 || dashboardPage === 2) && <div className='commercialDashboardGrid'>
+            {!liveMode && (!pagedDashboard || dashboardPage === 1) && <article className='commercialPanel'>
               <div className='commercialPanelTitle'><Activity size={17}/><div><b>Atividade recente</b><small>Eventos persistidos e autenticados</small></div></div>
               <div className='commercialList' tabIndex={0} aria-label='Atividade comercial recente'>
                 {data.events.slice(0, 5).map(item => <RecordRow key={item.id} item={item}/>)}
                 {!data.events.length && <div className='commercialEmpty'>Nenhum evento comercial comprovado ainda.</div>}
               </div>
             </article>}
-            {(!pagedDashboard || dashboardPage === 2) && <article className='commercialPanel'>
+            {!liveMode && (!pagedDashboard || dashboardPage === 2) && <article className='commercialPanel'>
               <div className='commercialPanelTitle'><Megaphone size={17}/><div><b>Pipeline de conteúdo</b><small>Criativo → aprovação → publicação</small></div></div>
               <div className='commercialList' tabIndex={0} aria-label='Pipeline comercial de conteúdo'>
                 {[...data.creatives, ...data.publications].slice(0, 5).map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
@@ -454,7 +458,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             </article>}
           </div>}
 
-          {(!pagedDashboard || dashboardPage === 3) && <div className='commercialProofStrip'>
+          {!liveMode && (!pagedDashboard || dashboardPage === 3) && <div className='commercialProofStrip'>
             <span><ShieldCheck/>Canais ativos <b>{data.robot.activeChannels.length ? data.robot.activeChannels.join(', ') : 'nenhum comprovado'}</b></span>
             <span><Bot/>Prospecção externa <b>{data.robot.externalProspecting ? 'LIBERADA' : 'NÃO COMPROVADA'}</b></span>
             <span><Send/>Adaptador de publicação <b>{data.robot.publishAdapterReady ? 'READY' : 'STANDBY'}</b></span>

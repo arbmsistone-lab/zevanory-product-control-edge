@@ -3969,3 +3969,18 @@ main.shell-commercial > .commercialWorkspace > .commercialDashboardGrid {
 .ownerChannelCard button{max-width:100%;font-size:var(--zpc-font-xs)}
 @media(max-width:720px){.ownerChannelCards{grid-template-columns:1fr}.ownerChannels{gap:var(--zpc-space-2)}.ownerChannelCard{padding:var(--zpc-space-2)}}
 @media(max-height:728px){.ownerChannels,.ownerChannelCards{gap:var(--zpc-space-1)}.ownerChannelCard{padding:var(--zpc-space-1)}}
+
+/* Live tape ("mercado de ações") */
+.liveTape { display: grid; gap: var(--zpc-space-2); }
+.liveEngines { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--zpc-space-12, 220px), 1fr)); gap: var(--zpc-space-2); }
+.liveEngine { display: grid; gap: var(--zpc-space-1); border: 1px solid var(--border); border-radius: var(--zpc-radius-sm); background: var(--surface); padding: var(--zpc-space-2); }
+.liveEngine span, .liveEngine small { color: var(--text-secondary); font-size: var(--zpc-font-xs); }
+.liveEngine strong { color: var(--text-primary); font-size: var(--zpc-font-md); font-variant-numeric: tabular-nums; }
+.liveRows { display: grid; gap: var(--zpc-space-1); max-height: 38vh; overflow-y: auto; }
+.liveRow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 3fr) minmax(0, 1.2fr); gap: var(--zpc-space-2); align-items: center; border-bottom: 1px solid var(--border); padding: var(--zpc-space-1); font-size: var(--zpc-font-xs); color: var(--text-secondary); }
+.liveRow strong { color: var(--text-primary); font-weight: 600; overflow-wrap: anywhere; }
+.liveRow time { font-variant-numeric: tabular-nums; }
+.liveStatus { text-align: right; overflow-wrap: anywhere; }
+.liveFresh { animation: liveFlash 2.4s ease-out; }
+@keyframes liveFlash { from { background: var(--surface); outline: 1px solid var(--status-info); } to { outline-color: transparent; } }
+@media (max-width: 760px) { .liveRow { grid-template-columns: 1fr; gap: var(--zpc-space-1); } .liveStatus { text-align: left; } }
