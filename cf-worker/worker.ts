@@ -1175,6 +1175,30 @@ export default {
       const action = String(input?.action || 'start');
       if (!['youtube', 'pinterest'].includes(channel) || !['start', 'status', 'disconnect'].includes(action))
         return Response.json({ error: 'invalid_channel_or_action' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+      // status/disconnect: this Worker shares the private KV namespace with the L
+      // Worker (728a…). A same-zone fetch to zevanory.api.br does not reach the
+      // L Worker reliably, so read/delete the connection record directly.
+      // Only booleans/timestamps leave this edge; the encrypted token never does.
+      if (action === 'status' || action === 'disconnect') {
+        const kv = (env as any).T2_CREATIVE_ASSETS;
+        const noStore = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' };
+        if (!kv?.get) return Response.json({ error: 'secure_store_unavailable' }, { status: 503, headers: noStore });
+        const key = 'zpc:owner:oauth:connection:' + channel + ':v1';
+        if (action === 'disconnect') {
+          await kv.delete(key);
+          return Response.json({ channel, connected: false, connectedAt: null, providerRevocation: 'not_confirmed' }, { headers: noStore });
+        }
+        let record: any = null;
+        try { record = JSON.parse(String(await kv.get(key) || 'null')); } catch {}
+        const connected = record?.schema === 'zpc.owner.oauth.v1' && record?.channel === channel && Boolean(record?.encryptedRefresh);
+        let lastFailure: any = null;
+        try { lastFailure = JSON.parse(String(await kv.get('zpc:owner:oauth:last-failure:' + channel) || 'null')); } catch {}
+        return Response.json({
+          channel, connected,
+          connectedAt: connected && typeof record.connectedAt === 'string' ? record.connectedAt : null,
+          lastFailure: !connected && lastFailure && /^[a-z0-9_]{3,64}$/.test(String(lastFailure.reason || '')) ? { reason: lastFailure.reason, at: String(lastFailure.at || '') } : null,
+        }, { headers: noStore });
+      }
       const master = String((env as any).OWNER_OAUTH_BRIDGE_SECRET || '');
       if (master.length < 32) return Response.json({ error: 'oauth_bridge_not_configured' }, { status: 503, headers: { 'cache-control': 'no-store' } });
       const ts = String(Date.now());

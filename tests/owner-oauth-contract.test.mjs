@@ -21,3 +21,9 @@ test('panel offers connect and local disconnect and never asks for refresh token
  assert.match(view,/sessionToken, channel, action/);
  assert.doesNotMatch(view,/localStorage\.setItem\(['"]oauth/i);
 });
+test('status/disconnect read the shared private KV directly; tokens never leave the edge',()=>{
+ assert.match(worker,/action === 'status' \|\| action === 'disconnect'/);
+ assert.match(worker,/'zpc:owner:oauth:connection:' \+ channel \+ ':v1'/);
+ assert.doesNotMatch(worker,/encryptedRefresh:\s*record/);
+ assert.match(worker,/Boolean\(record\?\.encryptedRefresh\)/);
+});
