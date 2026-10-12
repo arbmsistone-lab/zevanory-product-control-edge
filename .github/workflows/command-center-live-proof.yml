@@ -1,0 +1,32 @@
+name: Command center live proof
+
+# Production geometry proof with real data: every tab, 5 viewports, 2 themes.
+# Fails on page scroll, local scroll, clipped content/text or overlapping text.
+# Output carries only codes and CSS classes (public repository: no business data).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 11 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install browser
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Live proof
+        run: node scripts/command-center-live-proof.mjs
