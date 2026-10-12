@@ -5,9 +5,6 @@ name: Command center live proof
 # Output carries only codes and CSS classes (public repository: no business data).
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths: ["scripts/panel-actions-live-audit.mjs"]
   schedule:
     - cron: "41 11 * * *"
 
