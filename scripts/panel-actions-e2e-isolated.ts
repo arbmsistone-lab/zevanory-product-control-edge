@@ -57,8 +57,14 @@ await step('sessao_obrigatoria_em_todas_as_acoes', async () => {
   assert.equal(await count(), before, 'refused requests never write');
 });
 
+const buckets = async () => Object.fromEntries((await admin.query('select bucket, count(*)::int n from public.zpc_records group by bucket')).rows.map((r: any) => [r.bucket, r.n]));
 await step('validacao_sem_escrita', async () => {
+  // Prime the lazy catalog seed (the real backend seeds the official catalog on first product
+  // access); what must not happen is a write derived from the invalid input itself.
+  await call('/api/products/update', { sessionToken: session, id: randomUUID() });
+  await call('/api/admin/overview', { sessionToken: session });
   const before = await count();
+  const snap = await buckets();
   const bad: Array<[string, Record<string, unknown>, number]> = [
     ['/api/products/create', { name: '', slug: 'Inválido!' }, 400],
     ['/api/products/update', {}, 400],
@@ -80,7 +86,9 @@ await step('validacao_sem_escrita', async () => {
     const r = await call(path, { ...body, sessionToken: session });
     assert.equal(r.status, expected, path + ' ' + JSON.stringify(body) + ' -> ' + r.status);
   }
-  assert.equal(await count(), before, 'invalid requests never write');
+  const after = await buckets();
+  const diff = Object.entries(after).filter(([k, v]) => snap[k] !== v).map(([k, v]) => k + ':' + (snap[k] || 0) + '->' + v);
+  assert.equal(await count(), before, 'invalid requests never write ' + diff.join(','));
 });
 
 let productId = '';
