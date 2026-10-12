@@ -686,9 +686,10 @@ function App() {
       await load();
     } catch (err: any) {
       const reason = String(err?.message || '');
+      const detail = String(err?.response?.data?.error || reason || '').slice(0, 160);
       setError(/fonte_externa_indisponivel/.test(reason)
-        ? 'A telemetria externa (ARBM) não respondeu agora. Nada foi alterado; o estado real da ZEVANORY é o da faixa Trust Chain no topo.'
-        : 'A operação não foi concluída. O sistema permaneceu fail-closed.');
+        ? 'A telemetria externa (ARBM) não respondeu agora. Nada foi alterado; o estado real da ZEVANORY está na Central de Comando (Visão Geral → Operação).'
+        : `A operação não foi concluída e nada foi alterado (fail-closed). Motivo informado pelo servidor: ${detail || 'sem detalhe'}. O estado real da ZEVANORY está na Central de Comando (Visão Geral → Operação).`);
     } finally {
       setBusy(false);
     }
@@ -862,8 +863,22 @@ function App() {
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
   const operationsPageSize = viewportWidth <= 620 ? 1 : viewportWidth <= 900 ? 2 : 4;
-  const operationIncidents = dashboard?.incidents ?? [];
-  const operationAudits = dashboard?.audits ?? [];
+  // Repeated runs append identical records; show each finding once with its count and last time.
+  // Retired systems (ARBM ONE/SIST) are certified elsewhere and stay out of this queue.
+  const dedupeRecords = <T extends { system: string; title: string; detail: string; createdAt?: string }>(list: T[]) => {
+    const groups = new Map<string, T & { count: number; lastAt: string }>();
+    for (const item of list) {
+      if (['ARBM ONE', 'ARBM SIST'].includes(String(item.system))) continue;
+      const key = `${item.system}|${item.title}|${item.detail}`;
+      const at = String(item.createdAt || '');
+      const prev = groups.get(key);
+      if (!prev) groups.set(key, { ...item, count: 1, lastAt: at });
+      else { prev.count += 1; if (at > prev.lastAt) prev.lastAt = at; }
+    }
+    return [...groups.values()].sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+  };
+  const operationIncidents = useMemo(() => dedupeRecords(dashboard?.incidents ?? []), [dashboard]);
+  const operationAudits = useMemo(() => dedupeRecords(dashboard?.audits ?? []), [dashboard]);
   const incidentPageCount = Math.max(1, Math.ceil(operationIncidents.length / operationsPageSize));
   const safeIncidentPage = Math.min(incidentPage, incidentPageCount - 1);
   const pagedIncidents = operationIncidents.slice(safeIncidentPage * operationsPageSize, (safeIncidentPage + 1) * operationsPageSize);
@@ -1160,19 +1175,19 @@ function App() {
               </div>
             </div>
             <div className='operationSummary'>
-              <span>Incidentes <b>{shellDashboard.incidents.length}</b></span>
-              <span>Auditorias <b>{shellDashboard.audits.length}</b></span>
+              <span>Incidentes <b>{operationIncidents.length}</b></span>
+              <span>Auditorias <b>{operationAudits.length}</b></span>
               <span>Melhorias <b>{shellDashboard.improvements.length}</b></span>
             </div>
           </div>
           <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>INCIDENTES</p><h2>Fila operacional</h2></div><div className='opsPager'>{incidentPageCount > 1 && <><button className='secondary compact' onClick={() => setIncidentPage(Math.max(0, safeIncidentPage - 1))} disabled={safeIncidentPage === 0}>‹</button><strong>{safeIncidentPage + 1}/{incidentPageCount}</strong><button className='secondary compact' onClick={() => setIncidentPage(Math.min(incidentPageCount - 1, safeIncidentPage + 1))} disabled={safeIncidentPage >= incidentPageCount - 1}>›</button></>}<AlertTriangle size={20} /></div></div>
             <div className='feed'>
-              {shellDashboard.incidents.length === 0
+              {operationIncidents.length === 0
                 ? <div className='empty'>Nenhum incidente registrado.</div>
                 : pagedIncidents.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
-                    <div><strong>{item.title}</strong><p>{item.system} · {item.detail}</p></div>
+                    <div><strong>{item.title}</strong><p>{item.system} · {item.detail}{item.count > 1 ? ` · registrado ${item.count} vezes, última em ${item.lastAt ? new Date(item.lastAt).toLocaleString('pt-BR') : 'data desconhecida'}` : ''}</p></div>
                     <span className='state proposed'>{item.state}</span>
                   </article>
                 ))}
@@ -1181,11 +1196,11 @@ function App() {
           <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>AUDITORIA</p><h2>Achados recentes</h2></div><div className='opsPager'>{auditPageCount > 1 && <><button className='secondary compact' onClick={() => setAuditPage(Math.max(0, safeAuditPage - 1))} disabled={safeAuditPage === 0}>‹</button><strong>{safeAuditPage + 1}/{auditPageCount}</strong><button className='secondary compact' onClick={() => setAuditPage(Math.min(auditPageCount - 1, safeAuditPage + 1))} disabled={safeAuditPage >= auditPageCount - 1}>›</button></>}<ShieldCheck size={20} /></div></div>
             <div className='feed'>
-              {shellDashboard.audits.length === 0
+              {operationAudits.length === 0
                 ? <div className='empty'>Execute uma auditoria para gerar novos achados.</div>
                 : pagedAudits.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
-                    <div><strong>{item.title}</strong><p>{item.system} · {item.detail}</p></div>
+                    <div><strong>{item.title}</strong><p>{item.system} · {item.detail}{item.count > 1 ? ` · ${item.count}×` : ''}</p></div>
                     <time>{new Date(item.createdAt).toLocaleString('pt-BR')}</time>
                   </article>
                 ))}
