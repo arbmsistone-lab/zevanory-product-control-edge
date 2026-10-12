@@ -27,7 +27,8 @@ const session = mint(signingKey);
 const forged = mint('not-the-signing-key-but-same-length-0123456789abcdef');
 const expired = mint(signingKey, Date.now() - 1000);
 
-const { handler } = await import('../backend/index.ts');
+let handler: (r: Request) => Promise<Response>;
+try { ({ handler } = await import('../backend/index.ts')); } catch (e) { console.log('::error title=PANEL_ACTIONS_E2E_IMPORT::' + String((e as Error)?.stack || e).replace(/\s+/g, ' ').slice(0, 600)); process.exit(1); }
 const commercial = await import('../backend/commercial.ts');
 const { db } = await import('../backend/platform.ts');
 const call = async (path: string, body: Record<string, unknown>) => {
@@ -37,7 +38,11 @@ const call = async (path: string, body: Record<string, unknown>) => {
 };
 const count = async () => (await admin.query('select count(*)::int n from public.zpc_records')).rows[0].n as number;
 const results: Record<string, string> = {};
-const step = async (name: string, fn: () => Promise<void>) => { await fn(); results[name] = 'PASS'; };
+let failed = 0;
+const step = async (name: string, fn: () => Promise<void>) => {
+  try { await fn(); results[name] = 'PASS'; }
+  catch (e) { failed++; results[name] = 'FAIL'; console.log('::error title=PANEL_ACTIONS_E2E_' + name + '::' + String((e as Error)?.message || e).replace(/\s+/g, ' ').slice(0, 400)); }
+};
 
 const guarded = ['/api/admin/overview', '/api/products/create', '/api/products/update', '/api/products/archive', '/api/commercial/create', '/api/commercial/update',
   '/api/commercial/approval', '/api/commercial/sales/promote-discovery', '/api/commercial/sales/qualify', '/api/commercial/sales/decision', '/api/commercial/sales/execute',
@@ -172,5 +177,5 @@ await step('sessao_encerrada', async () => {
 });
 
 await admin.end();
-console.log('::notice title=PANEL_ACTIONS_E2E_ISOLATED::' + JSON.stringify({ ok: true, steps: results }));
-process.exit(0);
+console.log('::notice title=PANEL_ACTIONS_E2E_ISOLATED::' + JSON.stringify({ ok: failed === 0, steps: results }));
+process.exit(failed ? 1 : 0);
