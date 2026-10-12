@@ -318,15 +318,15 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
       )} />,
     ],
     path: [
+      <TileCard key='fc' title='Projeção 30 dias' subtitle={s.forecast.status === 'ok' ? 'Intervalo de 80% · base: ' + s.forecast.basis : 'Sem base suficiente: não há chute'}>
+        <Tile label='Vendas esperadas' value={s.forecast.status === 'ok' ? `${s.forecast.salesExpected} (${s.forecast.salesInterval80?.[0]}–${s.forecast.salesInterval80?.[1]})` : 'Dados insuficientes'} source='Modelo de taxa (Poisson)' at={s.generatedAt} integrity={s.forecast.status === 'ok' ? 'aggregated' : 'missing'} definition={s.forecast.reason || 'Taxa diária de vendas × 30 dias, com intervalo de 80%'} />
+        <Tile label='Receita esperada' value={s.forecast.status === 'ok' ? `${money(s.forecast.revenueExpectedCents)} (${money(s.forecast.revenueInterval80Cents?.[0])}–${money(s.forecast.revenueInterval80Cents?.[1])})` : 'Dados insuficientes'} source='Modelo de taxa (Poisson)' at={s.generatedAt} integrity={s.forecast.status === 'ok' ? 'aggregated' : 'missing'} definition={s.forecast.reason || 'Vendas esperadas × ticket médio'} />
+      </TileCard>,
       <ListCard key='goals' title='Metas' subtitle='Progresso real contra prazo' items={s.goals} keyOf={g => g.id} empty='—' render={g => {
         const current = g.id === 'fortnight' ? (live?.month.grossCents ?? g.current) : g.id === 'month' ? (live?.grossCents ?? g.current) : (live?.approved ?? g.current);
         const pct = Math.min(100, Math.round((100 * current) / Math.max(1, g.target)));
         return <><i className={'ccDot ' + (pct >= 100 ? 'ok' : 'warn')} /><div><b>{g.label}{g.deadline ? ' · até ' + g.deadline.split('-').reverse().slice(0, 2).join('/') : ''}</b><span className='ccBar'><i style={{ width: pct + '%' }} /></span></div><time>{g.unit === 'centavos' ? money(current) + ' / ' + money(g.target) : current + ' / ' + g.target}</time></>;
       }} />,
-      <TileCard key='fc' title='Projeção 30 dias' subtitle={s.forecast.status === 'ok' ? 'Intervalo de 80% · base: ' + s.forecast.basis : 'Sem base suficiente: não há chute'}>
-        <Tile label='Vendas esperadas' value={s.forecast.status === 'ok' ? `${s.forecast.salesExpected} (${s.forecast.salesInterval80?.[0]}–${s.forecast.salesInterval80?.[1]})` : 'Dados insuficientes'} source='Modelo de taxa (Poisson)' at={s.generatedAt} integrity={s.forecast.status === 'ok' ? 'aggregated' : 'missing'} definition={s.forecast.reason || 'Taxa diária de vendas × 30 dias, com intervalo de 80%'} />
-        <Tile label='Receita esperada' value={s.forecast.status === 'ok' ? `${money(s.forecast.revenueExpectedCents)} (${money(s.forecast.revenueInterval80Cents?.[0])}–${money(s.forecast.revenueInterval80Cents?.[1])})` : 'Dados insuficientes'} source='Modelo de taxa (Poisson)' at={s.generatedAt} integrity={s.forecast.status === 'ok' ? 'aggregated' : 'missing'} definition={s.forecast.reason || 'Vendas esperadas × ticket médio'} />
-      </TileCard>,
       <ListCard key='mkt' title='Inteligência de mercado' subtitle={s.market ? 'Buscas reais por ramo · ' + when(s.market.generatedAt) : 'Primeira pesquisa semanal ainda não rodou'} items={[...(s.market?.ideas || []).map(i => ({ k: 'i' + i.title, t: i.title, d: i.basis + ' · ' + i.status, v: 'ideia' })), ...(s.market?.top || []).map(r => ({ k: r.slug, t: r.name, d: (r.topQueries[0] ? '“' + r.topQueries[0] + '” · ' : '') + 'produto: ' + r.product, v: String(r.score) }))]} keyOf={x => x.k} empty='Sem dados de mercado ainda.' render={x => (
         <><i className={'ccDot ' + (x.v === 'ideia' ? 'warn' : 'info')} /><div><b>{x.t}</b><span>{x.d}</span></div><time>{x.v}</time></>
       )} />,
