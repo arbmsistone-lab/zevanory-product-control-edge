@@ -86,6 +86,7 @@
 .ccTabs > button.active {
   border-color: transparent;
   background: var(--z-brand-grad, var(--cc-accent));
+  background-color: var(--cc-accent);
   color: var(--action-primary-text);
 }
 .ccTabs > button svg { flex: 0 0 auto; }
