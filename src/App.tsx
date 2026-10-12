@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Archive,
@@ -25,6 +25,7 @@ import {
 import { api, OWNER_OAUTH_BASE } from './api';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
+import CommandCenter from './CommandCenter';
 import type { CommercialSection, CommercialWorkspaceData } from './commercial-model';
 import type { CfoWorkspaceData } from './cfo-model';
 
@@ -417,7 +418,7 @@ function OwnerChannelConnections({ sessionToken }: { sessionToken: string }) {
 
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
-  const [salesStateLabel, setSalesStateLabel] = useState('Estado indisponível');
+  const [, setSalesStateLabel] = useState('Estado indisponível');
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -436,7 +437,7 @@ function App() {
   const [globalTrustLoading, setGlobalTrustLoading] = useState(true);
   const [canonicalSha, setCanonicalSha] = useState<string | null>(null);
   const [canonicalShaLoading, setCanonicalShaLoading] = useState(true);
-  const [fastOverview, setFastOverview] = useState<FastOverview | null>(null);
+  const [, setFastOverview] = useState<FastOverview | null>(null);
   const [fastOverviewLoading, setFastOverviewLoading] = useState(true);
   const [commercial, setCommercial] = useState<CommercialWorkspaceData | null>(null);
   const [cfo, setCfo] = useState<CfoWorkspaceData | null>(null);
@@ -472,7 +473,6 @@ function App() {
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const shellDashboard = dashboard ?? EMPTY_DASHBOARD;
   const bootstrapPending = dashboard === null;
-  const overviewOperations = fastOverview?.operations ?? null;
   const surfacePending = view === 'overview' ? fastOverviewLoading : bootstrapPending;
   const primaryArea: PrimaryArea =
     view === 'overview' ? 'overview' :
@@ -877,78 +877,6 @@ function App() {
     [activeCertificationTargets, selectedTargetId],
   );
   // No-scroll overview: render only the approval rows that fit the card; the rest is one click away.
-  const approvalListRef = useRef<HTMLDivElement | null>(null);
-  const [approvalFit, setApprovalFit] = useState(3);
-  useLayoutEffect(() => {
-    const el = approvalListRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const measure = () => {
-      const row = el.querySelector<HTMLElement>('.ownerApprovalRow');
-      const action = el.querySelector<HTMLElement>('.champagneAction');
-      const gap = parseFloat(getComputedStyle(el).rowGap || '8') || 8;
-      const rowH = row?.offsetHeight || 52;
-      const actionStyle = action ? getComputedStyle(action) : null;
-      const actionH = (action?.offsetHeight || 32) + (parseFloat(actionStyle?.marginTop || '0') || 0) + (parseFloat(actionStyle?.marginBottom || '0') || 0) + 2;
-      const fit = Math.max(0, Math.floor((el.clientHeight - actionH) / (rowH + gap)));
-      setApprovalFit(previous => (previous === fit ? previous : fit));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  });
-
-  const ownerOverview = useMemo(() => {
-    if (!commercial) return null;
-    const now = new Date();
-    const sameDay = (value: string | null | undefined, daysAgo = 0) => {
-      if (!value) return false;
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return false;
-      const target = new Date(now);
-      target.setHours(0, 0, 0, 0);
-      target.setDate(target.getDate() - daysAgo);
-      return date.getFullYear() === target.getFullYear()
-        && date.getMonth() === target.getMonth()
-        && date.getDate() === target.getDate();
-    };
-    const sameMonth = (value: string | null | undefined) => {
-      if (!value) return false;
-      const date = new Date(value);
-      return !Number.isNaN(date.getTime())
-        && date.getFullYear() === now.getFullYear()
-        && date.getMonth() === now.getMonth();
-    };
-    const confirmed = new Set(['confirmed', 'paid', 'received', 'settled', 'done']);
-    const saleSources = new Set(['sale', 'payment', 'checkout', 'order', 'asaas']);
-    const isSale = (item: CommercialWorkspaceData['finance'][number]) =>
-      confirmed.has(String(item.status || '').toLowerCase().replaceAll('_', '-'))
-      && saleSources.has(String(item.source || '').toLowerCase().replaceAll('_', '-'))
-      && Number(item.valueCents || 0) > 0;
-    const sales = commercial.finance.filter(isSale);
-    const salesToday = sales.filter(item => sameDay(item.updatedAt || item.createdAt)).length;
-    const salesMonth = sales.filter(item => sameMonth(item.updatedAt || item.createdAt)).length;
-    const revenueMonth = sales
-      .filter(item => sameMonth(item.updatedAt || item.createdAt))
-      .reduce((sum, item) => sum + Number(item.valueCents || 0), 0);
-    const openConversationStates = new Set(['contacted','conversation','offer','follow-up','checkout','proposal','opportunity']);
-    const openConversations = commercial.leads.filter(item => openConversationStates.has(String(item.status || '').toLowerCase().replaceAll('_','-'))).length;
-    const approvalStates = new Set(['approval','pending-approval','awaiting-approval']);
-    const approvalItems = [...commercial.creatives, ...commercial.publications]
-      .filter(item => approvalStates.has(String(item.status || '').toLowerCase().replaceAll('_','-')))
-      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-    const revenueBars = Array.from({ length: 12 }, (_, index) => {
-      const daysAgo = 11 - index;
-      return sales
-        .filter(item => sameDay(item.updatedAt || item.createdAt, daysAgo))
-        .reduce((sum, item) => sum + Number(item.valueCents || 0), 0);
-    });
-    const latestEvents = [...commercial.events]
-      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt))
-      .slice(0, 3);
-    return { salesToday, salesMonth, revenueMonth, openConversations, approvalItems, revenueBars, latestEvents };
-  }, [commercial]);
-
   const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 900;
   const certTargetPageSize = compactGovernance ? 1 : 6;
   const certTargetPageCount = Math.max(1, Math.ceil(activeCertificationTargets.length / certTargetPageSize));
@@ -1130,72 +1058,11 @@ function App() {
       {view === 'channels' && <OwnerChannelConnections sessionToken={sessionToken} />}
 
       {view === 'overview' && (
-        <section className='premiumOverview' aria-label='Visão Geral executiva'>
-          <header className='premiumOverviewHeader'>
-            <div>
-              <p className='premiumEyebrow'>VISÃO GERAL</p>
-              <h2>O negócio em uma tela.</h2>
-              <p>Vendas, receita, conversas e decisões que realmente precisam de você.</p>
-            </div>
-            <button
-              className={'ownerHealth ' + (fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'healthy' : fastOverviewLoading ? 'loading' : 'attention')}
-              type='button'
-              onClick={() => setView('operations')}
-              aria-label='Abrir detalhes de saúde do sistema'
-            >
-              <span className='ownerHealthDot' />
-              <span>
-                <b>{fastOverview?.sources.health.ok && overviewOperations?.health.ready ? 'Operação saudável' : fastOverviewLoading ? 'Verificando operação' : 'Atenção necessária'}</b>
-                <small>Ver detalhes</small>
-              </span>
-            </button>
-          </header>
-
-          <section className='ownerKpis' aria-label='Indicadores do negócio'>
-            <article><small>Vendas hoje</small><strong>{ownerOverview ? ownerOverview.salesToday : '—'}</strong><span>{ownerOverview?.salesToday ? 'confirmadas' : 'Nenhuma venda ainda'}</span></article>
-            <article><small>Vendas no mês</small><strong>{ownerOverview ? ownerOverview.salesMonth : '—'}</strong><span>{ownerOverview?.salesMonth ? 'confirmadas' : 'Sem vendas confirmadas'}</span></article>
-            <article><small>Receita no mês</small><strong>{ownerOverview ? new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ownerOverview.revenueMonth / 100) : '—'}</strong><span>{ownerOverview?.revenueMonth ? 'recebida e confirmada' : 'Nenhuma receita confirmada'}</span></article>
-            <article><small>Conversas abertas</small><strong>{ownerOverview ? ownerOverview.openConversations : '—'}</strong><span>{ownerOverview?.openConversations ? 'em andamento' : 'Nenhuma conversa aberta'}</span></article>
-            <article><small>Aprovações pendentes</small><strong>{ownerOverview ? ownerOverview.approvalItems.length : '—'}</strong><span>{ownerOverview?.approvalItems.length ? 'aguardam sua decisão' : 'Nada aguardando você'}</span></article>
-          </section>
-
-          <section className='ownerOverviewGrid'>
-            <article className='ownerRevenueCard premiumCard'>
-              <div className='premiumCardHead'>
-                <div><h3>Receita</h3><p>Últimos 12 dias · somente pagamentos confirmados</p></div>
-                <strong>{ownerOverview ? new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ownerOverview.revenueBars.reduce((a,b)=>a+b,0)/100) : '—'}</strong>
-              </div>
-              {ownerOverview && ownerOverview.revenueBars.some(value => value > 0) ? (
-                <div className='ownerRevenueChart' aria-label='Receita confirmada dos últimos 12 dias'>
-                  {ownerOverview.revenueBars.map((value,index) => {
-                    const max = Math.max(...ownerOverview.revenueBars, 1);
-                    return <span key={index} className='ownerRevenueBar' style={{'--bar-height': Math.max(5, Math.round((value/max)*100)) + '%'} as CSSProperties} title={new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value/100)}><i /></span>;
-                  })}
-                </div>
-              ) : (
-                <div className='ownerEmptyState'><b>Nenhuma receita confirmada ainda</b><span>O gráfico aparecerá quando houver pagamentos reais.</span><button onClick={() => setView('finance')}>Ver financeiro</button></div>
-              )}
-            </article>
-
-            <article className='ownerActionCard premiumCard'>
-              <div className='premiumCardHead'><div><h3>O que precisa de mim agora</h3><p>Só decisões que exigem sua ação.</p></div></div>
-              {ownerOverview?.approvalItems.length ? (
-                <div className='ownerApprovalList' ref={approvalListRef}>
-                  {ownerOverview.approvalItems.slice(0, approvalFit).map(item => <div className='ownerApprovalRow' key={item.kind+item.id}><b>{item.title}</b><span>{item.kind === 'creative' ? 'Criativo' : 'Publicação'} · aguardando aprovação</span></div>)}
-                  <button className='champagneAction' onClick={() => setView('approvals')}>{approvalFit === 0 ? `Revisar ${ownerOverview.approvalItems.length} aprovação(ões)` : ownerOverview.approvalItems.length > approvalFit ? `Revisar todas (${ownerOverview.approvalItems.length})` : 'Revisar aprovações'}</button>
-                </div>
-              ) : (
-                <div className='ownerEmptyState compact'><b>Nada exige sua aprovação agora</b><span>Novas decisões aparecerão aqui.</span><button onClick={() => setView('approvals')}>Ver aprovações</button></div>
-              )}
-            </article>
-          </section>
-
-          <section className='ownerQuickCards'>
-            <article className='ownerQuickCard'><CircleDollarSign size={18}/><div><b>Checkout</b><span>{salesStateLabel}</span><button onClick={() => setView('finance')}>Ver checkout</button></div></article>
-            <article className='ownerQuickCard'><Headphones size={18}/><div><b>Atendimento</b><span>{ownerOverview?.openConversations ? `${ownerOverview.openConversations} conversa(s) aberta(s).` : 'Nenhuma conversa aberta.'}</span><button onClick={() => setView('support')}>Abrir conversas</button></div></article>
-            <article className='ownerQuickCard ownerEventCard'><FileCheck2 size={18}/><div><b>Últimos eventos</b>{ownerOverview?.latestEvents.length ? ownerOverview.latestEvents.map(event => <span key={event.id}>{event.title}</span>) : <span>Nenhum evento recente.</span>}<button onClick={() => setView('evidence')}>Ver evidências</button></div></article>
-          </section>
-        </section>
+        <CommandCenter
+          sessionToken={sessionToken}
+          events={commercial?.events ?? []}
+          onOpen={target => setView(target)}
+        />
       )}
 
       {view === 'products' && (

@@ -1,0 +1,247 @@
+/* ZEVANORY Revenue Command Center · brand colors from the logo (blue → cyan over navy). */
+.ccRoot {
+  --cc-surface: var(--surface);
+  --cc-surface-2: var(--surface-elevated);
+  --cc-line: var(--border);
+  --cc-text: var(--text-primary);
+  --cc-muted: var(--text-secondary);
+  --cc-accent: var(--action-primary);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: var(--zpc-space-3);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  color: var(--cc-text);
+}
+.ccHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zpc-space-3);
+  min-width: 0;
+}
+.ccHead > div { min-width: 0; }
+.ccEyebrow {
+  margin: 0;
+  color: var(--cc-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+.ccHead h2 {
+  margin: var(--zpc-space-1) 0 0;
+  font-size: var(--zpc-font-md);
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  overflow-wrap: anywhere;
+}
+.ccFresh {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--zpc-space-2);
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: var(--zpc-space-2) var(--zpc-space-3);
+  border: 1px solid var(--cc-line);
+  border-radius: var(--zpc-radius-pill);
+  background: var(--cc-surface);
+  color: var(--cc-text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.ccFresh:focus-visible, .ccTabs button:focus-visible, .ccPager button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+.ccFresh > i { width: 8px; height: 8px; flex: 0 0 auto; border-radius: var(--zpc-radius-pill); background: var(--status-warning); }
+.ccFresh.ok > i { background: var(--status-success); box-shadow: var(--zpc-shadow-live-success); }
+.ccFresh b, .ccFresh small { display: block; font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
+.ccFresh small { color: var(--cc-muted); }
+
+.ccTabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--zpc-space-1);
+  min-width: 0;
+}
+.ccTabs > button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--zpc-space-1);
+  min-height: 36px;
+  padding: var(--zpc-space-1) var(--zpc-space-3);
+  border: 1px solid var(--cc-line);
+  border-radius: var(--zpc-radius-pill);
+  background: var(--cc-surface);
+  color: var(--cc-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+.ccTabs > button:hover { color: var(--cc-text); border-color: var(--cc-accent); }
+.ccTabs > button.active {
+  border-color: transparent;
+  background: var(--z-brand-grad, var(--cc-accent));
+  color: var(--action-primary-text);
+}
+.ccTabs > button svg { flex: 0 0 auto; }
+.ccTabs > .ccPager { margin-left: auto; }
+
+.ccBody {
+  display: grid;
+  gap: var(--zpc-space-3);
+  min-height: 0;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+}
+.ccBody[data-cards="1"] { grid-template-columns: minmax(0, 1fr); }
+.ccBody[data-cards="3"] > :first-child { grid-column: 1 / -1; }
+
+.ccCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--zpc-space-2);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--zpc-space-3) var(--zpc-space-4);
+  border: 1px solid var(--cc-line);
+  border-radius: var(--zpc-radius-lg);
+  background: var(--cc-surface);
+  overflow: hidden;
+}
+.ccCard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4px;
+  background: var(--z-brand-grad, var(--cc-accent));
+  opacity: .9;
+  pointer-events: none;
+}
+.ccCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--zpc-space-2);
+  min-width: 0;
+  flex: 0 0 auto;
+}
+.ccCardHead > div { min-width: 0; }
+.ccCardHead h3 { margin: 0; font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
+.ccCardHead p { margin: var(--zpc-space-1) 0 0; color: var(--cc-muted); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+
+.ccPager { display: inline-flex; align-items: center; gap: var(--zpc-space-1); flex: 0 0 auto; color: var(--cc-muted); font-size: 12px; }
+.ccPager button {
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--cc-line);
+  border-radius: var(--zpc-radius-sm);
+  background: var(--cc-surface-2);
+  color: var(--cc-text);
+  cursor: pointer;
+}
+.ccPager button:disabled { opacity: .4; cursor: default; }
+
+.ccList {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: var(--zpc-space-2);
+}
+.ccRow {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--zpc-space-2);
+  min-width: 0;
+  padding: var(--zpc-space-2) var(--zpc-space-3);
+  border: 1px solid var(--cc-line);
+  border-radius: var(--zpc-radius-md);
+  background: var(--cc-surface-2);
+}
+.ccRow > div { min-width: 0; }
+.ccRow b, .ccRow span { display: block; overflow-wrap: anywhere; }
+.ccRow b { font-size: 14px; line-height: 1.3; }
+.ccRow span { margin-top: 0; color: var(--cc-muted); font-size: 12px; line-height: 1.35; }
+.ccRow a { color: var(--cc-accent); font-weight: 600; }
+.ccRow time { color: var(--cc-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ccEmpty { grid-template-columns: minmax(0, 1fr); }
+.ccDot { width: 8px; height: 8px; border-radius: var(--zpc-radius-pill); background: var(--cc-muted); }
+.ccDot.ok { background: var(--status-success); }
+.ccDot.warn { background: var(--status-warning); }
+.ccDot.bad { background: var(--status-error); }
+.ccDot.info { background: var(--cc-accent); }
+.ccDot.idle { background: var(--cc-line); }
+.ccBar { display: block; height: 8px; margin-top: var(--zpc-space-1); border-radius: var(--zpc-radius-pill); background: var(--cc-line); overflow: hidden; }
+.ccBar > i { display: block; height: 100%; border-radius: var(--zpc-radius-pill); background: var(--z-brand-grad, var(--cc-accent)); }
+
+.ccTiles {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: var(--zpc-space-2);
+}
+.ccTile {
+  display: grid;
+  gap: var(--zpc-space-1);
+  align-content: start;
+  min-width: 0;
+  padding: var(--zpc-space-2) var(--zpc-space-3);
+  border: 1px solid var(--cc-line);
+  border-radius: var(--zpc-radius-md);
+  background: var(--cc-surface-2);
+}
+.ccTile small { color: var(--cc-muted); font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
+.ccTile strong { font-size: var(--zpc-font-md); line-height: 1.15; letter-spacing: -.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ccProv { color: var(--cc-muted); font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
+.ccSeal {
+  justify-self: start;
+  padding: 0 var(--zpc-space-2);
+  border-radius: var(--zpc-radius-pill);
+  border: 1px solid var(--cc-line);
+  color: var(--cc-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.ccSeal.real, .ccSeal.webhook_authenticated { border-color: var(--status-success); color: var(--status-success-text, var(--status-success)); }
+.ccSeal.aggregated { border-color: var(--cc-accent); color: var(--cc-accent); }
+.ccSeal.stale { border-color: var(--status-warning); color: var(--status-warning-text, var(--status-warning)); }
+
+@media (max-width: 1180px) {
+  .ccTiles { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
+}
+@media (max-width: 900px) {
+  .ccHead { align-items: flex-start; }
+  .ccTabs > button { min-height: 32px; padding: var(--zpc-space-1) var(--zpc-space-2); font-size: 12px; }
+}
+@media (max-width: 560px) {
+  .ccHead { display: grid; gap: var(--zpc-space-2); }
+  .ccFresh { justify-self: start; }
+  .ccHead h2 { font-size: var(--zpc-font-sm); }
+  .ccTile strong { font-size: var(--zpc-font-sm); }
+  .ccTiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ccRow { padding: var(--zpc-space-2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ccTabs > button { transition: none; }
+}
+:root[data-theme='light'] .ccTabs > button.active { background: var(--action-primary); }
+.ccTileSlot { display: grid; min-width: 0; }
+.ccTileSlot > .ccTile { height: 100%; }

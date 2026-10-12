@@ -139,6 +139,34 @@ const bootstrap={
   commercial,cfo:null,products:productFixtures,certificationTargets:certificationFixtures,
   summary:{total:3,salesEnabled:0,commercialReady:0,blocked:3,certified:0,inCertification:3,zeesBlocked:3},
 };
+
+// Revenue Command Center fixture: dense, realistic shape so every tab is audited
+// with full lists (pagination must keep everything inside the viewport).
+const ccMetric=(value,definition,integrity='real')=>({value,source:'Fonte auditada',updatedAt:now,definition,integrity});
+const commandCenter={ok:true,servedAt:now,
+  sales:{updatedAt:now,totals:{approved:9,grossCents:229300,netCents:201400,feesCents:21900,affiliateCents:6000,refunded:1,chargeback:0,protest:0,reversedGrossCents:19700,abandoned:4,canceled:2,expired:1},
+    byDay:{'2026-09-26':{approved:2,grossCents:44400,netCents:39000}},
+    byProduct:Object.fromEntries(['IA na Prática','Vendas na Prática','Lucro & Caixa','Combo IA + Vendas','Negócio Completo','Conteúdo Pronto'].map((n,i)=>[n,{approved:i+1,grossCents:19700*(i+1),netCents:17300*(i+1),reversed:0}])),
+    bySource:Object.fromEntries(['youtube','telegram','bluesky','google','direto','instagram','tiktok'].map((n,i)=>[n,{approved:7-i,grossCents:19700*(7-i),netCents:17000*(7-i),reversed:0}])),
+    recent:Array.from({length:12},(_,i)=>({ref:'r'+i,kind:i%5?'approved':'refunded',product:'Lucro & Caixa com nome de produto bem longo para validar quebra',grossCents:24700,netCents:22200,src:'youtube',at:now}))},
+  snapshot:{generatedAt:now,day:'2026-09-26',
+    goals:[{id:'first-sale',label:'1ª venda',target:1,unit:'vendas',deadline:'2026-10-18',current:1},{id:'fortnight',label:'Quinzena',target:80000,unit:'centavos',deadline:'2026-10-25',current:44400},{id:'month',label:'Mês',target:200000,unit:'centavos',deadline:'2026-11-10',current:229300},{id:'paid-traffic',label:'Vendas para liberar tráfego pago',target:7,unit:'vendas',deadline:null,current:9}],
+    revenue:{salesToday:ccMetric(2,'Vendas hoje','webhook_authenticated')},
+    funnel:{visitors7:ccMetric(1840,'Pessoas','aggregated'),views7:ccMetric(4210,'Páginas','aggregated'),leads7:ccMetric(37,'Leads','aggregated'),views30:ccMetric(12890,'Visitas','aggregated'),intents30:ccMetric(212,'Intenções','aggregated'),sales30:ccMetric(9,'Vendas','webhook_authenticated'),
+      sources:Object.fromEntries(['youtube','telegram','bluesky','google','bing','direto','instagram','tiktok','whatsapp','email'].map((n,i)=>[n,{views:3000-i*250,checkout_intent:30-i,hotmart_view:12,subscribe_click:2}])),pages:[]},
+    acquisition:{reachAt:now,
+      channels:[{channel:'YouTube',audience:ccMetric(1240,'Inscritos'),views:ccMetric(88120,'Visualizações'),delta7:120},{channel:'Telegram',audience:ccMetric(310,'Membros'),delta7:12},{channel:'Bluesky',audience:ccMetric(96,'Seguidores'),delta7:-1},{channel:'TikTok',audience:ccMetric(null,'Seguidores'),note:'Publicação por agendamento no TikTok Studio'},{channel:'Instagram/Facebook',audience:ccMetric(null,'Seguidores')}],
+      youtubeRecent:Array.from({length:15},(_,i)=>({t:'IA para salão de beleza: 1 dica prática #shorts '+i,d:now,views:1500-i*90,likes:40-i,privacy:'public',url:'https://youtube.com/shorts/v'+i})),
+      history:[],
+      publications:{expected:42,published:40,pct:95.2,perChannel:{blog:{expected:7,published:7},telegram:{expected:7,published:7},bluesky:{expected:7,published:6},youtube:{expected:7,published:7},youtube_dica:{expected:7,published:7},youtube_calc:{expected:7,published:6}}},
+      today:['blog','telegram','bluesky','youtube_dica','youtube','youtube_calc'].map((c,i)=>({channel:c,status:i===5?'erro':'publicado',url:'https://zevanory.api.br/x'+i,at:now,code:i===5?'provider_http_503':null}))},
+    autonomy:{runs:{scheduledRuns:212,succeeded:205,failed:7,recoveredAutomatically:6,unrecovered:1,manualRuns:3,autonomyPct:97.2,mttrMinutes:84,failuresList:Array.from({length:7},(_,i)=>({workflow:'youtube-autonomous-short.yml',at:now,recovered:i!==3}))},
+      agenda:Array.from({length:10},(_,i)=>({id:'a'+i,agent:'Motor de Vídeo',task:'Short: dica de IA por ramo (YouTube + cross-post) '+i,next:now})),
+      ownerOnly:[{what:'Aprovar Instagram/Facebook',why:'Aguardando revisão da Meta',status:'aguardando terceiro'},{what:'Aprovar Pinterest',why:'Aguardando aprovação do app',status:'aguardando terceiro'},{what:'Trocar nome do TikTok',why:'Liberado a partir de 18/10',status:'agendado'},{what:'Liberar tráfego pago',why:'Só após a 7ª venda',status:'pronto para decidir'}]},
+    operations:{probes:[{url:'https://zevanory.api.br/api/health',http:200,ms:182,ok:true},{url:'https://vendas.zevanory.api.br/solucoes',http:200,ms:240,ok:true},{url:'https://controle.zevanory.api.br/',http:200,ms:131,ok:true}],salesSwitch:{open:false},checkoutMode:'Hotmart vendendo; checkout próprio bloqueado até LIBERAR VENDAS',deploys:Array.from({length:5},()=>({at:now,conclusion:'success'}))},
+    forecast:{status:'ok',horizonDays:30,salesExpected:13.5,salesInterval80:[9,18],revenueExpectedCents:344000,revenueInterval80Cents:[229000,458000],basis:'9 vendas em 20 dias'},
+    recommendations:Array.from({length:6},(_,i)=>({title:'Canal que mais traz visitas: youtube '+i,evidence:'3000 visitas e 42 intenções em 30 dias',action:'Manter frequência e repetir os formatos que geraram intenção',confidence:'média',risk:'baixo',cost:'R$ 0'}))}};
+const ccTabs=['Agora','IA','Desempenho','Funciona?','Operação','Financeiro','Rumo'];
 const views=[
   ['overview','Visão Geral'],['products','Produtos'],['commercial','Comercial'],['creatives','Criativos'],
   ['approvals','Aprovações'],['publications','Publicações'],['prospecting','Prospecção'],['crm','CRM/Vendas'],
@@ -217,6 +245,7 @@ for(const size of sizes){
     await page.route(/\/(control\/)?api\/commercial\/stream$/,r=>r.fulfill({status:200,contentType:'text/event-stream; charset=utf-8',headers:{'cache-control':'no-cache','connection':'keep-alive'},body:'event: commercial-update\ndata: {"seq":1,"at":"2026-09-26T16:00:00.000Z"}\n\n'}));
     await page.route('**/api/commercial/funnel',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,summary:null,readiness:{status:'AGUARDAR',headline:'Ainda não é hora de pagar anúncios.',nextMilestone:'Vendas abertas em produção: vendas ainda fechadas (modo teste).',criteria:[{id:'sales-open',label:'Vendas abertas em produção',ok:false,detail:''}],metrics:{visitors:0,paid:0,conversion:0,conversionLow:0,aov:0,refundRate:0,maxCpa:0,maxCpc:0,breakEvenRoas:0},plan:null}})}));
     await page.route(/\/api\/sales\/(state|switch)$/,r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,requested:false,open:false,switchedAt:null,preflightFresh:true,preflight:{ok:false,at:'2026-09-26T16:00:00.000Z',checks:[{id:'mercadopago_production_token',ok:false,detail:'credencial de teste'}]}})}));
+    await page.route('**/api/owner/command-center',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(commandCenter)}));
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
     await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:auditSha,runtime:'audit-preview'})}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
@@ -224,11 +253,16 @@ for(const size of sizes){
     else await page.locator('.zpcSidebarBrand').filter({hasText:'ZEVANORY'}).waitFor({state:'visible',timeout:15000});
     await page.addScriptTag({path:axePath});
 
-    const auditViews=views.map(([key,label])=>[key,label,0]);
+    const auditViews=views.flatMap(([key,label])=>key==='overview'?ccTabs.map((_,i)=>[key,label,i]):[[key,label,0]]);
     for(const [key,label,overviewPage] of auditViews){
       const row={viewport:size,theme,view:key,label,overviewPage,failures:[]};
       const fail=(code,detail)=>{row.failures.push({code,detail});failed=true;};
-      try{await navigate(page,size.width,key,label);}catch(e){fail('NAVIGATION',String(e));report.push(row);continue;}
+      try{
+        await navigate(page,size.width,key,label);
+        if(key==='overview'){
+          await page.getByRole('navigation',{name:'Perguntas da Central de Comando'}).getByRole('button',{name:ccTabs[overviewPage],exact:true}).click({timeout:15000});
+        }
+      }catch(e){fail('NAVIGATION',String(e));report.push(row);continue;}
       await page.waitForTimeout(80);
       const dom=await page.evaluate(({allowedFonts})=>{
         const de=document.documentElement, body=document.body, main=document.querySelector('main');
