@@ -17,7 +17,7 @@ const record=(id,kind,title,status,extra={})=>({
 const commercial={
   generatedAt:now,
   metrics:{leadsToday:16,contactsToday:4,creativesInProduction:3,pendingApproval:2,publishedToday:1,salesCentsToday:129900},
-  robot:{state:'ACTIVE',label:'ROBÔ COMERCIAL: ATIVO',reason:'Auditoria PED.',lastHeartbeatAt:now,externalProspecting:true,publishAdapterReady:false,activeChannels:['web']},
+  robot:{state:'ACTIVE',label:'ROBÔ: ONLINE · EXECUTANDO PESQUISA',reason:'Canais externos habilitados: web · contato direto bloqueado · publicação em espera · só vendas comprovadas contam.',lastHeartbeatAt:now,externalProspecting:true,publishAdapterReady:false,activeChannels:['web']},
   leads:[record('lead-1','lead','Lead de auditoria','new',{channel:'web'})],
   creatives:[record('creative-1','creative','Criativo de auditoria','approval')],
   publications:[record('publication-1','publication','Publicação auditada','published',{channel:'web',publishedAt:now})],
@@ -185,6 +185,11 @@ const sizes=[
   {name:'owner-1536x730',width:1536,height:730,deviceScaleFactor:1.25},
   {name:'tablet',width:768,height:1024,deviceScaleFactor:1},
   {name:'mobile',width:375,height:812,deviceScaleFactor:1},
+  // Owner's official matrix (12/10): every view, both themes.
+  {name:'owner-1280x720',width:1280,height:720,deviceScaleFactor:1},
+  {name:'owner-1366x768',width:1366,height:768,deviceScaleFactor:1},
+  {name:'owner-1024x768',width:1024,height:768,deviceScaleFactor:1},
+  {name:'owner-390x844',width:390,height:844,deviceScaleFactor:3},
 ];
 const themes=['dark','light'];
 const allowedFonts=new Set([12,14,16,18,21,24,25,28,30,37]);
@@ -261,14 +266,21 @@ for(const size of sizes){
     else await page.locator('.zpcSidebarBrand').filter({hasText:'ZEVANORY'}).waitFor({state:'visible',timeout:15000});
     await page.addScriptTag({path:axePath});
 
-    const auditViews=views.flatMap(([key,label])=>key==='overview'?ccTabs.map((_,i)=>[key,label,i]):[[key,label,0]]);
-    for(const [key,label,overviewPage] of auditViews){
-      const row={viewport:size,theme,view:key,label,overviewPage,failures:[]};
+    // Every card page of every Command Center tab is audited (paged cards are content too).
+    const auditViews=views.flatMap(([key,label])=>key==='overview'?ccTabs.flatMap((_,i)=>[0,1,2,3,4,5].map(cp=>[key,label,i,cp])):[[key,label,0,0]]);
+    for(const [key,label,overviewPage,cardPage] of auditViews){
+      const row={viewport:size,theme,view:key,label,overviewPage,cardPage,failures:[]};
       const fail=(code,detail)=>{row.failures.push({code,detail});failed=true;};
       try{
         await navigate(page,size.width,key,label);
         if(key==='overview'){
-          await page.getByRole('navigation',{name:'Perguntas da Central de Comando'}).getByRole('button',{name:ccTabs[overviewPage],exact:true}).click({timeout:15000});
+          const ccNav=page.getByRole('navigation',{name:'Perguntas da Central de Comando'});
+          await ccNav.getByRole('button',{name:ccTabs[(overviewPage+1)%ccTabs.length],exact:true}).click({timeout:15000});
+          await ccNav.getByRole('button',{name:ccTabs[overviewPage],exact:true}).click({timeout:15000});
+          const pagerText=await page.locator('.ccTabs .ccPager span').textContent({timeout:500}).catch(()=>null);
+          const cardPages=pagerText?Number(pagerText.split('/')[1]||1):1;
+          if(cardPage>=cardPages) continue;
+          for(let k=0;k<cardPage;k++){await page.locator('.ccTabs .ccPager button[aria-label="Próxima página"]').click({timeout:5000});await page.waitForTimeout(60);}
         }
       }catch(e){fail('NAVIGATION',String(e));report.push(row);continue;}
       await page.waitForTimeout(80);
@@ -477,7 +489,7 @@ for(const size of sizes){
       row.focus=focus;
       if(focus.active!=='true'||parseFloat(focus.outlineWidth||'0')<4||focus.outlineStyle==='none') fail('FOCUS_RING',JSON.stringify(focus));
 
-      const shot=`${outDir}/${size.name}-${theme}-${key}${overviewPage ? '-page'+(overviewPage+1) : ''}.png`;
+      const shot=`${outDir}/${size.name}-${theme}-${key}${overviewPage ? '-page'+(overviewPage+1) : ''}${cardPage ? '-cards'+(cardPage+1) : ''}.png`;
       await page.screenshot({path:shot,fullPage:true});
       row.screenshot=shot;
       report.push(row);

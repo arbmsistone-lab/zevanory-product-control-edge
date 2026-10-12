@@ -466,6 +466,8 @@ function App() {
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('arbm_admin_session') || '');
   const [authState, setAuthState] = useState<'checking' | 'signedout' | 'ready'>(sessionToken ? 'checking' : 'signedout');
   const loadGeneration = useRef(0);
+  // A failed action belongs to the screen where it happened: leaving the screen clears it.
+  useEffect(() => { setError(''); }, [view]);
   const bootstrapController = useRef<AbortController | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('zpc_theme');
@@ -681,6 +683,11 @@ function App() {
     void load(token);
   };
 
+  // A 401 is only "sessão expirada" when the edge itself says so; then the panel signs out
+  // instead of keeping "PIN ADMIN ATIVO" next to an error.
+  const sessionStillValid = async () => {
+    try { return (await api.post('/api/_session_verify', { sessionToken })).data?.valid === true; } catch { return true; }
+  };
   const runGovernance = async (path: string) => {
     setBusy(true);
     setError('');
@@ -688,6 +695,10 @@ function App() {
       await api.post(path, { sessionToken });
       await load();
     } catch (err: any) {
+      if (err?.response?.status === 401 && !(await sessionStillValid())) {
+        await logout();
+        return;
+      }
       const reason = String(err?.message || '');
       const detail = String(err?.response?.data?.error || reason || '').slice(0, 160);
       setError(/fonte_externa_indisponivel/.test(reason)
@@ -861,7 +872,8 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [activeProducts, filter]);
-  const productPageSize = viewportWidth <= 900 ? 1 : 2;
+  // Short screens (owner matrix 1280x720, 1024x768) show one full-width card per page.
+  const productPageSize = viewportWidth <= 900 || viewportHeight <= 800 ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);
@@ -1108,10 +1120,12 @@ function App() {
       {view === 'products' && (
         <>
           <section className='metrics'>
-            <div className='metric'><span>Produtos cadastrados</span><strong>{activeSummary.total}</strong></div>
-            <div className='metric'><span>Produtos certificados</span><strong>{activeSummary.certified}</strong></div>
-            <div className='metric'><span>Em certificação</span><strong>{activeSummary.inCertification}</strong></div>
-            <div className='metric'><span>Pendências ZEES próprias</span><strong>{activeSummary.zeesBlocked}</strong></div>
+            {/* Distinct universes, never mixed: the official sales catalog (hourly buy-path proof),
+                internal projects that are not sold, and the internal ZEES engineering certification. */}
+            <div className='metric' title={liveTruth?.at ? `Prova horária do caminho de compra · ${new Date(liveTruth.at).toLocaleString('pt-BR')}` : 'Prova horária ainda não lida'}><span>Catálogo oficial à venda</span><strong>{liveTruth ? `${Object.values(liveTruth.open).filter(Boolean).length}/${Object.keys(liveTruth.prices).length}` : 'N/D'}</strong></div>
+            <div className='metric' title='Cadastros do painel que não estão no catálogo oficial de vendas'><span>Projetos internos (não vendidos)</span><strong>{liveTruth ? activeProducts.filter(product => !(product.slug in liveTruth.prices)).length : 'N/D'}</strong></div>
+            <div className='metric' title='Padrão interno de engenharia ZEES-16; não é condição para vender'><span>Certificação ZEES concluída</span><strong>{activeSummary.certified}/{activeSummary.total}</strong></div>
+            <div className='metric' title='Todos os cadastros ativos do painel'><span>Cadastros no painel</span><strong>{activeSummary.total}</strong></div>
           </section>
 
           <section className='toolbar'>
@@ -1147,7 +1161,7 @@ function App() {
             </div>
           </section>
 
-          <section className='productGrid'>
+          <section className='productGrid' data-single={productPageSize === 1 ? 'true' : undefined}>
             {pagedProducts.map(product => (
               <article className={product.status === 'archived' ? 'productCard archived' : 'productCard'} key={product.id}>
                 <div className='productHead'>
@@ -1156,15 +1170,16 @@ function App() {
                     <h3>{product.name}</h3>
                   </div>
                   {(() => {
-                    const live = liveTruth && product.slug in liveTruth.open ? liveTruth.open[product.slug] : null;
-                    const on = live ?? product.salesEnabled;
-                    return <span className={on ? 'saleBadge on' : 'saleBadge off'} title={live != null ? `Prova horária do caminho de compra (site e Hotmart) · ${liveTruth?.at ? new Date(liveTruth.at).toLocaleString('pt-BR') : ''}` : 'Cadastro interno'}>{on ? 'VENDA ON' : 'VENDA OFF'}</span>;
+                    const official = Boolean(liveTruth && product.slug in liveTruth.prices);
+                    if (liveTruth && !official) return <span className='saleBadge off' title='Fora do catálogo oficial de vendas'>PROJETO INTERNO</span>;
+                    const on = official ? liveTruth!.open[product.slug] === true : product.salesEnabled;
+                    return <span className={on ? 'saleBadge on' : 'saleBadge off'} title={official ? `Prova horária do caminho de compra (site e Hotmart) · ${liveTruth?.at ? new Date(liveTruth.at).toLocaleString('pt-BR') : ''}` : 'Cadastro interno'}>{on ? 'À VENDA' : 'VENDA OFF'}</span>;
                   })()}
                 </div>
                 <p className='productDescription productDescriptionPrimary'>{product.description || 'Sem descricao administrativa.'}</p>
                 <div className='productFacts'>
-                  <span><b>{liveTruth && liveTruth.prices[product.slug] ? formatMoney(liveTruth.prices[product.slug] * 100) : formatMoney(product.priceCents)}</b><small>{liveTruth && liveTruth.prices[product.slug] ? 'Preço oficial' : 'Preco'}</small></span>
-                  <span><b>{liveTruth?.open[product.slug] ? 'À venda' : statusLabel(product.status)}</b><small>Status</small></span>
+                  <span><b>{liveTruth && liveTruth.prices[product.slug] ? formatMoney(liveTruth.prices[product.slug] * 100) : liveTruth ? 'Não vendido' : formatMoney(product.priceCents)}</b><small>{liveTruth && liveTruth.prices[product.slug] ? 'Preço oficial' : 'Preço'}</small></span>
+                  <span><b>{liveTruth?.open[product.slug] ? 'À venda' : liveTruth && !(product.slug in liveTruth.prices) ? 'Projeto interno' : statusLabel(product.status)}</b><small>Status</small></span>
                   <span><b>{product.deliveryModel || 'N/D'}</b><small>Entrega</small></span>
                 </div>
                 <button
@@ -1172,15 +1187,22 @@ function App() {
                   type='button'
                   onClick={() => setDetailProduct(product)}
                 >
-                  <span>ZEES {product.certification.summary.proved}/{product.certification.summary.applicable} · {product.certification.summary.blocked} bloqueados</span>
+                  <span title='Padrão interno de engenharia; não decide se o produto pode ser vendido'>Engenharia ZEES {product.certification.summary.proved}/{product.certification.summary.applicable} · {product.certification.summary.blocked} pendentes</span>
                   <strong>Ver detalhes</strong>
                 </button>
-                <div className='gateRow'>
-                  <span className={product.gates.legal ? 'gate ok' : 'gate'}>Legal</span>
-                  <span className={product.gates.payment ? 'gate ok' : 'gate'}>Pagamento</span>
-                  <span className={product.gates.fulfillment ? 'gate ok' : 'gate'}>Entrega</span>
-                  <span className={product.gates.support ? 'gate ok' : 'gate'}>Suporte</span>
-                </div>
+                {(() => {
+                  // Lifecycle, each stage with its own proof: a checkout that opens does not mean the
+                  // product passed the internal engineering certification, and vice versa.
+                  const official = Boolean(liveTruth && product.slug in liveTruth.prices);
+                  const stages: [string, boolean, string][] = [
+                    ['Cadastro', true, 'Registrado no painel'],
+                    ['Validado', official, official ? 'Na fonte oficial única (nome, preço e garantia conferidos a cada mudança)' : 'Fora do catálogo oficial'],
+                    ['ZEES', product.certification.ready, `Certificação interna de engenharia: ${product.certification.summary.proved}/${product.certification.summary.applicable}`],
+                    ['Publicado', official && Boolean(product.publicUrl), official ? 'Página pública no ar' : 'Sem página de venda'],
+                    ['À venda', Boolean(liveTruth?.open[product.slug]), liveTruth?.open[product.slug] ? 'Caminho de compra aberto na prova horária' : 'Não habilitado para venda'],
+                  ];
+                  return <div className='gateRow' aria-label='Etapas do produto'>{stages.map(([label, ok, why]) => <span key={label} className={ok ? 'gate ok' : 'gate'} title={why}>{label}</span>)}</div>;
+                })()}
                 <div className='productActions'>
                   <button className='secondary compact' aria-label='Abrir certificação' title='Certificação' onClick={() => openCertification(product)}><ShieldCheck size={14} />Certificação</button>
                   <button className='secondary compact' aria-label='Editar produto' title='Editar' onClick={() => openEdit(product)}><Pencil size={14} />Editar</button>

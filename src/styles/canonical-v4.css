@@ -607,7 +607,7 @@ html,body,#root,.app-container{width:100%!important;max-width:100%!important;min
   }
   .zpcWorkspace.shell-products .gateRow {
     display:grid!important;
-    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
     gap:var(--zpc-space-1)!important;
   }
   .zpcWorkspace.shell-products .gate {

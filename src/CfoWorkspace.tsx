@@ -16,11 +16,14 @@ export default function CfoWorkspace({ data }: { data: CfoWorkspaceData | null }
   }
 
   const { metrics } = data;
+  // Without a proven financial source a figure is "unavailable", never a proven zero.
+  const hasSource = data.adapters.some(adapter => adapter.state === 'READY');
+  const val = (cents: number) => hasSource ? money(cents) : 'Sem fonte';
   return (
     <section className='cfoWorkspace' aria-label='ZEVANORY CFO'>
       <section className='cfoHero panel'>
         <div>
-          <p className='kicker'>NOVO PRODUTO · INTELIGÊNCIA FINANCEIRA</p>
+          <p className='kicker'>PROJETO INTERNO · FORA DO CATÁLOGO DE VENDAS</p>
           <h2>ZEVANORY CFO</h2>
           <p className='productDescription'>Caixa, recebíveis, conciliação, cobrança e monitor financeiro em uma camada autônoma de leitura e decisão.</p>
         </div>
@@ -37,13 +40,13 @@ export default function CfoWorkspace({ data }: { data: CfoWorkspaceData | null }
         <button className={page === 'receivables' ? 'filter active' : 'filter'} onClick={() => setPage('receivables')}>Recebíveis</button>
       </nav>
 
-      {page === 'overview' && <section className='cfoMetrics' aria-label='Indicadores financeiros'>
-        <article><WalletCards size={18}/><span>Saldo consolidado</span><strong>{money(metrics.balanceCents)}</strong></article>
-        <article><ReceiptText size={18}/><span>A receber</span><strong>{money(metrics.receivableOpenCents)}</strong></article>
-        <article className={metrics.overdueCents > 0 ? 'attention' : ''}><AlertTriangle size={18}/><span>Em atraso</span><strong>{money(metrics.overdueCents)}</strong></article>
-        <article><CircleDollarSign size={18}/><span>Projeção 30 dias</span><strong>{money(metrics.projected30dCents)}</strong></article>
-        <article><Landmark size={18}/><span>Reserva tributária indicativa</span><strong>{money(metrics.taxReserveSuggestedCents)}</strong></article>
-        <article><ShieldCheck size={18}/><span>Recebíveis alto risco</span><strong>{metrics.highRiskReceivables}</strong></article>
+      {page === 'overview' && <section className='cfoMetrics' aria-label='Indicadores financeiros' title={hasSource ? 'Fontes financeiras comprovadas' : 'Nenhuma fonte financeira conectada (ARBM ONE, Pix e Open Finance exigem autorização do dono): valores indisponíveis, não zero'}>
+        <article><WalletCards size={18}/><span>Saldo consolidado</span><strong>{val(metrics.balanceCents)}</strong></article>
+        <article><ReceiptText size={18}/><span>A receber</span><strong>{val(metrics.receivableOpenCents)}</strong></article>
+        <article className={metrics.overdueCents > 0 ? 'attention' : ''}><AlertTriangle size={18}/><span>Em atraso</span><strong>{val(metrics.overdueCents)}</strong></article>
+        <article><CircleDollarSign size={18}/><span>Projeção 30 dias</span><strong>{val(metrics.projected30dCents)}</strong></article>
+        <article><Landmark size={18}/><span>Reserva tributária indicativa</span><strong>{val(metrics.taxReserveSuggestedCents)}</strong></article>
+        <article><ShieldCheck size={18}/><span>Recebíveis alto risco</span><strong>{hasSource ? metrics.highRiskReceivables : 'Sem fonte'}</strong></article>
       </section>}
 
       {page === 'integrations' && <section className='cfoGrid'>

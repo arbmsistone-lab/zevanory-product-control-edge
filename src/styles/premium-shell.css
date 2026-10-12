@@ -439,6 +439,10 @@ html, body, button, input, select, textarea {
 }
 .zpcHeaderActions .linkButton {
   color: var(--action-primary);
+  /* WCAG target size: never shrinks below 32px on mid-size screens (1024x768). */
+  min-width: 32px;
+  min-height: 32px;
+  flex-shrink: 0;
 }
 .zpcHeaderActions .primary {
   min-height: 32px;
@@ -532,6 +536,19 @@ html, body, button, input, select, textarea {
 .zpcAppShell > .areaSelectWrap {
   grid-column: 2;
   grid-row: 1;
+}
+/* 901-1100px keeps the sidebar navigation; the compact area select (from the canonical layer)
+   would sit on the header row and cover its actions, so it stays off in that range. */
+@media (min-width: 901px) and (max-width: 1100px) {
+  .zpcAppShell > .areaSelectWrap {
+    display: none;
+  }
+  /* The canonical layer switches to single-column areas at 1100px while this shell keeps the
+     sidebar column; restore the two-column areas so the header spans the full width instead of
+     being squeezed into the sidebar column (actions overlapped at 1024x768). */
+  .zpcAppShell {
+    grid-template-areas: "header header" "trust trust" "nav workspace";
+  }
 }
 .zpcAppShell > main.shell {
   grid-column: 2;
@@ -769,4 +786,9 @@ html, body, button, input, select, textarea {
   .adsPanel { padding: var(--zpc-space-2); gap: var(--zpc-space-1); margin-bottom: var(--zpc-space-1); }
   .adsPanel small { margin-top: var(--zpc-space-1); }
   .adsPanel .approvalActions { margin-top: 0; }
+}
+
+/* One product per page (short screens): the card spans the full width instead of half of it. */
+.zpcWorkspace.shell-products .productGrid[data-single='true'] {
+  grid-template-columns: minmax(0, 1fr) !important;
 }

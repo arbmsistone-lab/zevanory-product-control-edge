@@ -176,6 +176,26 @@ function RecordRow({ item }: { item: CommercialRecord }) {
   );
 }
 
+// One publication, many proofs: the engine's confirmation and the provider's readback (e.g. the
+// YouTube Data API) of the same content are merged under a canonical id instead of counted twice.
+export function canonicalPublicationKey(item: CommercialRecord) {
+  const url = String(item.sourceKey || item.evidence.find(e => /^https?:\/\//.test(e)) || '');
+  const yt = url.match(/(?:youtu\.be\/|shorts\/|[?&]v=)([A-Za-z0-9_-]{6,})/);
+  if (yt) return 'youtube:' + yt[1];
+  return url ? 'url:' + url.replace(/[?#].*$/, '') : 'id:' + item.kind + ':' + item.id;
+}
+export function consolidatePublications(items: CommercialRecord[]) {
+  const byKey = new Map<string, CommercialRecord>();
+  for (const item of items) {
+    const key = canonicalPublicationKey(item);
+    const prev = byKey.get(key);
+    if (!prev) { byKey.set(key, item); continue; }
+    const api = [prev, item].find(x => x.source === 'YouTube Data API') || prev;
+    byKey.set(key, { ...api, source: [...new Set([prev.source, item.source])].join(' + '), evidence: [...new Set([...prev.evidence, ...item.evidence])], detail: api.detail + ' · confirmado pelo motor e pelo provedor' });
+  }
+  return [...byKey.values()];
+}
+
 export default function CommercialWorkspace({ section, data, sessionToken, onRefresh }: Props) {
   const [busyId, setBusyId] = useState('');
   const [actionError, setActionError] = useState('');
@@ -186,7 +206,9 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [dashboardPage, setDashboardPage] = useState(0);
   const [liveMode, setLiveMode] = useState(false);
   const [listPage, setListPage] = useState(0);
-  const [financeRecords, setFinanceRecords] = useState(false);
+  // Compact screens show one finance block at a time: sales switch, paid-ads readiness, records.
+  const [financePage, setFinancePage] = useState<'sales' | 'ads' | 'records'>('sales');
+  const financeRecords = financePage === 'records';
   const [realFunnel, setRealFunnel] = useState<RealFunnel | null>(null);
   const [funnelError, setFunnelError] = useState(false);
   // Same source as the Command Center, so every area tells the same story.
@@ -387,11 +409,11 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const discardedSignals = rawDiscoveries.length - usefulSignals.length;
   const genericMap: Partial<Record<CommercialSection, CommercialRecord[]>> = {
     creatives: data.creatives,
-    publications: [
+    publications: consolidatePublications([
       ...((cc?.acquisition?.today || []) as any[]).filter(p => p.status === 'publicado').map((p, i): CommercialRecord => ({ id: 'cc-today-' + p.channel + i, kind: 'publication', title: 'Publicado · ' + p.channel, detail: 'Publicação confirmada pelo provedor' + (p.url ? ' · ' + p.url : ''), status: 'published', channel: p.channel, product: null, productId: null, valueCents: null, source: 'motores', sourceKey: p.url || null, evidence: p.url ? [p.url] : [], createdAt: p.at || cc?.generatedAt, updatedAt: p.at || cc?.generatedAt, publishedAt: p.at || null })),
       ...((cc?.acquisition?.youtubeRecent || []) as any[]).map((v, i): CommercialRecord => ({ id: 'cc-yt-' + i + v.url, kind: 'publication', title: 'YouTube · ' + v.t, detail: `${v.views} visualizações · ${v.url}`, status: 'published', channel: 'youtube', product: null, productId: null, valueCents: null, source: 'YouTube Data API', sourceKey: v.url, evidence: [v.url], createdAt: v.d, updatedAt: v.d, publishedAt: v.d })),
       ...data.publications,
-    ],
+    ]),
     prospecting: usefulSignals,
     crm: data.leads,
     support: data.support,
@@ -400,7 +422,8 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['new','nurture','qualified','contact-ready','contacted','conversation','offer','follow-up','checkout','payment','customer','fulfillment','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-  const compactFinance = viewportWidth <= 700 || viewportHeight <= 700;
+  // Owner matrix (1280x720, 1366x768, 1024x768): finance pages panels and records separately.
+  const compactFinance = viewportWidth <= 700 || viewportHeight <= 800;
   const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' && !compactFinance ? 2 : 0));
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);
@@ -424,7 +447,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <h2>{meta.title}</h2>
           <p>{meta.subtitle}</p>
           <div className={'liveTelemetry ' + liveState.toLowerCase()} aria-live='polite'>
-            <span className='liveDot' /><b>{liveState}</b><small>sincronização operacional · {Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000))}s</small>
+            <span className='liveDot' /><b>{liveState === 'LIVE' ? 'CONECTADO' : liveState === 'SYNCING' ? 'SINCRONIZANDO' : 'DESATUALIZADO'}</b><small title='Idade da leitura do painel e horário dos dados comerciais persistidos'>lido há {Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000))}s · dados {time(data.generatedAt)}</small>
             {section === 'commercial' && <button className={liveMode ? 'filter active' : 'filter'} aria-pressed={liveMode} onClick={() => setLiveMode(v => !v)}>{liveMode ? 'Voltar ao painel' : 'Ver ao vivo'}</button>}
           </div>
         </div>
@@ -524,14 +547,15 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
         </article>
       )}
 
-      {section === 'finance' && (!compactFinance || !financeRecords) && <SalesSwitchPanel sessionToken={sessionToken} compact={compactFinance} />}
-      {section === 'finance' && (!compactFinance || !financeRecords) && <AdsReadinessPanel sessionToken={sessionToken} compact={compactFinance} />}
-      {section === 'finance' && compactFinance && !financeRecords && (
-        <div className='approvalActions'><button className='changeBtn' onClick={() => setFinanceRecords(true)}><CircleDollarSign size={15}/>Ver recebimentos ({data.finance.length})</button></div>
+      {section === 'finance' && compactFinance && (
+        <nav className='commercialPager' aria-label='Blocos do financeiro'>
+          {([['sales', 'Vendas'], ['ads', 'Anúncios'], ['records', `Recebimentos (${data.finance.length})`]] as const).map(([id, label]) => (
+            <button key={id} className={financePage === id ? 'filter active' : 'filter'} aria-pressed={financePage === id} onClick={() => setFinancePage(id)}>{label}</button>
+          ))}
+        </nav>
       )}
-      {section === 'finance' && compactFinance && financeRecords && (
-        <div className='approvalActions'><button className='changeBtn' onClick={() => setFinanceRecords(false)}><RotateCcw size={15}/>Voltar para vendas e anúncios</button></div>
-      )}
+      {section === 'finance' && (!compactFinance || financePage === 'sales') && <SalesSwitchPanel sessionToken={sessionToken} compact={compactFinance} />}
+      {section === 'finance' && (!compactFinance || financePage === 'ads') && <AdsReadinessPanel sessionToken={sessionToken} compact={compactFinance} />}
 
       {!['commercial','approvals','creatives'].includes(section) && !(section === 'finance' && compactFinance && !financeRecords) && (
         <article className='commercialPanel'>

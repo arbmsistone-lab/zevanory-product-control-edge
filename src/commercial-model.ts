@@ -135,12 +135,11 @@ export function deriveCommercialRobotState(
   if (heartbeatFresh) {
     return {
       state: 'ACTIVE',
-      label: 'ROBÔ COMERCIAL: ATIVO',
-      reason: publishAdapterReady
-        ? 'Prospecção ativa com heartbeat recente; canais externos continuam condicionados aos gates e aprovações.'
-        : 'Prospecção ativa com heartbeat recente; contato e publicação externos permanecem bloqueados até liberação dos respectivos gates.',
+      // "Online and executing" is not "commercially capable": channels and results are stated apart.
+      label: 'ROBÔ: ONLINE · EXECUTANDO PESQUISA',
+      reason: `Canais externos habilitados: ${activeChannels.length ? activeChannels.join(', ') : 'nenhum'} · contato direto bloqueado${publishAdapterReady ? '' : ' · publicação em espera'} · só vendas comprovadas contam.`,
       lastHeartbeatAt,
-      externalProspecting: true,
+      externalProspecting: activeChannels.length > 0,
       publishAdapterReady,
       activeChannels,
     };

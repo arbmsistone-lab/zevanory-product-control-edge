@@ -60,7 +60,7 @@ const when = (iso: string | null | undefined) => {
 const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', no_events: 'Sem vendas ainda', estimated: 'Estimado', stale: 'Atrasado', missing: 'Sem dados' };
 const CHANNEL: Record<string, string> = { youtube: 'YouTube · produto', youtube_dica: 'YouTube · dica', youtube_calc: 'YouTube · calculadora', telegram: 'Telegram', bluesky: 'Bluesky', blog: 'Blog', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
 const STATE: Record<string, string> = { autonomous: 'Autônomo', partial: 'Parcial', blocked_third_party: 'Aguardando terceiro', awaiting_event: 'Aguardando evento real', manual: 'Manual', owner_reserved: 'Reservado ao dono' };
-const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando' };
+const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando', inconclusive: 'inconclusivo' };
 const KIND: Record<string, string> = { approved: 'Venda aprovada', refunded: 'Reembolso', chargeback: 'Chargeback', protest: 'Reclamação', canceled: 'Pagamento cancelado', expired: 'Pagamento expirado', abandoned: 'Carrinho abandonado', billet_printed: 'Boleto gerado', delayed: 'Pagamento atrasado', subscription_canceled: 'Assinatura cancelada' };
 
 function localDay(t = Date.now()) {
@@ -191,6 +191,10 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
   const [tab, setTab] = useState<TabId>('now');
   const [cardPage, setCardPage] = useState(0);
   const [narrow, setNarrow] = useState(typeof window !== 'undefined' && window.innerWidth <= 900);
+  // Short or mid-size screens (owner matrix: 1280x720, 1366x768, 1024x768) page the cards two at a
+  // time instead of squeezing them until a single row no longer fits.
+  const isCompact = () => typeof window !== 'undefined' && !(window.innerWidth <= 900) && (window.innerHeight <= 820 || window.innerWidth <= 1100);
+  const [compact, setCompact] = useState(isCompact);
 
   const load = useCallback(() => {
     if (!sessionToken) return;
@@ -200,11 +204,11 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
   }, [sessionToken]);
   useEffect(() => { load(); const id = window.setInterval(load, 60000); return () => window.clearInterval(id); }, [load]);
   useEffect(() => {
-    const onResize = () => setNarrow(window.innerWidth <= 900);
+    const onResize = () => { setNarrow(window.innerWidth <= 900); setCompact(isCompact()); };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  useEffect(() => { setCardPage(0); }, [tab, narrow]);
+  useEffect(() => { setCardPage(0); }, [tab, narrow, compact]);
 
   const live = useMemo(() => liveRevenue(sales), [sales]);
   const s = snapshot;
@@ -350,7 +354,7 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
   };
 
   const tabCards = cards[tab];
-  const perPage = narrow ? 1 : tabCards.length;
+  const perPage = narrow ? 1 : compact ? 2 : tabCards.length;
   const cardPages = Math.max(1, Math.ceil(tabCards.length / perPage));
   const safeCardPage = Math.min(cardPage, cardPages - 1);
   const visible = tabCards.slice(safeCardPage * perPage, safeCardPage * perPage + perPage);
@@ -371,7 +375,7 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
       </header>
       <nav className='ccTabs' aria-label='Perguntas da Central de Comando'>
         {TABS.map(t => <button key={t.id} type='button' className={t.id === tab ? 'active' : ''} aria-pressed={t.id === tab} aria-label={t.label} title={t.question} onClick={() => setTab(t.id)}><t.icon size={16} aria-hidden='true' /><span className='ccTabLabel'>{t.label}</span></button>)}
-        {narrow ? <Pager page={safeCardPage} pages={cardPages} onPage={setCardPage} label='Quadros desta pergunta' /> : null}
+        {narrow || compact ? <Pager page={safeCardPage} pages={cardPages} onPage={setCardPage} label='Quadros desta pergunta' /> : null}
       </nav>
       {!s ? (
         <div className='ccBody' data-cards={1}>

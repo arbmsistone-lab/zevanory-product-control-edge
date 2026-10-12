@@ -17,7 +17,7 @@ const ccBody = cc.ok ? await cc.json() : null;
 console.log('::notice title=LIVE_DATA::' + JSON.stringify({ endpoint: cc.status, snapshot: Boolean(ccBody?.snapshot), snapshotAt: ccBody?.snapshot?.generatedAt || null, salesLedger: Boolean(ccBody?.sales) }));
 
 const tabs = ['Agora', 'IA', 'Desempenho', 'Funciona?', 'Operação', 'Financeiro', 'Rumo'];
-const sizes = [[1920, 1080], [1440, 900], [1536, 730], [768, 1024], [375, 812]];
+const sizes = [[1920, 1080], [1440, 900], [1536, 730], [768, 1024], [375, 812], [1280, 720], [1366, 768], [1024, 768], [390, 844]];
 const browser = await chromium.launch({ headless: true });
 const failures = [];
 let checks = 0;
@@ -30,7 +30,7 @@ for (const [width, height] of sizes) for (const theme of ['dark', 'light']) {
   for (const tab of tabs) {
     await page.getByRole('navigation', { name: 'Perguntas da Central de Comando' }).getByRole('button', { name: tab, exact: true }).click();
     await page.waitForTimeout(400);
-    const narrowPages = width <= 900 ? Number((await page.locator('.ccTabs .ccPager span').textContent().catch(() => '1/1'))?.split('/')[1] || 1) : 1;
+    const narrowPages = Number((await page.locator('.ccTabs .ccPager span').textContent({ timeout: 800 }).catch(() => '1/1'))?.split('/')[1] || 1);
     for (let p = 0; p < narrowPages; p++) {
       if (p > 0) { await page.locator('.ccTabs .ccPager button[aria-label="Próxima página"]').click(); await page.waitForTimeout(300); }
       checks++;
