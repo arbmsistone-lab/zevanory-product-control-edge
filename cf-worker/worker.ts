@@ -1327,8 +1327,16 @@ export default {
       const edgeAuthPath = normalizedPath === '/api/_auth_diagnostic' || normalizedPath === '/api/_session_verify' || normalizedPath === '/api/pin/login' || normalizedPath === '/api/pin/logout';
       const forceDirect = edgeAuthPath || url.searchParams.get('runtime') === 'cloudflare';
       const renderBase = forceDirect ? '' : String(env.RENDER_BACKEND_URL || '').replace(/\/$/, '');
+      // The body is read ONCE and every hop (session guard, auxiliary server, edge handler) gets
+      // its own copy: a consumed or tee'd stream must never turn a valid session into "sessão
+      // inválida" (owner audit, Mission 10).
+      const hasBody = !['GET', 'HEAD'].includes(request.method.toUpperCase());
+      const rawBody = hasBody ? ((await request.clone().text().catch(() => '')) || (await normalizedRequest.clone().text().catch(() => ''))) : '';
+      const copy = (target: string) => new Request(target, { method: request.method, headers: request.headers, body: hasBody ? rawBody : undefined, redirect: 'manual' });
+      let bodyToken = '';
+      try { bodyToken = String(JSON.parse(rawBody || '{}')?.sessionToken || '').trim(); } catch {}
       if (renderBase && normalizedPath === '/api/admin/bootstrap' && request.method === 'POST') {
-        const fast = await edgeBootstrap(normalizedRequest, env as Record<string, any>, ctx, renderBase).catch(() => null);
+        const fast = await edgeBootstrap(copy(normalizedUrl.toString()), env as Record<string, any>, ctx, renderBase).catch(() => null);
         if (fast) return fast;
       }
       // A successful authenticated mutation invalidates the edge snapshot (anonymous or failed
@@ -1345,21 +1353,21 @@ export default {
         if (sessionGuard) return sessionGuard;
         try {
           const target = renderBase + normalizedPath + url.search;
-          const primaryResponse = await fetch(new Request(target, normalizedRequest.clone()));
+          const primaryResponse = await fetch(copy(target), { signal: AbortSignal.timeout(45000) });
           // The edge already verified the session above. A 401 from the auxiliary server for a
           // session the edge holds as valid is the auxiliary server failing to confirm it (cold
           // start, callback timeout), not an expired session: never surface it as "sessão
           // inválida". Fall through to the edge handler instead.
-          const edgeSessionValid = primaryResponse.status === 401 && await (async () => {
-            try { const t = String((await normalizedRequest.clone().json() as any)?.sessionToken || ''); return t.startsWith('zpc1.') && await verifyEdgeSession(t); } catch { return false; }
-          })();
+          const edgeSessionValid = primaryResponse.status === 401 && bodyToken.startsWith('zpc1.') && await verifyEdgeSession(bodyToken).catch(() => false);
           if (primaryResponse.status < 500 && !edgeSessionValid) return invalidate(primaryResponse);
         } catch {}
       }
-      const edgeResponse = await handler(normalizedRequest);
+      const edgeResponse = await handler(copy(normalizedUrl.toString()));
       if (edgeResponse.status === 404 && renderBase) {
-        // Route exists only on the auxiliary server and it did not complete the request.
-        return Response.json({ error: 'Servidor auxiliar indisponível para esta ação agora (sua sessão continua válida). Nada foi alterado.', code: 'auxiliary_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+        // Only when the ROUTE is missing at the edge (exists only on the auxiliary server, which did
+        // not complete the request). A real "not found" from an edge route passes through.
+        const routeMissing = await edgeResponse.clone().json().then((d: any) => d?.error === 'Rota nao encontrada.').catch(() => false);
+        if (routeMissing) return Response.json({ error: 'Servidor auxiliar indisponível para esta ação agora (sua sessão continua válida). Nada foi alterado.', code: 'auxiliary_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
       }
       return invalidate(edgeResponse);
     }

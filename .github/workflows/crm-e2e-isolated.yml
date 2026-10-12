@@ -6,7 +6,7 @@ name: CRM end-to-end (isolated database)
 on:
   pull_request:
     branches: [main]
-    paths: ["backend/**", "src/commercial-model.ts", "src/zevanory-sales-model.ts", "scripts/crm-e2e-isolated.ts", ".github/workflows/crm-e2e-isolated.yml"]
+    paths: ["backend/**", "src/commercial-model.ts", "src/zevanory-sales-model.ts", "scripts/crm-e2e-isolated.ts", "scripts/panel-actions-e2e-isolated.ts", ".github/workflows/crm-e2e-isolated.yml"]
   schedule:
     - cron: "23 6 * * *"
   workflow_dispatch:
@@ -38,3 +38,6 @@ jobs:
           node-version: '24'
       - run: npm install --no-audit --no-fund
       - run: npx tsx scripts/crm-e2e-isolated.ts
+      - name: Every panel write action on the isolated database (Mission 10)
+        if: always()
+        run: npx tsx scripts/panel-actions-e2e-isolated.ts
