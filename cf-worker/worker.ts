@@ -1349,7 +1349,7 @@ export default {
         return response;
       };
       if (renderBase) {
-        const sessionGuard = await guardProxiedEdgeSession(copy(normalizedUrl.toString()));
+        const sessionGuard = await guardProxiedEdgeSession(request);
         if (sessionGuard) return sessionGuard;
         try {
           const target = renderBase + normalizedPath + url.search;
