@@ -185,6 +185,11 @@ const sizes=[
   {name:'owner-1536x730',width:1536,height:730,deviceScaleFactor:1.25},
   {name:'tablet',width:768,height:1024,deviceScaleFactor:1},
   {name:'mobile',width:375,height:812,deviceScaleFactor:1},
+  // Owner's official matrix (12/10): every view, both themes.
+  {name:'owner-1280x720',width:1280,height:720,deviceScaleFactor:1},
+  {name:'owner-1366x768',width:1366,height:768,deviceScaleFactor:1},
+  {name:'owner-1024x768',width:1024,height:768,deviceScaleFactor:1},
+  {name:'owner-390x844',width:390,height:844,deviceScaleFactor:3},
 ];
 const themes=['dark','light'];
 const allowedFonts=new Set([12,14,16,18,21,24,25,28,30,37]);
