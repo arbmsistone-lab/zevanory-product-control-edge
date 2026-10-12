@@ -1166,6 +1166,18 @@ export default {
       return Response.json({ ok: true, summary, readiness: assessAdsReadiness(summary), policy: ADS_POLICY }, { headers: { 'cache-control': 'no-store' } });
     }
 
+    if (normalizedPath === '/api/owner/command-center' && request.method === 'POST') {
+      // Revenue Command Center: hourly snapshot (provenance per metric) plus the live
+      // Hotmart ledger, so a sale shows up immediately instead of at the next rollup.
+      let token = '';
+      try { token = String((await request.clone().json() as any)?.sessionToken || ''); } catch {}
+      if (!token || !(await verifyEdgeSession(token))) return Response.json({ ok: false, error: 'unauthorized' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+      const kv = (env as any).T2_CREATIVE_ASSETS;
+      const read = async (key: string) => { try { return JSON.parse(String(await kv?.get?.(key) || 'null')); } catch { return null; } };
+      const [snapshot, sales] = await Promise.all([read('zpc:command:v1:snapshot'), read('zpc:sales:v1:summary')]);
+      return Response.json({ ok: true, servedAt: new Date().toISOString(), snapshot, sales }, { headers: { 'cache-control': 'no-store' } });
+    }
+
     if (normalizedPath === '/api/owner/oauth/ticket' && request.method === 'POST') {
       // Session PIN checked by this authoritative Cloudflare edge. The browser
       // receives a 60-second HMAC ticket, never the PIN session or shared key.

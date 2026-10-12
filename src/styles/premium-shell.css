@@ -1,24 +1,26 @@
-/* Premium owner overview · Onyx & Champagne */
+/* Premium owner shell · ZEVANORY brand (logo: electric blue -> cyan over deep navy, chrome silver) */
 :root {
-  --z-onix: #0E0F12;
-  --z-surface-dark: #16181D;
-  --z-surface-dark-2: #1D2027;
-  --z-ivory: #F7F5F0;
+  --z-onix: #050B14;
+  --z-surface-dark: #0A1524;
+  --z-surface-dark-2: #0F1E33;
+  --z-ivory: #F4F8FC;
   --z-surface-light: #FFFFFF;
-  --z-surface-light-2: #EFECE4;
-  --z-champagne: #C8A96A;
-  --z-champagne-soft: #D9C492;
-  --z-success: #3FA37A;
-  --z-warning: #D9A441;
-  --z-error: #D25C5C;
-  --z-action-ink: #17140E;
-  --z-text-light: #1A1A1A;
-  --z-muted-light: #514C43;
-  --z-border-light: #DED9CF;
-  --z-action-light: #5E4619;
-  --z-text-dark: #E9E4D8;
-  --z-muted-dark: #B0ABA1;
-  --z-border-dark: #2A2D34;
+  --z-surface-light-2: #E8F0F8;
+  --z-champagne: #00B8FF;
+  --z-champagne-soft: #21E6F3;
+  --z-brand-1: #1578FF;
+  --z-brand-grad: linear-gradient(135deg, #1578FF 0%, #00B8FF 55%, #21E6F3 100%);
+  --z-success: #3FB37F;
+  --z-warning: #E0AA45;
+  --z-error: #E06464;
+  --z-action-ink: #03101C;
+  --z-text-light: #0A1423;
+  --z-muted-light: #3F546B;
+  --z-border-light: #D3DEEA;
+  --z-action-light: #0A5BD1;
+  --z-text-dark: #E8F0FA;
+  --z-muted-dark: #9FB2C8;
+  --z-border-dark: #1A3049;
 }
 
 html, body, button, input, select, textarea {
@@ -184,7 +186,7 @@ html, body, button, input, select, textarea {
   right: var(--zpc-space-3);
   top: -1px;
   height: var(--zpc-space-1);
-  background: linear-gradient(90deg, transparent, var(--z-champagne), transparent);
+  background: linear-gradient(90deg, transparent, var(--z-brand-1), var(--z-champagne), var(--z-champagne-soft), transparent);
   opacity: .65;
   pointer-events: none;
 }
