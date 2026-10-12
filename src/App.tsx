@@ -453,6 +453,8 @@ function App() {
   const [expandedPillarIds, setExpandedPillarIds] = useState<Set<string>>(() => new Set());
   const [incidentPage, setIncidentPage] = useState(0);
   const [incidentFit, setIncidentFit] = useState(99);
+  // Phones show one operations feed at a time (three stacked panels do not fit 390x844).
+  const [opsFeed, setOpsFeed] = useState<'incidents' | 'audits'>('incidents');
   const [auditFit, setAuditFit] = useState(99);
   const [auditPage, setAuditPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
@@ -1231,12 +1233,15 @@ function App() {
               </div>
             </div>
             <div className='operationSummary'>
-              <span>Incidentes <b>{operationIncidents.length}</b></span>
-              <span>Auditorias <b>{operationAudits.length}</b></span>
+              {viewportWidth <= 700
+                ? <><button type='button' className={opsFeed === 'incidents' ? 'filter active' : 'filter'} aria-pressed={opsFeed === 'incidents'} onClick={() => setOpsFeed('incidents')}>Incidentes <b>{operationIncidents.length}</b></button>
+                    <button type='button' className={opsFeed === 'audits' ? 'filter active' : 'filter'} aria-pressed={opsFeed === 'audits'} onClick={() => setOpsFeed('audits')}>Auditorias <b>{operationAudits.length}</b></button></>
+                : <><span>Incidentes <b>{operationIncidents.length}</b></span>
+                    <span>Auditorias <b>{operationAudits.length}</b></span></>}
               <span>Melhorias <b>{shellDashboard.improvements.length}</b></span>
             </div>
           </div>
-          <div className='panel'>
+          {(viewportWidth > 700 || opsFeed === 'incidents') && <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>INCIDENTES</p><h2>Fila operacional</h2></div><div className='opsPager'>{incidentPageCount > 1 && <><button className='secondary compact' onClick={() => setIncidentPage(Math.max(0, safeIncidentPage - 1))} disabled={safeIncidentPage === 0}>‹</button><strong>{safeIncidentPage + 1}/{incidentPageCount}</strong><button className='secondary compact' onClick={() => setIncidentPage(Math.min(incidentPageCount - 1, safeIncidentPage + 1))} disabled={safeIncidentPage >= incidentPageCount - 1}>›</button></>}<AlertTriangle size={20} /></div></div>
             <FitList className='feed' total={operationIncidents.length} max={operationsPageSize} onFit={setIncidentFit}>
               {operationIncidents.length === 0
@@ -1248,8 +1253,8 @@ function App() {
                   </article>
                 ))}
             </FitList>
-          </div>
-          <div className='panel'>
+          </div>}
+          {(viewportWidth > 700 || opsFeed === 'audits') && <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>AUDITORIA</p><h2>Achados recentes</h2></div><div className='opsPager'>{auditPageCount > 1 && <><button className='secondary compact' onClick={() => setAuditPage(Math.max(0, safeAuditPage - 1))} disabled={safeAuditPage === 0}>‹</button><strong>{safeAuditPage + 1}/{auditPageCount}</strong><button className='secondary compact' onClick={() => setAuditPage(Math.min(auditPageCount - 1, safeAuditPage + 1))} disabled={safeAuditPage >= auditPageCount - 1}>›</button></>}<ShieldCheck size={20} /></div></div>
             <FitList className='feed' total={operationAudits.length} max={operationsPageSize} onFit={setAuditFit}>
               {operationAudits.length === 0
@@ -1261,7 +1266,7 @@ function App() {
                   </article>
                 ))}
             </FitList>
-          </div>
+          </div>}
         </section>
       )}
 
