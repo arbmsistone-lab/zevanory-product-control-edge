@@ -176,6 +176,26 @@ function RecordRow({ item }: { item: CommercialRecord }) {
   );
 }
 
+// One publication, many proofs: the engine's confirmation and the provider's readback (e.g. the
+// YouTube Data API) of the same content are merged under a canonical id instead of counted twice.
+export function canonicalPublicationKey(item: CommercialRecord) {
+  const url = String(item.sourceKey || item.evidence.find(e => /^https?:\/\//.test(e)) || '');
+  const yt = url.match(/(?:youtu\.be\/|shorts\/|[?&]v=)([A-Za-z0-9_-]{6,})/);
+  if (yt) return 'youtube:' + yt[1];
+  return url ? 'url:' + url.replace(/[?#].*$/, '') : 'id:' + item.kind + ':' + item.id;
+}
+export function consolidatePublications(items: CommercialRecord[]) {
+  const byKey = new Map<string, CommercialRecord>();
+  for (const item of items) {
+    const key = canonicalPublicationKey(item);
+    const prev = byKey.get(key);
+    if (!prev) { byKey.set(key, item); continue; }
+    const api = [prev, item].find(x => x.source === 'YouTube Data API') || prev;
+    byKey.set(key, { ...api, source: [...new Set([prev.source, item.source])].join(' + '), evidence: [...new Set([...prev.evidence, ...item.evidence])], detail: api.detail + ' · confirmado pelo motor e pelo provedor' });
+  }
+  return [...byKey.values()];
+}
+
 export default function CommercialWorkspace({ section, data, sessionToken, onRefresh }: Props) {
   const [busyId, setBusyId] = useState('');
   const [actionError, setActionError] = useState('');
@@ -387,11 +407,11 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const discardedSignals = rawDiscoveries.length - usefulSignals.length;
   const genericMap: Partial<Record<CommercialSection, CommercialRecord[]>> = {
     creatives: data.creatives,
-    publications: [
+    publications: consolidatePublications([
       ...((cc?.acquisition?.today || []) as any[]).filter(p => p.status === 'publicado').map((p, i): CommercialRecord => ({ id: 'cc-today-' + p.channel + i, kind: 'publication', title: 'Publicado · ' + p.channel, detail: 'Publicação confirmada pelo provedor' + (p.url ? ' · ' + p.url : ''), status: 'published', channel: p.channel, product: null, productId: null, valueCents: null, source: 'motores', sourceKey: p.url || null, evidence: p.url ? [p.url] : [], createdAt: p.at || cc?.generatedAt, updatedAt: p.at || cc?.generatedAt, publishedAt: p.at || null })),
       ...((cc?.acquisition?.youtubeRecent || []) as any[]).map((v, i): CommercialRecord => ({ id: 'cc-yt-' + i + v.url, kind: 'publication', title: 'YouTube · ' + v.t, detail: `${v.views} visualizações · ${v.url}`, status: 'published', channel: 'youtube', product: null, productId: null, valueCents: null, source: 'YouTube Data API', sourceKey: v.url, evidence: [v.url], createdAt: v.d, updatedAt: v.d, publishedAt: v.d })),
       ...data.publications,
-    ],
+    ]),
     prospecting: usefulSignals,
     crm: data.leads,
     support: data.support,
@@ -424,7 +444,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <h2>{meta.title}</h2>
           <p>{meta.subtitle}</p>
           <div className={'liveTelemetry ' + liveState.toLowerCase()} aria-live='polite'>
-            <span className='liveDot' /><b>{liveState}</b><small>sincronização operacional · {Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000))}s</small>
+            <span className='liveDot' /><b>{liveState === 'LIVE' ? 'CONECTADO' : liveState === 'SYNCING' ? 'SINCRONIZANDO' : 'DESATUALIZADO'}</b><small>painel lido há {Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000))}s · dados de {time(data.generatedAt)} (eventos persistidos)</small>
             {section === 'commercial' && <button className={liveMode ? 'filter active' : 'filter'} aria-pressed={liveMode} onClick={() => setLiveMode(v => !v)}>{liveMode ? 'Voltar ao painel' : 'Ver ao vivo'}</button>}
           </div>
         </div>

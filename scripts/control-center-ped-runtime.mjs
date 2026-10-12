@@ -17,7 +17,7 @@ const record=(id,kind,title,status,extra={})=>({
 const commercial={
   generatedAt:now,
   metrics:{leadsToday:16,contactsToday:4,creativesInProduction:3,pendingApproval:2,publishedToday:1,salesCentsToday:129900},
-  robot:{state:'ACTIVE',label:'ROBÔ COMERCIAL: ATIVO',reason:'Auditoria PED.',lastHeartbeatAt:now,externalProspecting:true,publishAdapterReady:false,activeChannels:['web']},
+  robot:{state:'ACTIVE',label:'ROBÔ: ONLINE · EXECUTANDO PESQUISA',reason:'Canais externos habilitados: web. Contato direto bloqueado por política; publicação externa em espera. Resultado comercial: só vendas comprovadas contam.',lastHeartbeatAt:now,externalProspecting:true,publishAdapterReady:false,activeChannels:['web']},
   leads:[record('lead-1','lead','Lead de auditoria','new',{channel:'web'})],
   creatives:[record('creative-1','creative','Criativo de auditoria','approval')],
   publications:[record('publication-1','publication','Publicação auditada','published',{channel:'web',publishedAt:now})],

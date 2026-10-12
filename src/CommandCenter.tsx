@@ -60,7 +60,7 @@ const when = (iso: string | null | undefined) => {
 const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', no_events: 'Sem vendas ainda', estimated: 'Estimado', stale: 'Atrasado', missing: 'Sem dados' };
 const CHANNEL: Record<string, string> = { youtube: 'YouTube · produto', youtube_dica: 'YouTube · dica', youtube_calc: 'YouTube · calculadora', telegram: 'Telegram', bluesky: 'Bluesky', blog: 'Blog', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
 const STATE: Record<string, string> = { autonomous: 'Autônomo', partial: 'Parcial', blocked_third_party: 'Aguardando terceiro', awaiting_event: 'Aguardando evento real', manual: 'Manual', owner_reserved: 'Reservado ao dono' };
-const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando' };
+const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando', inconclusive: 'inconclusivo' };
 const KIND: Record<string, string> = { approved: 'Venda aprovada', refunded: 'Reembolso', chargeback: 'Chargeback', protest: 'Reclamação', canceled: 'Pagamento cancelado', expired: 'Pagamento expirado', abandoned: 'Carrinho abandonado', billet_printed: 'Boleto gerado', delayed: 'Pagamento atrasado', subscription_canceled: 'Assinatura cancelada' };
 
 function localDay(t = Date.now()) {

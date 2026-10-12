@@ -33,7 +33,7 @@ const commercial = {
   },
   robot: {
     state: 'ACTIVE',
-    label: 'ROBÔ COMERCIAL: ATIVO',
+    label: 'ROBÔ: ONLINE · EXECUTANDO PESQUISA',
     reason: 'Prospecção ativa com heartbeat recente; publicação permanece condicionada aos gates.',
     lastHeartbeatAt: now,
     externalProspecting: true,
@@ -198,7 +198,7 @@ for (const size of sizes) {
       kpis:expected.map(label => ({label,present:visibleText.includes(label)})),
       robotActive:(() => {
         const badge=document.querySelector('.robotBadge');
-        return Boolean(badge?.classList.contains('active') && (badge.textContent || '').includes('ROBÔ COMERCIAL: ATIVO'));
+        return Boolean(badge?.classList.contains('active') && (badge.textContent || '').includes('ROBÔ: ONLINE'));
       })(),
       robotBadgeVisible:(() => {
         const badge=document.querySelector('.robotBadge');

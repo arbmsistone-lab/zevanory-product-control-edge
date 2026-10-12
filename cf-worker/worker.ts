@@ -1346,10 +1346,22 @@ export default {
         try {
           const target = renderBase + normalizedPath + url.search;
           const primaryResponse = await fetch(new Request(target, normalizedRequest.clone()));
-          if (primaryResponse.status < 500) return invalidate(primaryResponse);
+          // The edge already verified the session above. A 401 from the auxiliary server for a
+          // session the edge holds as valid is the auxiliary server failing to confirm it (cold
+          // start, callback timeout), not an expired session: never surface it as "sessão
+          // inválida". Fall through to the edge handler instead.
+          const edgeSessionValid = primaryResponse.status === 401 && await (async () => {
+            try { const t = String((await normalizedRequest.clone().json() as any)?.sessionToken || ''); return t.startsWith('zpc1.') && await verifyEdgeSession(t); } catch { return false; }
+          })();
+          if (primaryResponse.status < 500 && !edgeSessionValid) return invalidate(primaryResponse);
         } catch {}
       }
-      return invalidate(await handler(normalizedRequest));
+      const edgeResponse = await handler(normalizedRequest);
+      if (edgeResponse.status === 404 && renderBase) {
+        // Route exists only on the auxiliary server and it did not complete the request.
+        return Response.json({ error: 'Servidor auxiliar indisponível para esta ação agora (sua sessão continua válida). Nada foi alterado.', code: 'auxiliary_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+      }
+      return invalidate(edgeResponse);
     }
 
     // Trust and build lineage must come from the exact deployed Worker ASSETS,

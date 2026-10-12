@@ -25,7 +25,8 @@ assert.equal(blocked.state, 'BLOCKED');
 
 const heartbeatOnly = deriveCommercialRobotState(null, new Date().toISOString());
 assert.equal(heartbeatOnly.state, 'ACTIVE');
-assert.equal(heartbeatOnly.externalProspecting, true);
+// Online and executing, but with no enabled channel it is not external prospecting.
+assert.equal(heartbeatOnly.externalProspecting, false);
 assert.equal(heartbeatOnly.publishAdapterReady, false);
 
 const readyOps = {
@@ -45,7 +46,8 @@ const activeWithoutPublishChannel = deriveCommercialRobotState({
   channels: [],
 }, new Date().toISOString());
 assert.equal(activeWithoutPublishChannel.state, 'ACTIVE');
-assert.equal(activeWithoutPublishChannel.externalProspecting, true);
+assert.equal(activeWithoutPublishChannel.externalProspecting, false);
+assert.ok(!/ATIVO$/.test(activeWithoutPublishChannel.label) && /Canais externos habilitados: nenhum/.test(activeWithoutPublishChannel.reason));
 assert.equal(activeWithoutPublishChannel.publishAdapterReady, false);
 
 const staleHeartbeat = deriveCommercialRobotState(
