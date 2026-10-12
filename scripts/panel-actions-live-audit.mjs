@@ -83,9 +83,9 @@ await expect('vendas-fechar-sem-confirmacao', async () => {
 // B) Read routes with session, plus routes outside the menu.
 const reads = [
   ['POST', '/api/_session_verify', { sessionToken: token }, 200, d => d?.valid === true || 'valid!=true'],
-  ['POST', '/api/admin/overview', { sessionToken: token }, 200, d => (d && typeof d === 'object') || 'sem corpo'],
+  ['POST', '/api/admin/overview', { sessionToken: token }, 200, d => Boolean(d && typeof d === 'object') || 'sem corpo'],
   ['POST', '/api/admin/bootstrap', { sessionToken: token }, 200, d => Array.isArray(d?.products) || 'sem products'],
-  ['POST', '/api/owner/command-center', { sessionToken: token }, 200, d => (d?.ok === true && d.snapshot) || 'sem snapshot'],
+  ['POST', '/api/owner/command-center', { sessionToken: token }, 200, d => (d?.ok === true && Boolean(d.snapshot)) || 'sem snapshot'],
   ['POST', '/api/commercial/funnel', { sessionToken: token }, 200, d => d?.ok === true || 'ok!=true'],
   ['POST', '/api/sales/state', { sessionToken: token }, 200, d => typeof d?.open === 'boolean' || 'sem open'],
   ['GET', '/api/sales/state', null, 200, d => typeof d?.open === 'boolean' || 'sem open'],
@@ -95,8 +95,8 @@ const reads = [
   ['GET', '/api/commercial/publish/status', null, null, null],
   ['GET', '/api/commercial/creative/angles', null, null, null],
   ['GET', '/api/_auth_diagnostic', null, null, null],
-  ['GET', '/global-trust.json', null, 200, d => (d && typeof d === 'object') || 'sem json'],
-  ['GET', '/zpc-build.json', null, 200, d => (d && typeof d === 'object') || 'sem json'],
+  ['GET', '/global-trust.json', null, 200, d => Boolean(d && typeof d === 'object') || 'sem json'],
+  ['GET', '/zpc-build.json', null, 200, d => Boolean(d && typeof d === 'object') || 'sem json'],
   ['GET', '/version.json', null, 200, d => typeof d?.sha === 'string' || 'sem sha'],
   ['GET', '/runtime-proof', null, 200, d => d?.ok === true || 'ok!=true'],
   ['GET', '/portable-health', null, null, null],
