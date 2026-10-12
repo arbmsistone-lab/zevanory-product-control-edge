@@ -835,3 +835,27 @@ html, body, button, input, select, textarea {
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+
+/* Approval cards: flexible columns so a lone card spans the width, image beside the text on wide
+   screens (a single stacked card was taller than a 720px screen). */
+.zpcWorkspace .approvalGrid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+}
+@media (min-width: 901px) {
+  .zpcWorkspace .approvalCard {
+    display: grid !important;
+    grid-template-columns: minmax(0, 160px) minmax(0, 1fr);
+    column-gap: var(--zpc-space-3);
+    align-items: start;
+  }
+  .zpcWorkspace .approvalCard > * {
+    grid-column: 2;
+  }
+  .zpcWorkspace .approvalCard > .approvalImage {
+    grid-column: 1;
+    grid-row: 1 / span 5;
+    block-size: auto;
+    aspect-ratio: 1 / 1;
+    margin-block: 0;
+  }
+}

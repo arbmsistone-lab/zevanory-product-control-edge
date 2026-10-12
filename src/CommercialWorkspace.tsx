@@ -157,6 +157,8 @@ function AdsReadinessPanel({ sessionToken, compact }: { sessionToken: string; co
 }
 
 function RecordRow({ item }: { item: CommercialRecord }) {
+  const [open, setOpen] = useState(false);
+  const long = String(item.detail || '').length > CAPTION_PREVIEW;
   return (
     <article className='commercialRow'>
       <div className='commercialRowMain'>
@@ -164,7 +166,9 @@ function RecordRow({ item }: { item: CommercialRecord }) {
           <strong>{item.title}</strong>
           <span className={'commercialState ' + statusClass(item.status)}>{commercialStatusLabel(item.status)}</span>
         </div>
-        <p>{item.detail || 'Sem detalhe adicional.'}</p>
+        <p>{captionPreview(item.detail)}</p>
+        {long && <button type='button' className='filter' onClick={() => setOpen(true)}>Ver texto completo ({String(item.detail).length} caracteres)</button>}
+        {open && <CaptionDialog item={item} onClose={() => setOpen(false)} />}
         <div className='commercialMeta'>
           {item.product && <span>Produto: {item.product}</span>}
           {item.channel && <span>Canal: {item.channel}</span>}
@@ -197,7 +201,7 @@ export function consolidatePublications(items: CommercialRecord[]) {
   return [...byKey.values()];
 }
 
-const CAPTION_PREVIEW = 220;
+const CAPTION_PREVIEW = 160;
 function captionPreview(text: string | null | undefined) {
   const t = String(text || 'Sem detalhe adicional.');
   if (t.length <= CAPTION_PREVIEW) return t;

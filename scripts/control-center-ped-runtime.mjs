@@ -263,6 +263,7 @@ for(const size of sizes){
     // Dark theme renders the real zero-sales state (no Hotmart events yet); light renders a dense ledger.
     const ccPayload=theme==='dark'?{...commandCenter,sales:null}:commandCenter;
     await page.route('**/api/owner/command-center',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(ccPayload)}));
+    await page.route('**/api/owner/oauth/ticket',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,connected:false,connectedAt:null,lastFailure:null})}));
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
     await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:auditSha,runtime:'audit-preview'})}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
