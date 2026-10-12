@@ -223,7 +223,7 @@
   font-size: 12px;
   line-height: 1.6;
 }
-.ccSeal.real, .ccSeal.webhook_authenticated { border-color: var(--status-success); color: var(--status-success-text, var(--status-success)); }
+.ccSeal.real, .ccSeal.webhook_authenticated, .ccSeal.no_events { border-color: var(--status-success); color: var(--status-success-text, var(--status-success)); }
 .ccSeal.aggregated { border-color: var(--cc-accent); color: var(--cc-accent); }
 .ccSeal.estimated { border-color: var(--status-warning); color: var(--status-warning-text, var(--status-warning)); }
 .ccSeal.stale { border-color: var(--status-warning); color: var(--status-warning-text, var(--status-warning)); }
