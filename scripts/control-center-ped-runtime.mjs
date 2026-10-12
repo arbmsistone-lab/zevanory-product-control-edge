@@ -136,7 +136,11 @@ const certificationFixtures=productFixtures.map(product=>({
   certification:product.certification,
 }));
 const bootstrap={
-  dashboard:{systems:[],audits:[],improvements:[],incidents:[],policy:{zeroSpend:true,failClosed:true,destructiveActions:false,greenRule:'FALSE_GREEN=0'},lastEngineRun:now,certificationRuns:[]},
+  dashboard:{systems:[],
+    // Production-shaped operations feed (long details, repeated findings collapsed with counts).
+    audits:Array.from({length:6},(_,i)=>({id:'audit-'+i,title:'Gate requer prova reproduzível '+i,system:i%2?'ZEVANORY':'ARBM ONE',detail:'Vendas OFF até gates simultâneos. Fail-closed mantido com evidência pendente de reprodução independente e reconciliação do pacote de prova.',severity:'warning',state:'open',createdAt:now})),
+    improvements:[],
+    incidents:Array.from({length:8},(_,i)=>({id:'inc-'+i,title:'Executor primário interrompido '+i,system:'ZEVANORY PRODUCT CONTROL',detail:'Fail-closed ativo; sem snapshot comprovado disponível e nenhuma promoção para verde é permitida até nova evidência reproduzível.',severity:'warning',state:'WATCHING',createdAt:now})),policy:{zeroSpend:true,failClosed:true,destructiveActions:false,greenRule:'FALSE_GREEN=0'},lastEngineRun:now,certificationRuns:[]},
   globalTrust:{state:'GREEN',sha:'ped-runtime',evidenceRoot:'ped-runtime',policyVersion:'PED-VERSAL-V1.1-SUPREME',quorum:{passed:3,total:3,required:3,conflicts:0,independentKeys:3},zea10:{proven:10,partial:0,blocked:0},engines:[],checkedAt:now},
   operations:{available:true,generatedAt:now,releaseSha:'ped-runtime',health:{ready:true,live:true,databaseReachable:true,schemaReady:true,requiredTables:1,requiredMigrations:1,missingTables:0,missingMigrations:0},runtime:{sales:'globally-blocked',checkout:'blocked',financial:'ready',whatsapp:'blocked'},control:{globalState:'operational_commercial_blocked',rootBlocker:'global_sale_disabled',decision:'BLOCK'},continuity:{quorumOk:true,mode:'multi-provider',channels:['web'],whatsappDependencyRequired:false},channels:[{name:'web',scopeStatus:'ready',releaseGate:'green',commercialExecution:'blocked'}],zees16:{proven:16,partial:0,blocked:0},zea10:{proven:10,partial:0,blocked:0,unknown:0}},
   commercial,cfo:null,products:productFixtures,certificationTargets:certificationFixtures,
