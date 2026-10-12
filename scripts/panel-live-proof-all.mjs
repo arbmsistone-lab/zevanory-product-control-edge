@@ -72,6 +72,10 @@ for (const [width, height] of sizes) for (const theme of ['dark', 'light']) {
 }
 await browser.close();
 console.log('::notice title=LIVE_ALL::' + JSON.stringify({ checks, failures: failures.length, byView: Object.entries(failures.reduce((m, f) => (m[f.view] = (m[f.view] || 0) + 1, m), {})) }));
+// One summary line per area (annotation budget is small): sizes that failed and the issue kinds.
+const byView = {};
+for (const f of failures) { const v = (byView[f.view] = byView[f.view] || { sizes: new Set(), issues: new Set() }); v.sizes.add(f.size + '/' + f.theme[0]); for (const i of f.issues) v.issues.add(i.replace(/\|.*/, '|…')); }
+for (const [view, v] of Object.entries(byView).slice(0, 10)) console.log('::warning title=LIVE_ALL_' + view + '::' + JSON.stringify({ sizes: [...v.sizes], issues: [...v.issues].slice(0, 14) }));
 for (const f of failures.slice(0, 9)) console.log('::error title=LIVE_ALL_GEOMETRY::' + JSON.stringify(f));
 if (failures.length) process.exit(1);
 console.log('PANEL_LIVE_PROOF_ALL=PASS checks=' + checks);
