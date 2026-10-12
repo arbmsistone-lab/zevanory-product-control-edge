@@ -543,6 +543,12 @@ html, body, button, input, select, textarea {
   .zpcAppShell > .areaSelectWrap {
     display: none;
   }
+  /* The canonical layer switches to single-column areas at 1100px while this shell keeps the
+     sidebar column; restore the two-column areas so the header spans the full width instead of
+     being squeezed into the sidebar column (actions overlapped at 1024x768). */
+  .zpcAppShell {
+    grid-template-areas: "header header" "trust trust" "nav workspace";
+  }
 }
 .zpcAppShell > main.shell {
   grid-column: 2;

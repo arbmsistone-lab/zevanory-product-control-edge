@@ -206,7 +206,9 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [dashboardPage, setDashboardPage] = useState(0);
   const [liveMode, setLiveMode] = useState(false);
   const [listPage, setListPage] = useState(0);
-  const [financeRecords, setFinanceRecords] = useState(false);
+  // Compact screens show one finance block at a time: sales switch, paid-ads readiness, records.
+  const [financePage, setFinancePage] = useState<'sales' | 'ads' | 'records'>('sales');
+  const financeRecords = financePage === 'records';
   const [realFunnel, setRealFunnel] = useState<RealFunnel | null>(null);
   const [funnelError, setFunnelError] = useState(false);
   // Same source as the Command Center, so every area tells the same story.
@@ -545,14 +547,15 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
         </article>
       )}
 
-      {section === 'finance' && (!compactFinance || !financeRecords) && <SalesSwitchPanel sessionToken={sessionToken} compact={compactFinance} />}
-      {section === 'finance' && (!compactFinance || !financeRecords) && <AdsReadinessPanel sessionToken={sessionToken} compact={compactFinance} />}
-      {section === 'finance' && compactFinance && !financeRecords && (
-        <div className='approvalActions'><button className='changeBtn' onClick={() => setFinanceRecords(true)}><CircleDollarSign size={15}/>Ver recebimentos ({data.finance.length})</button></div>
+      {section === 'finance' && compactFinance && (
+        <nav className='commercialPager' aria-label='Blocos do financeiro'>
+          {([['sales', 'Vendas'], ['ads', 'Anúncios'], ['records', `Recebimentos (${data.finance.length})`]] as const).map(([id, label]) => (
+            <button key={id} className={financePage === id ? 'filter active' : 'filter'} aria-pressed={financePage === id} onClick={() => setFinancePage(id)}>{label}</button>
+          ))}
+        </nav>
       )}
-      {section === 'finance' && compactFinance && financeRecords && (
-        <div className='approvalActions'><button className='changeBtn' onClick={() => setFinanceRecords(false)}><RotateCcw size={15}/>Voltar para vendas e anúncios</button></div>
-      )}
+      {section === 'finance' && (!compactFinance || financePage === 'sales') && <SalesSwitchPanel sessionToken={sessionToken} compact={compactFinance} />}
+      {section === 'finance' && (!compactFinance || financePage === 'ads') && <AdsReadinessPanel sessionToken={sessionToken} compact={compactFinance} />}
 
       {!['commercial','approvals','creatives'].includes(section) && !(section === 'finance' && compactFinance && !financeRecords) && (
         <article className='commercialPanel'>
