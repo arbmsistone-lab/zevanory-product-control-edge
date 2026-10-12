@@ -251,7 +251,9 @@ for(const size of sizes){
     await page.route(/\/(control\/)?api\/commercial\/stream$/,r=>r.fulfill({status:200,contentType:'text/event-stream; charset=utf-8',headers:{'cache-control':'no-cache','connection':'keep-alive'},body:'event: commercial-update\ndata: {"seq":1,"at":"2026-09-26T16:00:00.000Z"}\n\n'}));
     await page.route('**/api/commercial/funnel',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,summary:null,readiness:{status:'AGUARDAR',headline:'Ainda não é hora de pagar anúncios.',nextMilestone:'Vendas abertas em produção: vendas ainda fechadas (modo teste).',criteria:[{id:'sales-open',label:'Vendas abertas em produção',ok:false,detail:''}],metrics:{visitors:0,paid:0,conversion:0,conversionLow:0,aov:0,refundRate:0,maxCpa:0,maxCpc:0,breakEvenRoas:0},plan:null}})}));
     await page.route(/\/api\/sales\/(state|switch)$/,r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,requested:false,open:false,switchedAt:null,preflightFresh:true,preflight:{ok:false,at:'2026-09-26T16:00:00.000Z',checks:[{id:'mercadopago_production_token',ok:false,detail:'credencial de teste'}]}})}));
-    await page.route('**/api/owner/command-center',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(commandCenter)}));
+    // Dark theme renders the real zero-sales state (no Hotmart events yet); light renders a dense ledger.
+    const ccPayload=theme==='dark'?{...commandCenter,sales:null}:commandCenter;
+    await page.route('**/api/owner/command-center',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(ccPayload)}));
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
     await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:auditSha,runtime:'audit-preview'})}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
@@ -316,7 +318,21 @@ for(const size of sizes){
         const textDebt=visible.filter(el=>(el.textContent||'').trim() && el.children.length===0).map(el=>({tag:el.tagName,cls:String(el.className),font:parseFloat(getComputedStyle(el).fontSize)}))
           .filter(x=>!allowedFonts.includes(x.font)).slice(0,30);
         const direct=main?[...main.children].filter(el=>getComputedStyle(el).display!=='none').map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),top:r.top,bottom:r.bottom,left:r.left,right:r.right};}):[];
+        const ccGeometry=[];
+        const ccRoot=document.querySelector('.ccRoot');
+        if(ccRoot){
+          const rootBox=ccRoot.getBoundingClientRect();
+          const inCc=visible.filter(el=>ccRoot.contains(el)&&el!==ccRoot);
+          for(const el of inCc){const b=el.getBoundingClientRect(); if(b.right>rootBox.right+1||b.bottom>rootBox.bottom+1||b.left<rootBox.left-1) ccGeometry.push('OUTSIDE:'+String(el.className));}
+          const texts=inCc.filter(el=>el.children.length===0&&(el.textContent||'').trim()).map(el=>({el,b:el.getBoundingClientRect()}));
+          for(let i=0;i<texts.length;i++) for(let j=i+1;j<texts.length;j++){
+            const a=texts[i].b,c=texts[j].b;
+            const ix=Math.min(a.right,c.right)-Math.max(a.left,c.left), iy=Math.min(a.bottom,c.bottom)-Math.max(a.top,c.top);
+            if(ix>2&&iy>2) ccGeometry.push('OVERLAP:'+String(texts[i].el.className)+'|'+String(texts[j].el.className));
+          }
+        }
         return {
+          ccGeometry:[...new Set(ccGeometry)].slice(0,20),
           docScrollX:Math.max(de.scrollWidth,body.scrollWidth)-innerWidth,
           docScrollY:Math.max(de.scrollHeight,body.scrollHeight)-innerHeight,
           localScroll:visible.filter(el=>{
@@ -348,6 +364,7 @@ for(const size of sizes){
       if(dom.localScroll.length) fail('LOCAL_SCROLL_SURFACE',JSON.stringify(dom.localScroll));
       if(dom.horizontal.length) fail('HORIZONTAL_OUTSIDE_VIEWPORT',JSON.stringify(dom.horizontal));
       if(dom.clips.length) fail('CONTENT_CLIPPED',JSON.stringify(dom.clips));
+      if(dom.ccGeometry.length) fail('CONTENT_OVERLAP',JSON.stringify(dom.ccGeometry));
       if(dom.textClips.length) fail('TEXT_CLIPPED',JSON.stringify(dom.textClips));
       if(dom.textDebt.length) fail('RUNTIME_FONT_SCALE',JSON.stringify(dom.textDebt));
       if(dom.theme!==theme) fail('THEME_RUNTIME',dom.theme);

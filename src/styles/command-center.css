@@ -215,7 +215,9 @@
 .ccProv { color: var(--cc-muted); font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
 .ccSeal {
   justify-self: start;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   padding: 0 var(--zpc-space-2);
   border-radius: var(--zpc-radius-pill);
   border: 1px solid var(--cc-line);

@@ -37,7 +37,8 @@ async function main() {
   for (const item of pending) {
     const d = decide(item, catalog);
     const r = await fetch(base + '/api/commercial/approval', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sessionToken, id: item.id, kind: item.kind, action: d.action, note: d.action === 'approve' ? 'Aprovado pelo controle de qualidade: catálogo, preço e link oficiais conferidos.' : 'Controle de qualidade: ' + d.reasons.join('; ') }) });
-    out.push({ id: String(item.id).slice(0, 12), kind: item.kind, action: d.action, http: r.status, reasons: d.reasons });
+    const fail = r.status >= 400 ? String((await r.json().catch(() => ({})))?.error || '').replace(/[^\p{L}\p{N} _:.,()/-]/gu, '').slice(0, 120) : '';
+    out.push({ id: String(item.id).slice(0, 12), kind: item.kind, action: d.action, http: r.status, reasons: d.reasons, ...(fail ? { error: fail } : {}) });
   }
   console.log('::notice title=CREATIVE_AUTO_DECISION::' + JSON.stringify({ pending: pending.length, decisions: out }));
   if (out.some((o) => o.http >= 400)) process.exit(1);
