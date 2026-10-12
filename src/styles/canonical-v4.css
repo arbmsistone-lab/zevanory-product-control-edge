@@ -424,7 +424,7 @@ html,body,#root,.app-container{width:100%!important;max-width:100%!important;min
   min-width:0;min-height:44px;height:auto;white-space:normal;line-height:1.4
 }
 .zpcWorkspace.shell-operations .feed{
-  min-height:0;max-height:100%;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable
+  min-height:0;max-height:100%;overflow:hidden
 }
 .zpcWorkspace.shell-operations .feeditem{
   display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:var(--zpc-space-2)

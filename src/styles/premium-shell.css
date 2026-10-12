@@ -719,19 +719,22 @@ html, body, button, input, select, textarea {
 /* Creative studio: the square creative sits beside its metadata; nothing is drawn on top of it. */
 .zpcWorkspace.shell-creatives .creativeLiveCard {
   display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) !important;
+  /* The square image takes at most 42% of the card width so the metadata column always has
+     room (it was squeezed to a sliver and clipped at 1280x720 and below). */
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr) !important;
   grid-template-rows: minmax(0, 1fr) !important;
+  align-items: start;
   height: 100% !important;
   min-height: 0 !important;
   overflow: hidden !important;
 }
 .zpcWorkspace.shell-creatives .creativePreview {
   position: relative;
-  height: 100% !important;
+  height: auto !important;
   max-height: 100% !important;
   min-height: 0 !important;
   aspect-ratio: 1 / 1;
-  width: auto;
+  width: 100%;
   overflow: hidden !important;
 }
 .zpcWorkspace.shell-creatives .creativePreview img {
@@ -791,4 +794,44 @@ html, body, button, input, select, textarea {
 /* One product per page (short screens): the card spans the full width instead of half of it. */
 .zpcWorkspace.shell-products .productGrid[data-single='true'] {
   grid-template-columns: minmax(0, 1fr) !important;
+}
+
+/* Measured paging notes and the full-caption dialog (paged, never scrolls). */
+.commercialMore {
+  display: block;
+  margin-top: var(--zpc-space-1);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.captionDialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--zpc-space-4);
+  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+}
+.captionDialog {
+  display: grid;
+  gap: var(--zpc-space-3);
+  width: min(560px, 100%);
+  padding: var(--zpc-space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--zpc-radius-md);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+.captionDialog header,
+.captionDialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--zpc-space-2);
+}
+.captionDialog p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }

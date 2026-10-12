@@ -1,3 +1,4 @@
+import { FitList } from './FitList';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, BadgeDollarSign, Bot, Check, CircleDollarSign, FileCheck2, Headphones,
@@ -196,6 +197,35 @@ export function consolidatePublications(items: CommercialRecord[]) {
   return [...byKey.values()];
 }
 
+const CAPTION_PREVIEW = 220;
+function captionPreview(text: string | null | undefined) {
+  const t = String(text || 'Sem detalhe adicional.');
+  if (t.length <= CAPTION_PREVIEW) return t;
+  const cut = t.slice(0, CAPTION_PREVIEW);
+  return cut.slice(0, Math.max(cut.lastIndexOf(' '), 160)) + '…';
+}
+// Full caption, paged in blocks (no scroll inside the dialog), so nothing is inaccessible.
+function CaptionDialog({ item, onClose }: { item: CommercialRecord; onClose: () => void }) {
+  const blocks = useMemo(() => {
+    const words = String(item.detail || '').split(/(\s+)/);
+    const out: string[] = []; let cur = '';
+    for (const w of words) { if ((cur + w).length > 420 && cur.trim()) { out.push(cur.trim()); cur = ''; } cur += w; }
+    if (cur.trim()) out.push(cur.trim());
+    return out.length ? out : [''];
+  }, [item]);
+  const [i, setI] = useState(0);
+  useEffect(() => { const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; document.addEventListener('keydown', onKey); return () => document.removeEventListener('keydown', onKey); }, [onClose]);
+  return (
+    <div className='captionDialogBackdrop' role='presentation' onClick={onClose}>
+      <div className='captionDialog' role='dialog' aria-modal='true' aria-label={'Legenda completa: ' + item.title} onClick={e => e.stopPropagation()}>
+        <header><b>{item.title}</b><button type='button' className='secondary compact' onClick={onClose} aria-label='Fechar'><X size={15}/></button></header>
+        <p>{blocks[i]}</p>
+        {blocks.length > 1 && <footer><button type='button' className='secondary compact' aria-label='Trecho anterior' onClick={() => setI(Math.max(0, i - 1))} disabled={i === 0}>‹</button><strong>{i + 1}/{blocks.length}</strong><button type='button' className='secondary compact' aria-label='Próximo trecho' onClick={() => setI(Math.min(blocks.length - 1, i + 1))} disabled={i >= blocks.length - 1}>›</button></footer>}
+      </div>
+    </div>
+  );
+}
+
 export default function CommercialWorkspace({ section, data, sessionToken, onRefresh }: Props) {
   const [busyId, setBusyId] = useState('');
   const [actionError, setActionError] = useState('');
@@ -206,6 +236,13 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [dashboardPage, setDashboardPage] = useState(0);
   const [liveMode, setLiveMode] = useState(false);
   const [listPage, setListPage] = useState(0);
+  // Measured page sizes (see FitList): lists show only what fits, the rest is paged.
+  const [genericFit, setGenericFit] = useState(99);
+  const [eventsFit, setEventsFit] = useState(99);
+  const [pipelineFit, setPipelineFit] = useState(99);
+  const [approvalFit, setApprovalFit] = useState(99);
+  const [approvalPage, setApprovalPage] = useState(0);
+  const [captionOpen, setCaptionOpen] = useState<CommercialRecord | null>(null);
   // Compact screens show one finance block at a time: sales switch, paid-ads readiness, records.
   const [financePage, setFinancePage] = useState<'sales' | 'ads' | 'records'>('sales');
   const financeRecords = financePage === 'records';
@@ -424,10 +461,16 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   if (section === 'crm') items = data.leads.filter(item => ['new','nurture','qualified','contact-ready','contacted','conversation','offer','follow-up','checkout','payment','customer','fulfillment','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
   // Owner matrix (1280x720, 1366x768, 1024x768): finance pages panels and records separately.
   const compactFinance = viewportWidth <= 700 || viewportHeight <= 800;
-  const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' && !compactFinance ? 2 : 0));
+  const genericBaseSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' && !compactFinance ? 2 : 0));
+  const genericPageSize = Math.max(1, Math.min(genericBaseSize, genericFit));
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);
   const pagedItems = items.slice(safeListPage * genericPageSize, (safeListPage + 1) * genericPageSize);
+  const approvalBase = viewportWidth <= 700 ? 1 : viewportWidth <= 1100 ? 2 : 3;
+  const approvalPageSize = Math.max(1, Math.min(approvalBase, approvalFit));
+  const approvalPages = Math.max(1, Math.ceil(approvalItems.length / approvalPageSize));
+  const safeApprovalPage = Math.min(approvalPage, approvalPages - 1);
+  const pagedApprovals = approvalItems.slice(safeApprovalPage * approvalPageSize, (safeApprovalPage + 1) * approvalPageSize);
   const creativePageSize = viewportWidth <= 700 ? 1 : 2;
   // Studio shows real pieces only: archived history and briefs without art stay out of the grid.
   const studioCreatives = data.creatives.filter(item => item.status !== 'archived' && Boolean(item.imageUrl || item.imageDataUrl || item.evidence.some(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e))));
@@ -479,17 +522,19 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           {!liveMode && (!pagedDashboard || dashboardPage === 1 || dashboardPage === 2) && <div className='commercialDashboardGrid'>
             {!liveMode && (!pagedDashboard || dashboardPage === 1) && <article className='commercialPanel'>
               <div className='commercialPanelTitle'><Activity size={17}/><div><b>Atividade recente</b><small>Eventos persistidos e autenticados</small></div></div>
-              <div className='commercialList' tabIndex={0} aria-label='Atividade comercial recente'>
-                {data.events.slice(0, 5).map(item => <RecordRow key={item.id} item={item}/>)}
+              <FitList className='commercialList' ariaLabel='Atividade comercial recente' total={data.events.length} max={5} onFit={setEventsFit}>
+                {data.events.slice(0, Math.min(5, eventsFit)).map(item => <RecordRow key={item.id} item={item}/>)}
                 {!data.events.length && <div className='commercialEmpty'>Nenhum evento comercial comprovado ainda.</div>}
-              </div>
+              </FitList>
+              {data.events.length > Math.min(5, eventsFit) && <small className='commercialMore'>Mostrando {Math.min(5, eventsFit)} de {data.events.length} · lista completa em Evidências</small>}
             </article>}
             {!liveMode && (!pagedDashboard || dashboardPage === 2) && <article className='commercialPanel'>
               <div className='commercialPanelTitle'><Megaphone size={17}/><div><b>Pipeline de conteúdo</b><small>Criativo → aprovação → publicação</small></div></div>
-              <div className='commercialList' tabIndex={0} aria-label='Pipeline comercial de conteúdo'>
-                {[...data.creatives, ...data.publications].slice(0, 5).map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
+              <FitList className='commercialList' ariaLabel='Pipeline comercial de conteúdo' total={data.creatives.length + data.publications.length} max={5} onFit={setPipelineFit}>
+                {[...data.creatives, ...data.publications].slice(0, Math.min(5, pipelineFit)).map(item => <RecordRow key={item.kind + item.id} item={item}/>)}
                 {!data.creatives.length && !data.publications.length && <div className='commercialEmpty'>Nenhum criativo ou publicação registrado.</div>}
-              </div>
+              </FitList>
+              {data.creatives.length + data.publications.length > Math.min(5, pipelineFit) && <small className='commercialMore'>Mostrando {Math.min(5, pipelineFit)} de {data.creatives.length + data.publications.length} · lista completa em Conteúdo</small>}
             </article>}
           </div>}
 
@@ -504,15 +549,16 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
 
       {section === 'approvals' && (
         <article className='commercialPanel'>
-          <div className='commercialPanelTitle'><FileCheck2 size={17}/><div><b>Itens aguardando decisão</b><small>{approvalItems.length} item(ns)</small></div></div>
+          <div className='commercialPanelTitle'><FileCheck2 size={17}/><div><b>Itens aguardando decisão</b><small>{approvalItems.length} item(ns)</small></div>{approvalPages > 1 && <div className='recordPager'><button className='secondary compact' aria-label='Página anterior' onClick={() => setApprovalPage(Math.max(0, safeApprovalPage - 1))} disabled={safeApprovalPage === 0}>‹</button><strong>{safeApprovalPage + 1}/{approvalPages}</strong><button className='secondary compact' aria-label='Próxima página' onClick={() => setApprovalPage(Math.min(approvalPages - 1, safeApprovalPage + 1))} disabled={safeApprovalPage >= approvalPages - 1}>›</button></div>}</div>
           {actionError && <div className='errorbox'>{actionError}</div>}
-          <div className='approvalGrid'>
-            {approvalItems.map(item => (
+          <FitList className='approvalGrid' total={approvalItems.length} max={approvalBase} onFit={setApprovalFit}>
+            {pagedApprovals.map(item => (
               <article className='approvalCard' key={item.kind + item.id}>
                 <div><span className='commercialState warn'>AGUARDANDO APROVAÇÃO</span><small>{item.kind === 'creative' ? 'CRIATIVO' : 'PUBLICAÇÃO'} · {item.channel || 'sem canal'}</small></div>
                 {item.kind === 'creative' && (item.imageUrl || item.imageDataUrl) && <img className='approvalImage' src={item.imageUrl || item.imageDataUrl || ''} alt={'Criativo de ' + (item.product || 'ZEVANORY')} />}
                 <h3>{item.title}</h3>
-                <p>{item.detail || 'Sem detalhe adicional.'}</p>
+                <p>{captionPreview(item.detail)}</p>
+                {String(item.detail || '').length > CAPTION_PREVIEW && <button type='button' className='filter' onClick={() => setCaptionOpen(item)}>Ver legenda completa ({String(item.detail).length} caracteres)</button>}
                 <div className='approvalActions'>
                   <button className='approveBtn' disabled={Boolean(busyId)} onClick={() => void act(item,'approve')}><Check size={15}/>Aprovar</button>
                   <button className='changeBtn' disabled={Boolean(busyId)} onClick={() => void act(item,'request-changes')}><RotateCcw size={15}/>Alterar</button>
@@ -521,7 +567,8 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
               </article>
             ))}
             {!approvalItems.length && <div className='commercialEmpty'>Fila de aprovação vazia.</div>}
-          </div>
+          </FitList>
+          {captionOpen && <CaptionDialog item={captionOpen} onClose={() => setCaptionOpen(null)} />}
         </article>
       )}
 
@@ -571,7 +618,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             <div className='recordPager'><button className='secondary compact' onClick={() => setListPage(Math.max(0, safeListPage - 1))} disabled={safeListPage === 0}>‹</button><strong>{safeListPage + 1}/{genericPageCount}</strong><button className='secondary compact' onClick={() => setListPage(Math.min(genericPageCount - 1, safeListPage + 1))} disabled={safeListPage >= genericPageCount - 1}>›</button></div>
           </div>
           {actionError && <div className='errorbox'>{actionError}</div>}
-          <div className='commercialList commercialListTall' tabIndex={0} aria-label={meta.title + ' — registros'}>
+          <FitList className='commercialList commercialListTall' ariaLabel={meta.title + ' — registros'} total={items.length} max={genericBaseSize} onFit={setGenericFit}>
             {pagedItems.map(item => (
               <div key={item.kind + item.id}>
                 <RecordRow item={item}/>
@@ -592,7 +639,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
               </div>
             ))}
             {!items.length && <div className='commercialEmpty'>Nenhum registro comprovado nesta área. O painel não preencherá dados fictícios.</div>}
-          </div>
+          </FitList>
         </article>
       )}
     </section>

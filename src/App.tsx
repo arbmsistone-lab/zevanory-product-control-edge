@@ -1,3 +1,4 @@
+import { FitList } from './FitList';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
@@ -451,6 +452,8 @@ function App() {
   const [liveTruth, setLiveTruth] = useState<{ prices: Record<string, number>; open: Record<string, boolean>; at: string | null } | null>(null);
   const [expandedPillarIds, setExpandedPillarIds] = useState<Set<string>>(() => new Set());
   const [incidentPage, setIncidentPage] = useState(0);
+  const [incidentFit, setIncidentFit] = useState(99);
+  const [auditFit, setAuditFit] = useState(99);
   const [auditPage, setAuditPage] = useState(0);
   const [governancePage, setGovernancePage] = useState(0);
   const [certTargetPage, setCertTargetPage] = useState(0);
@@ -894,12 +897,14 @@ function App() {
   };
   const operationIncidents = useMemo(() => dedupeRecords(dashboard?.incidents ?? []), [dashboard]);
   const operationAudits = useMemo(() => dedupeRecords(dashboard?.audits ?? []), [dashboard]);
-  const incidentPageCount = Math.max(1, Math.ceil(operationIncidents.length / operationsPageSize));
+  const incidentPageSize = Math.max(1, Math.min(operationsPageSize, incidentFit));
+  const auditPageSize = Math.max(1, Math.min(operationsPageSize, auditFit));
+  const incidentPageCount = Math.max(1, Math.ceil(operationIncidents.length / incidentPageSize));
   const safeIncidentPage = Math.min(incidentPage, incidentPageCount - 1);
-  const pagedIncidents = operationIncidents.slice(safeIncidentPage * operationsPageSize, (safeIncidentPage + 1) * operationsPageSize);
-  const auditPageCount = Math.max(1, Math.ceil(operationAudits.length / operationsPageSize));
+  const pagedIncidents = operationIncidents.slice(safeIncidentPage * incidentPageSize, (safeIncidentPage + 1) * incidentPageSize);
+  const auditPageCount = Math.max(1, Math.ceil(operationAudits.length / auditPageSize));
   const safeAuditPage = Math.min(auditPage, auditPageCount - 1);
-  const pagedAudits = operationAudits.slice(safeAuditPage * operationsPageSize, (safeAuditPage + 1) * operationsPageSize);
+  const pagedAudits = operationAudits.slice(safeAuditPage * auditPageSize, (safeAuditPage + 1) * auditPageSize);
 
   const activeCertificationTargets = useMemo(() => certificationTargets.filter(target => !['ARBM SIST','ZEVANORY ONE','ARBM ONE'].includes(target.name)), [certificationTargets]);
   const selectedCertificationTarget = useMemo(
@@ -1233,7 +1238,7 @@ function App() {
           </div>
           <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>INCIDENTES</p><h2>Fila operacional</h2></div><div className='opsPager'>{incidentPageCount > 1 && <><button className='secondary compact' onClick={() => setIncidentPage(Math.max(0, safeIncidentPage - 1))} disabled={safeIncidentPage === 0}>‹</button><strong>{safeIncidentPage + 1}/{incidentPageCount}</strong><button className='secondary compact' onClick={() => setIncidentPage(Math.min(incidentPageCount - 1, safeIncidentPage + 1))} disabled={safeIncidentPage >= incidentPageCount - 1}>›</button></>}<AlertTriangle size={20} /></div></div>
-            <div className='feed'>
+            <FitList className='feed' total={operationIncidents.length} max={operationsPageSize} onFit={setIncidentFit}>
               {operationIncidents.length === 0
                 ? <div className='empty'>Nenhum incidente registrado.</div>
                 : pagedIncidents.map(item => (
@@ -1242,11 +1247,11 @@ function App() {
                     <span className='state proposed'>{item.state}</span>
                   </article>
                 ))}
-            </div>
+            </FitList>
           </div>
           <div className='panel'>
             <div className='panelhead'><div><p className='kicker'>AUDITORIA</p><h2>Achados recentes</h2></div><div className='opsPager'>{auditPageCount > 1 && <><button className='secondary compact' onClick={() => setAuditPage(Math.max(0, safeAuditPage - 1))} disabled={safeAuditPage === 0}>‹</button><strong>{safeAuditPage + 1}/{auditPageCount}</strong><button className='secondary compact' onClick={() => setAuditPage(Math.min(auditPageCount - 1, safeAuditPage + 1))} disabled={safeAuditPage >= auditPageCount - 1}>›</button></>}<ShieldCheck size={20} /></div></div>
-            <div className='feed'>
+            <FitList className='feed' total={operationAudits.length} max={operationsPageSize} onFit={setAuditFit}>
               {operationAudits.length === 0
                 ? <div className='empty'>Execute uma auditoria para gerar novos achados.</div>
                 : pagedAudits.map(item => (
@@ -1255,7 +1260,7 @@ function App() {
                     <time>{new Date(item.createdAt).toLocaleString('pt-BR')}</time>
                   </article>
                 ))}
-            </div>
+            </FitList>
           </div>
         </section>
       )}

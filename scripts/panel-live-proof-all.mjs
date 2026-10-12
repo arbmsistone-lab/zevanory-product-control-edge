@@ -50,7 +50,7 @@ for (const [width, height] of sizes) for (const theme of ['dark', 'light']) {
       if (de.scrollHeight > innerHeight + 1 || de.scrollWidth > innerWidth + 1) out.push('PAGE_SCROLL');
       const root = document.querySelector('main');
       if (!root) return ['NO_WORKSPACE'];
-      const all = [...root.querySelectorAll('*')].filter(el => { const b = el.getBoundingClientRect(); const s = getComputedStyle(el); return b.width > 0 && b.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; });
+      const all = [...root.querySelectorAll('*')].filter(el => { const b = el.getBoundingClientRect(); const s = getComputedStyle(el); const inClosed = el.closest('details:not([open])') && !el.closest('summary'); return !inClosed && b.width > 0 && b.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; });
       const rootBox = root.getBoundingClientRect();
       for (const el of all) {
         const s = getComputedStyle(el), b = el.getBoundingClientRect();
