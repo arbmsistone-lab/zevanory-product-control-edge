@@ -86,6 +86,7 @@
 .ccTabs > button.active {
   border-color: transparent;
   background: var(--z-brand-grad, var(--cc-accent));
+  background-color: var(--cc-accent);
   color: var(--action-primary-text);
 }
 .ccTabs > button svg { flex: 0 0 auto; }
@@ -101,6 +102,7 @@
 }
 .ccBody[data-cards="1"] { grid-template-columns: minmax(0, 1fr); }
 .ccBody[data-cards="3"] > :first-child { grid-column: 1 / -1; }
+.ccBody[data-cards="3"]:has(> .ccCard.tiles:first-child) { grid-template-rows: auto minmax(0, 1fr); grid-auto-rows: unset; }
 
 .ccCard {
   position: relative;
@@ -190,7 +192,7 @@
 .ccBar > i { display: block; height: 100%; border-radius: var(--zpc-radius-pill); background: var(--z-brand-grad, var(--cc-accent)); }
 
 .ccTiles {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
@@ -213,6 +215,7 @@
 .ccProv { color: var(--cc-muted); font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
 .ccSeal {
   justify-self: start;
+  white-space: nowrap;
   padding: 0 var(--zpc-space-2);
   border-radius: var(--zpc-radius-pill);
   border: 1px solid var(--cc-line);
@@ -232,6 +235,9 @@
   .ccTabs > button { min-height: 32px; padding: var(--zpc-space-1) var(--zpc-space-2); font-size: 12px; }
 }
 @media (max-width: 560px) {
+  .ccEyebrow { display: none; }
+  .ccTabLabel { display: none; }
+  .ccTabs > button { min-width: 40px; justify-content: center; padding: var(--zpc-space-1) var(--zpc-space-2); }
   .ccHead { display: grid; gap: var(--zpc-space-2); }
   .ccFresh { justify-self: start; }
   .ccHead h2 { font-size: var(--zpc-font-sm); }

@@ -53,7 +53,7 @@ const when = (iso: string | null | undefined) => {
   if (Number.isNaN(d.getTime())) return 'sem registro';
   return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
-const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Consolidado por hora', webhook_authenticated: 'Hotmart autenticado', stale: 'Atrasado', missing: 'Sem dados' };
+const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', stale: 'Atrasado', missing: 'Sem dados' };
 const CHANNEL: Record<string, string> = { youtube: 'YouTube · produto', youtube_dica: 'YouTube · dica', youtube_calc: 'YouTube · calculadora', telegram: 'Telegram', bluesky: 'Bluesky', blog: 'Blog', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
 const KIND: Record<string, string> = { approved: 'Venda aprovada', refunded: 'Reembolso', chargeback: 'Chargeback', protest: 'Reclamação', canceled: 'Pagamento cancelado', expired: 'Pagamento expirado', abandoned: 'Carrinho abandonado', billet_printed: 'Boleto gerado', delayed: 'Pagamento atrasado', subscription_canceled: 'Assinatura cancelada' };
 
@@ -145,7 +145,7 @@ function FitCard({ title, subtitle, nodes, variant, empty }: { title: string; su
   const safe = Math.min(page, pages - 1);
   const shown = nodes.slice(safe * fit, safe * fit + fit);
   return (
-    <section className='ccCard'>
+    <section className={'ccCard ' + variant}>
       <header className='ccCardHead'>
         <div><h3>{title}</h3><p>{subtitle}</p></div>
         <Pager page={safe} pages={pages} onPage={setPage} label={'Páginas de ' + title} />
@@ -338,7 +338,7 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
         </button>
       </header>
       <nav className='ccTabs' aria-label='Perguntas da Central de Comando'>
-        {TABS.map(t => <button key={t.id} type='button' className={t.id === tab ? 'active' : ''} aria-pressed={t.id === tab} onClick={() => setTab(t.id)}><t.icon size={16} />{t.label}</button>)}
+        {TABS.map(t => <button key={t.id} type='button' className={t.id === tab ? 'active' : ''} aria-pressed={t.id === tab} aria-label={t.label} title={t.question} onClick={() => setTab(t.id)}><t.icon size={16} aria-hidden='true' /><span className='ccTabLabel'>{t.label}</span></button>)}
         {narrow ? <Pager page={safeCardPage} pages={cardPages} onPage={setCardPage} label='Quadros desta pergunta' /> : null}
       </nav>
       {!s ? (
