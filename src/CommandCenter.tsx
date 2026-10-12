@@ -42,6 +42,8 @@ type Snapshot = {
   operations: { probes: { url: string; http: number; ms: number; ok: boolean }[]; salesSwitch: { open: boolean } | null; checkoutMode: string; deploys: { at: string; conclusion: string }[] };
   forecast: { status: 'ok' | 'insufficient'; reason?: string; salesExpected?: number; salesInterval80?: [number, number]; revenueExpectedCents?: number; revenueInterval80Cents?: [number, number]; basis?: string };
   recommendations: Recommendation[];
+  experiments?: { id: string; title: string; hypothesis: string; metric: string; decision: string; status: string; verdict: string; progress?: string | null }[];
+  inventory?: { criterion: string; eligible: number; provenAutonomous: number; pct: number | null; byState: Record<string, number>; dependencies: { id: string; name: string; state: string; dependency: string | null; impact: string | null }[]; processes: { id: string; area: string; agent: string; name: string; eligible: boolean; state: string; proven: boolean; lastEvidence: string | null; how: string | null }[] };
 };
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -55,6 +57,8 @@ const when = (iso: string | null | undefined) => {
 };
 const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', stale: 'Atrasado', missing: 'Sem dados' };
 const CHANNEL: Record<string, string> = { youtube: 'YouTube · produto', youtube_dica: 'YouTube · dica', youtube_calc: 'YouTube · calculadora', telegram: 'Telegram', bluesky: 'Bluesky', blog: 'Blog', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
+const STATE: Record<string, string> = { autonomous: 'Autônomo', partial: 'Parcial', blocked_third_party: 'Aguardando terceiro', manual: 'Manual', owner_reserved: 'Reservado ao dono' };
+const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando' };
 const KIND: Record<string, string> = { approved: 'Venda aprovada', refunded: 'Reembolso', chargeback: 'Chargeback', protest: 'Reclamação', canceled: 'Pagamento cancelado', expired: 'Pagamento expirado', abandoned: 'Carrinho abandonado', billet_printed: 'Boleto gerado', delayed: 'Pagamento atrasado', subscription_canceled: 'Assinatura cancelada' };
 
 function localDay(t = Date.now()) {
@@ -230,7 +234,8 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
       )} />,
     ],
     ai: [
-      <TileCard key='auto' title='Autonomia medida (7 dias)' subtitle={s.autonomy.runs ? 'Execuções reais dos motores · GitHub Actions' : 'Sem leitura das execuções'}>
+      <TileCard key='auto' title='Autonomia medida' subtitle={s.inventory ? s.inventory.criterion : 'Execuções reais dos motores'}>
+        <Tile label='Autonomia certificável' value={s.inventory?.pct == null ? '—' : `${s.inventory.pct}% · ${s.inventory.provenAutonomous}/${s.inventory.eligible}`} source='Inventário de processos' at={s.generatedAt} integrity={s.inventory ? 'real' : 'missing'} definition='Processos elegíveis autônomos com evidência recente ÷ processos elegíveis' />
         <Tile label='Sem intervenção humana' value={s.autonomy.runs?.autonomyPct == null ? '—' : s.autonomy.runs.autonomyPct + '%'} source='Execuções' at={s.generatedAt} integrity={s.autonomy.runs ? 'real' : 'missing'} definition='(execuções agendadas com sucesso + recuperadas sozinhas) ÷ (agendadas + manuais)' />
         <Tile label='Execuções agendadas' value={num(s.autonomy.runs?.scheduledRuns ?? null)} source='Execuções' at={s.generatedAt} integrity={s.autonomy.runs ? 'real' : 'missing'} definition='Rodadas automáticas dos motores em 7 dias' />
         <Tile label='Falhas · recuperadas sozinhas' value={s.autonomy.runs ? `${s.autonomy.runs.failed} · ${s.autonomy.runs.recoveredAutomatically}` : '—'} source='Execuções' at={s.generatedAt} integrity={s.autonomy.runs ? 'real' : 'missing'} definition='Falhas e quantas foram resolvidas por uma execução automática seguinte' />
@@ -238,6 +243,9 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
         <Tile label='Intervenções manuais' value={num(s.autonomy.runs?.manualRuns ?? null)} source='Execuções' at={s.generatedAt} integrity={s.autonomy.runs ? 'real' : 'missing'} definition='Execuções disparadas à mão (dono ou orquestrador)' />
         <Tile label='Publicações confirmadas' value={s.acquisition.publications.pct == null ? '—' : s.acquisition.publications.pct + '%'} source='Provedores' at={s.generatedAt} integrity={s.acquisition.publications.pct == null ? 'missing' : 'real'} definition={`${s.acquisition.publications.published} de ${s.acquisition.publications.expected} publicações previstas em 7 dias`} />
       </TileCard>,
+      <ListCard key='inv' title='Inventário de processos' subtitle='Cada processo, quem faz e a prova de agora' items={(s.inventory?.processes || []).filter(p => p.eligible)} keyOf={p => p.id} empty='Inventário ainda não medido.' render={p => (
+        <><i className={'ccDot ' + (p.proven ? 'ok' : p.state === 'autonomous' ? 'warn' : p.state === 'blocked_third_party' ? 'idle' : 'bad')} /><div><b>{p.name}</b><span>{p.agent} · {STATE[p.state] || p.state}{p.proven ? ' · comprovado ' + when(p.lastEvidence) : p.state === 'autonomous' ? ' · sem evidência recente' : ''}</span></div><time>{p.area}</time></>
+      )} />,
       <ListCard key='next' title='Próximas ações' subtitle='Qual motor, o quê e quando (Brasília)' items={s.autonomy.agenda} keyOf={a => a.id} empty='Agenda indisponível.' render={a => (
         <><i className='ccDot info' /><div><b>{a.task}</b><span>{a.agent}</span></div><time>{when(a.next)}</time></>
       )} />,
@@ -263,6 +271,9 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
     works: [
       <ListCard key='rec' title='Oportunidades e gargalos' subtitle='Cada recomendação com evidência, confiança, risco e custo' items={s.recommendations} keyOf={r => r.title} empty='Sem dados suficientes para recomendar.' render={r => (
         <><i className='ccDot info' /><div><b>{r.title}</b><span>{r.evidence} → {r.action}</span></div><time>conf. {r.confidence}</time></>
+      )} />,
+      <ListCard key='exp' title='Experimentos' subtitle='Hipótese, métrica e veredito automático (p < 0,05)' items={s.experiments || []} keyOf={e => e.id} empty='Nenhum experimento registrado.' render={e => (
+        <><i className={'ccDot ' + (e.status === 'winner' ? 'ok' : e.status === 'loser' ? 'bad' : 'info')} /><div><b>{e.title}</b><span>{e.verdict}{e.progress ? ' · ' + e.progress : ''}</span></div><time>{EXP[e.status] || e.status}</time></>
       )} />,
       <ListCard key='best' title='Conteúdos com melhor desempenho' subtitle='YouTube · visualizações reais por vídeo' items={[...s.acquisition.youtubeRecent].sort((a, b) => b.views - a.views)} keyOf={v => v.url} empty='Sem vídeos medidos ainda.' render={v => (
         <><i className={'ccDot ' + (v.views > 0 ? 'ok' : 'idle')} /><div><b>{v.t}</b><span>{num(v.views)} visualizações · {num(v.likes)} curtidas · <a href={v.url} target='_blank' rel='noreferrer'>abrir</a></span></div><time>{when(v.d)}</time></>
@@ -311,6 +322,9 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
         <Tile label='Vendas esperadas' value={s.forecast.status === 'ok' ? `${s.forecast.salesExpected} (${s.forecast.salesInterval80?.[0]}–${s.forecast.salesInterval80?.[1]})` : 'Dados insuficientes'} source='Modelo de taxa (Poisson)' at={s.generatedAt} integrity={s.forecast.status === 'ok' ? 'aggregated' : 'missing'} definition={s.forecast.reason || 'Taxa diária de vendas × 30 dias, com intervalo de 80%'} />
         <Tile label='Receita esperada' value={s.forecast.status === 'ok' ? `${money(s.forecast.revenueExpectedCents)} (${money(s.forecast.revenueInterval80Cents?.[0])}–${money(s.forecast.revenueInterval80Cents?.[1])})` : 'Dados insuficientes'} source='Modelo de taxa (Poisson)' at={s.generatedAt} integrity={s.forecast.status === 'ok' ? 'aggregated' : 'missing'} definition={s.forecast.reason || 'Vendas esperadas × ticket médio'} />
       </TileCard>,
+      <ListCard key='deps' title='Dependências a eliminar' subtitle='O que ainda impede autonomia total, por impacto' items={s.inventory?.dependencies || []} keyOf={d => d.id} empty='Nenhuma dependência aberta.' render={d => (
+        <><i className={'ccDot ' + (d.impact === 'high' ? 'bad' : d.impact === 'medium' ? 'warn' : 'idle')} /><div><b>{d.name}</b><span>{d.dependency || STATE[d.state] || d.state}</span></div><time>{d.impact === 'high' ? 'alto' : d.impact === 'medium' ? 'médio' : d.impact === 'low' ? 'baixo' : '—'}</time></>
+      )} />,
       <ListCard key='owner' title='O que exige você' subtitle='Só atos do dono · o resto a ZEVANORY decide sozinha' items={s.autonomy.ownerOnly} keyOf={o => o.what} empty='Nada exige você agora.' render={o => (
         <><i className={'ccDot ' + (o.status.startsWith('pronto') ? 'bad' : 'idle')} /><div><b>{o.what}</b><span>{o.why}</span></div><time>{o.status}</time></>
       )} />,
