@@ -31,12 +31,16 @@ function primaryPool() {
   const url = env('DATABASE_URL_PRIMARY');
   if (!url) throw new Error('primary_database_unconfigured');
   if (!pool) {
+    // TLS is mandatory for every remote database; only a throwaway local database (isolated CI
+    // tests) is reached without it.
+    let local = false;
+    try { local = ['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname); } catch {}
     pool = new Pool({
       connectionString: hardenedDatabaseUrl(url),
       max: 4,
       idleTimeoutMillis: 20_000,
       connectionTimeoutMillis: 5_000,
-      ssl: { rejectUnauthorized: true },
+      ssl: local ? false : { rejectUnauthorized: true },
     });
   }
   return pool;
