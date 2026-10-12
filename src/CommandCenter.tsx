@@ -57,7 +57,7 @@ const when = (iso: string | null | undefined) => {
   if (Number.isNaN(d.getTime())) return 'sem registro';
   return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
-const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', no_events: 'Nenhum evento Hotmart ainda', estimated: 'Estimado', stale: 'Atrasado', missing: 'Sem dados' };
+const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', no_events: 'Sem vendas ainda', estimated: 'Estimado', stale: 'Atrasado', missing: 'Sem dados' };
 const CHANNEL: Record<string, string> = { youtube: 'YouTube · produto', youtube_dica: 'YouTube · dica', youtube_calc: 'YouTube · calculadora', telegram: 'Telegram', bluesky: 'Bluesky', blog: 'Blog', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
 const STATE: Record<string, string> = { autonomous: 'Autônomo', partial: 'Parcial', blocked_third_party: 'Aguardando terceiro', manual: 'Manual', owner_reserved: 'Reservado ao dono' };
 const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando' };
