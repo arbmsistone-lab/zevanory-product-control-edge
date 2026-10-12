@@ -896,3 +896,31 @@ html, body, button, input, select, textarea {
     grid-template-columns: 56px minmax(0, 1fr);
   }
 }
+
+/* Operations feeds: items keep their natural height (they were squeezed and their text clipped
+   inside a height-limited flex column) and the feed takes the panel's remaining height; the
+   measured paging decides how many fit. Theme tokens keep text at AAA in both themes. */
+.zpcWorkspace.shell-operations .opsGrid > .panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.zpcWorkspace.shell-operations .feed {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.zpcWorkspace.shell-operations .feeditem {
+  flex-shrink: 0;
+  border-color: var(--border);
+  background: var(--surface-elevated);
+}
+.zpcWorkspace.shell-operations .feeditem p,
+.zpcWorkspace.shell-operations .feeditem time {
+  color: var(--text-secondary);
+}
+.zpcWorkspace.shell-operations .opsPager {
+  color: var(--text-secondary);
+}
+.zpcWorkspace.shell-operations .opsPager strong {
+  color: var(--text-primary);
+}
