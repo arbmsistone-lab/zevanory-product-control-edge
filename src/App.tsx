@@ -446,6 +446,9 @@ function App() {
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'channels' | 'cfo' | CommercialSection>('overview');
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
+  // Live commercial truth for the product views: official catalog price and the hourly proof that
+  // the buy path is open (site checkout + Hotmart). The legacy product registry is not the switch.
+  const [liveTruth, setLiveTruth] = useState<{ prices: Record<string, number>; open: Record<string, boolean>; at: string | null } | null>(null);
   const [expandedPillarIds, setExpandedPillarIds] = useState<Set<string>>(() => new Set());
   const [incidentPage, setIncidentPage] = useState(0);
   const [auditPage, setAuditPage] = useState(0);
@@ -892,6 +895,28 @@ function App() {
     [activeCertificationTargets, selectedTargetId],
   );
   // No-scroll overview: render only the approval rows that fit the card; the rest is one click away.
+  useEffect(() => {
+    if (!sessionToken) return;
+    let alive = true;
+    const loadTruth = () => api.post<any>('/api/owner/command-center', { sessionToken }).then(({ data }) => {
+      if (!alive) return;
+      const snap = data?.snapshot;
+      const prices: Record<string, number> = {};
+      for (const p of snap?.catalog?.products || []) prices[p.slug] = Number(p.price);
+      if (snap?.catalog?.subscription?.slug) prices[snap.catalog.subscription.slug] = Number(snap.catalog.subscription.price);
+      const siteOpen = snap?.operations?.salesSwitch?.open === true && (snap?.operations?.buyFlow || []).length > 0 && snap.operations.buyFlow.every((b: any) => b.state === 'checkout');
+      const open: Record<string, boolean> = {};
+      for (const slug of Object.keys(prices)) {
+        const hm = (snap?.operations?.hotmart || []).find((h: any) => h.slug === slug);
+        open[slug] = siteOpen || Boolean(hm && hm.http === 200 && !hm.blockedText);
+      }
+      setLiveTruth({ prices, open, at: snap?.generatedAt || null });
+    }).catch(() => {});
+    loadTruth();
+    const id = window.setInterval(loadTruth, 120000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, [sessionToken]);
+
   const compactGovernance = viewportWidth <= 1100 || viewportHeight <= 900;
   const certTargetPageSize = compactGovernance ? 1 : 6;
   const certTargetPageCount = Math.max(1, Math.ceil(activeCertificationTargets.length / certTargetPageSize));
@@ -1130,12 +1155,16 @@ function App() {
                     <p className='productCategory'>{product.category}</p>
                     <h3>{product.name}</h3>
                   </div>
-                  <span className={product.salesEnabled ? 'saleBadge on' : 'saleBadge off'}>{product.salesEnabled ? 'VENDA ON' : 'VENDA OFF'}</span>
+                  {(() => {
+                    const live = liveTruth && product.slug in liveTruth.open ? liveTruth.open[product.slug] : null;
+                    const on = live ?? product.salesEnabled;
+                    return <span className={on ? 'saleBadge on' : 'saleBadge off'} title={live != null ? `Prova horária do caminho de compra (site e Hotmart) · ${liveTruth?.at ? new Date(liveTruth.at).toLocaleString('pt-BR') : ''}` : 'Cadastro interno'}>{on ? 'VENDA ON' : 'VENDA OFF'}</span>;
+                  })()}
                 </div>
                 <p className='productDescription productDescriptionPrimary'>{product.description || 'Sem descricao administrativa.'}</p>
                 <div className='productFacts'>
-                  <span><b>{formatMoney(product.priceCents)}</b><small>Preco</small></span>
-                  <span><b>{statusLabel(product.status)}</b><small>Status</small></span>
+                  <span><b>{liveTruth && liveTruth.prices[product.slug] ? formatMoney(liveTruth.prices[product.slug] * 100) : formatMoney(product.priceCents)}</b><small>{liveTruth && liveTruth.prices[product.slug] ? 'Preço oficial' : 'Preco'}</small></span>
+                  <span><b>{liveTruth?.open[product.slug] ? 'À venda' : statusLabel(product.status)}</b><small>Status</small></span>
                   <span><b>{product.deliveryModel || 'N/D'}</b><small>Entrega</small></span>
                 </div>
                 <button

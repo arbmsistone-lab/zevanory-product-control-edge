@@ -1,0 +1,31 @@
+name: Creative approval auto-decision
+
+# The approval queue is decided by the quality gate against the official catalog; the owner
+# only sees owner acts. Runs every 3 hours and on demand. Logs ids and reasons only.
+on:
+  schedule:
+    - cron: "23 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: creative-auto-decision
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test tests/creative-auto-decision.test.mjs
+      - run: node scripts/creative-auto-decision.mjs
