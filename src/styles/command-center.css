@@ -225,6 +225,7 @@
 }
 .ccSeal.real, .ccSeal.webhook_authenticated { border-color: var(--status-success); color: var(--status-success-text, var(--status-success)); }
 .ccSeal.aggregated { border-color: var(--cc-accent); color: var(--cc-accent); }
+.ccSeal.estimated { border-color: var(--status-warning); color: var(--status-warning-text, var(--status-warning)); }
 .ccSeal.stale { border-color: var(--status-warning); color: var(--status-warning-text, var(--status-warning)); }
 
 @media (max-width: 1180px) {
@@ -253,3 +254,9 @@
 .ccTileSlot > .ccTile { height: 100%; }
 .ccBody[data-cards="4"]:has(> .ccCard.tiles:first-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); grid-auto-rows: unset; }
 .ccBody[data-cards="4"]:has(> .ccCard.tiles:first-child) > :first-child { grid-column: 1 / -1; }
+.ccBody[data-cards="5"]:has(> .ccCard.tiles:first-child) { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); grid-auto-rows: unset; }
+.ccBody[data-cards="5"]:has(> .ccCard.tiles:first-child) > :first-child { grid-column: 1 / -1; }
+@media (max-width: 1180px) {
+  .ccBody[data-cards="5"]:has(> .ccCard.tiles:first-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); }
+  .ccBody[data-cards="4"]:has(> .ccCard.tiles:first-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
