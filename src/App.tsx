@@ -872,7 +872,8 @@ function App() {
     if (filter === 'archived') return product.status === 'archived';
     return true;
   }), [activeProducts, filter]);
-  const productPageSize = viewportWidth <= 900 ? 1 : 2;
+  // Short screens (owner matrix 1280x720, 1024x768) show one full-width card per page.
+  const productPageSize = viewportWidth <= 900 || viewportHeight <= 800 ? 1 : 2;
   const productPageCount = Math.max(1, Math.ceil(visibleProducts.length / productPageSize));
   const safeProductPage = Math.min(productPage, productPageCount - 1);
   const pagedProducts = visibleProducts.slice(safeProductPage * productPageSize, (safeProductPage + 1) * productPageSize);

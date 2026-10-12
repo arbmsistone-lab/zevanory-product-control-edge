@@ -30,7 +30,7 @@ for (const [width, height] of sizes) for (const theme of ['dark', 'light']) {
   for (const tab of tabs) {
     await page.getByRole('navigation', { name: 'Perguntas da Central de Comando' }).getByRole('button', { name: tab, exact: true }).click();
     await page.waitForTimeout(400);
-    const narrowPages = width <= 900 ? Number((await page.locator('.ccTabs .ccPager span').textContent().catch(() => '1/1'))?.split('/')[1] || 1) : 1;
+    const narrowPages = Number((await page.locator('.ccTabs .ccPager span').textContent({ timeout: 800 }).catch(() => '1/1'))?.split('/')[1] || 1);
     for (let p = 0; p < narrowPages; p++) {
       if (p > 0) { await page.locator('.ccTabs .ccPager button[aria-label="Próxima página"]').click(); await page.waitForTimeout(300); }
       checks++;

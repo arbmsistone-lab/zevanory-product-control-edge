@@ -444,7 +444,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <h2>{meta.title}</h2>
           <p>{meta.subtitle}</p>
           <div className={'liveTelemetry ' + liveState.toLowerCase()} aria-live='polite'>
-            <span className='liveDot' /><b>{liveState === 'LIVE' ? 'CONECTADO' : liveState === 'SYNCING' ? 'SINCRONIZANDO' : 'DESATUALIZADO'}</b><small>painel lido há {Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000))}s · dados de {time(data.generatedAt)} (eventos persistidos)</small>
+            <span className='liveDot' /><b>{liveState === 'LIVE' ? 'CONECTADO' : liveState === 'SYNCING' ? 'SINCRONIZANDO' : 'DESATUALIZADO'}</b><small title='Idade da leitura do painel e horário dos dados comerciais persistidos'>lido há {Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000))}s · dados {time(data.generatedAt)}</small>
             {section === 'commercial' && <button className={liveMode ? 'filter active' : 'filter'} aria-pressed={liveMode} onClick={() => setLiveMode(v => !v)}>{liveMode ? 'Voltar ao painel' : 'Ver ao vivo'}</button>}
           </div>
         </div>

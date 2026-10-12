@@ -266,14 +266,20 @@ for(const size of sizes){
     else await page.locator('.zpcSidebarBrand').filter({hasText:'ZEVANORY'}).waitFor({state:'visible',timeout:15000});
     await page.addScriptTag({path:axePath});
 
-    const auditViews=views.flatMap(([key,label])=>key==='overview'?ccTabs.map((_,i)=>[key,label,i]):[[key,label,0]]);
-    for(const [key,label,overviewPage] of auditViews){
-      const row={viewport:size,theme,view:key,label,overviewPage,failures:[]};
+    // Every card page of every Command Center tab is audited (paged cards are content too).
+    const auditViews=views.flatMap(([key,label])=>key==='overview'?ccTabs.flatMap((_,i)=>[0,1,2,3,4,5].map(cp=>[key,label,i,cp])):[[key,label,0,0]]);
+    for(const [key,label,overviewPage,cardPage] of auditViews){
+      const row={viewport:size,theme,view:key,label,overviewPage,cardPage,failures:[]};
       const fail=(code,detail)=>{row.failures.push({code,detail});failed=true;};
       try{
         await navigate(page,size.width,key,label);
         if(key==='overview'){
           await page.getByRole('navigation',{name:'Perguntas da Central de Comando'}).getByRole('button',{name:ccTabs[overviewPage],exact:true}).click({timeout:15000});
+          const pagerText=await page.locator('.ccTabs .ccPager span').textContent({timeout:500}).catch(()=>null);
+          const cardPages=pagerText?Number(pagerText.split('/')[1]||1):1;
+          if(cardPage>=cardPages) continue;
+          for(let k=0;k<6;k++){const prev=page.locator('.ccTabs .ccPager button[aria-label="Página anterior"]');if(await prev.count()&&await prev.isEnabled())await prev.click();else break;}
+          for(let k=0;k<cardPage;k++){await page.locator('.ccTabs .ccPager button[aria-label="Próxima página"]').click({timeout:5000});await page.waitForTimeout(60);}
         }
       }catch(e){fail('NAVIGATION',String(e));report.push(row);continue;}
       await page.waitForTimeout(80);
@@ -482,7 +488,7 @@ for(const size of sizes){
       row.focus=focus;
       if(focus.active!=='true'||parseFloat(focus.outlineWidth||'0')<4||focus.outlineStyle==='none') fail('FOCUS_RING',JSON.stringify(focus));
 
-      const shot=`${outDir}/${size.name}-${theme}-${key}${overviewPage ? '-page'+(overviewPage+1) : ''}.png`;
+      const shot=`${outDir}/${size.name}-${theme}-${key}${overviewPage ? '-page'+(overviewPage+1) : ''}${cardPage ? '-cards'+(cardPage+1) : ''}.png`;
       await page.screenshot({path:shot,fullPage:true});
       row.screenshot=shot;
       report.push(row);
