@@ -537,6 +537,13 @@ html, body, button, input, select, textarea {
   grid-column: 2;
   grid-row: 1;
 }
+/* 901-1100px keeps the sidebar navigation; the compact area select (from the canonical layer)
+   would sit on the header row and cover its actions, so it stays off in that range. */
+@media (min-width: 901px) and (max-width: 1100px) {
+  .zpcAppShell > .areaSelectWrap {
+    display: none;
+  }
+}
 .zpcAppShell > main.shell {
   grid-column: 2;
   grid-row: 3;
@@ -773,4 +780,9 @@ html, body, button, input, select, textarea {
   .adsPanel { padding: var(--zpc-space-2); gap: var(--zpc-space-1); margin-bottom: var(--zpc-space-1); }
   .adsPanel small { margin-top: var(--zpc-space-1); }
   .adsPanel .approvalActions { margin-top: 0; }
+}
+
+/* One product per page (short screens): the card spans the full width instead of half of it. */
+.zpcWorkspace.shell-products .productGrid[data-single='true'] {
+  grid-template-columns: minmax(0, 1fr) !important;
 }

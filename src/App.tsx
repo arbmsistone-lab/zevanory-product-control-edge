@@ -1161,7 +1161,7 @@ function App() {
             </div>
           </section>
 
-          <section className='productGrid'>
+          <section className='productGrid' data-single={productPageSize === 1 ? 'true' : undefined}>
             {pagedProducts.map(product => (
               <article className={product.status === 'archived' ? 'productCard archived' : 'productCard'} key={product.id}>
                 <div className='productHead'>

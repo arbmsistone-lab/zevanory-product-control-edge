@@ -420,7 +420,8 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   };
   let items = genericMap[section] || [];
   if (section === 'crm') items = data.leads.filter(item => ['new','nurture','qualified','contact-ready','contacted','conversation','offer','follow-up','checkout','payment','customer','fulfillment','won','lost'].includes(item.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-  const compactFinance = viewportWidth <= 700 || viewportHeight <= 700;
+  // Owner matrix (1280x720, 1366x768, 1024x768): finance pages panels and records separately.
+  const compactFinance = viewportWidth <= 700 || viewportHeight <= 800;
   const genericPageSize = Math.max(1, (viewportWidth <= 620 ? 1 : viewportWidth <= 700 ? 2 : viewportHeight <= 780 ? 3 : 4) - (section === 'finance' && !compactFinance ? 2 : 0));
   const genericPageCount = Math.max(1, Math.ceil(items.length / genericPageSize));
   const safeListPage = Math.min(listPage, genericPageCount - 1);

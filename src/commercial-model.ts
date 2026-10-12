@@ -137,7 +137,7 @@ export function deriveCommercialRobotState(
       state: 'ACTIVE',
       // "Online and executing" is not "commercially capable": channels and results are stated apart.
       label: 'ROBÔ: ONLINE · EXECUTANDO PESQUISA',
-      reason: `Canais externos habilitados: ${activeChannels.length ? activeChannels.join(', ') : 'nenhum'}. Contato direto bloqueado por política${publishAdapterReady ? '' : '; publicação externa em espera'}. Resultado comercial: só vendas comprovadas contam.`,
+      reason: `Canais externos habilitados: ${activeChannels.length ? activeChannels.join(', ') : 'nenhum'} · contato direto bloqueado${publishAdapterReady ? '' : ' · publicação em espera'} · só vendas comprovadas contam.`,
       lastHeartbeatAt,
       externalProspecting: activeChannels.length > 0,
       publishAdapterReady,

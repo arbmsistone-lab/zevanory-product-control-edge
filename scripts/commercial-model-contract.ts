@@ -47,7 +47,7 @@ const activeWithoutPublishChannel = deriveCommercialRobotState({
 }, new Date().toISOString());
 assert.equal(activeWithoutPublishChannel.state, 'ACTIVE');
 assert.equal(activeWithoutPublishChannel.externalProspecting, false);
-assert.ok(!/ATIVO$/.test(activeWithoutPublishChannel.label) && /Canais externos habilitados: nenhum/.test(activeWithoutPublishChannel.reason));
+assert.ok(!/ATIVO$/.test(activeWithoutPublishChannel.label) && /Canais externos habilitados: nenhum ·/.test(activeWithoutPublishChannel.reason));
 assert.equal(activeWithoutPublishChannel.publishAdapterReady, false);
 
 const staleHeartbeat = deriveCommercialRobotState(

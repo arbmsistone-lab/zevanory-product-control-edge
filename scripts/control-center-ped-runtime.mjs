@@ -17,7 +17,7 @@ const record=(id,kind,title,status,extra={})=>({
 const commercial={
   generatedAt:now,
   metrics:{leadsToday:16,contactsToday:4,creativesInProduction:3,pendingApproval:2,publishedToday:1,salesCentsToday:129900},
-  robot:{state:'ACTIVE',label:'ROBÔ: ONLINE · EXECUTANDO PESQUISA',reason:'Canais externos habilitados: web. Contato direto bloqueado por política; publicação externa em espera. Resultado comercial: só vendas comprovadas contam.',lastHeartbeatAt:now,externalProspecting:true,publishAdapterReady:false,activeChannels:['web']},
+  robot:{state:'ACTIVE',label:'ROBÔ: ONLINE · EXECUTANDO PESQUISA',reason:'Canais externos habilitados: web · contato direto bloqueado · publicação em espera · só vendas comprovadas contam.',lastHeartbeatAt:now,externalProspecting:true,publishAdapterReady:false,activeChannels:['web']},
   leads:[record('lead-1','lead','Lead de auditoria','new',{channel:'web'})],
   creatives:[record('creative-1','creative','Criativo de auditoria','approval')],
   publications:[record('publication-1','publication','Publicação auditada','published',{channel:'web',publishedAt:now})],
@@ -274,11 +274,12 @@ for(const size of sizes){
       try{
         await navigate(page,size.width,key,label);
         if(key==='overview'){
-          await page.getByRole('navigation',{name:'Perguntas da Central de Comando'}).getByRole('button',{name:ccTabs[overviewPage],exact:true}).click({timeout:15000});
+          const ccNav=page.getByRole('navigation',{name:'Perguntas da Central de Comando'});
+          await ccNav.getByRole('button',{name:ccTabs[(overviewPage+1)%ccTabs.length],exact:true}).click({timeout:15000});
+          await ccNav.getByRole('button',{name:ccTabs[overviewPage],exact:true}).click({timeout:15000});
           const pagerText=await page.locator('.ccTabs .ccPager span').textContent({timeout:500}).catch(()=>null);
           const cardPages=pagerText?Number(pagerText.split('/')[1]||1):1;
           if(cardPage>=cardPages) continue;
-          for(let k=0;k<6;k++){const prev=page.locator('.ccTabs .ccPager button[aria-label="Página anterior"]');if(await prev.count()&&await prev.isEnabled())await prev.click();else break;}
           for(let k=0;k<cardPage;k++){await page.locator('.ccTabs .ccPager button[aria-label="Próxima página"]').click({timeout:5000});await page.waitForTimeout(60);}
         }
       }catch(e){fail('NAVIGATION',String(e));report.push(row);continue;}
