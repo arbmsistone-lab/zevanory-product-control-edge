@@ -1331,7 +1331,7 @@ export default {
       // its own copy: a consumed or tee'd stream must never turn a valid session into "sessão
       // inválida" (owner audit, Mission 10).
       const hasBody = !['GET', 'HEAD'].includes(request.method.toUpperCase());
-      const rawBody = hasBody ? ((await normalizedRequest.clone().text().catch(() => '')) || (await request.clone().text().catch(() => ''))) : '';
+      const rawBody = hasBody ? ((await request.clone().text().catch(() => '')) || (await normalizedRequest.clone().text().catch(() => ''))) : '';
       const copy = (target: string) => new Request(target, { method: request.method, headers: request.headers, body: hasBody ? rawBody : undefined, redirect: 'manual' });
       let bodyToken = '';
       try { bodyToken = String(JSON.parse(rawBody || '{}')?.sessionToken || '').trim(); } catch {}
