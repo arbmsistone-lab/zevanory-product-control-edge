@@ -885,7 +885,14 @@ html, body, button, input, select, textarea {
     font-size: 16px;
   }
 }
-.zpcWorkspace .recordPager strong {
-  min-width: 32px;
-  text-align: center;
+@media (min-width: 701px) {
+  .zpcWorkspace .recordPager strong {
+    min-width: 32px;
+    text-align: center;
+  }
+}
+@media (max-width: 480px) {
+  .zpcWorkspace .approvalCard {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
 }

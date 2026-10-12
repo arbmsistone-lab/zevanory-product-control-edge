@@ -202,11 +202,11 @@ export function consolidatePublications(items: CommercialRecord[]) {
 }
 
 const CAPTION_PREVIEW = 160;
-function captionPreview(text: string | null | undefined) {
+function captionPreview(text: string | null | undefined, limit = CAPTION_PREVIEW) {
   const t = String(text || 'Sem detalhe adicional.');
-  if (t.length <= CAPTION_PREVIEW) return t;
-  const cut = t.slice(0, CAPTION_PREVIEW);
-  return cut.slice(0, Math.max(cut.lastIndexOf(' '), 160)) + '…';
+  if (t.length <= limit) return t;
+  const cut = t.slice(0, limit);
+  return cut.slice(0, Math.max(cut.lastIndexOf(' '), Math.floor(limit * 0.7))) + '…';
 }
 // Full caption, paged in blocks (no scroll inside the dialog), so nothing is inaccessible.
 function CaptionDialog({ item, onClose }: { item: CommercialRecord; onClose: () => void }) {
@@ -561,8 +561,8 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
                 <div><span className='commercialState warn'>AGUARDANDO APROVAÇÃO</span><small>{item.kind === 'creative' ? 'CRIATIVO' : 'PUBLICAÇÃO'} · {item.channel || 'sem canal'}</small></div>
                 {item.kind === 'creative' && (item.imageUrl || item.imageDataUrl) && <img className='approvalImage' src={item.imageUrl || item.imageDataUrl || ''} alt={'Criativo de ' + (item.product || 'ZEVANORY')} />}
                 <h3>{item.title}</h3>
-                <p>{captionPreview(item.detail)}</p>
-                {String(item.detail || '').length > CAPTION_PREVIEW && <button type='button' className='filter' onClick={() => setCaptionOpen(item)}>Ver legenda completa ({String(item.detail).length} caracteres)</button>}
+                <p>{captionPreview(item.detail, viewportWidth <= 480 ? 70 : CAPTION_PREVIEW)}</p>
+                {String(item.detail || '').length > (viewportWidth <= 480 ? 70 : CAPTION_PREVIEW) && <button type='button' className='filter' onClick={() => setCaptionOpen(item)}>Ver legenda completa ({String(item.detail).length} caracteres)</button>}
                 <div className='approvalActions'>
                   <button className='approveBtn' disabled={Boolean(busyId)} onClick={() => void act(item,'approve')}><Check size={15}/>Aprovar</button>
                   <button className='changeBtn' disabled={Boolean(busyId)} onClick={() => void act(item,'request-changes')}><RotateCcw size={15}/>Alterar</button>
