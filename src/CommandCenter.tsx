@@ -100,25 +100,30 @@ function Tile({ label, value, source, at, integrity, definition }: { label: stri
 const tileOf = (label: string, m: Metric | undefined, format: (v: number | null) => string = num) =>
   m ? <Tile label={label} value={format(m.value)} source={m.source} at={m.updatedAt} integrity={m.integrity} definition={m.definition} /> : <Tile label={label} value='—' source='Central de Comando' at={null} integrity='missing' definition={label} />;
 
-// Measures how many rows fit in the available space so nothing ever scrolls or clips.
-function useFit(count: number) {
+// Shows only what fits: render everything, then drop one item per pass while the
+// container overflows (rows can have different heights). Any size change starts over.
+function useShrinkFit(total: number) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [fit, setFit] = useState(3);
+  const [fit, setFit] = useState(Math.max(1, total));
+  const [epoch, setEpoch] = useState(0);
+  const resetPending = useRef(false);
+  useLayoutEffect(() => { const all = Math.max(1, total); if (fit !== all) { resetPending.current = true; setFit(all); } }, [total, epoch]);
+  useLayoutEffect(() => {
+    if (resetPending.current) { resetPending.current = false; return; }
+    const el = ref.current;
+    if (el && fit > 1 && el.scrollHeight > el.clientHeight + 1) setFit(f => Math.max(1, f - 1));
+  });
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const measure = () => {
-      const row = el.querySelector<HTMLElement>('.ccRow');
-      const gap = parseFloat(getComputedStyle(el).rowGap || '8') || 8;
-      const rowH = row?.offsetHeight || 44;
-      const next = Math.max(1, Math.floor((el.clientHeight + gap) / (rowH + gap)));
-      setFit(prev => (prev === next ? prev : next));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
+    let last = '';
+    const observer = new ResizeObserver(() => {
+      const size = el.clientWidth + 'x' + el.clientHeight;
+      if (size !== last) { last = size; setEpoch(e => e + 1); }
+    });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [count]);
+  }, []);
   return { ref, fit };
 }
 
@@ -133,32 +138,32 @@ function Pager({ page, pages, onPage, label }: { page: number; pages: number; on
   );
 }
 
-function ListCard<T>({ title, subtitle, items, render, empty, keyOf }: { title: string; subtitle: ReactNode; items: T[]; render: (item: T) => ReactNode; empty: string; keyOf: (item: T, i: number) => string }) {
-  const { ref, fit } = useFit(items.length);
+function FitCard({ title, subtitle, nodes, variant, empty }: { title: string; subtitle: ReactNode; nodes: ReactNode[]; variant: 'list' | 'tiles'; empty?: string }) {
+  const { ref, fit } = useShrinkFit(nodes.length);
   const [page, setPage] = useState(0);
-  const pages = Math.max(1, Math.ceil(items.length / fit));
+  const pages = Math.max(1, Math.ceil(nodes.length / fit));
   const safe = Math.min(page, pages - 1);
-  const shown = items.slice(safe * fit, safe * fit + fit);
+  const shown = nodes.slice(safe * fit, safe * fit + fit);
   return (
     <section className='ccCard'>
       <header className='ccCardHead'>
         <div><h3>{title}</h3><p>{subtitle}</p></div>
         <Pager page={safe} pages={pages} onPage={setPage} label={'Páginas de ' + title} />
       </header>
-      <div className='ccList' ref={ref}>
-        {items.length ? shown.map((item, i) => <div className='ccRow' key={keyOf(item, i)}>{render(item)}</div>) : <div className='ccRow ccEmpty'><span>{empty}</span></div>}
+      <div className={variant === 'list' ? 'ccList' : 'ccTiles'} ref={ref}>
+        {nodes.length ? shown : <div className='ccRow ccEmpty'><span>{empty || 'Sem dados.'}</span></div>}
       </div>
     </section>
   );
 }
 
+function ListCard<T>({ title, subtitle, items, render, empty, keyOf }: { title: string; subtitle: ReactNode; items: T[]; render: (item: T) => ReactNode; empty: string; keyOf: (item: T, i: number) => string }) {
+  return <FitCard title={title} subtitle={subtitle} variant='list' empty={empty} nodes={items.map((item, i) => <div className='ccRow' key={keyOf(item, i)}>{render(item)}</div>)} />;
+}
+
 function TileCard({ title, subtitle, children }: { title: string; subtitle: ReactNode; children: ReactNode }) {
-  return (
-    <section className='ccCard'>
-      <header className='ccCardHead'><div><h3>{title}</h3><p>{subtitle}</p></div></header>
-      <div className='ccTiles'>{children}</div>
-    </section>
-  );
+  const nodes = (Array.isArray(children) ? children : [children]).filter(Boolean).map((child, i) => <div className='ccTileSlot' key={i}>{child}</div>);
+  return <FitCard title={title} subtitle={subtitle} variant='tiles' nodes={nodes} />;
 }
 
 const TABS = [
@@ -212,8 +217,12 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
     now: [
       <TileCard key='today' title='Hoje' subtitle={'Atualizado ' + when(servedAt)}>
         {hot('Vendas hoje', num(live?.today ?? 0), 'Compras aprovadas hoje (Brasília)')}
+        {hot('Receita no mês', money(live?.month.grossCents ?? 0), 'Valor pago pelos clientes no mês, antes de taxas')}
         {tileOf('Pessoas reais (7 dias)', s.funnel.visitors7)}
         {tileOf('Leads (7 dias)', s.funnel.leads7)}
+        {tileOf('Intenção de compra (30d)', s.funnel.intents30)}
+        <Tile label='Autonomia (7 dias)' value={s.autonomy.runs?.autonomyPct == null ? '—' : s.autonomy.runs.autonomyPct + '%'} source='Execuções' at={s.generatedAt} integrity={s.autonomy.runs ? 'real' : 'missing'} definition='Execuções concluídas sem intervenção humana' />
+        <Tile label='Serviços no ar' value={`${s.operations.probes.filter(p => p.ok).length}/${s.operations.probes.length}`} source='Verificação HTTP' at={s.generatedAt} integrity='real' definition='Site, vendas e painel respondendo' />
         <Tile label='Publicações hoje' value={`${s.acquisition.today.filter(p => p.status === 'publicado').length}/${s.acquisition.today.length || 6}`} source='Provedores' at={s.generatedAt} integrity='real' definition='Publicações confirmadas pelo provedor hoje / previstas' />
       </TileCard>,
       <ListCard key='feed' title='Linha do tempo' subtitle='Publicações, vendas e eventos, do mais recente' items={timeline} keyOf={(r, i) => r.at + i} empty='Nenhuma atividade registrada ainda.' render={r => (

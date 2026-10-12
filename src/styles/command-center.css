@@ -190,7 +190,7 @@
 .ccBar > i { display: block; height: 100%; border-radius: var(--zpc-radius-pill); background: var(--z-brand-grad, var(--cc-accent)); }
 
 .ccTiles {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
@@ -243,3 +243,5 @@
   .ccTabs > button { transition: none; }
 }
 :root[data-theme='light'] .ccTabs > button.active { background: var(--action-primary); }
+.ccTileSlot { display: grid; min-width: 0; }
+.ccTileSlot > .ccTile { height: 100%; }
