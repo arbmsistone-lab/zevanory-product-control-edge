@@ -7,7 +7,7 @@ import type { CommercialRecord } from './commercial-model';
 // Every number shows its source, last update and integrity seal; nothing estimated is
 // shown as real. No page scroll: cards paginate and lists fit what the space allows.
 
-type Integrity = 'real' | 'aggregated' | 'webhook_authenticated' | 'estimated' | 'stale' | 'missing';
+type Integrity = 'real' | 'aggregated' | 'webhook_authenticated' | 'no_events' | 'estimated' | 'stale' | 'missing';
 type Metric = { value: number | null; source: string; updatedAt: string | null; definition: string; integrity: Integrity };
 type SalesBucket = { approved: number; grossCents: number; netCents: number; reversed?: number };
 type SalesSummary = {
@@ -57,7 +57,7 @@ const when = (iso: string | null | undefined) => {
   if (Number.isNaN(d.getTime())) return 'sem registro';
   return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
-const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', estimated: 'Estimado', stale: 'Atrasado', missing: 'Sem dados' };
+const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', no_events: 'Nenhum evento Hotmart ainda', estimated: 'Estimado', stale: 'Atrasado', missing: 'Sem dados' };
 const CHANNEL: Record<string, string> = { youtube: 'YouTube · produto', youtube_dica: 'YouTube · dica', youtube_calc: 'YouTube · calculadora', telegram: 'Telegram', bluesky: 'Bluesky', blog: 'Blog', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
 const STATE: Record<string, string> = { autonomous: 'Autônomo', partial: 'Parcial', blocked_third_party: 'Aguardando terceiro', manual: 'Manual', owner_reserved: 'Reservado ao dono' };
 const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando' };
@@ -209,14 +209,24 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
   const live = useMemo(() => liveRevenue(sales), [sales]);
   const s = snapshot;
   const salesAt = live?.updatedAt || s?.revenue?.salesToday?.updatedAt || null;
-  const hot = (label: string, value: string, definition: string) => <Tile label={label} value={value} source='Hotmart' at={salesAt} integrity={sales ? 'webhook_authenticated' : 'missing'} definition={definition} />;
+  // No ledger yet means Hotmart has sent no event since the ledger went live (12/10): zero is real, not missing.
+  const hot = (label: string, value: string, definition: string) => <Tile label={label} value={value} source='Hotmart' at={salesAt || s?.generatedAt || null} integrity={sales ? 'webhook_authenticated' : 'no_events'} definition={definition} />;
 
   const timeline = useMemo(() => {
-    const rows: { at: string; what: string; detail: string; tone: string; url?: string | null }[] = [];
+    const rows: { at: string; what: string; detail: string; tone: string; url?: string | null; n?: number }[] = [];
     for (const p of s?.acquisition.today || []) rows.push({ at: p.at || s?.generatedAt || '', what: (CHANNEL[p.channel] || p.channel) + ' · ' + (p.status === 'publicado' ? 'publicado' : p.status), detail: p.status === 'publicado' ? 'Publicação confirmada pelo provedor' : (p.code || 'aguardando'), tone: p.status === 'publicado' ? 'ok' : 'warn', url: p.url });
     for (const r of sales?.recent || []) rows.push({ at: r.at, what: (KIND[r.kind] || r.kind) + ' · ' + r.product, detail: money(r.grossCents) + ' · origem ' + r.src, tone: r.kind === 'approved' ? 'ok' : 'warn' });
     for (const e of events.slice(0, 40)) rows.push({ at: e.updatedAt || e.createdAt, what: e.title, detail: [e.channel, e.status].filter(Boolean).join(' · '), tone: 'info' });
-    return rows.filter(r => r.at).sort((a, b) => b.at.localeCompare(a.at));
+    // Recurring heartbeats and cycles are collapsed into one line with a count.
+    const sorted = rows.filter(r => r.at).sort((a, b) => b.at.localeCompare(a.at));
+    const out: typeof rows = [];
+    const seen = new Map<string, number>();
+    for (const r of sorted) {
+      const idx = seen.get(r.what);
+      if (idx != null && r.tone === 'info') { out[idx].n = (out[idx].n || 1) + 1; continue; }
+      seen.set(r.what, out.length); out.push({ ...r });
+    }
+    return out.map(r => (r.n || 1) > 1 ? { ...r, detail: `${r.detail} · repetido ${r.n}× (mostrando o mais recente)` } : r);
   }, [s, sales, events]);
 
   const cards: Record<TabId, ReactNode[]> = !s ? { now: [], ai: [], perf: [], works: [], ops: [], money: [], path: [] } : {
