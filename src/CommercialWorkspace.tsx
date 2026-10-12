@@ -189,6 +189,14 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const [financeRecords, setFinanceRecords] = useState(false);
   const [realFunnel, setRealFunnel] = useState<RealFunnel | null>(null);
   const [funnelError, setFunnelError] = useState(false);
+  // Same source as the Command Center, so every area tells the same story.
+  const [cc, setCc] = useState<any>(null);
+  useEffect(() => {
+    if (!sessionToken || !['commercial', 'publications'].includes(section)) return;
+    let alive = true;
+    api.post('/api/owner/command-center', { sessionToken }).then(({ data: r }) => { if (alive) setCc(r?.snapshot || null); }).catch(() => {});
+    return () => { alive = false; };
+  }, [section, sessionToken]);
   useEffect(() => {
     if (section !== 'commercial' || !sessionToken) return;
     let active = true;
@@ -379,7 +387,11 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const discardedSignals = rawDiscoveries.length - usefulSignals.length;
   const genericMap: Partial<Record<CommercialSection, CommercialRecord[]>> = {
     creatives: data.creatives,
-    publications: data.publications,
+    publications: [
+      ...((cc?.acquisition?.today || []) as any[]).filter(p => p.status === 'publicado').map((p, i): CommercialRecord => ({ id: 'cc-today-' + p.channel + i, kind: 'publication', title: 'Publicado · ' + p.channel, detail: 'Publicação confirmada pelo provedor' + (p.url ? ' · ' + p.url : ''), status: 'published', channel: p.channel, product: null, productId: null, valueCents: null, source: 'motores', sourceKey: p.url || null, evidence: p.url ? [p.url] : [], createdAt: p.at || cc?.generatedAt, updatedAt: p.at || cc?.generatedAt, publishedAt: p.at || null })),
+      ...((cc?.acquisition?.youtubeRecent || []) as any[]).map((v, i): CommercialRecord => ({ id: 'cc-yt-' + i + v.url, kind: 'publication', title: 'YouTube · ' + v.t, detail: `${v.views} visualizações · ${v.url}`, status: 'published', channel: 'youtube', product: null, productId: null, valueCents: null, source: 'YouTube Data API', sourceKey: v.url, evidence: [v.url], createdAt: v.d, updatedAt: v.d, publishedAt: v.d })),
+      ...data.publications,
+    ],
     prospecting: usefulSignals,
     crm: data.leads,
     support: data.support,
@@ -400,7 +412,6 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const safeCreativePage = Math.min(listPage, creativePageCount - 1);
   const pagedCreatives = studioCreatives.slice(safeCreativePage * creativePageSize, (safeCreativePage + 1) * creativePageSize);
 
-  const totalViews = realFunnel ? sumVerified(Object.values(realFunnel.pages).map(page => page.views)) : null;
   const totalCheckouts = realFunnel ? sumVerified(Object.values(realFunnel.products).map(product => product.checkouts)) : null;
   const funnelProvenance = realFunnel ? 'Fonte: funil real · últimos 30 dias · ' + time(realFunnel.generatedAt)
     : funnelError ? 'Medição ausente, antiga ou não certificada' : 'Consultando funil real';
@@ -433,11 +444,11 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             </nav>
           )}
           {!liveMode && (!pagedDashboard || dashboardPage === 0) && <div className='commercialMetrics' aria-label='Métricas comerciais auditáveis'>
-            <article title={funnelProvenance}><Search/><span>Visitas às páginas · 30 dias</span><strong>{totalViews ?? 'N/D'}</strong></article>
+            <article title={'Fonte: Central de Comando · contador próprio sem robôs, desde 12/10'}><Search/><span>Pessoas reais · 7 dias</span><strong>{cc?.funnel?.visitors7?.value ?? 'N/D'}</strong></article>
             <article title={'Fonte: leads persistidos · ' + time(data.generatedAt)}><MessageSquareText/><span>Leads de hoje</span><strong>{data.metrics.leadsToday}</strong></article>
-            <article title={funnelProvenance}><Activity/><span>Checkouts iniciados · 30 dias</span><strong>{totalCheckouts ?? 'N/D'}</strong></article>
+            <article title={funnelProvenance}><Activity/><span>Checkouts Mercado Pago · 30 dias</span><strong>{totalCheckouts ?? 'N/D'}</strong></article>
             <article title={'Fonte: financeiro confirmado · ' + time(data.generatedAt)}><CircleDollarSign/><span>Vendas confirmadas hoje</span><strong>{brl(data.metrics.salesCentsToday)}</strong></article>
-            <article title={'Fonte: publicações comprovadas · ' + time(data.generatedAt)}><Send/><span>Posts publicados hoje</span><strong>{data.metrics.publishedToday}</strong></article>
+            <article title={'Fonte: Central de Comando · publicações confirmadas pelos provedores'}><Send/><span>Posts publicados hoje</span><strong>{cc ? (cc.acquisition?.today || []).filter((p: any) => p.status === 'publicado').length : data.metrics.publishedToday}</strong></article>
             <article title={'Fonte: eventos comerciais persistidos · ' + time(data.generatedAt)}><MessageSquareText/><span>Contatos hoje</span><strong>{data.metrics.contactsToday}</strong></article>
           </div>}
 
