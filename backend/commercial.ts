@@ -1057,6 +1057,10 @@ export async function commercialSalesLifecycle(request: Request, body: unknown) 
   const occurredAt = cleanString(raw.occurredAt, 64) || new Date().toISOString();
   const externalId = cleanNullable(raw.externalId, 220);
   const marker = event + ':true';
+  // Idempotent: the same lifecycle event (same external id) delivered again changes nothing.
+  if ((lead.evidence || []).includes(marker) && (!externalId || (lead.evidence || []).includes('lifecycle-external-id:' + externalId))) {
+    return json({ ok: true, leadId, event, status: String(lead.status || ''), occurredAt, duplicate: true });
+  }
   const evidence = [
     ...(lead.evidence || []),
     'lead-id:' + leadId,

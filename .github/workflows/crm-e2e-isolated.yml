@@ -1,0 +1,40 @@
+name: CRM end-to-end (isolated database)
+
+# Capture -> qualification -> persistence -> update -> proposal -> result -> report, idempotency,
+# empty state, history and tenant isolation, running the real backend code against a throwaway
+# Postgres service. Production data is never touched; no synthetic contact is created there.
+on:
+  pull_request:
+    branches: [main]
+    paths: ["backend/**", "src/commercial-model.ts", "src/zevanory-sales-model.ts", "scripts/crm-e2e-isolated.ts", ".github/workflows/crm-e2e-isolated.yml"]
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  crm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: crm_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_PRIMARY: postgres://postgres:e2e@localhost:5432/crm_e2e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-audit --no-fund
+      - run: npx tsx scripts/crm-e2e-isolated.ts
