@@ -859,3 +859,33 @@ html, body, button, input, select, textarea {
     margin-block: 0;
   }
 }
+
+@media (max-width: 900px) {
+  /* Phones: thumbnail beside the text, smaller title, so one card fits a 390x844 screen. */
+  .zpcWorkspace .approvalCard {
+    display: grid !important;
+    grid-template-columns: 88px minmax(0, 1fr);
+    column-gap: var(--zpc-space-2);
+    align-items: start;
+  }
+  .zpcWorkspace .approvalCard > * {
+    grid-column: 2;
+  }
+  .zpcWorkspace .approvalCard > .approvalImage {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    block-size: auto;
+    aspect-ratio: 1 / 1;
+    margin-block: 0;
+  }
+  .zpcWorkspace .approvalCard > .approvalActions {
+    grid-column: 1 / -1;
+  }
+  .zpcWorkspace .approvalCard h3 {
+    font-size: 16px;
+  }
+}
+.zpcWorkspace .recordPager strong {
+  min-width: 32px;
+  text-align: center;
+}
