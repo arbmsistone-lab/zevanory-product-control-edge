@@ -7,7 +7,7 @@ import type { CommercialRecord } from './commercial-model';
 // Every number shows its source, last update and integrity seal; nothing estimated is
 // shown as real. No page scroll: cards paginate and lists fit what the space allows.
 
-type Integrity = 'real' | 'aggregated' | 'webhook_authenticated' | 'stale' | 'missing';
+type Integrity = 'real' | 'aggregated' | 'webhook_authenticated' | 'estimated' | 'stale' | 'missing';
 type Metric = { value: number | null; source: string; updatedAt: string | null; definition: string; integrity: Integrity };
 type SalesBucket = { approved: number; grossCents: number; netCents: number; reversed?: number };
 type SalesSummary = {
@@ -43,6 +43,8 @@ type Snapshot = {
   forecast: { status: 'ok' | 'insufficient'; reason?: string; salesExpected?: number; salesInterval80?: [number, number]; revenueExpectedCents?: number; revenueInterval80Cents?: [number, number]; basis?: string };
   recommendations: Recommendation[];
   experiments?: { id: string; title: string; hypothesis: string; metric: string; decision: string; status: string; verdict: string; progress?: string | null }[];
+  costs?: { rule: string; incrementalCostBRL: number; usageAt: string | null; providers: { id: string; name: string; uses: string; plan: string; freeLimit: string; billingRisk: string; verifiable: boolean; fallback: string; usedToday: number | null; guard: number | null }[] } | null;
+  market?: { generatedAt: string; method: string; integrity: string; top: { name: string; slug: string; score: number; product: string; topQueries: string[] }[]; ideas: { title: string; basis: string; evidence: string[]; status: string }[] } | null;
   inventory?: { criterion: string; eligible: number; provenAutonomous: number; pct: number | null; byState: Record<string, number>; dependencies: { id: string; name: string; state: string; dependency: string | null; impact: string | null }[]; processes: { id: string; area: string; agent: string; name: string; eligible: boolean; state: string; proven: boolean; lastEvidence: string | null; how: string | null }[] };
 };
 
@@ -55,7 +57,7 @@ const when = (iso: string | null | undefined) => {
   if (Number.isNaN(d.getTime())) return 'sem registro';
   return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
-const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', stale: 'Atrasado', missing: 'Sem dados' };
+const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', estimated: 'Estimado', stale: 'Atrasado', missing: 'Sem dados' };
 const CHANNEL: Record<string, string> = { youtube: 'YouTube · produto', youtube_dica: 'YouTube · dica', youtube_calc: 'YouTube · calculadora', telegram: 'Telegram', bluesky: 'Bluesky', blog: 'Blog', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
 const STATE: Record<string, string> = { autonomous: 'Autônomo', partial: 'Parcial', blocked_third_party: 'Aguardando terceiro', manual: 'Manual', owner_reserved: 'Reservado ao dono' };
 const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando' };
@@ -292,6 +294,9 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
       ]} keyOf={x => x.k} empty='—' render={x => (
         <><i className={'ccDot ' + (x.ok ? 'ok' : 'warn')} /><div><b>{x.k}</b><span>{x.d}</span></div><time>{x.ok ? 'ativo' : 'aguardando'}</time></>
       )} />,
+      <ListCard key='cost' title={'Custo zero · R$ ' + (s.costs?.incrementalCostBRL ?? 0).toFixed(2).replace('.', ',') + ' adicionais'} subtitle='Provedores, plano, cota gratuita, consumo de hoje e risco de cobrança' items={s.costs?.providers || []} keyOf={p => p.id} empty='Registro de provedores ainda não publicado.' render={p => (
+        <><i className={'ccDot ' + (!p.verifiable ? 'warn' : p.guard != null && (p.usedToday || 0) >= p.guard ? 'bad' : 'ok')} /><div><b>{p.name} · {p.plan}</b><span>{p.freeLimit}{p.guard != null ? ` · hoje ${p.usedToday ?? 0} (freio ${p.guard})` : ''} · risco: {p.billingRisk}</span></div><time>{p.verifiable ? 'verificado' : 'não verificável'}</time></>
+      )} />,
       <ListCard key='dep' title='Implantações' subtitle='Últimas publicações do sistema em produção' items={s.operations.deploys} keyOf={(d, i) => d.at + i} empty='Nenhuma implantação nos últimos 7 dias.' render={d => (
         <><i className={'ccDot ' + (d.conclusion === 'success' ? 'ok' : 'bad')} /><div><b>Implantação central</b><span>{d.conclusion === 'success' ? 'Concluída' : d.conclusion || 'em andamento'}</span></div><time>{when(d.at)}</time></>
       )} />,
@@ -322,6 +327,9 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
         <Tile label='Vendas esperadas' value={s.forecast.status === 'ok' ? `${s.forecast.salesExpected} (${s.forecast.salesInterval80?.[0]}–${s.forecast.salesInterval80?.[1]})` : 'Dados insuficientes'} source='Modelo de taxa (Poisson)' at={s.generatedAt} integrity={s.forecast.status === 'ok' ? 'aggregated' : 'missing'} definition={s.forecast.reason || 'Taxa diária de vendas × 30 dias, com intervalo de 80%'} />
         <Tile label='Receita esperada' value={s.forecast.status === 'ok' ? `${money(s.forecast.revenueExpectedCents)} (${money(s.forecast.revenueInterval80Cents?.[0])}–${money(s.forecast.revenueInterval80Cents?.[1])})` : 'Dados insuficientes'} source='Modelo de taxa (Poisson)' at={s.generatedAt} integrity={s.forecast.status === 'ok' ? 'aggregated' : 'missing'} definition={s.forecast.reason || 'Vendas esperadas × ticket médio'} />
       </TileCard>,
+      <ListCard key='mkt' title='Inteligência de mercado' subtitle={s.market ? 'Buscas reais por ramo · ' + when(s.market.generatedAt) : 'Primeira pesquisa semanal ainda não rodou'} items={[...(s.market?.ideas || []).map(i => ({ k: 'i' + i.title, t: i.title, d: i.basis + ' · ' + i.status, v: 'ideia' })), ...(s.market?.top || []).map(r => ({ k: r.slug, t: r.name, d: (r.topQueries[0] ? '“' + r.topQueries[0] + '” · ' : '') + 'produto: ' + r.product, v: String(r.score) }))]} keyOf={x => x.k} empty='Sem dados de mercado ainda.' render={x => (
+        <><i className={'ccDot ' + (x.v === 'ideia' ? 'warn' : 'info')} /><div><b>{x.t}</b><span>{x.d}</span></div><time>{x.v}</time></>
+      )} />,
       <ListCard key='deps' title='Dependências a eliminar' subtitle='O que ainda impede autonomia total, por impacto' items={s.inventory?.dependencies || []} keyOf={d => d.id} empty='Nenhuma dependência aberta.' render={d => (
         <><i className={'ccDot ' + (d.impact === 'high' ? 'bad' : d.impact === 'medium' ? 'warn' : 'idle')} /><div><b>{d.name}</b><span>{d.dependency || STATE[d.state] || d.state}</span></div><time>{d.impact === 'high' ? 'alto' : d.impact === 'medium' ? 'médio' : d.impact === 'low' ? 'baixo' : '—'}</time></>
       )} />,
