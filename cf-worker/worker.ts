@@ -1353,7 +1353,7 @@ export default {
         if (sessionGuard) return sessionGuard;
         try {
           const target = renderBase + normalizedPath + url.search;
-          const primaryResponse = await fetch(copy(target), { signal: AbortSignal.timeout(20000) });
+          const primaryResponse = await fetch(copy(target), { signal: AbortSignal.timeout(45000) });
           // The edge already verified the session above. A 401 from the auxiliary server for a
           // session the edge holds as valid is the auxiliary server failing to confirm it (cold
           // start, callback timeout), not an expired session: never surface it as "sessão
