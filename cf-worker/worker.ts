@@ -62,7 +62,11 @@ async function commercialRobotTickSignature(secret: string, timestamp: string, n
 // Session is verified at the edge first; the snapshot is shared by all valid admin sessions,
 // served fresh for 60s, stale-while-revalidate up to 15min, and dropped on any mutating call.
 const BOOTSTRAP_SNAPSHOT_KEY = 'zpc-admin-bootstrap-snapshot:v1';
-const BOOTSTRAP_FRESH_MS = 60_000;
+// Workers Free: 1,000 KV writes/day for the whole account. Revalidating every 60 s rewrote this
+// key on almost every panel load (12/10: the quota ran out). Revalidate every 10 min and write
+// only when the content changed, or once an hour to refresh its age.
+const BOOTSTRAP_FRESH_MS = 10 * 60_000;
+const BOOTSTRAP_REFRESH_UNCHANGED_MS = 60 * 60_000;
 const BOOTSTRAP_STALE_MS = 6 * 60 * 60_000;
 const BOOTSTRAP_READ_ONLY = new Set(['/api/admin/bootstrap', '/api/admin/overview', '/api/_session_verify', '/api/pin/login', '/api/pin/logout']);
 
@@ -82,10 +86,18 @@ async function fetchRenderBootstrap(renderBase: string, body: string) {
   return text;
 }
 
-async function storeBootstrapSnapshot(store: any, text: string) {
+async function sha256Hex(text: string) {
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
+  return Array.from(digest, b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
+}
+
+async function storeBootstrapSnapshot(store: any, text: string, previous?: { hash?: string; at?: number } | null, now = Date.now()) {
   try {
-    await store.put(BOOTSTRAP_SNAPSHOT_KEY, text, { metadata: { at: Date.now() }, expirationTtl: 6 * 3600 });
-  } catch {}
+    const hash = await sha256Hex(text);
+    if (previous?.hash === hash && previous?.at && now - previous.at < BOOTSTRAP_REFRESH_UNCHANGED_MS) return 'unchanged';
+    await store.put(BOOTSTRAP_SNAPSHOT_KEY, text, { metadata: { at: now, hash }, expirationTtl: 6 * 3600 });
+    return 'written';
+  } catch { return 'failed'; }
 }
 
 async function edgeBootstrap(request: Request, env: Record<string, any>, ctx: any, renderBase: string): Promise<Response | null> {
@@ -102,7 +114,7 @@ async function edgeBootstrap(request: Request, env: Record<string, any>, ctx: an
     const age = Date.now() - at;
     if (cached?.value && at && age < BOOTSTRAP_STALE_MS) {
       if (age >= BOOTSTRAP_FRESH_MS) {
-        ctx?.waitUntil?.(fetchRenderBootstrap(renderBase, body).then(text => text ? storeBootstrapSnapshot(store, text) : undefined).catch(() => undefined));
+        ctx?.waitUntil?.(fetchRenderBootstrap(renderBase, body).then(text => text ? storeBootstrapSnapshot(store, text, { hash: cached?.metadata?.hash, at }) : undefined).catch(() => undefined));
       }
       const payload = String(cached.value).replace(/\}\s*$/, ',"snapshotAgeMs":' + Math.max(0, age) + '}');
       return new Response(payload, { headers: { ...headers, 'x-zpc-bootstrap': age < BOOTSTRAP_FRESH_MS ? 'edge-fresh' : 'edge-stale' } });
