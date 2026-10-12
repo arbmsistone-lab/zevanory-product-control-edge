@@ -1178,6 +1178,44 @@ export default {
       return Response.json({ ok: true, servedAt: new Date().toISOString(), snapshot, sales }, { headers: { 'cache-control': 'no-store' } });
     }
 
+    if (normalizedPath === '/api/commercial/approval' && request.method === 'POST') {
+      // Approval queue decided at the edge, on the same store the creative factory writes to
+      // (queued to the primary like every edge write). Does not depend on the Render backend
+      // being awake. Session required; only items still awaiting approval can change.
+      let body: any = {};
+      try { body = await request.clone().json(); } catch {}
+      const token = String(body?.sessionToken || '');
+      if (!token || !(await verifyEdgeSession(token))) return Response.json({ error: 'Sessao invalida ou expirada.' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+      const id = String(body?.id || '');
+      const bucket = body?.kind === 'creative' ? T2_CREATIVE_BUCKET : body?.kind === 'publication' ? 'zpc_commercial_publications' : '';
+      const status = ({ approve: 'approved', reject: 'rejected', 'request-changes': 'changes-requested' } as Record<string, string>)[String(body?.action || '')];
+      if (!bucket || !status || !/^[0-9a-f-]{8,64}$/i.test(id)) return Response.json({ error: 'Acao de aprovacao invalida.' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+      try {
+        const listed = await t2StoreCall(env as Record<string, unknown>, { op: 'list', bucket, limit: 1000 });
+        const item = (Array.isArray(listed?.items) ? listed.items : []).find((x: any) => String(x?.id) === id);
+        if (!item) return Response.json({ error: 'commercial_record_not_found' }, { status: 404, headers: { 'cache-control': 'no-store' } });
+        if (!['approval', 'pending-approval', 'awaiting-approval'].includes(String(item.status || '').toLowerCase().replaceAll('_', '-'))) {
+          return Response.json({ error: 'commercial_record_not_awaiting_approval', status: item.status }, { status: 409, headers: { 'cache-control': 'no-store' } });
+        }
+        const now = new Date().toISOString();
+        const note = String(body?.note || '').replace(/[\u0000-\u001f]/g, ' ').slice(0, 500);
+        const record = { ...item, status, updatedAt: now, evidence: [...(Array.isArray(item.evidence) ? item.evidence : []), 'approval:' + body.action + ':' + now, ...(note ? ['note:' + note] : [])].slice(-20) };
+        await t2StoreCall(env as Record<string, unknown>, { op: 'update', bucket, items: [{ id, record }] });
+        try { await (env as any).T2_CREATIVE_ASSETS?.delete?.(BOOTSTRAP_SNAPSHOT_KEY); } catch {}
+        await recordCommercialActivity(env as Record<string, any>, 'event', {
+          title: status === 'approved' ? 'Item aprovado' : status === 'rejected' ? 'Item rejeitado' : 'Alterações solicitadas',
+          detail: String(item.title || ''),
+          status: 'approval-action',
+          channel: String(item.channel || ''),
+          sourceKey: 'approval:' + id + ':' + now,
+          evidence: ['edge-approval', now],
+        }).catch(() => null);
+        return Response.json({ ok: true, id, status }, { headers: { 'cache-control': 'no-store' } });
+      } catch (cause) {
+        return Response.json({ error: 'Falha na aprovacao comercial: ' + String((cause as Error)?.message || cause).slice(0, 160) }, { status: 502, headers: { 'cache-control': 'no-store' } });
+      }
+    }
+
     if (normalizedPath === '/api/owner/oauth/ticket' && request.method === 'POST') {
       // Session PIN checked by this authoritative Cloudflare edge. The browser
       // receives a 60-second HMAC ticket, never the PIN session or shared key.
