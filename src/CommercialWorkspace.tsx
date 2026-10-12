@@ -412,6 +412,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
   const safeCreativePage = Math.min(listPage, creativePageCount - 1);
   const pagedCreatives = studioCreatives.slice(safeCreativePage * creativePageSize, (safeCreativePage + 1) * creativePageSize);
 
+  const totalViews = realFunnel ? sumVerified(Object.values(realFunnel.pages).map(page => page.views)) : null;
   const totalCheckouts = realFunnel ? sumVerified(Object.values(realFunnel.products).map(product => product.checkouts)) : null;
   const funnelProvenance = realFunnel ? 'Fonte: funil real · últimos 30 dias · ' + time(realFunnel.generatedAt)
     : funnelError ? 'Medição ausente, antiga ou não certificada' : 'Consultando funil real';
@@ -444,9 +445,9 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             </nav>
           )}
           {!liveMode && (!pagedDashboard || dashboardPage === 0) && <div className='commercialMetrics' aria-label='Métricas comerciais auditáveis'>
-            <article title={'Fonte: Central de Comando · contador próprio sem robôs, desde 12/10'}><Search/><span>Pessoas reais · 7 dias</span><strong>{cc?.funnel?.visitors7?.value ?? 'N/D'}</strong></article>
+            <article title={funnelProvenance + ' · inclui robôs até 11/10; pessoas reais desde 12/10: ' + (cc?.funnel?.visitors7?.value ?? 'N/D')}><Search/><span>Visitas às páginas · 30 dias (com robôs até 11/10)</span><strong>{totalViews ?? 'N/D'}</strong></article>
             <article title={'Fonte: leads persistidos · ' + time(data.generatedAt)}><MessageSquareText/><span>Leads de hoje</span><strong>{data.metrics.leadsToday}</strong></article>
-            <article title={funnelProvenance}><Activity/><span>Checkouts Mercado Pago · 30 dias</span><strong>{totalCheckouts ?? 'N/D'}</strong></article>
+            <article title={funnelProvenance}><Activity/><span>Checkouts iniciados · 30 dias</span><strong>{totalCheckouts ?? 'N/D'}</strong></article>
             <article title={'Fonte: financeiro confirmado · ' + time(data.generatedAt)}><CircleDollarSign/><span>Vendas confirmadas hoje</span><strong>{brl(data.metrics.salesCentsToday)}</strong></article>
             <article title={'Fonte: Central de Comando · publicações confirmadas pelos provedores'}><Send/><span>Posts publicados hoje</span><strong>{cc ? (cc.acquisition?.today || []).filter((p: any) => p.status === 'publicado').length : data.metrics.publishedToday}</strong></article>
             <article title={'Fonte: eventos comerciais persistidos · ' + time(data.generatedAt)}><MessageSquareText/><span>Contatos hoje</span><strong>{data.metrics.contactsToday}</strong></article>
