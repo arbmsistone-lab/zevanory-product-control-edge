@@ -14,18 +14,21 @@ const record=(id,kind,title,status,extra={})=>({
   valueCents:extra.valueCents??null,source:extra.source||'ped-runtime',
   sourceKey:id,evidence:['ped-runtime'],createdAt:now,updatedAt:now,publishedAt:extra.publishedAt||null,
 });
+const LONG_CAPTION='Seu caixa fecha no vermelho mesmo vendendo bem? O Lucro & Caixa mostra, em linguagem simples, quanto sobra de verdade em cada venda, como separar o dinheiro da empresa do seu e como montar a reserva que evita aperto no fim do mês. São planilhas prontas, exemplos reais de pequenos negócios e um passo a passo de 15 minutos por semana. Garantia de 7 dias. '.repeat(3)+'https://vendas.zevanory.api.br/lucro-e-caixa';
+const FIXTURE_IMAGE='data:image/svg+xml;base64,'+Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080"><rect width="1080" height="1080" fill="navy"/></svg>').toString('base64');
 const commercial={
   generatedAt:now,
   metrics:{leadsToday:16,contactsToday:4,creativesInProduction:3,pendingApproval:2,publishedToday:1,salesCentsToday:129900},
   robot:{state:'ACTIVE',label:'ROBÔ: ONLINE · EXECUTANDO PESQUISA',reason:'Canais externos habilitados: web · contato direto bloqueado · publicação em espera · só vendas comprovadas contam.',lastHeartbeatAt:now,externalProspecting:true,publishAdapterReady:false,activeChannels:['web']},
-  leads:[record('lead-1','lead','Lead de auditoria','new',{channel:'web'})],
-  creatives:[record('creative-1','creative','Criativo de auditoria','approval')],
-  publications:[record('publication-1','publication','Publicação auditada','published',{channel:'web',publishedAt:now})],
-  events:[record('event-1','event','Evento auditável','research')],
-  support:[record('support-1','support','Atendimento auditável','resolved')],
-  finance:[record('finance-1','finance','Receita confirmada','confirmed',{valueCents:129900,source:'sale'})],
-  evidence:[record('evidence-1','evidence','Evidência PED','confirmed')],
-  counts:{leads:1,creatives:1,publications:1,events:1,support:1,finance:1,evidence:1},
+  // Production-shaped volume and length (the live proof found defects the short fixture hid).
+  leads:Array.from({length:6},(_,i)=>record('lead-'+i,'lead','Lead de auditoria com nome de empresa longo '+i,'new',{channel:'web'})),
+  creatives:Array.from({length:6},(_,i)=>({...record('creative-'+i,'creative','Criativo · Lucro & Caixa · ângulo '+i,'approval',{channel:'instagram-facebook'}),detail:LONG_CAPTION,imageUrl:FIXTURE_IMAGE})),
+  publications:Array.from({length:8},(_,i)=>record('publication-'+i,'publication','Publicado · youtube · Short de dica para salão de beleza número '+i,'published',{channel:'youtube',publishedAt:now})),
+  events:Array.from({length:12},(_,i)=>record('event-'+i,'event','Ciclo de prospecção concluído com pesquisa de mercado em vários ramos '+i,'research')),
+  support:Array.from({length:3},(_,i)=>record('support-'+i,'support','Atendimento auditável '+i,'resolved')),
+  finance:Array.from({length:3},(_,i)=>record('finance-'+i,'finance','Receita confirmada '+i,'confirmed',{valueCents:129900,source:'sale'})),
+  evidence:Array.from({length:14},(_,i)=>record('evidence-'+i,'evidence','Evidência PED com título longo de verificação de produção '+i,'confirmed')),
+  counts:{leads:6,creatives:6,publications:8,events:12,support:3,finance:3,evidence:14},
 };
 const productPillars=Array.from({length:16},(_,index)=>({
   id:`P${String(index+1).padStart(2,'0')}`,
@@ -177,7 +180,7 @@ const views=[
   ['overview','Visão Geral'],['products','Produtos'],['commercial','Comercial'],['creatives','Criativos'],
   ['approvals','Aprovações'],['publications','Publicações'],['prospecting','Prospecção'],['crm','CRM/Vendas'],
   ['support','Atendimento'],['finance','Financeiro'],['cfo','ZEVANORY CFO'],['evidence','Evidências'],
-  ['operations','Operações técnicas'],['governance','ZEES-16 / Governança'],
+  ['operations','Operações técnicas'],['governance','ZEES-16 / Governança'],['channels','Conectar canais'],
 ];
 const sizes=[
   {name:'large',width:1920,height:1080,deviceScaleFactor:1},
@@ -212,6 +215,7 @@ const navigationRoute={
   evidence:{primary:'evidence',primaryLabel:'Evidências'},
   operations:{primary:'system',primaryLabel:'Sistema',subLabel:'Saúde do sistema'},
   governance:{primary:'system',primaryLabel:'Sistema',subLabel:'Qualidade e certificação'},
+  channels:{primary:'system',primaryLabel:'Sistema',subLabel:'Conectar canais'},
 };
 
 async function navigate(page,width,key,label){
@@ -259,6 +263,7 @@ for(const size of sizes){
     // Dark theme renders the real zero-sales state (no Hotmart events yet); light renders a dense ledger.
     const ccPayload=theme==='dark'?{...commandCenter,sales:null}:commandCenter;
     await page.route('**/api/owner/command-center',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(ccPayload)}));
+    await page.route('**/api/owner/oauth/ticket',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,connected:false,connectedAt:null,lastFailure:null})}));
     await page.route('**/global-trust.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(bootstrap.globalTrust)}));
     await page.route('**/version.json*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:auditSha,runtime:'audit-preview'})}));
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:30000});
@@ -331,10 +336,11 @@ for(const size of sizes){
           .filter(x=>!allowedFonts.includes(x.font)).slice(0,30);
         const direct=main?[...main.children].filter(el=>getComputedStyle(el).display!=='none').map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,cls:String(el.className),top:r.top,bottom:r.bottom,left:r.left,right:r.right};}):[];
         const ccGeometry=[];
-        const ccRoot=document.querySelector('.ccRoot');
+        // Text overlap and elements leaving the workspace, for every view (not only the Command Center).
+        const ccRoot=main;
         if(ccRoot){
           const rootBox=ccRoot.getBoundingClientRect();
-          const inCc=visible.filter(el=>ccRoot.contains(el)&&el!==ccRoot);
+          const inCc=visible.filter(el=>ccRoot.contains(el)&&el!==ccRoot&&!(el.closest('details:not([open])')&&!el.closest('summary')));
           for(const el of inCc){const b=el.getBoundingClientRect(); if(b.right>rootBox.right+1||b.bottom>rootBox.bottom+1||b.left<rootBox.left-1) ccGeometry.push('OUTSIDE:'+String(el.className));}
           const texts=inCc.filter(el=>el.children.length===0&&(el.textContent||'').trim()).map(el=>({el,b:el.getBoundingClientRect()}));
           for(let i=0;i<texts.length;i++) for(let j=i+1;j<texts.length;j++){
