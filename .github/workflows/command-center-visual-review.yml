@@ -1,0 +1,46 @@
+name: Command center visual review (fixture screenshots)
+
+# Renders the Command Center with the PED audit FIXTURE (never business data) in every
+# tab, size and theme, and pushes the screenshots to review/command-center-visual for
+# design review. Production proof with real data is command-center-live-proof.yml.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install and build
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.0 axe-core@4.10.3
+          npx playwright install --with-deps chromium
+          npx vite build
+      - name: Preview
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173 >/dev/null && break; sleep 1; done
+      - name: Render (audit result does not block the review)
+        env:
+          CONTROL_CENTER_AUDIT_URL: http://127.0.0.1:4173
+        run: node scripts/control-center-ped-runtime.mjs || true
+      - name: Push overview screenshots
+        env:
+          GH_PUSH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rev && cp control-center-audit/*overview*.png /tmp/rev/ && echo "${GITHUB_SHA}" > /tmp/rev/SOURCE_SHA
+          cd /tmp/rev && git init -q && git checkout -q -b review/command-center-visual
+          git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -qm "visual review ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:review/command-center-visual
