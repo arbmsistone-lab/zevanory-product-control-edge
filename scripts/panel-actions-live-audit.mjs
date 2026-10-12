@@ -149,7 +149,7 @@ const routes = {
   operations: ['Sistema', 'Saúde do sistema'], governance: ['Sistema', 'Qualidade e certificação'], channels: ['Sistema', 'Conectar canais'],
 };
 // Buttons that write business data or leave the session: proven in isolation / by guard, never clicked live.
-const PROTECTED = /^(aprovar|rejeitar|alterar$|pedir|solicitar|fechar vendas|confirmar|arquivar|salvar|criar produto|conectar|desconectar|reconectar|qualificar|promover|oferta|contato|follow|checkout|executar|certificar|rodar|auditoria|telemetria|publicar|enviar|sair|encerrar|upload|gerar)/i;
+const PROTECTED = /^(aprovar|rejeitar|alterar$|pedir|solicitar|fechar vendas|confirmar|arquivar|salvar|criar produto|conectar|desconectar|reconectar|qualificar|promover|oferta|contato|follow|checkout|executar|certificar|rodar|auditoria$|telemetria$|publicar|enviar|sair|encerrar|upload|gerar)/i;
 const browser = await chromium.launch({ headless: true });
 let clicked = 0;
 const skipped = new Set();
@@ -212,6 +212,9 @@ await browser.close();
 
 const summary = { apiAndRouteChecks: passed.length, uiClicks: clicked, protectedNotClicked: [...skipped].slice(0, 40), failures: failures.length };
 console.log('::notice title=PANEL_ACTIONS_LIVE::' + JSON.stringify(summary));
-for (const f of failures.slice(0, 20)) console.log('::error title=PANEL_ACTION::' + JSON.stringify(f));
+// Annotation budget is ~10 per step: pack every failure into at most 8 lines.
+const lines = failures.map(f => f.where + ' => ' + f.detail);
+const per = Math.max(1, Math.ceil(lines.length / 8));
+for (let i = 0; i < lines.length; i += per) console.log('::error title=PANEL_ACTION_' + (i / per + 1) + '::' + lines.slice(i, i + per).join(' || ').slice(0, 3800));
 if (failures.length) process.exit(1);
 console.log('PANEL_ACTIONS_LIVE=PASS');
