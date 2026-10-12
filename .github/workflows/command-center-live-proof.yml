@@ -5,6 +5,9 @@ name: Command center live proof
 # Output carries only codes and CSS classes (public repository: no business data).
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths: ["scripts/panel-actions-live-audit.mjs"]
   schedule:
     - cron: "41 11 * * *"
 
@@ -33,3 +36,6 @@ jobs:
       - name: Live proof of every panel area (official matrix, both themes)
         if: always()
         run: node scripts/panel-live-proof-all.mjs
+      - name: Every panel action and route on production (guards, reads, safe actions, UI clicks)
+        if: always()
+        run: node scripts/panel-actions-live-audit.mjs
