@@ -14,7 +14,7 @@ permissions:
 jobs:
   proof:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
     steps:
@@ -30,3 +30,6 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Live proof
         run: node scripts/command-center-live-proof.mjs
+      - name: Live proof of every panel area (official matrix, both themes)
+        if: always()
+        run: node scripts/panel-live-proof-all.mjs

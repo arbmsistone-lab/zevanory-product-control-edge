@@ -177,7 +177,7 @@ const views=[
   ['overview','Visão Geral'],['products','Produtos'],['commercial','Comercial'],['creatives','Criativos'],
   ['approvals','Aprovações'],['publications','Publicações'],['prospecting','Prospecção'],['crm','CRM/Vendas'],
   ['support','Atendimento'],['finance','Financeiro'],['cfo','ZEVANORY CFO'],['evidence','Evidências'],
-  ['operations','Operações técnicas'],['governance','ZEES-16 / Governança'],
+  ['operations','Operações técnicas'],['governance','ZEES-16 / Governança'],['channels','Conectar canais'],
 ];
 const sizes=[
   {name:'large',width:1920,height:1080,deviceScaleFactor:1},
@@ -212,6 +212,7 @@ const navigationRoute={
   evidence:{primary:'evidence',primaryLabel:'Evidências'},
   operations:{primary:'system',primaryLabel:'Sistema',subLabel:'Saúde do sistema'},
   governance:{primary:'system',primaryLabel:'Sistema',subLabel:'Qualidade e certificação'},
+  channels:{primary:'system',primaryLabel:'Sistema',subLabel:'Conectar canais'},
 };
 
 async function navigate(page,width,key,label){
