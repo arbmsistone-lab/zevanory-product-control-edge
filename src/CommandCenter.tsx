@@ -45,7 +45,7 @@ type Snapshot = {
   experiments?: { id: string; title: string; hypothesis: string; metric: string; decision: string; status: string; verdict: string; progress?: string | null }[];
   costs?: { rule: string; incrementalCostBRL: number; usageAt: string | null; providers: { id: string; name: string; uses: string; plan: string; freeLimit: string; billingRisk: string; verifiable: boolean; fallback: string; usedToday: number | null; guard: number | null }[] } | null;
   market?: { generatedAt: string; method: string; integrity: string; top: { name: string; slug: string; score: number; product: string; topQueries: string[] }[]; ideas: { title: string; basis: string; evidence: string[]; status: string }[] } | null;
-  inventory?: { criterion: string; eligible: number; provenAutonomous: number; pct: number | null; byState: Record<string, number>; dependencies: { id: string; name: string; state: string; dependency: string | null; impact: string | null }[]; processes: { id: string; area: string; agent: string; name: string; eligible: boolean; state: string; proven: boolean; lastEvidence: string | null; how: string | null }[] };
+  inventory?: { criterion: string; eligible: number; provenAutonomous: number; pct: number | null; byState: Record<string, number>; dependencies: { id: string; name: string; state: string; dependency: string | null; impact: string | null }[]; processes: { id: string; area: string; agent: string; name: string; eligible: boolean; state: string; proven: boolean; failed?: boolean; lastEvidence: string | null; how: string | null }[] };
 };
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -59,7 +59,7 @@ const when = (iso: string | null | undefined) => {
 };
 const SEAL: Record<Integrity, string> = { real: 'Real', aggregated: 'Hora a hora', webhook_authenticated: 'Autenticado', no_events: 'Sem vendas ainda', estimated: 'Estimado', stale: 'Atrasado', missing: 'Sem dados' };
 const CHANNEL: Record<string, string> = { youtube: 'YouTube · produto', youtube_dica: 'YouTube · dica', youtube_calc: 'YouTube · calculadora', telegram: 'Telegram', bluesky: 'Bluesky', blog: 'Blog', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
-const STATE: Record<string, string> = { autonomous: 'Autônomo', partial: 'Parcial', blocked_third_party: 'Aguardando terceiro', manual: 'Manual', owner_reserved: 'Reservado ao dono' };
+const STATE: Record<string, string> = { autonomous: 'Autônomo', partial: 'Parcial', blocked_third_party: 'Aguardando terceiro', awaiting_event: 'Aguardando evento real', manual: 'Manual', owner_reserved: 'Reservado ao dono' };
 const EXP: Record<string, string> = { collecting: 'coletando', winner: 'vencedor', loser: 'piorou', no_difference: 'sem diferença', tracking: 'acompanhando' };
 const KIND: Record<string, string> = { approved: 'Venda aprovada', refunded: 'Reembolso', chargeback: 'Chargeback', protest: 'Reclamação', canceled: 'Pagamento cancelado', expired: 'Pagamento expirado', abandoned: 'Carrinho abandonado', billet_printed: 'Boleto gerado', delayed: 'Pagamento atrasado', subscription_canceled: 'Assinatura cancelada' };
 
@@ -256,7 +256,7 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
         <Tile label='Publicações confirmadas' value={s.acquisition.publications.pct == null ? '—' : s.acquisition.publications.pct + '%'} source='Provedores' at={s.generatedAt} integrity={s.acquisition.publications.pct == null ? 'missing' : 'real'} definition={`${s.acquisition.publications.published} de ${s.acquisition.publications.expected} publicações previstas em 7 dias`} />
       </TileCard>,
       <ListCard key='inv' title='Inventário de processos' subtitle='Cada processo, quem faz e a prova de agora' items={(s.inventory?.processes || []).filter(p => p.eligible)} keyOf={p => p.id} empty='Inventário ainda não medido.' render={p => (
-        <><i className={'ccDot ' + (p.proven ? 'ok' : p.state === 'autonomous' ? 'warn' : p.state === 'blocked_third_party' ? 'idle' : 'bad')} /><div><b>{p.name}</b><span>{p.agent} · {STATE[p.state] || p.state}{p.proven ? ' · comprovado ' + when(p.lastEvidence) : p.state === 'autonomous' ? ' · sem evidência recente' : ''}</span></div><time>{p.area}</time></>
+        <><i className={'ccDot ' + (p.proven ? 'ok' : p.failed ? 'bad' : p.state === 'autonomous' ? 'warn' : p.state === 'blocked_third_party' || p.state === 'awaiting_event' ? 'idle' : 'bad')} /><div><b>{p.name}</b><span>{p.agent} · {STATE[p.state] || p.state}{p.proven ? ' · comprovado ' + when(p.lastEvidence) : p.failed ? ' · falhou na última verificação' : p.state === 'autonomous' ? ' · sem evidência recente' : ''}</span></div><time>{p.area}</time></>
       )} />,
       <ListCard key='next' title='Próximas ações' subtitle='Qual motor, o quê e quando (Brasília)' items={s.autonomy.agenda} keyOf={a => a.id} empty='Agenda indisponível.' render={a => (
         <><i className='ccDot info' /><div><b>{a.task}</b><span>{a.agent}</span></div><time>{when(a.next)}</time></>
