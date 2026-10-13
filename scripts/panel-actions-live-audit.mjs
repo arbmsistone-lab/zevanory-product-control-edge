@@ -353,6 +353,15 @@ console.log('::notice title=CREATIVE_RENDER_MATRIX::' + JSON.stringify(mediaMatr
     await page.evaluate(candidates.shortTrustLabels);
     await page.waitForTimeout(300);
     cert.geoShortLabels = await measure();
+    // Candidate fix B: compact ZEA-10 cell, run strip on one line, original "Alvos ativos" label.
+    await page.evaluate(() => {
+      const sm = [...document.querySelectorAll('.trustStrip small')]; if (sm[1]) sm[1].textContent = 'ZEA-10';
+      const bs = [...document.querySelectorAll('.trustStrip > div b')]; if (bs[1]) bs[1].textContent = bs[1].textContent.replace(' provados', '');
+      const span = [...document.querySelectorAll('.standardStrip span')].find(x => /Alvos/.test(x.textContent || '')); if (span) span.lastChild.textContent = 'Alvos ativos';
+      const st = document.createElement('style'); st.textContent = "@media (max-width:620px){.shell-governance[data-compact-governance='true'] .certRunStrip span{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}}"; document.head.append(st);
+    });
+    await page.waitForTimeout(300);
+    cert.geoFixB = await measure();
     await context.close();
   } catch (e) { cert.geo390 = { error: String(e?.message || e).slice(0, 100) }; }
   cert.trustSamples = [];
