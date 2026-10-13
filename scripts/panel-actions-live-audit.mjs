@@ -240,6 +240,46 @@ for (const [width, height] of [[1280, 720], [390, 844]]) {
   if (pageErrors.length) fail(width + ' global', 'JS ' + [...new Set(pageErrors)].slice(0, 3).join(' | '));
   await context.close();
 }
+// E) Creative studio rendering in the 5 official viewports x 2 themes (owner audit 13/10, Mission 3):
+// for every creative image, whether the browser actually painted it (complete + naturalWidth) and
+// whether its box is visible. Numbers only; no screenshot of the authenticated panel is stored.
+const mediaMatrix = [];
+for (const [width, height] of [[1536, 730], [1280, 720], [1366, 768], [1024, 768], [390, 844]]) {
+  for (const theme of ['dark', 'light']) {
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
+    await context.addInitScript(([t, th]) => { localStorage.setItem('arbm_admin_session', t); localStorage.setItem('zpc_theme', th); }, [token, theme]);
+    const page = await context.newPage();
+    try {
+      await page.goto(base + '/', { waitUntil: 'networkidle', timeout: 45000 });
+      await page.getByRole('navigation', { name: 'Perguntas da Central de Comando' }).waitFor({ timeout: 30000 });
+      for (const key of ['creatives', 'approvals']) {
+        if (width <= 960) { const sel = page.getByLabel('Selecionar área do Control Center'); await sel.waitFor({ state: 'visible', timeout: 15000 }); await sel.selectOption(key); }
+        else { const nav = page.getByRole('navigation', { name: 'Áreas do ZEVANORY' }); const [p1, s1] = routes[key]; await nav.getByRole('button', { name: p1, exact: true }).click(); if (s1) await nav.getByRole('button', { name: s1, exact: true }).click(); }
+        await page.waitForTimeout(4000);
+        const r = await page.evaluate(() => {
+          const boxes = [...document.querySelectorAll('.creativePreview, .approvalImage, .creativeMediaError')];
+          const imgs = [...document.querySelectorAll('.creativePreview img, img.approvalImage')];
+          const vis = (el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0 && b.bottom > 0 && b.right > 0 && b.top < innerHeight && b.left < innerWidth; };
+          return {
+            boxes: boxes.length,
+            imgs: imgs.length,
+            painted: imgs.filter(i => i.complete && i.naturalWidth > 0).length,
+            pending: imgs.filter(i => !i.complete).length,
+            broken: imgs.filter(i => i.complete && i.naturalWidth === 0).length,
+            visibleBoxes: boxes.filter(vis).length,
+            emptyVisibleBoxes: boxes.filter(b => vis(b) && b.classList.contains('creativePreview') && !b.querySelector('img') && !b.textContent.trim()).length,
+            tinyImgs: imgs.filter(i => { const b = i.getBoundingClientRect(); return i.complete && i.naturalWidth > 0 && (b.width < 24 || b.height < 24); }).length,
+            errorStates: document.querySelectorAll('.creativeMediaError').length,
+            scroll: document.documentElement.scrollHeight > innerHeight + 1 || document.documentElement.scrollWidth > innerWidth + 1,
+          };
+        });
+        mediaMatrix.push({ v: width + 'x' + height, theme, area: key, ...r });
+      }
+    } catch (e) { mediaMatrix.push({ v: width + 'x' + height, theme, error: String(e?.message || e).slice(0, 80) }); }
+    await context.close();
+  }
+}
+console.log('::notice title=CREATIVE_RENDER_MATRIX::' + JSON.stringify(mediaMatrix).slice(0, 3900));
 await browser.close();
 
 const summary = { apiAndRouteChecks: passed.length, uiClicks: clicked, protectedNotClicked: [...skipped].slice(0, 40), failures: failures.length };
