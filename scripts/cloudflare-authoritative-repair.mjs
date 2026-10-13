@@ -17,7 +17,7 @@ const rs=base.indexOf('routes = [');
 const re=rs>=0?base.indexOf(']\n\n',rs):-1;
 const routeFree=rs>=0&&re>=0?base.slice(0,rs)+base.slice(re+3):base;
 fs.writeFileSync('cf-worker/wrangler.script-only.toml',routeFree);
-execFileSync('npx',['--yes','wrangler@4.135.0','deploy','--config','cf-worker/wrangler.script-only.toml','--var','WORKER_COMMIT:'+expected],{stdio:'inherit',env:process.env});
+execFileSync('npx',['--yes','wrangler@4.135.0','deploy','--config','cf-worker/wrangler.script-only.toml','--var','WORKER_COMMIT:'+expected,'--tag='+expected,'--message=ZPC-canonical-'+expected],{stdio:'inherit',env:process.env});
 console.log('ZPC_CLOUDFLARE_DEPLOY=PASS sha='+expected);
 process.env.EXPECTED_DEPLOY_SHA=expected;
 execFileSync(process.execPath,['scripts/production-readback.mjs'],{stdio:'inherit',env:process.env});
