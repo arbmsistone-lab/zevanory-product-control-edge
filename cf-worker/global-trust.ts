@@ -110,6 +110,7 @@ export function deriveGlobalTrust(input: {
     else if (checkedAtMs - now > 5 * 60 * 1000) noProof('snapshot_timestamp_in_future');
     if (proofAtMs === null) noProof('proof_timestamp_missing');
     else if (now - proofAtMs > PROOF_MAX_AGE_MS) noProof('proof_expired');
+    else if (proofAtMs - now > 5 * 60 * 1000) noProof('proof_timestamp_in_future');
     if (!s.zees16 || typeof s.zees16 !== 'object') noProof('zees16_missing');
     else if (lowerSha(s.zees16.release_sha) !== sha) noProof('zees16_not_bound_to_release');
     if (!s.zea10 || typeof s.zea10 !== 'object') noProof('zea10_missing');
@@ -118,16 +119,24 @@ export function deriveGlobalTrust(input: {
   }
 
   // ---- Engines: identical criteria to the canonical build (zpc-canonical-build.yml) ----
-  const zeesGreen = zees16.proven === 16 && zees16.partial === 0 && zees16.blocked === 0
+  // Union of the criteria of the artifact that was actually served (mirror zpc-control-worker-deploy.yml)
+  // and of zpc-canonical-build.yml: nothing is loosened, only bound to the release and the clock.
+  const zeesGreen = zees16.proven === 16 && zees16.partial === 0 && zees16.blocked === 0 && num(zeesC.na) === 0
     && ['kv-append-only', 'recomputed-immutable-sources'].includes(String(s?.zees16?.persistence || ''));
   const zeaGreen = zea10.proven === 10 && zea10.partial === 0 && zea10.blocked === 0 && zea10.unknown === 0
     && s?.zea10?.authority === true && s?.zea10?.external_review_required !== true;
+  const inv = s?.invariants || {};
+  const coreInvariantsOk = s?.authority === 'server-side-core-only' && s?.source_of_truth === true && s?.fail_closed === true
+    && s?.ui_can_authorize === false && inv.exact_release_bound === true && inv.control_plane_ready === true
+    && inv.health_ready === true && inv.quorum_ok === true && inv.evidence_to_evaluation_unidirectional === true;
+  const decisionAtMs = parseTime(d?.generated_at);
   let coreState: EngineState;
   if (!d) { coreState = 'NO_PROOF'; reasons.push('core_decision_missing'); }
   else if (lowerSha(d.release_sha) !== sha) { coreState = 'NO_PROOF'; reasons.push('core_decision_not_bound_to_release'); }
-  else if (d.decision === 'ALLOW' && d.eligible_for_critical_promotion === true && Array.isArray(d.blockers) && d.blockers.length === 0
+  else if (decisionAtMs === null || Math.abs(now - decisionAtMs) > SNAPSHOT_MAX_AGE_MS) { coreState = 'NO_PROOF'; reasons.push('core_decision_stale'); }
+  else if (coreInvariantsOk && d.decision === 'ALLOW' && d.eligible_for_critical_promotion === true && Array.isArray(d.blockers) && d.blockers.length === 0
     && d.checks?.evidence_integrity_ok === true && d.checks?.zees16_complete === true && d.checks?.zea10_complete === true) coreState = 'GREEN';
-  else { coreState = 'BLOCKED'; reasons.push('core_decision_not_allow'); }
+  else { coreState = 'BLOCKED'; reasons.push(coreInvariantsOk ? 'core_decision_not_allow' : 'core_invariants_not_met'); }
   const engines: GlobalTrust['engines'] = [
     { id: 'ZEES-16', state: !s?.zees16 ? 'NO_PROOF' : zeesGreen ? 'GREEN' : 'BLOCKED' },
     { id: 'ZEA-10', state: !s?.zea10 ? 'NO_PROOF' : zeaGreen ? 'GREEN' : 'BLOCKED' },
@@ -142,14 +151,22 @@ export function deriveGlobalTrust(input: {
     ? Object.keys(s.status.channel_readiness) : [];
   const continuityRequired = Number.isFinite(Number(s?.continuity?.min_quorum)) && Number(s?.continuity?.min_quorum) > 0
     ? Number(s.continuity.min_quorum) : null;
-  const continuityOk = s?.continuity?.quorum_ok === true && continuityRequired !== null && channels.length >= continuityRequired;
+  // Floor of 3 kept from the canonical build (`.quorum.required >= 3`).
+  const continuityOk = s?.continuity?.quorum_ok === true && continuityRequired !== null && continuityRequired >= 3 && channels.length >= continuityRequired;
   if (s && !continuityOk) reasons.push(continuityRequired === null ? 'continuity_requirement_missing' : 'continuity_below_minimum');
   if (s && s.invariants?.health_ready !== true) reasons.push('health_not_ready');
 
   // ---- Independent trust quorum (published by /api/control-plane; never invented here) ----
   const tc = cp?.trust_chain && typeof cp.trust_chain === 'object' ? cp.trust_chain : null;
-  const quorumOk = independentQuorumProven(tc);
-  if (!quorumOk) reasons.push('independent_quorum_unproven');
+  // A quorum only counts for THIS release and while fresh: a leftover quorum of a previous release
+  // plus a fresh snapshot must never produce GREEN.
+  const tcAtMs = parseTime(tc?.ledger?.checked_at ?? tc?.checked_at);
+  const quorumBound = Boolean(sha && lowerSha(tc?.artifact_sha) === sha);
+  const quorumFresh = tcAtMs !== null && now - tcAtMs <= PROOF_MAX_AGE_MS && tcAtMs - now <= 5 * 60 * 1000;
+  const quorumOk = independentQuorumProven(tc) && quorumBound && quorumFresh;
+  if (!independentQuorumProven(tc)) reasons.push('independent_quorum_unproven');
+  else if (!quorumBound) reasons.push('independent_quorum_other_release');
+  else if (!quorumFresh) reasons.push('independent_quorum_stale');
 
   // ---- Cross-check against /api/control-plane (can only degrade) ----
   const crossDetails: string[] = [];
@@ -157,7 +174,7 @@ export function deriveGlobalTrust(input: {
   if (!cp) { cross = 'unavailable'; crossDetails.push('control_plane_unavailable'); }
   else {
     const cpSha = lowerSha(cp?.release?.deployment?.commit_sha || cp?.proof_chain?.sha);
-    if (sha && cpSha && cpSha !== sha) crossDetails.push('release_sha_differs');
+    if (sha && cpSha && cpSha !== sha) { crossDetails.push('release_sha_differs'); noProof('control_plane_release_differs'); }
     const live = cp?.zea10_live;
     const liveCounts = live?.report?.counts || null;
     if (!live) crossDetails.push('zea10_live_missing');

@@ -12,21 +12,22 @@ const iso = (msAgo: number) => new Date(NOW - msAgo).toISOString();
 const snapshot = (over: Record<string, any> = {}) => ({
   release_sha: SHA,
   generated_at: iso(5_000),
-  invariants: { exact_release_bound: true, health_ready: true, quorum_ok: true },
+  authority: 'server-side-core-only', source_of_truth: true, fail_closed: true, ui_can_authorize: false,
+  invariants: { exact_release_bound: true, control_plane_ready: true, health_ready: true, quorum_ok: true, evidence_to_evaluation_unidirectional: true },
   continuity: { min_quorum: 3, quorum_ok: true, available_channels: ['zevanory', 'email', 'youtube', 'google'] },
   status: { channel_readiness: { zevanory: {}, email: {}, youtube: {}, google: {}, whatsapp: {} } },
-  zees16: { release_sha: SHA, observed_at: iso(20 * 60_000), counts: { proven: 16, partial: 0, blocked: 0 }, persistence: 'kv-append-only', decision_hash: 'abc', policy_version: 'ZEES-16/x' },
+  zees16: { release_sha: SHA, observed_at: iso(20 * 60_000), counts: { proven: 16, partial: 0, blocked: 0, na: 0 }, persistence: 'kv-append-only', decision_hash: 'abc', policy_version: 'ZEES-16/x' },
   zea10: { release_sha: SHA, counts: { proven: 10, partial: 0, blocked: 0, unknown: 0 }, authority: true, external_review_required: false, evaluator: 'ZEA-10/2026.09-internal-v2' },
   ...over,
 });
 const decision = (over: Record<string, any> = {}) => ({
-  decision: 'ALLOW', eligible_for_critical_promotion: true, blockers: [], release_sha: SHA,
+  decision: 'ALLOW', eligible_for_critical_promotion: true, blockers: [], release_sha: SHA, generated_at: iso(3_000),
   checks: { evidence_integrity_ok: true, zees16_complete: true, zea10_complete: true }, ...over,
 });
 const controlPlane = (over: Record<string, any> = {}) => ({
   release: { deployment: { commit_sha: SHA } },
   zea10_live: { ready: true, fail_closed: false, report: { release_sha: SHA, counts: { proven: 10, partial: 0, blocked: 0, unknown: 0 } } },
-  trust_chain: { state: 'GREEN', passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 0, evidence_root: 'sha256:root' },
+  trust_chain: { state: 'GREEN', artifact_sha: SHA, ledger: { checked_at: iso(15 * 60_000) }, passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 0, evidence_root: 'sha256:root' },
   ...over,
 });
 const derive = (s: any = snapshot(), d: any = decision(), c: any = controlPlane(), now = NOW) => deriveGlobalTrust({ snapshot: s, decision: d, controlPlane: c, now });
@@ -60,11 +61,11 @@ await test('2. no fabricated participants: GREEN requires a real independent quo
   assert.equal(missing.state, 'DEGRADED');
   // Weak quorums (1 signer, shared keys, conflicts, no evidence root) are not proven.
   for (const tc of [
-    { state: 'GREEN', passed: 1, total: 3, required: 2, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
-    { state: 'GREEN', passed: 3, total: 3, required: 2, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
-    { state: 'GREEN', passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 1, evidence_root: 'r' },
-    { state: 'GREEN', passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 0, evidence_root: '' },
-    { state: 'GREEN', passed: 1, total: 1, required: 1, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
+    { state: 'GREEN', artifact_sha: SHA, ledger: { checked_at: iso(60_000) }, passed: 1, total: 3, required: 2, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
+    { state: 'GREEN', artifact_sha: SHA, ledger: { checked_at: iso(60_000) }, passed: 3, total: 3, required: 2, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
+    { state: 'GREEN', artifact_sha: SHA, ledger: { checked_at: iso(60_000) }, passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 1, evidence_root: 'r' },
+    { state: 'GREEN', artifact_sha: SHA, ledger: { checked_at: iso(60_000) }, passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 0, evidence_root: '' },
+    { state: 'GREEN', artifact_sha: SHA, ledger: { checked_at: iso(60_000) }, passed: 1, total: 1, required: 1, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
   ]) assert.equal(derive(snapshot(), decision(), controlPlane({ trust_chain: tc })).state, 'DEGRADED', JSON.stringify(tc));
   // Continuity channels below their minimum also degrade (and are never shown as trust quorum).
   const fewChannels = derive(snapshot({ continuity: { min_quorum: 3, quorum_ok: true, available_channels: ['zevanory'] } }));
@@ -114,14 +115,33 @@ await test('7. contradicting or unavailable secondary source => DEGRADED, never 
   assert.ok(blockedLegacy.crossCheck.details.includes('trust_chain_blocked_vs_core'));
   const counts = derive(snapshot(), decision(), controlPlane({ zea10_live: { ready: true, fail_closed: false, report: { release_sha: SHA, counts: { proven: 0, partial: 10, blocked: 0 } } } }));
   assert.ok(counts.crossCheck.details.includes('zea10_counts_differ'));
-  assert.equal(derive(snapshot(), decision(), controlPlane({ release: { deployment: { commit_sha: OLD } } })).state, 'DEGRADED');
+  assert.equal(derive(snapshot(), decision(), controlPlane({ release: { deployment: { commit_sha: OLD } } })).state, 'NO_PROOF', 'another deployed release => proof unbound');
   assert.equal(derive(snapshot(), decision(), null).state, 'DEGRADED');
   // A green secondary source cannot rescue a blocked core.
   assert.equal(derive(snapshot({ zea10: { ...snapshot().zea10, counts: { proven: 9, partial: 1, blocked: 0, unknown: 0 } } }), decision(), controlPlane()).state, 'BLOCKED');
 });
 
-await test('8. health not ready => DEGRADED', () => {
-  assert.equal(derive(snapshot({ invariants: { exact_release_bound: true, health_ready: false, quorum_ok: true } })).state, 'DEGRADED');
+await test('8. old deploy-gate criteria kept: health, invariants, ZEES N/A, continuity floor', () => {
+  assert.equal(derive(snapshot({ invariants: { ...snapshot().invariants, health_ready: false } })).state, 'BLOCKED');
+  assert.equal(derive(snapshot({ invariants: { ...snapshot().invariants, quorum_ok: false } })).state, 'BLOCKED');
+  assert.equal(derive(snapshot({ invariants: { ...snapshot().invariants, control_plane_ready: false } })).state, 'BLOCKED');
+  assert.equal(derive(snapshot({ ui_can_authorize: true })).state, 'BLOCKED');
+  assert.equal(derive(snapshot({ authority: 'ui' })).state, 'BLOCKED');
+  assert.equal(derive(snapshot({ zees16: { ...snapshot().zees16, counts: { proven: 16, partial: 0, blocked: 0, na: 1 } } })).state, 'BLOCKED');
+  assert.equal(derive(snapshot({ continuity: { ...snapshot().continuity, min_quorum: 1 } })).state, 'DEGRADED', 'continuity floor of 3');
+});
+
+await test('8b. quorum must be bound to this release and fresh; decision and proof timestamps are checked', () => {
+  const tc = controlPlane().trust_chain;
+  const other = derive(snapshot(), decision(), controlPlane({ trust_chain: { ...tc, artifact_sha: OLD } }));
+  assert.equal(other.state, 'DEGRADED');
+  assert.ok(other.reasons.includes('independent_quorum_other_release'));
+  const stale = derive(snapshot(), decision(), controlPlane({ trust_chain: { ...tc, ledger: { checked_at: iso(PROOF_MAX_AGE_MS + 1) } } }));
+  assert.ok(stale.reasons.includes('independent_quorum_stale'));
+  assert.equal(derive(snapshot(), decision(), controlPlane({ trust_chain: { ...tc, ledger: undefined } })).state, 'DEGRADED');
+  assert.equal(derive(snapshot(), decision({ generated_at: iso(SNAPSHOT_MAX_AGE_MS + 1) })).state, 'NO_PROOF');
+  assert.equal(derive(snapshot(), decision({ generated_at: undefined })).state, 'NO_PROOF');
+  assert.equal(derive(snapshot({ zees16: { ...snapshot().zees16, observed_at: new Date(NOW + 60 * 60_000).toISOString() } })).state, 'NO_PROOF');
 });
 
 await test('9. loader never throws and fails closed on network errors', async () => {
@@ -145,6 +165,7 @@ await test('10. the panel serves trust live, never from a deploy-time file, and 
   assert.match(app, /if \(trust\.schema !== 'zpc-global-trust\/v2'\) return \{ key: 'noproof'/, 'legacy baked artifact must render SEM PROVA');
   assert.match(app, /if \(!Number\.isFinite\(until\) \|\| now > until\) return \{ key: 'noproof'/, 'expired proof must render SEM PROVA');
   assert.match(app, /className=\{'trustStrip ' \+ tv\.key\}/);
+  assert.match(app, /\} catch \{\n\s+\/\/ Never keep painting[^\n]*\n\s+setGlobalTrust\(null\);/, 'a failed read must not keep showing the previous GREEN');
   assert.doesNotMatch(app, /globalTrust\.state === 'GREEN' \? 'trustStrip green'/);
 });
 

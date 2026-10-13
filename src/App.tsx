@@ -544,6 +544,8 @@ function App() {
       setGlobalTrust(trust);
       return trust;
     } catch {
+      // Never keep painting the previous reading when the live read fails (owner audit 13/10).
+      setGlobalTrust(null);
       return null;
     } finally {
       setGlobalTrustLoading(false);
