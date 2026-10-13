@@ -8,7 +8,9 @@
 //  - The only authority is ZEVANORY Control Core (/api/core/v1/snapshot + /api/core/v1/decision).
 //  - Proof must be bound to the running release SHA (snapshot, ZEES-16 and ZEA-10 all on the same SHA).
 //  - Proof has a timestamp and an explicit validity window; expired or missing proof is NO_PROOF.
-//  - Quorum counts the real continuity channels reported by the core; nothing is invented.
+//  - Quorum is the independent trust quorum (>= 2 signers, independent keys, evidence root, no
+//    conflicts), the same rule as worker/trust-projection.mjs (#792). Absent => DEGRADED, never GREEN.
+//    Continuity channels are reported separately and are not presented as a trust quorum.
 //  - A contradicting secondary source (/api/control-plane) degrades the state; it never upgrades it.
 //  - Certification criteria are the same ones the canonical build already applied (no loosening).
 
@@ -26,15 +28,19 @@ export type GlobalTrust = {
   proofObservedAt: string | null;
   validUntil: string | null;
   derivedAt: string;
+  /** Independent trust quorum (signers/engines), as published by /api/control-plane trust_chain. */
   quorum: {
-    basis: 'continuity_channels';
-    passed: number;
-    total: number;
+    basis: 'independent_signers';
+    source: '/api/control-plane trust_chain';
+    passed: number | null;
+    total: number | null;
     required: number | null;
+    independentKeys: number | null;
     ok: boolean;
-    channels: string[];
     conflicts: number;
   };
+  /** Technical continuity channels reported by the core (not a trust quorum). */
+  continuity: { channels: string[]; total: number; required: number | null; ok: boolean };
   zea10: { proven: number; partial: number; blocked: number; unknown: number };
   zees16: { proven: number; partial: number; blocked: number };
   engines: Array<{ id: string; state: EngineState }>;
@@ -49,6 +55,19 @@ export const SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1000;
 export const PROOF_MAX_AGE_MS = 3 * 60 * 60 * 1000;
 
 const SHA_RE = /^[0-9a-f]{40}$/;
+/** Same threshold as worker/trust-projection.mjs MIN_INDEPENDENT_QUORUM (#792). */
+export const MIN_INDEPENDENT_QUORUM = 2;
+const finiteOrNull = (value: unknown) => (value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)) ? Number(value) : null);
+
+export function independentQuorumProven(t: any): boolean {
+  if (!t || typeof t !== 'object') return false;
+  const passed = Number(t.passed) || 0;
+  const required = Number(t.required) || 0;
+  const keys = Number(t.independent_keys) || 0;
+  const conflicts = Number(t.conflicts) || 0;
+  return required >= MIN_INDEPENDENT_QUORUM && passed >= required && keys >= required && conflicts === 0
+    && typeof t.evidence_root === 'string' && t.evidence_root.length > 0;
+}
 const num = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const parseTime = (value: unknown) => {
   const t = Date.parse(String(value ?? ''));
@@ -117,15 +136,20 @@ export function deriveGlobalTrust(input: {
   if (engines[0].state === 'BLOCKED') reasons.push('zees16_incomplete');
   if (engines[1].state === 'BLOCKED') reasons.push('zea10_incomplete');
 
-  // ---- Quorum: real continuity channels from the core (never a fabricated 3/3) ----
+  // ---- Continuity channels from the core (technical continuity, NOT a trust quorum) ----
   const channels: string[] = Array.isArray(s?.continuity?.available_channels) ? s.continuity.available_channels.map(String) : [];
   const readinessKeys = s?.status?.channel_readiness && typeof s.status.channel_readiness === 'object'
     ? Object.keys(s.status.channel_readiness) : [];
-  const required = Number.isFinite(Number(s?.continuity?.min_quorum)) && Number(s?.continuity?.min_quorum) > 0
+  const continuityRequired = Number.isFinite(Number(s?.continuity?.min_quorum)) && Number(s?.continuity?.min_quorum) > 0
     ? Number(s.continuity.min_quorum) : null;
-  const quorumOk = s?.continuity?.quorum_ok === true && required !== null && channels.length >= required;
-  if (s && !quorumOk) reasons.push(required === null ? 'quorum_requirement_missing' : 'quorum_below_minimum');
+  const continuityOk = s?.continuity?.quorum_ok === true && continuityRequired !== null && channels.length >= continuityRequired;
+  if (s && !continuityOk) reasons.push(continuityRequired === null ? 'continuity_requirement_missing' : 'continuity_below_minimum');
   if (s && s.invariants?.health_ready !== true) reasons.push('health_not_ready');
+
+  // ---- Independent trust quorum (published by /api/control-plane; never invented here) ----
+  const tc = cp?.trust_chain && typeof cp.trust_chain === 'object' ? cp.trust_chain : null;
+  const quorumOk = independentQuorumProven(tc);
+  if (!quorumOk) reasons.push('independent_quorum_unproven');
 
   // ---- Cross-check against /api/control-plane (can only degrade) ----
   const crossDetails: string[] = [];
@@ -143,9 +167,11 @@ export function deriveGlobalTrust(input: {
       const liveGreen = live.ready === true && live.fail_closed === false;
       if (liveGreen !== zeaGreen) crossDetails.push('zea10_live_state_differs');
     }
-    const cpTrust = String(cp?.trust_chain?.state || '');
+    // trust_chain may legitimately be UNVERIFIED (no independent quorum, #792). A BLOCKED chain
+    // against an all-green core, or a GREEN chain against a non-green core, is a contradiction.
+    const cpTrust = String(tc?.state || '');
     const coreAllGreen = engines.every(e => e.state === 'GREEN');
-    if (cpTrust && (cpTrust === 'GREEN') !== coreAllGreen) crossDetails.push(`trust_chain_${cpTrust.toLowerCase()}_vs_core`);
+    if ((cpTrust === 'BLOCKED' && coreAllGreen) || (cpTrust === 'GREEN' && !coreAllGreen)) crossDetails.push(`trust_chain_${cpTrust.toLowerCase()}_vs_core`);
     if (crossDetails.length) cross = 'contradicts';
   }
   if (cross !== 'agree') reasons.push(`cross_check_${cross}`);
@@ -154,7 +180,7 @@ export function deriveGlobalTrust(input: {
   let state: TrustState;
   if (!proofOk || engines.some(e => e.state === 'NO_PROOF')) state = 'NO_PROOF';
   else if (engines.some(e => e.state === 'BLOCKED')) state = 'BLOCKED';
-  else if (!quorumOk || s?.invariants?.health_ready !== true || cross !== 'agree') state = 'DEGRADED';
+  else if (!quorumOk || !continuityOk || s?.invariants?.health_ready !== true || cross !== 'agree') state = 'DEGRADED';
   else state = 'GREEN';
 
   const validUntilMs = checkedAtMs !== null && proofAtMs !== null
@@ -172,14 +198,16 @@ export function deriveGlobalTrust(input: {
     validUntil: validUntilMs !== null ? new Date(validUntilMs).toISOString() : null,
     derivedAt: new Date(now).toISOString(),
     quorum: {
-      basis: 'continuity_channels',
-      passed: channels.length,
-      total: Math.max(readinessKeys.length, channels.length),
-      required,
+      basis: 'independent_signers',
+      source: '/api/control-plane trust_chain',
+      passed: finiteOrNull(tc?.passed),
+      total: finiteOrNull(tc?.total),
+      required: finiteOrNull(tc?.required),
+      independentKeys: finiteOrNull(tc?.independent_keys),
       ok: quorumOk,
-      channels,
-      conflicts: crossDetails.length,
+      conflicts: crossDetails.length + (Number(tc?.conflicts) || 0),
     },
+    continuity: { channels, total: Math.max(readinessKeys.length, channels.length), required: continuityRequired, ok: continuityOk },
     zea10,
     zees16,
     engines,

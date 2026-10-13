@@ -83,7 +83,8 @@ type GlobalTrust = {
   sha: string | null;
   evidenceRoot: string | null;
   policyVersion: string | null;
-  quorum: { passed: number; total: number; required: number | null; ok?: boolean; basis?: string; conflicts?: number };
+  quorum: { passed: number | null; total: number | null; required: number | null; ok?: boolean; basis?: string; conflicts?: number };
+  continuity?: { channels: string[]; total: number; required: number | null; ok: boolean };
   zea10: { proven: number; partial: number; blocked: number };
   engines: Array<{ id: string; state: string }>;
   checkedAt: string | null;
@@ -1016,7 +1017,7 @@ function App() {
           <span>TRUST CHAIN</span>
           <strong>{tv.label}</strong>
         </div>
-        <div><small>Canais (quórum)</small><b>{g ? `${g.quorum.passed}/${g.quorum.total} · min ${g.quorum.required ?? '—'}` : dash}</b></div>
+        <div title={g?.continuity ? `Canais de continuidade: ${g.continuity.channels.length}/${g.continuity.total} · mín ${g.continuity.required ?? '—'}` : undefined}><small>Quórum independente</small><b>{g ? (g.quorum.ok ? `${g.quorum.passed}/${g.quorum.total} · min ${g.quorum.required}` : 'NÃO PROVADO') : dash}</b></div>
         <div><small>ZEA-10 global</small><b>{g ? `${g.zea10.proven}/10 provados` : dash}</b></div>
         <div><small>SHA da prova</small><b>{g && g.sha ? g.sha.slice(0, 12) : dash}</b></div>
         <div><small>Motores</small><b>{g && g.engines.length ? `${g.engines.filter(item => item.state === 'GREEN').length}/${g.engines.length} GREEN` : dash}</b></div>

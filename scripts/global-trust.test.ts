@@ -26,7 +26,7 @@ const decision = (over: Record<string, any> = {}) => ({
 const controlPlane = (over: Record<string, any> = {}) => ({
   release: { deployment: { commit_sha: SHA } },
   zea10_live: { ready: true, fail_closed: false, report: { release_sha: SHA, counts: { proven: 10, partial: 0, blocked: 0, unknown: 0 } } },
-  trust_chain: { state: 'GREEN' },
+  trust_chain: { state: 'GREEN', passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 0, evidence_root: 'sha256:root' },
   ...over,
 });
 const derive = (s: any = snapshot(), d: any = decision(), c: any = controlPlane(), now = NOW) => deriveGlobalTrust({ snapshot: s, decision: d, controlPlane: c, now });
@@ -34,26 +34,42 @@ const derive = (s: any = snapshot(), d: any = decision(), c: any = controlPlane(
 let n = 0;
 const test = (name: string, fn: () => void | Promise<void>) => Promise.resolve().then(fn).then(() => { n++; console.log('ok', name); });
 
-await test('1. fully proven, bound, fresh and consistent => GREEN with real channel quorum', () => {
+await test('1. fully proven, bound, fresh, consistent and independently quorate => GREEN', () => {
   const t = derive();
   assert.equal(t.state, 'GREEN');
   assert.deepEqual(t.reasons, []);
   assert.equal(t.sha, SHA);
-  assert.deepEqual(t.quorum, { basis: 'continuity_channels', passed: 4, total: 5, required: 3, ok: true, channels: ['zevanory', 'email', 'youtube', 'google'], conflicts: 0 });
+  assert.deepEqual(t.quorum, { basis: 'independent_signers', source: '/api/control-plane trust_chain', passed: 3, total: 3, required: 2, independentKeys: 3, ok: true, conflicts: 0 });
+  assert.deepEqual(t.continuity, { channels: ['zevanory', 'email', 'youtube', 'google'], total: 5, required: 3, ok: true });
   assert.equal(t.engines.every(e => e.state === 'GREEN'), true);
   assert.equal(Date.parse(t.validUntil!), Math.min(NOW - 5_000 + SNAPSHOT_MAX_AGE_MS, NOW - 20 * 60_000 + PROOF_MAX_AGE_MS));
 });
 
-await test('2. no fabricated participants: quorum is never 3/3 unless 3 channels really exist', () => {
-  const t = derive(snapshot({ continuity: { min_quorum: 3, quorum_ok: true, available_channels: ['zevanory'] } }));
-  assert.equal(t.quorum.passed, 1);
-  assert.equal(t.quorum.ok, false, 'a quorum_ok flag with 1 channel must not count as quorum');
-  assert.equal(t.state, 'DEGRADED');
-  assert.ok(t.reasons.includes('quorum_below_minimum'));
-  assert.equal('independentKeys' in t.quorum, false, 'no invented signing keys');
-  const missing = derive(snapshot({ continuity: { quorum_ok: true, available_channels: ['a', 'b', 'c'] } }));
+await test('2. no fabricated participants: GREEN requires a real independent quorum', () => {
+  // The live shape after #792: legacy indicators ok, no independent quorum => UNVERIFIED 0/0.
+  const unverified = derive(snapshot(), decision(), controlPlane({ trust_chain: { state: 'UNVERIFIED', passed: 0, total: 0, required: 2, independent_keys: 0, conflicts: 0, evidence_root: null } }));
+  assert.equal(unverified.state, 'DEGRADED');
+  assert.ok(unverified.reasons.includes('independent_quorum_unproven'));
+  assert.equal(unverified.crossCheck.state, 'agree', 'UNVERIFIED is consistent, not a contradiction');
+  assert.equal(unverified.quorum.passed, 0);
+  assert.equal(unverified.quorum.ok, false);
+  // Missing numbers stay null, never a default.
+  const missing = derive(snapshot(), decision(), controlPlane({ trust_chain: { state: 'UNVERIFIED' } }));
+  assert.equal(missing.quorum.passed, null);
   assert.equal(missing.quorum.required, null);
   assert.equal(missing.state, 'DEGRADED');
+  // Weak quorums (1 signer, shared keys, conflicts, no evidence root) are not proven.
+  for (const tc of [
+    { state: 'GREEN', passed: 1, total: 3, required: 2, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
+    { state: 'GREEN', passed: 3, total: 3, required: 2, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
+    { state: 'GREEN', passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 1, evidence_root: 'r' },
+    { state: 'GREEN', passed: 3, total: 3, required: 2, independent_keys: 3, conflicts: 0, evidence_root: '' },
+    { state: 'GREEN', passed: 1, total: 1, required: 1, independent_keys: 1, conflicts: 0, evidence_root: 'r' },
+  ]) assert.equal(derive(snapshot(), decision(), controlPlane({ trust_chain: tc })).state, 'DEGRADED', JSON.stringify(tc));
+  // Continuity channels below their minimum also degrade (and are never shown as trust quorum).
+  const fewChannels = derive(snapshot({ continuity: { min_quorum: 3, quorum_ok: true, available_channels: ['zevanory'] } }));
+  assert.equal(fewChannels.state, 'DEGRADED');
+  assert.ok(fewChannels.reasons.includes('continuity_below_minimum'));
 });
 
 await test('3. stale snapshot, expired proof, future timestamp => SEM PROVA (NO_PROOF)', () => {
@@ -92,7 +108,7 @@ await test('6. incomplete evidence => BLOCKED (criteria unchanged)', () => {
 });
 
 await test('7. contradicting or unavailable secondary source => DEGRADED, never upgraded', () => {
-  const blockedLegacy = derive(snapshot(), decision(), controlPlane({ trust_chain: { state: 'BLOCKED' } }));
+  const blockedLegacy = derive(snapshot(), decision(), controlPlane({ trust_chain: { ...controlPlane().trust_chain, state: 'BLOCKED' } }));
   assert.equal(blockedLegacy.state, 'DEGRADED');
   assert.equal(blockedLegacy.crossCheck.state, 'contradicts');
   assert.ok(blockedLegacy.crossCheck.details.includes('trust_chain_blocked_vs_core'));
