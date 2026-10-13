@@ -362,6 +362,19 @@ console.log('::notice title=CREATIVE_RENDER_MATRIX::' + JSON.stringify(mediaMatr
     });
     await page.waitForTimeout(300);
     cert.geoFixB = await measure();
+    const clipCount = () => page.evaluate(() => [...document.querySelectorAll('main *, .trustStrip *')].filter(el => { const s = getComputedStyle(el); const b = el.getBoundingClientRect(); return b.width > 0 && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) && ['hidden', 'clip'].includes(s.overflowX) && el.children.length === 0; }).length);
+    const steps = {
+      C_runStrip4: "@media (max-width:620px){.shell-governance[data-compact-governance='true'] .certRunStrip{grid-template-columns:repeat(4,minmax(0,1fr))!important}}",
+      D_trust4: "@media (max-width:560px){.zpcAppShell>.trustStrip{grid-template-columns:repeat(4,minmax(0,1fr))!important}.zpcAppShell>.trustStrip>.trustState{grid-column:1/-1}}",
+      E_runSpanTight: "@media (max-width:620px){.shell-governance[data-compact-governance='true'] .certRunStrip span{min-height:0!important;padding-block:2px!important}}",
+    };
+    cert.geoSteps = {};
+    for (const [k, css] of Object.entries(steps)) {
+      await page.evaluate(c => { const st = document.createElement('style'); st.textContent = c; document.head.append(st); }, css);
+      await page.waitForTimeout(250);
+      const m = await measure();
+      cert.geoSteps[k] = { overflow: m.overflow, trust: m.trust, runKids: m.runKids, trustKids: m.trustKids, clips: await clipCount() };
+    }
     await context.close();
   } catch (e) { cert.geo390 = { error: String(e?.message || e).slice(0, 100) }; }
   cert.trustSamples = [];
