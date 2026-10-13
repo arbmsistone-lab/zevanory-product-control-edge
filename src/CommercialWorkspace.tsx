@@ -156,6 +156,29 @@ function AdsReadinessPanel({ sessionToken, compact }: { sessionToken: string; co
   );
 }
 
+// Creative image with explicit failure states (owner audit 13/10, Mission 3). A failed image used
+// to leave only the dark preview box. Now: one retry against the stored original (same-origin raw
+// asset) and, if that also fails, a visible "imagem indisponível" state. A PUBLISHED creative whose
+// image cannot be loaded is flagged as not verifiable.
+export function creativeOriginalUrl(src: string): string | null {
+  return /\/api\/commercial\/creative\/assets\/[0-9a-f-]{36}\.(jpg|png)$/i.test(src) ? src.replace('/creative/assets/', '/creative/assets-raw/') : null;
+}
+function CreativeImage({ src, alt, className, published, loading }: { src: string; alt: string; className?: string; published?: boolean; loading?: 'lazy' | 'eager' }) {
+  const [current, setCurrent] = useState(src);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setCurrent(src); setFailed(false); }, [src]);
+  if (failed) {
+    return <div className={'creativeMediaError' + (className ? ' ' + className : '')} role='img' aria-label={'Imagem indisponível: ' + alt}>
+      <Sparkles size={24}/>
+      <strong>IMAGEM INDISPONÍVEL</strong>
+      <small>{published ? 'PUBLICADO · ASSET NÃO VERIFICÁVEL' : 'A mídia não carregou; nada foi aprovado por isso'}</small>
+    </div>;
+  }
+  return <img className={className} src={current} alt={alt} loading={loading} data-media-state='pending'
+    onLoad={event => { event.currentTarget.dataset.mediaState = 'loaded'; }}
+    onError={() => { const original = creativeOriginalUrl(current); if (original && original !== current) setCurrent(original); else setFailed(true); }} />;
+}
+
 function RecordRow({ item }: { item: CommercialRecord }) {
   const [open, setOpen] = useState(false);
   const long = String(item.detail || '').length > CAPTION_PREVIEW;
@@ -559,7 +582,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
             {pagedApprovals.map(item => (
               <article className='approvalCard' key={item.kind + item.id}>
                 <div><span className='commercialState warn'>AGUARDANDO APROVAÇÃO</span><small>{item.kind === 'creative' ? 'CRIATIVO' : 'PUBLICAÇÃO'} · {item.channel || 'sem canal'}</small></div>
-                {item.kind === 'creative' && (item.imageUrl || item.imageDataUrl) && <img className='approvalImage' src={item.imageUrl || item.imageDataUrl || ''} alt={'Criativo de ' + (item.product || 'ZEVANORY')} />}
+                {item.kind === 'creative' && (item.imageUrl || item.imageDataUrl) && <CreativeImage className='approvalImage' src={item.imageUrl || item.imageDataUrl || ''} alt={'Criativo de ' + (item.product || 'ZEVANORY')} />}
                 <h3>{item.title}</h3>
                 <p>{captionPreview(item.detail, viewportWidth <= 480 ? 70 : CAPTION_PREVIEW)}</p>
                 {String(item.detail || '').length > (viewportWidth <= 480 ? 70 : CAPTION_PREVIEW) && <button type='button' className='filter' onClick={() => setCaptionOpen(item)}>Ver legenda completa ({String(item.detail).length} caracteres)</button>}
@@ -582,7 +605,7 @@ export default function CommercialWorkspace({ section, data, sessionToken, onRef
           <div className='creativeLiveGrid' aria-label='Criativos em tempo real'>
             {pagedCreatives.map(item => (
               <article className='creativeLiveCard' key={item.id}>
-                <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}>{(item.imageUrl || item.imageDataUrl) ? <img src={item.imageUrl || item.imageDataUrl || ''} alt={'Asset de ' + item.title} loading='lazy' /> : item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e)) ? <img src={item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e))} alt={'Asset de ' + item.title} loading='lazy' /> : <><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>ASSET PENDENTE · NÃO COMPROVADO</small></>}</div>
+                <div className='creativePreview' aria-label={'Preview operacional de ' + item.title}>{(item.imageUrl || item.imageDataUrl) ? <CreativeImage src={item.imageUrl || item.imageDataUrl || ''} alt={'Asset de ' + item.title} loading='lazy' published={item.status === 'published'} /> : item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e)) ? <CreativeImage src={item.evidence.find(e => /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?|$)/i.test(e)) || ''} alt={'Asset de ' + item.title} loading='lazy' published={item.status === 'published'} /> : <><Sparkles size={28}/><span>{item.product || 'ZEVANORY'}</span><small>ASSET PENDENTE · NÃO COMPROVADO</small></>}</div>
                 <div className='creativeLiveBody'>
                   <div className='commercialTitleLine'><strong>{item.title}</strong><span className={'commercialState ' + statusClass(item.status)}>{commercialStatusLabel(item.status)}</span></div>
                   <div className='creativeFacts'>

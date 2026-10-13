@@ -884,6 +884,20 @@ function kvPrefixOf(key: unknown) {
   }
   return head.join(':') || '(root)';
 }
+// Stored creative asset (KV) exactly as composed. Used by the raw route and as the fallback when
+// the edge resize is unavailable.
+async function readRawCreativeAsset(env: any, id: string, ext: string, method: string): Promise<Response> {
+  try {
+    if (!env.T2_CREATIVE_ASSETS?.getWithMetadata) return Response.json({ ok: false, error: 'creative_asset_store_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+    const asset = await env.T2_CREATIVE_ASSETS.getWithMetadata('t2-creative/v1/' + id, { type: 'arrayBuffer' }) as any;
+    if (!asset?.value) return Response.json({ ok: false, error: 'creative_asset_not_found' }, { status: 404, headers: { 'cache-control': 'no-store' } });
+    const mime = String(asset?.metadata?.mime || (ext.toLowerCase() === 'png' ? 'image/png' : 'image/jpeg'));
+    return new Response(method === 'HEAD' ? null : asset.value, { headers: { 'content-type': mime, 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' } });
+  } catch {
+    return Response.json({ ok: false, error: 'creative_asset_read_failed' }, { status: 500, headers: { 'cache-control': 'no-store' } });
+  }
+}
+
 function meteredEnv(env: Record<string, unknown>, src: string): Record<string, unknown> {
   const kv = (env as any)?.T2_CREATIVE_ASSETS;
   if (!kv || kv.__metered) return env;
@@ -941,35 +955,36 @@ export default {
       if (request.method !== 'GET' && request.method !== 'HEAD') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
       const match = url.pathname.match(/^\/api\/commercial\/creative\/assets-raw\/([0-9a-f-]{36})\.(jpg|png)$/i);
       if (!match) return Response.json({ ok: false, error: 'creative_asset_invalid' }, { status: 400 });
-      try {
-        if (!env.T2_CREATIVE_ASSETS?.getWithMetadata) return Response.json({ ok: false, error: 'creative_asset_store_unavailable' }, { status: 503 });
-        const asset = await env.T2_CREATIVE_ASSETS.getWithMetadata('t2-creative/v1/' + match[1], { type: 'arrayBuffer' }) as any;
-        if (!asset?.value) return Response.json({ ok: false, error: 'creative_asset_not_found' }, { status: 404 });
-        const mime = String(asset?.metadata?.mime || (match[2].toLowerCase() === 'png' ? 'image/png' : 'image/jpeg'));
-        return new Response(request.method === 'HEAD' ? null : asset.value, { headers: { 'content-type': mime, 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' } });
-      } catch {
-        return Response.json({ ok: false, error: 'creative_asset_read_failed' }, { status: 500, headers: { 'cache-control': 'no-store' } });
-      }
+      return readRawCreativeAsset(env, match[1], match[2], request.method);
     }
 
     if (url.pathname.startsWith('/api/commercial/creative/assets/')) {
       if (request.method !== 'GET' && request.method !== 'HEAD') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405 });
       const match = url.pathname.match(/^\/api\/commercial\/creative\/assets\/([0-9a-f-]{36})\.(jpg|png)$/i);
       if (!match) return Response.json({ ok: false, error: 'creative_asset_invalid' }, { status: 400 });
+      // Resize when the edge transform works; otherwise serve the stored original (already
+      // 1080x1080 from the composer) instead of an error that renders as a blank card
+      // (owner audit 13/10, Mission 3). A missing asset stays a 404.
+      let transformed: Response | null = null;
       try {
         const rawUrl = new URL('/api/commercial/creative/assets-raw/' + match[1] + '.' + match[2].toLowerCase(), request.url);
-        const transformed = await fetch(rawUrl.toString(), {
+        transformed = await fetch(rawUrl.toString(), {
           cf: { image: { width: 1080, height: 1080, fit: 'cover', format: match[2].toLowerCase() === 'png' ? 'png' : 'jpeg', quality: 95 } },
         } as any);
-        if (!transformed.ok) return transformed;
-        const headers = new Headers(transformed.headers);
-        headers.set('cache-control', 'public, max-age=31536000, immutable');
-        headers.set('x-content-type-options', 'nosniff');
-        headers.set('x-zpc-image-size', '1080x1080');
-        return new Response(request.method === 'HEAD' ? null : transformed.body, { status: transformed.status, headers });
-      } catch {
-        return Response.json({ ok: false, error: 'creative_asset_transform_failed' }, { status: 500, headers: { 'cache-control': 'no-store' } });
+      } catch { transformed = null; }
+      const transformedIsImage = Boolean(transformed?.ok && /^image\//i.test(String(transformed.headers.get('content-type') || '')));
+      if (!transformed || !transformedIsImage) {
+        if (transformed && transformed.status === 404) return transformed;
+        const original = await readRawCreativeAsset(env, match[1], match[2], request.method);
+        if (original.ok) original.headers.set('x-zpc-image-source', 'original-fallback');
+        return original;
       }
+      const headers = new Headers(transformed.headers);
+      headers.set('cache-control', 'public, max-age=31536000, immutable');
+      headers.set('x-content-type-options', 'nosniff');
+      headers.set('x-zpc-image-size', '1080x1080');
+      headers.set('x-zpc-image-source', 'edge-transform');
+      return new Response(request.method === 'HEAD' ? null : transformed.body, { status: transformed.status, headers });
     }
 
     if (url.pathname === '/api/commercial/creative/background') {
