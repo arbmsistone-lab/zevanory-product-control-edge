@@ -26,6 +26,6 @@ assert.doesNotMatch(worker, /if \(!transformed\.ok\) return transformed;/);
 // 3. ARBM projects are not ZEVANORY certification targets; nothing is deleted from the catalog.
 assert.match(app, /const isExternalCertificationTarget = \(name: string\) => \/\^ARBM\\b\/i\.test/);
 assert.match(app, /!isExternalCertificationTarget\(target\.name\)/);
-assert.match(app, /externo\(s\) fora do escopo/);
+assert.match(app, /projeto\(s\) externo\(s\) fora do escopo/);
 
 console.log('creative-media: 3 groups passed');

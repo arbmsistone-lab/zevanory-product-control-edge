@@ -1322,7 +1322,7 @@ function App() {
             ) : (
               <p className='productDescription'>O ZEA-10 legado foi incorporado ao ZEES-16. Os 16 selos P01–P16 refletem diretamente o estado das evidências: verde somente quando PROVADO; parcial, bloqueado e N/A permanecem visualmente distintos e fail-closed.</p>
             )}
-            <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span title={externalCertificationTargets.length ? 'Fora do escopo ZEVANORY (projetos externos): ' + externalCertificationTargets.map(target => target.name).join(', ') : undefined}><b>{activeCertificationTargets.length}</b>Alvos ZEVANORY{externalCertificationTargets.length ? ` · ${externalCertificationTargets.length} externo(s) fora do escopo` : ''}</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
+            <div className='standardStrip'><span><b>16</b>Pilares</span><span><b>247</b>Controles-base</span><span title={externalCertificationTargets.length ? 'Fora do escopo ZEVANORY (projetos externos): ' + externalCertificationTargets.map(target => target.name).join(', ') : undefined} aria-label={`${activeCertificationTargets.length} alvos ZEVANORY` + (externalCertificationTargets.length ? `; ${externalCertificationTargets.length} projeto(s) externo(s) fora do escopo` : '')}><b>{activeCertificationTargets.length}</b>Alvos ZEVANORY</span><span><b>FAIL-CLOSED</b>Regra global</span></div>
           </section>
           {governanceMode === 'certification' && <section className='certWorkspace'>
             {compactGovernance && (
