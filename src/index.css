@@ -3984,3 +3984,9 @@ main.shell-commercial > .commercialWorkspace > .commercialDashboardGrid {
 .liveFresh { animation: liveFlash 2.4s ease-out; }
 @keyframes liveFlash { from { background: var(--surface); outline: 1px solid var(--status-info); } to { outline-color: transparent; } }
 @media (max-width: 760px) { .liveRow { grid-template-columns: 1fr; gap: var(--zpc-space-1); } .liveStatus { text-align: left; } }
+
+/* Trust strip states (owner audit 13/10/2026): DEGRADED and SEM PROVA are never styled as green. */
+.trustStrip.degraded { border-color: var(--palette-alpha-06); }
+.trustStrip.degraded .trustState strong { color: var(--palette-ffd98a); }
+.trustStrip.noproof { border-color: var(--palette-alpha-06); }
+.trustStrip.noproof .trustState strong { color: var(--palette-ffc0c0); }
