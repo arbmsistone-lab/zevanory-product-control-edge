@@ -85,7 +85,16 @@ type GlobalTrust = {
   zea10: { proven: number; partial: number; blocked: number };
   engines: Array<{ id: string; state: string }>;
   checkedAt: string | null;
+  reason?: string;
+  ageSeconds?: number | null;
 };
+
+// Defence in depth: the strip is green only when the payload itself proves an independent quorum.
+// A GREEN label without it (e.g. an old static artifact) is shown as not verified.
+const trustIsProvenGreen = (t: GlobalTrust | null) => !!t && t.state === 'GREEN'
+  && t.quorum.required >= 2 && t.quorum.passed >= t.quorum.required
+  && t.quorum.independentKeys >= t.quorum.required && t.quorum.conflicts === 0 && !!t.evidenceRoot;
+const trustLabel = (t: GlobalTrust) => (t.state === 'GREEN' && !trustIsProvenGreen(t) ? 'UNVERIFIED' : t.state);
 
 type OperationalSnapshot = {
   available: boolean;
@@ -987,11 +996,11 @@ function App() {
         </div>
       </header>
 
-      {primaryArea === 'system' && <section className={globalTrust ? (globalTrust.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked') : 'trustStrip loading'} aria-label='Estado global ZEVANORY'>
+      {primaryArea === 'system' && <section className={globalTrust ? (trustIsProvenGreen(globalTrust) ? 'trustStrip green' : 'trustStrip blocked') : 'trustStrip loading'} aria-label='Estado global ZEVANORY'>
         <div className='trustState'>
           <ShieldCheck size={16} />
           <span>TRUST CHAIN</span>
-          <strong>{globalTrust ? globalTrust.state : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</strong>
+          <strong title={globalTrust?.reason || undefined}>{globalTrust ? trustLabel(globalTrust) : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</strong>
         </div>
         <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
         <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>

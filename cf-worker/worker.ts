@@ -2,6 +2,7 @@ import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdge
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
+import { loadLiveGlobalTrust } from './global-trust.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
 const CANONICAL_PUBLIC_ORIGIN = 'https://controle.zevanory.api.br';
@@ -1152,6 +1153,16 @@ export default {
 
       headers.set('cache-control','public, max-age=3600');
       return new Response(response.body,{status:response.status,headers});
+    }
+
+    // Live, fail-closed TRUST CHAIN derived from the core on every request. The static asset written
+    // at deploy time is never served again: it froze GREEN with a fabricated 3/3 quorum.
+    if (normalizedPath === '/global-trust.json' && (request.method === 'GET' || request.method === 'HEAD')) {
+      const trust = await loadLiveGlobalTrust();
+      return new Response(request.method === 'HEAD' ? null : JSON.stringify(trust), {
+        status: 200,
+        headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store, max-age=0', 'x-zpc-trust-origin': 'live-core', 'x-content-type-options': 'nosniff' },
+      });
     }
 
     if (normalizedPath === '/version.json') {
