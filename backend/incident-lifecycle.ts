@@ -37,7 +37,11 @@ const keyOf = (item: { system: string; title: string }) => {
   return item.system + '\u0000' + title;
 };
 const isActive = (item: LifecycleIncident) => item.state !== 'resolved';
+const strip = (row: LifecycleIncident): LifecycleIncident => { const { id: _id, ...rest } = row; return rest; };
 const occ = (item: LifecycleIncident) => Math.max(1, Math.trunc(Number(item.occurrences) || 1));
+
+/** Bounded write batch per refresh (edge RPC timeout); remaining legacy duplicates merge next run. */
+export const MAX_MERGES_PER_REFRESH = 150;
 
 export type IncidentWritePlan = {
   add: LifecycleIncident[];
@@ -59,10 +63,14 @@ export function planIncidentWrites(existing: LifecycleIncident[], observed: Life
     activeByKey.set(keyOf(row), list);
   }
 
+  // Recovery closes only telemetry incidents NOT observed in this same refresh: an incident that is
+  // still being seen (e.g. "Telemetria privada incompleta" while the feed is live) stays open and
+  // keeps counting instead of being resolved and recreated (independent review, 13/10).
+  const observedKeys = new Set(observed.map(keyOf));
   if (telemetryRecovered) {
     for (const row of existing) {
-      if (row.id && isActive(row) && TELEMETRY_INCIDENT_TITLES.has(row.title)) {
-        update.set(row.id, { ...row, state: 'resolved', resolvedAt: now });
+      if (row.id && isActive(row) && TELEMETRY_INCIDENT_TITLES.has(row.title) && !observedKeys.has(keyOf(row))) {
+        update.set(row.id, { ...strip(row), state: 'resolved', resolvedAt: now });
       }
     }
   }
@@ -72,7 +80,7 @@ export function planIncidentWrites(existing: LifecycleIncident[], observed: Life
     const key = keyOf(incident);
     if (seen.has(key)) continue;
     seen.add(key);
-    const rows = (activeByKey.get(key) || []).filter(row => !update.has(row.id!) || update.get(row.id!)!.state !== 'resolved');
+    const rows = activeByKey.get(key) || [];
     if (rows.length === 0) {
       add.push({ ...incident, occurrences: 1, lastSeenAt: now, resolvedAt: null });
       continue;
@@ -80,9 +88,10 @@ export function planIncidentWrites(existing: LifecycleIncident[], observed: Life
     // Merge every legacy duplicate into the oldest row; close the rest as merged.
     const sorted = [...rows].sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
     const keeper = sorted[0];
-    const total = sorted.reduce((sum, row) => sum + occ(row), 0) + 1;
-    update.set(keeper.id!, { ...keeper, title: incident.title, detail: incident.detail, severity: incident.severity, state: incident.state, occurrences: total, lastSeenAt: now, resolvedAt: null });
-    for (const dup of sorted.slice(1)) update.set(dup.id!, { ...dup, state: 'resolved', resolvedAt: now, detail: dup.detail + ' (consolidado)' });
+    const merged = sorted.slice(0, 1 + MAX_MERGES_PER_REFRESH);
+    const total = merged.reduce((sum, row) => sum + occ(row), 0) + 1;
+    update.set(keeper.id!, { ...strip(keeper), title: incident.title, detail: incident.detail, severity: incident.severity, state: incident.state, occurrences: total, lastSeenAt: now, resolvedAt: null });
+    for (const dup of sorted.slice(1, 1 + MAX_MERGES_PER_REFRESH)) update.set(dup.id!, { ...strip(dup), state: 'resolved', resolvedAt: now, detail: dup.detail + ' (consolidado)' });
   }
   return { add, update: [...update.entries()].map(([id, record]) => ({ id, record })) };
 }

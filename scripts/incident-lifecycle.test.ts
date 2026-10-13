@@ -86,13 +86,36 @@ test('6. recovery does not close unrelated incidents (e.g. availability failures
   assert.deepEqual(active.map(a => a.title), ['Falha de disponibilidade']);
 });
 
+test('8. an incident still observed while telemetry is live is NOT resolved and recreated (review finding)', () => {
+  const db = store();
+  const partial = (t: string): LifecycleIncident => ({ system: 'ZEVANORY', severity: 'warning', title: 'Telemetria privada incompleta', detail: 'sem SHA', createdAt: t, state: 'watching' });
+  for (let i = 0; i < 5; i++) refresh(db, [partial(at(i))], true, at(i));
+  assert.equal(db.rows.length, 1, 'no new row per refresh');
+  assert.equal(db.rows[0].state, 'watching');
+  assert.equal(activeIncidents(db.list())[0].occurrences, 5);
+  refresh(db, [], true, at(9));
+  assert.equal(activeIncidents(db.list()).length, 0, 'closed once no longer observed with live telemetry');
+});
+
+test('9. bounded merge batch never double counts across refreshes; records carry no id field', () => {
+  const db = store();
+  db.add(Array.from({ length: 400 }, (_, i) => ({ ...telemetryDown(at(i)), title: 'Executor primario interrompido' })));
+  for (let r = 0; r < 4; r++) refresh(db, [telemetryDown(at(1000 + r))], false, at(1000 + r));
+  const active = activeIncidents(db.list());
+  assert.equal(active.length, 1);
+  assert.equal(active[0].occurrences, 404);
+  assert.equal(db.rows.filter(x => x.state !== 'resolved').length, 1);
+  const plan = planIncidentWrites(db.list(), [telemetryDown(at(2000))], false, at(2000));
+  assert.equal(plan.update.every(u => !('id' in u.record)), true);
+});
+
 test('7. both backends use the lifecycle and no longer claim an interrupted executor', () => {
   for (const file of ['../backend/index.ts', '../cf-worker/backend-index.ts']) {
     const src = readFileSync(new URL(file, import.meta.url), 'utf8');
     assert.doesNotMatch(src, /title: 'Executor primario interrompido'/, file);
     assert.match(src, /planIncidentWrites\(storedIncidents\.items, incidents, Boolean\(telemetry\) && !fetchResult\.stale, now\)/, file);
     assert.match(src, /incidents: activeIncidents\(/, file);
-    assert.doesNotMatch(src, /db\.list<IncidentRecord>\(INCIDENTS, \{ limit: 20 \}\)/, file);
+    assert.doesNotMatch(src, /db\.list<IncidentRecord>\(INCIDENTS, \{ limit: (20|500) \}\)/, file);
   }
   const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
   assert.match(app, /if \(item\.state === 'resolved'\) continue;/);

@@ -1238,7 +1238,7 @@ async function refreshTelemetry() {
   }
 
   // One active row per system+title; repeats increment occurrences; live recovery resolves.
-  const storedIncidents = await db.list<IncidentRecord>(INCIDENTS, { limit: 500 });
+  const storedIncidents = await db.list<IncidentRecord>(INCIDENTS, { limit: 1000 });
   const incidentPlan = planIncidentWrites(storedIncidents.items, incidents, Boolean(telemetry) && !fetchResult.stale, now);
   if (incidentPlan.update.length > 0) await db.update(INCIDENTS, incidentPlan.update as Array<{ id: string; record: IncidentRecord }>);
   if (incidentPlan.add.length > 0) await db.add(INCIDENTS, (incidentPlan.add as IncidentRecord[]).slice(0, 20));
@@ -1566,7 +1566,7 @@ async function adminData() {
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
     db.list<AuditRecord>(AUDITS, { limit: 500 }),
     db.list<ImprovementRecord>(IMPROVEMENTS, { limit: 500 }),
-    db.list<IncidentRecord>(INCIDENTS, { limit: 500 }),
+    db.list<IncidentRecord>(INCIDENTS, { limit: 1000 }),
     db.list<{ lastRun: string }>(ENGINE, { limit: 1 }),
     db.list<ProductRecord>(productTable(), { limit: 100 }),
     db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
