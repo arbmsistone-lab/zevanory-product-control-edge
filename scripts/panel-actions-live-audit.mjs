@@ -313,7 +313,7 @@ console.log('::notice title=CREATIVE_RENDER_MATRIX::' + JSON.stringify(mediaMatr
     // Trust strip as painted vs live document.
     const { context, page } = await open('normal');
     await nav(page, 'operations');
-    cert.strip = await page.evaluate(() => { const s = document.querySelector('.trustStrip'); return s ? { cls: s.className, label: s.querySelector('.trustState strong')?.textContent?.trim(), quorum: s.querySelectorAll('div')[1]?.textContent?.trim() } : null; });
+    cert.strip = await page.evaluate(() => { const s = document.querySelector('.trustStrip'); return s ? { cls: s.className, label: s.querySelector('.trustState strong')?.textContent?.trim(), title: s.getAttribute('title') } : null; });
     // Governance: no ARBM target in the list (all pages) nor in the selector.
     await nav(page, 'governance');
     const names = new Set();
@@ -338,10 +338,18 @@ console.log('::notice title=CREATIVE_RENDER_MATRIX::' + JSON.stringify(mediaMatr
     const sel = page.getByLabel('Selecionar área do Control Center'); await sel.selectOption('governance'); await page.waitForTimeout(3000);
     cert.geo390 = await page.evaluate(() => {
       const h = (q) => { const e = document.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.top), Math.round(b.height), Math.round(b.bottom)]; };
-      return { main: h('main'), trust: h('.trustStrip'), nav: h('.zpcNavigation'), header: h('header'), stack: h('.governanceStack'), detail: h('.certDetail'), summary: h('.certSummaryPanel'), runStrip: h('.certRunStrip'), selected: document.querySelector('.certProductButton.active b, select option:checked')?.textContent?.trim() || null };
+      const kids = (q) => { const e = document.querySelector(q); return e ? [...e.children].map(c => [String(c.className || c.tagName).slice(0, 40), Math.round(c.getBoundingClientRect().height)]) : null; };
+      return { stackKids: kids('.governanceStack'), detailKids: kids('.certDetail'), workspaceKids: kids('.certWorkspace'), stripText: document.querySelector('.standardStrip')?.getBoundingClientRect().height, main: h('main'), trust: h('.trustStrip'), nav: h('.zpcNavigation'), header: h('header'), stack: h('.governanceStack'), detail: h('.certDetail'), summary: h('.certSummaryPanel'), runStrip: h('.certRunStrip'), selected: document.querySelector('.certProductButton.active b, select option:checked')?.textContent?.trim() || null };
     });
     await context.close();
   } catch (e) { cert.geo390 = { error: String(e?.message || e).slice(0, 100) }; }
+  cert.trustSamples = [];
+  for (let k = 0; k < 12; k++) {
+    const t0 = Date.now();
+    try { const r = await fetch(base + '/global-trust.json?t=' + Date.now()); const d = await r.json(); cert.trustSamples.push([r.status, d.state, (d.reasons || []).join('|').slice(0, 60), r.headers.get('x-zpc-trust-cache'), Date.now() - t0]); }
+    catch (e) { cert.trustSamples.push([0, 'ERR', String(e?.message || e).slice(0, 40), null, Date.now() - t0]); }
+    await new Promise(r => setTimeout(r, 15000));
+  }
   for (const mode of ['transform-down', 'all-down']) {
     try {
       const { context, page } = await open(mode);
