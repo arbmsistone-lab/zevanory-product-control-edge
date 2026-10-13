@@ -341,10 +341,22 @@ console.log('::notice title=CREATIVE_RENDER_MATRIX::' + JSON.stringify(mediaMatr
       const kids = (q) => { const e = document.querySelector(q); return e ? [...e.children].map(c => [String(c.className || c.tagName).slice(0, 40), Math.round(c.getBoundingClientRect().height)]) : null; };
       return { stackKids: kids('.governanceStack'), detailKids: kids('.certDetail'), workspaceKids: kids('.certWorkspace'), stripText: document.querySelector('.standardStrip')?.getBoundingClientRect().height, main: h('main'), trust: h('.trustStrip'), nav: h('.zpcNavigation'), header: h('header'), stack: h('.governanceStack'), detail: h('.certDetail'), summary: h('.certSummaryPanel'), runStrip: h('.certRunStrip'), selected: document.querySelector('.certProductButton.active b, select option:checked')?.textContent?.trim() || null };
     });
+    const measure = () => page.evaluate(() => {
+      const kids = (q) => { const e = document.querySelector(q); return e ? [...e.children].map(c => [String(c.className || c.tagName).slice(0, 30), Math.round(c.getBoundingClientRect().height)]) : null; };
+      const m = document.querySelector('main').getBoundingClientRect(), st = document.querySelector('.governanceStack').getBoundingClientRect();
+      return { overflow: Math.round(st.bottom - m.bottom), summaryKids: kids('.certSummaryPanel'), heroKids: kids('.governanceHero'), runKids: kids('.certRunStrip'), trust: Math.round(document.querySelector('.trustStrip').getBoundingClientRect().height), trustKids: kids('.trustStrip') };
+    });
+    cert.geoBase = await measure();
+    const candidates = {
+      shortTrustLabels: () => { const sm = [...document.querySelectorAll('.trustStrip small')]; if (sm[0]) sm[0].textContent = 'Quórum'; if (sm[2]) sm[2].textContent = 'SHA'; },
+    };
+    await page.evaluate(candidates.shortTrustLabels);
+    await page.waitForTimeout(300);
+    cert.geoShortLabels = await measure();
     await context.close();
   } catch (e) { cert.geo390 = { error: String(e?.message || e).slice(0, 100) }; }
   cert.trustSamples = [];
-  for (let k = 0; k < 12; k++) {
+  for (let k = 0; k < 0; k++) {
     const t0 = Date.now();
     try { const r = await fetch(base + '/global-trust.json?t=' + Date.now()); const d = await r.json(); cert.trustSamples.push([r.status, d.state, (d.reasons || []).join('|').slice(0, 60), r.headers.get('x-zpc-trust-cache'), Date.now() - t0]); }
     catch (e) { cert.trustSamples.push([0, 'ERR', String(e?.message || e).slice(0, 40), null, Date.now() - t0]); }
