@@ -58,10 +58,10 @@ const bootstrap = {
     certificationRuns: [],
   },
   globalTrust: {
-    state:'GREEN', sha:'visual-contract', evidenceRoot:'visual-contract', policyVersion:'ZEA-10',
-    quorum:{passed:3,total:3,required:3,conflicts:0,independentKeys:3},
+    schema:'zpc-global-trust/v2', state:'GREEN', reasons:[], sha:'0123456789abcdef0123456789abcdef01234567', evidenceRoot:'visual-contract', policyVersion:'ZEA-10',
+    quorum:{basis:'independent_signers',source:'/api/control-plane trust_chain',passed:3,total:3,required:2,independentKeys:3,ok:true,conflicts:0},continuity:{channels:['zevanory','email','youtube'],total:9,required:3,ok:true},
     zea10:{proven:10,partial:0,blocked:0},
-    engines:[], checkedAt:now,
+    engines:[{id:'ZEES-16',state:'GREEN'},{id:'ZEA-10',state:'GREEN'},{id:'CORE',state:'GREEN'}], checkedAt:now, validUntil:'2099-01-01T00:00:00.000Z',
   },
   operations: {
     available:true, generatedAt:now, releaseSha:'visual-contract',

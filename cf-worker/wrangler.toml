@@ -22,6 +22,11 @@ BACKEND_INSTANCE_ID = "cloudflare"
 [ai]
 binding = "AI"
 
+# Direct, egress-free read of ZEVANORY Control Core for the live trust strip (no extra cost).
+[[services]]
+binding = "CORE_WORKER"
+service = "zevanory"
+
 [[kv_namespaces]]
 binding = "T2_CREATIVE_ASSETS"
 id = "728a45738e4047f29bcb89934fd533c1"

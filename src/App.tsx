@@ -73,19 +73,41 @@ type Incident = {
   title: string;
   detail: string;
   createdAt: string;
-  state: 'open' | 'watching';
+  state: 'open' | 'watching' | 'resolved';
+  occurrences?: number;
+  lastSeenAt?: string;
 };
 
 type GlobalTrust = {
+  schema?: string;
   state: string;
+  reasons?: string[];
   sha: string | null;
   evidenceRoot: string | null;
   policyVersion: string | null;
-  quorum: { passed: number; total: number; required: number; conflicts: number; independentKeys: number };
+  quorum: { passed: number | null; total: number | null; required: number | null; ok?: boolean; basis?: string; conflicts?: number };
+  continuity?: { channels: string[]; total: number; required: number | null; ok: boolean };
   zea10: { proven: number; partial: number; blocked: number };
   engines: Array<{ id: string; state: string }>;
   checkedAt: string | null;
+  validUntil?: string | null;
 };
+
+// Display state of the trust strip. Anything not proven live is never shown as GREEN:
+// a document without the v2 schema, without validity, expired, or of another release is SEM PROVA.
+export type TrustView = { key: 'green' | 'degraded' | 'blocked' | 'noproof' | 'loading'; label: string; reason: string };
+export function trustView(trust: GlobalTrust | null, loading: boolean, now = Date.now()): TrustView {
+  if (!trust) return loading ? { key: 'loading', label: 'CARREGANDO', reason: '' } : { key: 'noproof', label: 'SEM PROVA', reason: 'fonte de confiança indisponível' };
+  const until = Date.parse(String(trust.validUntil || ''));
+  if (trust.schema !== 'zpc-global-trust/v2') return { key: 'noproof', label: 'SEM PROVA', reason: 'artefato sem prova viva' };
+  if (!Number.isFinite(until) || now > until) return { key: 'noproof', label: 'SEM PROVA', reason: 'prova expirada' };
+  if (!/^[0-9a-f]{40}$/.test(String(trust.sha || ''))) return { key: 'noproof', label: 'SEM PROVA', reason: 'prova sem SHA' };
+  const reason = (trust.reasons || []).join(', ');
+  if (trust.state === 'GREEN') return { key: 'green', label: 'GREEN', reason: '' };
+  if (trust.state === 'DEGRADED') return { key: 'degraded', label: 'DEGRADED', reason };
+  if (trust.state === 'BLOCKED') return { key: 'blocked', label: 'BLOCKED', reason };
+  return { key: 'noproof', label: 'SEM PROVA', reason: reason || 'estado desconhecido' };
+}
 
 type OperationalSnapshot = {
   available: boolean;
@@ -524,6 +546,8 @@ function App() {
       setGlobalTrust(trust);
       return trust;
     } catch {
+      // Never keep painting the previous reading when the live read fails (owner audit 13/10).
+      setGlobalTrust(null);
       return null;
     } finally {
       setGlobalTrustLoading(false);
@@ -885,19 +909,22 @@ function App() {
   const operationsPageSize = viewportWidth <= 620 ? 1 : viewportWidth <= 900 ? 2 : 4;
   // Repeated runs append identical records; show each finding once with its count and last time.
   // Retired systems (ARBM ONE/SIST) are certified elsewhere and stay out of this queue.
-  const dedupeRecords = <T extends { system: string; title: string; detail: string; createdAt?: string }>(list: T[]) => {
+  const dedupeRecords = <T extends { system: string; title: string; detail: string; createdAt?: string; occurrences?: number; lastSeenAt?: string; state?: string }>(list: T[], byDetail = true) => {
     const groups = new Map<string, T & { count: number; lastAt: string }>();
     for (const item of list) {
       if (['ARBM ONE', 'ARBM SIST'].includes(String(item.system))) continue;
-      const key = `${item.system}|${item.title}|${item.detail}`;
-      const at = String(item.createdAt || '');
+      if (item.state === 'resolved') continue;
+      // Grouped by system+title; the server sends the real occurrence total per active incident.
+      const key = byDetail ? `${item.system}|${item.title}|${item.detail}` : `${item.system}|${item.title}`;
+      const at = String(item.lastSeenAt || item.createdAt || '');
+      const n = Math.max(1, Math.trunc(Number(item.occurrences) || 1));
       const prev = groups.get(key);
-      if (!prev) groups.set(key, { ...item, count: 1, lastAt: at });
-      else { prev.count += 1; if (at > prev.lastAt) prev.lastAt = at; }
+      if (!prev) groups.set(key, { ...item, count: n, lastAt: at });
+      else { prev.count += n; if (at > prev.lastAt) { prev.lastAt = at; prev.detail = item.detail; } }
     }
     return [...groups.values()].sort((a, b) => b.lastAt.localeCompare(a.lastAt));
   };
-  const operationIncidents = useMemo(() => dedupeRecords(dashboard?.incidents ?? []), [dashboard]);
+  const operationIncidents = useMemo(() => dedupeRecords(dashboard?.incidents ?? [], false), [dashboard]);
   const operationAudits = useMemo(() => dedupeRecords(dashboard?.audits ?? []), [dashboard]);
   const incidentPageSize = Math.max(1, Math.min(operationsPageSize, incidentFit));
   const auditPageSize = Math.max(1, Math.min(operationsPageSize, auditFit));
@@ -987,17 +1014,22 @@ function App() {
         </div>
       </header>
 
-      {primaryArea === 'system' && <section className={globalTrust ? (globalTrust.state === 'GREEN' ? 'trustStrip green' : 'trustStrip blocked') : 'trustStrip loading'} aria-label='Estado global ZEVANORY'>
+      {primaryArea === 'system' && (() => {
+        const tv = trustView(globalTrust, globalTrustLoading);
+        const g = tv.key !== 'noproof' && tv.key !== 'loading' ? globalTrust : null;
+        const dash = tv.key === 'loading' ? 'CARREGANDO' : 'SEM PROVA';
+        return <section className={'trustStrip ' + tv.key} aria-label='Estado global ZEVANORY' title={[tv.reason && 'Motivo: ' + tv.reason, canonicalSha ? 'Build do painel: ' + canonicalSha.slice(0, 12) : canonicalShaLoading ? 'Build do painel: carregando' : ''].filter(Boolean).join(' · ') || undefined}>
         <div className='trustState'>
           <ShieldCheck size={16} />
           <span>TRUST CHAIN</span>
-          <strong>{globalTrust ? globalTrust.state : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</strong>
+          <strong>{tv.label}</strong>
         </div>
-        <div><small>Quorum</small><b>{globalTrust ? `${globalTrust.quorum.passed}/${globalTrust.quorum.total} · min ${globalTrust.quorum.required}` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
-        <div><small>ZEA-10 global</small><b>{globalTrust ? `${globalTrust.zea10.proven}/10 provados` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
-        <div><small>SHA</small><b>{canonicalSha ? canonicalSha.slice(0, 12) : canonicalShaLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
-        <div><small>Motores</small><b>{globalTrust?.engines.length ? `${globalTrust.engines.filter(item => item.state === 'GREEN').length}/${globalTrust.engines.length} GREEN` : globalTrustLoading ? 'CARREGANDO' : 'INDISPONÍVEL'}</b></div>
-      </section>}
+        <div title={g?.continuity ? `Canais de continuidade: ${g.continuity.channels.length}/${g.continuity.total} · mín ${g.continuity.required ?? '—'}` : undefined}><small>Quórum independente</small><b>{g ? (g.quorum.ok ? `${g.quorum.passed}/${g.quorum.total} · min ${g.quorum.required}` : 'NÃO PROVADO') : dash}</b></div>
+        <div><small>ZEA-10 global</small><b>{g ? `${g.zea10.proven}/10 provados` : dash}</b></div>
+        <div><small>SHA da prova</small><b>{g && g.sha ? g.sha.slice(0, 12) : dash}</b></div>
+        <div><small>Motores</small><b>{g && g.engines.length ? `${g.engines.filter(item => item.state === 'GREEN').length}/${g.engines.length} GREEN` : dash}</b></div>
+      </section>;
+      })()}
 
       <nav className='zpcNavigation' aria-label='Áreas do ZEVANORY'>
         <div className='zpcSidebarBrand' aria-label='ZEVANORY'><img src='/brand/zevanory-logo-dark.svg' alt='' width={64} height={28} style={{ maxWidth: '64px', objectFit: 'contain', verticalAlign: 'middle', marginRight: 8 }} />ZEVANORY</div>
@@ -1249,7 +1281,7 @@ function App() {
                 : pagedIncidents.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
                     <div><strong>{item.title}</strong><p>{item.system} · {item.detail}{item.count > 1 ? ` · registrado ${item.count} vezes, última em ${item.lastAt ? new Date(item.lastAt).toLocaleString('pt-BR') : 'data desconhecida'}` : ''}</p></div>
-                    <span className='state proposed'>{item.state}</span>
+                    <span className='state proposed'>{item.state === 'watching' ? 'EM OBSERVAÇÃO' : item.state === 'open' ? 'ABERTO' : item.state}</span>
                   </article>
                 ))}
             </FitList>

@@ -2,6 +2,7 @@ import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdge
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
+import { globalTrustResponse } from './global-trust.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
 const CANONICAL_PUBLIC_ORIGIN = 'https://controle.zevanory.api.br';
@@ -1060,6 +1061,17 @@ export default {
     normalizedUrl.pathname = normalizedPath;
     const normalizedRequest = new Request(normalizedUrl.toString(), request);
 
+    // Global trust is derived live from ZEVANORY Control Core on every read (30 s shared edge
+    // cache). It is never served from a deploy-time file again: a baked artifact kept showing
+    // GREEN for a release that was no longer running (owner audit 13/10/2026, Mission 1).
+    if (normalizedPath === '/global-trust.json') {
+      if (request.method !== 'GET' && request.method !== 'HEAD') return Response.json({ error: 'method_not_allowed' }, { status: 405, headers: { 'cache-control': 'no-store' } });
+      const live = await globalTrustResponse(env as Record<string, any>, ctx);
+      const headers = new Headers(live.headers);
+      applyPanelSecurityHeaders(headers);
+      return new Response(request.method === 'HEAD' ? null : live.body, { status: live.status, headers });
+    }
+
     const publicPath = normalizedPath.startsWith('/produtos/')
       ? normalizedPath.slice('/produtos'.length)
       : normalizedPath;
@@ -1418,7 +1430,7 @@ export default {
 
     // Trust and build lineage must come from the exact deployed Worker ASSETS,
     // not the GitHub Pages origin, which can hold evidence for another release.
-    const exactDeployArtifact = normalizedPath === '/global-trust.json' || normalizedPath === '/zpc-build.json';
+    const exactDeployArtifact = normalizedPath === '/zpc-build.json';
 
     if (env.ASSETS && typeof (env.ASSETS as any).fetch === 'function') {
       const assetUrl = new URL(request.url);
