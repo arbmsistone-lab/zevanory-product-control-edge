@@ -136,6 +136,35 @@ for (const path of ['/api/telemetry/refresh', '/api/audit/run']) {
     return '';
   });
 }
+// C2) Creative media probe (owner audit 13/10, Mission 3): every studio/approval image URL is
+// fetched as the browser would, and the raw stored asset is fetched too, so a blank card can be
+// attributed to 404 (asset missing), 5xx (transform), timeout or undecodable bytes. Output is ids
+// (8 chars), statuses and sizes only.
+await expect('midia dos criativos', async () => {
+  const r = await req('POST', '/api/admin/bootstrap', { sessionToken: token }, { timeout: 60000 });
+  const creatives = Array.isArray(r.data?.commercial?.creatives) ? r.data.commercial.creatives : null;
+  if (!creatives) { console.log('::notice title=CREATIVE_MEDIA::' + JSON.stringify({ available: false, bootstrap: r.status })); return ''; }
+  const visible = creatives.filter(c => c && c.status !== 'archived' && typeof c.imageUrl === 'string' && c.imageUrl);
+  const probe = async (u) => {
+    const t0 = Date.now();
+    try {
+      const m = await fetch(u, { signal: AbortSignal.timeout(20000) });
+      const b = new Uint8Array(await m.arrayBuffer());
+      const magic = b[0] === 0xff && b[1] === 0xd8 ? 'jpeg' : b[0] === 0x89 && b[1] === 0x50 ? 'png' : b.length ? 'other' : 'empty';
+      return { http: m.status, type: String(m.headers.get('content-type') || '').slice(0, 24), bytes: b.length, magic, ms: Date.now() - t0 };
+    } catch (e) { return { http: 0, error: e?.name === 'TimeoutError' ? 'timeout' : 'network', ms: Date.now() - t0 }; }
+  };
+  const rows = [];
+  for (const c of visible.slice(0, 40)) {
+    const img = await probe(c.imageUrl);
+    const ok = img.http === 200 && (img.magic === 'jpeg' || img.magic === 'png');
+    const raw = ok ? null : await probe(String(c.imageUrl).replace('/creative/assets/', '/creative/assets-raw/'));
+    rows.push({ id: String(c.id || '').slice(0, 8), status: c.status, ok, img, raw });
+  }
+  const broken = rows.filter(x => !x.ok);
+  console.log('::notice title=CREATIVE_MEDIA::' + JSON.stringify({ available: true, total: creatives.length, withImage: visible.length, probed: rows.length, broken: broken.length, byStatus: broken.reduce((a, x) => { a[x.status] = (a[x.status] || 0) + 1; return a; }, {}), rows: rows.slice(0, 40) }).slice(0, 3800));
+  return '';
+});
 await expect('acao auditoria persistida', async () => {
   const r = await req('POST', '/api/admin/bootstrap', { sessionToken: token });
   const audits = Array.isArray(r.data?.dashboard?.audits) ? r.data.dashboard.audits : null;
