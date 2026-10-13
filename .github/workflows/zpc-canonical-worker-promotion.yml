@@ -1,4 +1,13 @@
-name: ZPC Canonical Worker Promotion
+name: ZPC build verification (no production publish)
+
+# Plan 3.1, T1: this repository never publishes production. It failed on every run for days
+# (no Cloudflare credential here) and, had a credential been added, it would have published the
+# panel in parallel with the canonical publisher. The panel is published ONLY by
+# arbmsistone-lab/zevanory-public-mirror:
+#   - zpc-control-worker-deploy.yml (pin, monotonic guard, authorised rollback), and
+#   - t2-exact-control-worker-promotion.yml (scheduled forward-only reconciler, same queue),
+# see ops/publishers.json there. This workflow keeps the build and a Cloudflare dry run so a
+# broken main is caught here, without credentials.
 
 on:
   push:
@@ -18,12 +27,8 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: zpc-canonical-worker-production
-  cancel-in-progress: false
-
 jobs:
-  deploy:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,8 +40,5 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build canonical assets
         run: npm run build
-      - name: Promote exact main SHA and verify production
-        env:
-          EXPECTED_ZPC_SHA: ${{ github.sha }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: node scripts/cloudflare-authoritative-repair.mjs
+      - name: Cloudflare dry run (bundle and bindings, no upload)
+        run: npx --yes wrangler@4.135.0 deploy --dry-run --config cf-worker/wrangler.toml --outdir /tmp/zpc-dry-run
