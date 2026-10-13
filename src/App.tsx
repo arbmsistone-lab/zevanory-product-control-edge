@@ -73,7 +73,9 @@ type Incident = {
   title: string;
   detail: string;
   createdAt: string;
-  state: 'open' | 'watching';
+  state: 'open' | 'watching' | 'resolved';
+  occurrences?: number;
+  lastSeenAt?: string;
 };
 
 type GlobalTrust = {
@@ -907,19 +909,22 @@ function App() {
   const operationsPageSize = viewportWidth <= 620 ? 1 : viewportWidth <= 900 ? 2 : 4;
   // Repeated runs append identical records; show each finding once with its count and last time.
   // Retired systems (ARBM ONE/SIST) are certified elsewhere and stay out of this queue.
-  const dedupeRecords = <T extends { system: string; title: string; detail: string; createdAt?: string }>(list: T[]) => {
+  const dedupeRecords = <T extends { system: string; title: string; detail: string; createdAt?: string; occurrences?: number; lastSeenAt?: string; state?: string }>(list: T[], byDetail = true) => {
     const groups = new Map<string, T & { count: number; lastAt: string }>();
     for (const item of list) {
       if (['ARBM ONE', 'ARBM SIST'].includes(String(item.system))) continue;
-      const key = `${item.system}|${item.title}|${item.detail}`;
-      const at = String(item.createdAt || '');
+      if (item.state === 'resolved') continue;
+      // Grouped by system+title; the server sends the real occurrence total per active incident.
+      const key = byDetail ? `${item.system}|${item.title}|${item.detail}` : `${item.system}|${item.title}`;
+      const at = String(item.lastSeenAt || item.createdAt || '');
+      const n = Math.max(1, Math.trunc(Number(item.occurrences) || 1));
       const prev = groups.get(key);
-      if (!prev) groups.set(key, { ...item, count: 1, lastAt: at });
-      else { prev.count += 1; if (at > prev.lastAt) prev.lastAt = at; }
+      if (!prev) groups.set(key, { ...item, count: n, lastAt: at });
+      else { prev.count += n; if (at > prev.lastAt) { prev.lastAt = at; prev.detail = item.detail; } }
     }
     return [...groups.values()].sort((a, b) => b.lastAt.localeCompare(a.lastAt));
   };
-  const operationIncidents = useMemo(() => dedupeRecords(dashboard?.incidents ?? []), [dashboard]);
+  const operationIncidents = useMemo(() => dedupeRecords(dashboard?.incidents ?? [], false), [dashboard]);
   const operationAudits = useMemo(() => dedupeRecords(dashboard?.audits ?? []), [dashboard]);
   const incidentPageSize = Math.max(1, Math.min(operationsPageSize, incidentFit));
   const auditPageSize = Math.max(1, Math.min(operationsPageSize, auditFit));
@@ -1276,7 +1281,7 @@ function App() {
                 : pagedIncidents.map(item => (
                   <article className={`feeditem ${item.severity}`} key={item.id}>
                     <div><strong>{item.title}</strong><p>{item.system} · {item.detail}{item.count > 1 ? ` · registrado ${item.count} vezes, última em ${item.lastAt ? new Date(item.lastAt).toLocaleString('pt-BR') : 'data desconhecida'}` : ''}</p></div>
-                    <span className='state proposed'>{item.state}</span>
+                    <span className='state proposed'>{item.state === 'watching' ? 'EM OBSERVAÇÃO' : item.state === 'open' ? 'ABERTO' : item.state}</span>
                   </article>
                 ))}
             </FitList>

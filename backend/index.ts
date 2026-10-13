@@ -1,4 +1,5 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
+import { activeIncidents, planIncidentWrites, TELEMETRY_UNAVAILABLE_TITLE } from './incident-lifecycle.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
 import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialCleanup, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesLifecycle, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
 import { cfoAdminIngest, cfoWorkspace } from './cfo.ts';
@@ -46,7 +47,10 @@ type IncidentRecord = {
   title: string;
   detail: string;
   createdAt: string;
-  state: 'open' | 'watching';
+  state: 'open' | 'watching' | 'resolved';
+  occurrences?: number;
+  lastSeenAt?: string;
+  resolvedAt?: string | null;
 };
 
 type ProductGates = {
@@ -2349,10 +2353,11 @@ async function refreshTelemetry() {
     incidents.push({
       system: 'ZEVANORY PRODUCT CONTROL',
       severity: 'warning',
-      title: 'Executor primario interrompido',
+      // What is proven is a telemetry read failure, not an interrupted executor (owner audit 13/10).
+      title: TELEMETRY_UNAVAILABLE_TITLE,
       detail: telemetry
-        ? `Fail-closed ativo; usando ultimo snapshot comprovado apos ${fetchResult.attempts} tentativa(s). Nenhuma promocao para verde e permitida.`
-        : 'Fail-closed ativo; sem snapshot comprovado disponivel e nenhuma promocao para verde e permitida.',
+        ? `Leitura da telemetria privada falhou apos ${fetchResult.attempts} tentativa(s); usando ultimo snapshot comprovado. Fail-closed: nenhuma promocao para verde.`
+        : `Leitura da telemetria privada falhou apos ${fetchResult.attempts} tentativa(s) e nao ha snapshot comprovado. Fail-closed: nenhuma promocao para verde.`,
       createdAt: now,
       state: 'watching',
     });
@@ -2422,7 +2427,11 @@ async function refreshTelemetry() {
     await db.update(SYSTEMS, [{ id: system.id, record: next }]);
   }
 
-  if (incidents.length > 0) await db.add(INCIDENTS, incidents.slice(0, 20));
+  // One active row per system+title; repeats increment occurrences; live recovery resolves.
+  const storedIncidents = await db.list<IncidentRecord>(INCIDENTS, { limit: 500 });
+  const incidentPlan = planIncidentWrites(storedIncidents.items, incidents, Boolean(telemetry) && !fetchResult.stale, now);
+  if (incidentPlan.update.length > 0) await db.update(INCIDENTS, incidentPlan.update as Array<{ id: string; record: IncidentRecord }>);
+  if (incidentPlan.add.length > 0) await db.add(INCIDENTS, (incidentPlan.add as IncidentRecord[]).slice(0, 20));
   const engine = await db.list<{ lastRun: string }>(ENGINE, { limit: 1 });
   if (engine.items[0]) await db.update(ENGINE, [{ id: engine.items[0].id, record: { lastRun: now } }]);
   return { ok: Boolean(telemetry) && !fetchResult.stale, at: now, source: fetchResult.source, stale: fetchResult.stale, attempts: fetchResult.attempts, incidents: incidents.length };
@@ -2914,7 +2923,7 @@ async function adminData() {
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
     db.list<AuditRecord>(AUDITS, { limit: 20 }),
     db.list<ImprovementRecord>(IMPROVEMENTS, { limit: 20 }),
-    db.list<IncidentRecord>(INCIDENTS, { limit: 20 }),
+    db.list<IncidentRecord>(INCIDENTS, { limit: 500 }),
     db.list<{ lastRun: string }>(ENGINE, { limit: 1 }),
     db.list<ProductRecord>(productTable(), { limit: 100 }),
     db.list<CertificationEvidenceRecord>(CERTIFICATION_EVIDENCE, { limit: 1000 }),
@@ -3067,7 +3076,8 @@ async function adminData() {
       systems: visibleSystems.filter(item => !retiredPublicSystemNames.has(item.name)),
       audits: audits.items.filter(item => !deprecatedVisibleSystems.has(item.system)).sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
       improvements: improvements.items.filter(item => !deprecatedVisibleSystems.has(item.system)),
-      incidents: incidents.items.filter(item => !deprecatedVisibleSystems.has(item.system)).sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
+      // Active only, one per system+title, with the true occurrence total (not a 20-row cap).
+      incidents: activeIncidents(incidents.items.filter(item => !deprecatedVisibleSystems.has(item.system))).slice(0, 50),
       policy: { zeroSpend: true, failClosed: true, destructiveActions: false, greenRule: 'Somente com evidencia reproduzivel' },
       telemetrySource: 'telemetria privada interna v1',
       lastEngineRun: engine.items[0]?.lastRun ?? new Date().toISOString(),
