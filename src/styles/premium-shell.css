@@ -924,3 +924,21 @@ html, body, button, input, select, textarea {
 .zpcWorkspace.shell-operations .opsPager strong {
   color: var(--text-primary);
 }
+
+/* Creative media failure state (owner audit 13/10, Mission 3): never a blank dark box. */
+.creativeMediaError {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--zpc-space-1);
+  width: 100%;
+  min-height: 96px;
+  padding: var(--zpc-space-2);
+  text-align: center;
+  color: var(--palette-ffc0c0);
+  border: 1px dashed var(--palette-alpha-06);
+  border-radius: var(--zpc-radius-md);
+}
+.creativeMediaError strong { font-size: var(--zpc-font-xs); letter-spacing: .08em; }
+.creativeMediaError small { color: var(--palette-ffd98a); font-size: var(--zpc-font-xs); }
+.zpcWorkspace.shell-creatives .creativePreview > .creativeMediaError { position: absolute; inset: 0; min-height: 0; }
