@@ -1,0 +1,320 @@
+[
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 812,
+      "deviceScaleFactor": 1
+    },
+    "theme": "dark",
+    "view": "governance",
+    "label": "ZEES-16 / Governança",
+    "overviewPage": 0,
+    "cardPage": 0,
+    "failures": [
+      {
+        "code": "CONTENT_CLIPPED",
+        "detail": "[{\"tag\":\"SECTION\",\"cls\":\"governanceStack\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SECTION\",\"cls\":\"certWorkspace\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"DIV\",\"cls\":\"certDetail\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SECTION\",\"cls\":\"panel certSummaryPanel\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"DIV\",\"cls\":\"certSummaryGrid\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SPAN\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SMALL\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SPAN\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SPAN\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SMALL\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"DETAILS\",\"cls\":\"rootBlockerDetails\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SUMMARY\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true}]"
+      },
+      {
+        "code": "CONTENT_OVERLAP",
+        "detail": "[\"OUTSIDE:governanceStack\",\"OUTSIDE:certWorkspace\",\"OUTSIDE:certDetail\",\"OUTSIDE:panel certSummaryPanel\",\"OUTSIDE:certSummaryGrid\",\"OUTSIDE:\"]"
+      }
+    ],
+    "dom": {
+      "ccGeometry": [
+        "OUTSIDE:governanceStack",
+        "OUTSIDE:certWorkspace",
+        "OUTSIDE:certDetail",
+        "OUTSIDE:panel certSummaryPanel",
+        "OUTSIDE:certSummaryGrid",
+        "OUTSIDE:"
+      ],
+      "docScrollX": 0,
+      "docScrollY": 0,
+      "localScroll": [],
+      "horizontal": [],
+      "clips": [
+        {
+          "tag": "SECTION",
+          "cls": "governanceStack",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SECTION",
+          "cls": "certWorkspace",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "DIV",
+          "cls": "certDetail",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SECTION",
+          "cls": "panel certSummaryPanel",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "DIV",
+          "cls": "certSummaryGrid",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SMALL",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SMALL",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "DETAILS",
+          "cls": "rootBlockerDetails",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SUMMARY",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        }
+      ],
+      "textClips": [],
+      "textDebt": [],
+      "direct": [
+        {
+          "tag": "SECTION",
+          "cls": "governanceStack",
+          "top": 239.65625,
+          "bottom": 864.546875,
+          "left": 20,
+          "right": 355
+        }
+      ],
+      "theme": "dark",
+      "bg": "#050b14",
+      "mainClass": "zpcWorkspace shell shell-governance"
+    },
+    "contrast": [],
+    "axe": [],
+    "focus": {
+      "active": "true",
+      "outlineWidth": "4px",
+      "outlineStyle": "solid",
+      "outlineColor": "rgb(0, 184, 255)"
+    },
+    "screenshot": "control-center-audit/mobile-dark-governance.png"
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 812,
+      "deviceScaleFactor": 1
+    },
+    "theme": "light",
+    "view": "governance",
+    "label": "ZEES-16 / Governança",
+    "overviewPage": 0,
+    "cardPage": 0,
+    "failures": [
+      {
+        "code": "CONTENT_CLIPPED",
+        "detail": "[{\"tag\":\"SECTION\",\"cls\":\"governanceStack\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SECTION\",\"cls\":\"certWorkspace\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"DIV\",\"cls\":\"certDetail\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SECTION\",\"cls\":\"panel certSummaryPanel\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"DIV\",\"cls\":\"certSummaryGrid\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SPAN\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SMALL\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SPAN\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SPAN\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SMALL\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"DETAILS\",\"cls\":\"rootBlockerDetails\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true},{\"tag\":\"SUMMARY\",\"cls\":\"\",\"kind\":\"ancestor\",\"ancestor\":\"MAIN.zpcWorkspace shell shell-governance\",\"x\":false,\"y\":true}]"
+      },
+      {
+        "code": "CONTENT_OVERLAP",
+        "detail": "[\"OUTSIDE:governanceStack\",\"OUTSIDE:certWorkspace\",\"OUTSIDE:certDetail\",\"OUTSIDE:panel certSummaryPanel\",\"OUTSIDE:certSummaryGrid\",\"OUTSIDE:\"]"
+      }
+    ],
+    "dom": {
+      "ccGeometry": [
+        "OUTSIDE:governanceStack",
+        "OUTSIDE:certWorkspace",
+        "OUTSIDE:certDetail",
+        "OUTSIDE:panel certSummaryPanel",
+        "OUTSIDE:certSummaryGrid",
+        "OUTSIDE:"
+      ],
+      "docScrollX": 0,
+      "docScrollY": 0,
+      "localScroll": [],
+      "horizontal": [],
+      "clips": [
+        {
+          "tag": "SECTION",
+          "cls": "governanceStack",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SECTION",
+          "cls": "certWorkspace",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "DIV",
+          "cls": "certDetail",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SECTION",
+          "cls": "panel certSummaryPanel",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "DIV",
+          "cls": "certSummaryGrid",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SMALL",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SMALL",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "DETAILS",
+          "cls": "rootBlockerDetails",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        },
+        {
+          "tag": "SUMMARY",
+          "cls": "",
+          "kind": "ancestor",
+          "ancestor": "MAIN.zpcWorkspace shell shell-governance",
+          "x": false,
+          "y": true
+        }
+      ],
+      "textClips": [],
+      "textDebt": [],
+      "direct": [
+        {
+          "tag": "SECTION",
+          "cls": "governanceStack",
+          "top": 239.65625,
+          "bottom": 864.546875,
+          "left": 20,
+          "right": 355
+        }
+      ],
+      "theme": "light",
+      "bg": "#f4f8fc",
+      "mainClass": "zpcWorkspace shell shell-governance"
+    },
+    "contrast": [],
+    "axe": [],
+    "focus": {
+      "active": "true",
+      "outlineWidth": "4px",
+      "outlineStyle": "solid",
+      "outlineColor": "rgb(6, 71, 168)"
+    },
+    "screenshot": "control-center-audit/mobile-light-governance.png"
+  }
+]
