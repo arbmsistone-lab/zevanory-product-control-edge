@@ -2355,9 +2355,13 @@ async function refreshTelemetry() {
       severity: 'warning',
       // What is proven is a telemetry read failure, not an interrupted executor (owner audit 13/10).
       title: TELEMETRY_UNAVAILABLE_TITLE,
-      detail: telemetry
-        ? `Leitura da telemetria privada falhou apos ${fetchResult.attempts} tentativa(s); usando ultimo snapshot comprovado. Fail-closed: nenhuma promocao para verde.`
-        : `Leitura da telemetria privada falhou apos ${fetchResult.attempts} tentativa(s) e nao ha snapshot comprovado. Fail-closed: nenhuma promocao para verde.`,
+      // attempts 0 = no credential configured for the external (ARBM) feed on this panel: nothing
+      // was even requested. Confirmed on 13/10 by the TELEMETRY_CONSUMER audit annotation.
+      detail: fetchResult.attempts === 0
+        ? `Fonte de telemetria privada externa sem credencial configurada neste painel (0 tentativas). ${telemetry ? 'Usando ultimo snapshot comprovado' : 'Sem snapshot comprovado'}; ZEVANORY segue pelo Control Core canonico. Fail-closed: nenhuma promocao para verde por esta fonte.`
+        : telemetry
+          ? `Leitura da telemetria privada falhou apos ${fetchResult.attempts} tentativa(s); usando ultimo snapshot comprovado. Fail-closed: nenhuma promocao para verde.`
+          : `Leitura da telemetria privada falhou apos ${fetchResult.attempts} tentativa(s) e nao ha snapshot comprovado. Fail-closed: nenhuma promocao para verde.`,
       createdAt: now,
       state: 'watching',
     });
