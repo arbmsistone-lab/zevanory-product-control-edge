@@ -320,13 +320,28 @@ console.log('::notice title=CREATIVE_RENDER_MATRIX::' + JSON.stringify(mediaMatr
     for (let k = 0; k < 20; k++) {
       (await page.$$eval('.certProductButton b, select option', els => els.map(e => (e.textContent || '').trim()))).forEach(n => names.add(n));
       const next = page.locator('.certTargetPager button').last();
-      if (!(await next.count()) || await next.isDisabled()) break;
-      await next.click(); await page.waitForTimeout(400);
+      if (!(await next.count()) || !(await next.isVisible().catch(() => false)) || await next.isDisabled().catch(() => true)) break;
+      const moved = await next.click({ timeout: 3000 }).then(() => true).catch(() => false);
+      if (!moved) break;
+      await page.waitForTimeout(400);
     }
     cert.uiTargets = names.size; cert.uiArbmTargets = [...names].filter(n => /^ARBM\b/i.test(n)).length;
     cert.stripLabel = await page.evaluate(() => [...document.querySelectorAll('.standardStrip span')].map(s => s.getAttribute('aria-label')).filter(Boolean)[0] || null);
     await context.close();
   } catch (e) { cert.trustOrGovError = String(e?.message || e).slice(0, 120); }
+  try {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+    await context.addInitScript(([t]) => { localStorage.setItem('arbm_admin_session', t); localStorage.setItem('zpc_theme', 'dark'); }, [token]);
+    const page = await context.newPage();
+    await page.goto(base + '/', { waitUntil: 'networkidle', timeout: 45000 });
+    await page.getByRole('navigation', { name: 'Perguntas da Central de Comando' }).waitFor({ timeout: 30000 });
+    const sel = page.getByLabel('Selecionar área do Control Center'); await sel.selectOption('governance'); await page.waitForTimeout(3000);
+    cert.geo390 = await page.evaluate(() => {
+      const h = (q) => { const e = document.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.top), Math.round(b.height), Math.round(b.bottom)]; };
+      return { main: h('main'), trust: h('.trustStrip'), nav: h('.zpcNavigation'), header: h('header'), stack: h('.governanceStack'), detail: h('.certDetail'), summary: h('.certSummaryPanel'), runStrip: h('.certRunStrip'), selected: document.querySelector('.certProductButton.active b, select option:checked')?.textContent?.trim() || null };
+    });
+    await context.close();
+  } catch (e) { cert.geo390 = { error: String(e?.message || e).slice(0, 100) }; }
   for (const mode of ['transform-down', 'all-down']) {
     try {
       const { context, page } = await open(mode);
