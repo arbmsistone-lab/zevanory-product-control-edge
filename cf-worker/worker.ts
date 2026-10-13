@@ -873,8 +873,38 @@ async function fetchPagesOrigin(pathname: string) {
   return new Response(response.body, { status: response.status, headers });
 }
 
+// KV write meter (METACLOUD phase A): the panel shares the KV namespace with the main Worker and
+// the account's free quota (1,000 writes/day). One log line per put/delete: key prefix + trigger.
+function kvPrefixOf(key: unknown) {
+  const head: string[] = [];
+  for (const p of String(key || '').split(/[:/]/).filter(Boolean)) {
+    if (/^[0-9a-f-]{8,}$/i.test(p) || /^\d{4}-\d{2}-\d{2}/.test(p) || /^\d{6,}/.test(p) || head.length >= 3) break;
+    head.push(p);
+  }
+  return head.join(':') || '(root)';
+}
+function meteredEnv(env: Record<string, unknown>, src: string): Record<string, unknown> {
+  const kv = (env as any)?.T2_CREATIVE_ASSETS;
+  if (!kv || kv.__metered) return env;
+  const metered = new Proxy(kv, {
+    get(target: any, prop: string | symbol) {
+      if (prop === '__metered') return true;
+      const value = Reflect.get(target, prop);
+      if ((prop === 'put' || prop === 'delete') && typeof value === 'function') {
+        return (key: unknown, ...rest: unknown[]) => {
+          try { console.log(JSON.stringify({ kvw: kvPrefixOf(key), op: prop, src: 'panel:' + src })); } catch {}
+          return value.call(target, key, ...rest);
+        };
+      }
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+  return new Proxy(env, { get: (t, p, r) => (p === 'T2_CREATIVE_ASSETS' ? metered : Reflect.get(t, p, r)) });
+}
+
 export default {
-  async scheduled(_controller: ScheduledController, env: Record<string, unknown>) {
+  async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>) {
+    const env = meteredEnv(rawEnv, 'cron');
     try {
       const result = await wakeCommercialRobot(env);
       console.info('commercial_robot_cron_tick', JSON.stringify(result));
@@ -899,7 +929,9 @@ export default {
     // the cron never generates images with model-rendered text.
   },
 
-  async fetch(request: Request, env: Record<string, unknown>, ctx?: any) {
+  async fetch(request: Request, rawEnv: Record<string, unknown>, ctx?: any) {
+    const routeWords = (() => { try { return new URL(request.url).pathname.split('/').slice(0, 4).map(s => (s === '' || /^[a-z][a-z-]{0,23}$/.test(s) ? s : '*')).join('/'); } catch { return '/'; } })();
+    const env = meteredEnv(rawEnv, 'fetch:' + routeWords);
     setWorkerEnv(env);
     setSessionRevocationStore((env as any).T2_CREATIVE_ASSETS || null);
     const url = new URL(request.url);
