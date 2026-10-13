@@ -128,6 +128,9 @@ for (const path of ['/api/telemetry/refresh', '/api/audit/run']) {
   await expect('acao ' + path, async () => {
     const r = await req('POST', path, { sessionToken: token }, { timeout: 90000 });
     if (r.status !== 200) return 'respondeu ' + r.status;
+    // Sanitized consumer diagnosis (owner audit 13/10): attempts 0 = token not configured on the
+    // panel side; attempts > 0 with stale = the private feed failed. No secret or payload is printed.
+    if (path === '/api/telemetry/refresh') console.log('::notice title=TELEMETRY_CONSUMER::' + JSON.stringify({ ok: r.data?.ok === true, stale: r.data?.stale === true, source: String(r.data?.source || ''), attempts: Number(r.data?.attempts ?? -1), tokenConfigured: Number(r.data?.attempts ?? -1) > 0 }));
     const at = Date.parse(String(r.data?.at || ''));
     if (!Number.isFinite(at) || Math.abs(Date.now() - at) > 10 * 60_000) return 'sem carimbo de execução recente';
     return '';
