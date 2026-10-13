@@ -280,6 +280,82 @@ for (const [width, height] of [[1536, 730], [1280, 720], [1366, 768], [1024, 768
   }
 }
 console.log('::notice title=CREATIVE_RENDER_MATRIX::' + JSON.stringify(mediaMatrix).slice(0, 3900));
+
+// F) Production certification of #208 (owner order 13/10 11:41). Client-side interception only:
+// nothing in production is altered; failures are simulated inside this CI browser.
+{
+  const cert = {};
+  const ver = await (await fetch(base + '/version.json?t=' + Date.now())).json().catch(() => null);
+  cert.servedSha = ver?.sha || null;
+  const trust = await (await fetch(base + '/global-trust.json?t=' + Date.now())).json().catch(() => null);
+  cert.trust = trust ? { schema: trust.schema, state: trust.state, reasons: trust.reasons, quorumOk: trust.quorum?.ok, validUntil: trust.validUntil, sha: trust.sha } : null;
+  const boot = await req('POST', '/api/admin/bootstrap', { sessionToken: token }, { timeout: 60000 });
+  const targets = Array.isArray(boot.data?.certificationTargets) ? boot.data.certificationTargets.map(t => String(t?.name || '')) : [];
+  cert.apiTargets = targets.length; cert.apiArbmTargets = targets.filter(n => /^ARBM\b/i.test(n.trim())).length;
+  const creatives = (boot.data?.commercial?.creatives || []).filter(c => c && c.status !== 'archived' && c.imageUrl);
+  if (creatives[0]) {
+    const u = creatives[0].imageUrl;
+    const a = await fetch(u); cert.assetHeader = { http: a.status, source: a.headers.get('x-zpc-image-source'), type: a.headers.get('content-type') };
+    const r = await fetch(String(u).replace('/creative/assets/', '/creative/assets-raw/')); cert.rawHeader = { http: r.status, type: r.headers.get('content-type') };
+  }
+  const open = async (mode) => {
+    const context = await browser.newContext({ viewport: { width: 1536, height: 730 }, reducedMotion: 'reduce' });
+    await context.addInitScript(([t]) => { localStorage.setItem('arbm_admin_session', t); localStorage.setItem('zpc_theme', 'dark'); }, [token]);
+    if (mode === 'transform-down') await context.route(/\/api\/commercial\/creative\/assets\/[0-9a-f-]{36}\.(jpg|png)/i, r => r.fulfill({ status: 500, body: 'simulated' }));
+    if (mode === 'all-down') await context.route(/\/api\/commercial\/creative\/assets(-raw)?\/[0-9a-f-]{36}\.(jpg|png)/i, r => r.fulfill({ status: 500, body: 'simulated' }));
+    const page = await context.newPage();
+    await page.goto(base + '/', { waitUntil: 'networkidle', timeout: 45000 });
+    await page.getByRole('navigation', { name: 'Perguntas da Central de Comando' }).waitFor({ timeout: 30000 });
+    return { context, page };
+  };
+  const nav = async (page, key) => { const n = page.getByRole('navigation', { name: 'Áreas do ZEVANORY' }); const [p1, s1] = routes[key]; await n.getByRole('button', { name: p1, exact: true }).click(); if (s1) await n.getByRole('button', { name: s1, exact: true }).click(); await page.waitForTimeout(4000); };
+  try {
+    // Trust strip as painted vs live document.
+    const { context, page } = await open('normal');
+    await nav(page, 'operations');
+    cert.strip = await page.evaluate(() => { const s = document.querySelector('.trustStrip'); return s ? { cls: s.className, label: s.querySelector('.trustState strong')?.textContent?.trim(), quorum: s.querySelectorAll('div')[1]?.textContent?.trim() } : null; });
+    // Governance: no ARBM target in the list (all pages) nor in the selector.
+    await nav(page, 'governance');
+    const names = new Set();
+    for (let k = 0; k < 20; k++) {
+      (await page.$$eval('.certProductButton b, select option', els => els.map(e => (e.textContent || '').trim()))).forEach(n => names.add(n));
+      const next = page.locator('.certTargetPager button').last();
+      if (!(await next.count()) || await next.isDisabled()) break;
+      await next.click(); await page.waitForTimeout(400);
+    }
+    cert.uiTargets = names.size; cert.uiArbmTargets = [...names].filter(n => /^ARBM\b/i.test(n)).length;
+    cert.stripLabel = await page.evaluate(() => [...document.querySelectorAll('.standardStrip span')].map(s => s.getAttribute('aria-label')).filter(Boolean)[0] || null);
+    await context.close();
+  } catch (e) { cert.trustOrGovError = String(e?.message || e).slice(0, 120); }
+  for (const mode of ['transform-down', 'all-down']) {
+    try {
+      const { context, page } = await open(mode);
+      await nav(page, 'creatives');
+      await page.waitForTimeout(3000);
+      cert[mode] = await page.evaluate(() => ({
+        imgs: document.querySelectorAll('.creativePreview img').length,
+        paintedFromOriginal: [...document.querySelectorAll('.creativePreview img')].filter(i => i.complete && i.naturalWidth > 0 && /assets-raw/.test(i.currentSrc)).length,
+        errorStates: document.querySelectorAll('.creativeMediaError').length,
+        errorText: document.querySelector('.creativeMediaError strong')?.textContent?.trim() || null,
+        publishedFlag: [...document.querySelectorAll('.creativeMediaError small')].some(e => /PUBLICADO · ASSET NÃO VERIFICÁVEL/.test(e.textContent || '')),
+        emptyBoxes: [...document.querySelectorAll('.creativePreview')].filter(b => !b.querySelector('img') && !b.querySelector('.creativeMediaError') && !b.textContent.trim()).length,
+      }));
+      await context.close();
+    } catch (e) { cert[mode] = { error: String(e?.message || e).slice(0, 120) }; }
+  }
+  const checks = {
+    trustV2Live: cert.trust?.schema === 'zpc-global-trust/v2' && Date.parse(cert.trust.validUntil) > Date.now(),
+    noFalseGreen: cert.trust ? (cert.trust.state !== 'GREEN' || cert.trust.quorumOk === true) && !(String(cert.strip?.cls || '').includes('green') && cert.trust.state !== 'GREEN') : false,
+    stripMatchesDoc: Boolean(cert.strip) && String(cert.strip.cls).includes({ GREEN: 'green', DEGRADED: 'degraded', BLOCKED: 'blocked', NO_PROOF: 'noproof' }[cert.trust?.state] || '??'),
+    arbmOutOfScope: cert.uiTargets > 0 && cert.uiArbmTargets === 0,
+    fallbackToOriginal: (cert['transform-down']?.paintedFromOriginal || 0) > 0 && cert['transform-down']?.errorStates === 0 && cert['transform-down']?.emptyBoxes === 0,
+    explicitErrorState: (cert['all-down']?.errorStates || 0) > 0 && cert['all-down']?.errorText === 'IMAGEM INDISPONÍVEL' && cert['all-down']?.emptyBoxes === 0,
+    rawOriginalServed: cert.rawHeader?.http === 200 && /^image\//.test(String(cert.rawHeader?.type || '')),
+    assetServed: cert.assetHeader?.http === 200 && /^image\//.test(String(cert.assetHeader?.type || '')),
+  };
+  console.log('::notice title=CERT_208::' + JSON.stringify({ checks, cert }).slice(0, 3900));
+  for (const [k, v] of Object.entries(checks)) if (!v) fail('CERT_208', k);
+}
 await browser.close();
 
 const summary = { apiAndRouteChecks: passed.length, uiClicks: clicked, protectedNotClicked: [...skipped].slice(0, 40), failures: failures.length };
