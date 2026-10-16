@@ -6,6 +6,19 @@ if(!/^[0-9a-f]{40}$/.test(expected)) throw new Error('EXPECTED_ZPC_SHA_REQUIRED'
 if(!token) throw new Error('CLOUDFLARE_API_TOKEN_REQUIRED');
 const actual=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 if(actual!==expected) throw new Error('SHA_MISMATCH '+actual);
+// Never publish a Worker whose ASSETS lack the exact generated Control Core proof.
+for (const filename of ['global-trust.json', 'zpc-build.json']) {
+  if (!fs.existsSync('dist/' + filename)) throw new Error('ZPC_DEPLOY_ARTIFACT_MISSING:' + filename);
+  const parsed = JSON.parse(fs.readFileSync('dist/' + filename, 'utf8'));
+  if (filename === 'global-trust.json') {
+    if (parsed.state !== 'GREEN' || !Array.isArray(parsed.engines) || parsed.engines.length !== 3 ||
+        parsed.engines.some(engine => engine.state !== 'GREEN') || parsed.zea10?.proven !== 10 ||
+        parsed.zees16?.proven !== 16) throw new Error('ZPC_DEPLOY_TRUST_NOT_GREEN');
+  } else if (parsed.sha !== expected) {
+    throw new Error('ZPC_DEPLOY_BUILD_SHA_MISMATCH');
+  }
+}
+console.log('ZPC_DEPLOY_ASSETS_PREFLIGHT=PASS');
 const r=await fetch('https://api.cloudflare.com/client/v4/zones?name=zevanory.api.br',{headers:{Authorization:'Bearer '+token}});
 const j=await r.json();
 if(!j.success||j.result?.length!==1) throw new Error('ZONE_NOT_UNIQUE');
