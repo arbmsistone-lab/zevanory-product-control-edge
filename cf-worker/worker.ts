@@ -2,6 +2,7 @@ import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdge
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 import { isLegacyDutyMinute, runP18ExternalTrigger } from './p18-dispatch.ts';
+import { buildOwnerAlertEntry } from './owner-alert-entry.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
 import { globalTrustResponse } from './global-trust.ts';
 import { COMMERCIAL_AUTH_PROBE_PURPOSE, CREATIVE_FACTORY_PURPOSE, CREATIVE_UPLOAD_PURPOSE, operatorTokenMigration, verifyCommercialSignature } from './commercial-hmac.ts';
@@ -762,12 +763,13 @@ async function seenOnce(env: Record<string, any>, id: string) {
 const ESCALATION_RE = /golpe|fraude|procon|advogad|processo|absurdo|n[aã]o recebi|cad[eê] (meu|o) (produto|acesso|link)|reembols|estorno|cancelar|humano|atendente|pessoa real|reclame aqui/i;
 
 // Owner alert through the shared KV bridge; the main Worker emails a digest to the owner.
+// The entry carries `category` (refund | complaint): without it the central digest deleted it unsent.
 async function alertOwner(env: Record<string, any>, input: { channel: string; reason: string; excerpt: string; eventId: string }) {
   const kv = env.T2_CREATIVE_ASSETS;
   if (!kv?.put) return;
-  const excerpt = input.excerpt.replace(/\b\d{6,}\b/g, '***').replace(/[^\s@]+@[^\s@]+/g, '***@***').slice(0, 280);
+  const entry = buildOwnerAlertEntry(input, Date.now());
   try {
-    await kv.put('zpc-alert:v1:' + Date.now() + ':' + input.eventId.replace(/[^a-zA-Z0-9:_-]/g, '').slice(0, 60), JSON.stringify({ channel: input.channel, reason: input.reason, excerpt, at: new Date().toISOString() }), { expirationTtl: 7 * 24 * 3600 });
+    await kv.put(entry.key, entry.value, { expirationTtl: entry.ttl });
   } catch {}
 }
 
