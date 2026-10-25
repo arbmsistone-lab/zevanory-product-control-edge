@@ -14,7 +14,21 @@ Nada aqui declara conformidade com as seções 9 ou 11 do Roteiro. Essa conformi
 | Pedido por janela | Cron do Worker `zevanory-product-control-portable` (`*/5`) | `POST .../actions/workflows/p18-external-monitor.yml/dispatches` com `ref=gh-pages`, `inputs.window_id=p18w-AAAAMMDDTHHMMZ` (janela de 5 min de `controller.scheduledTime`), `dispatched_at`, `dispatch_source=cloudflare-cron`, `return_run_details=true` | Token inválido, sem permissão, limite, GitHub fora do ar, timeout |
 | Contingência executável | Mesmo cron | `GET` público de `raw.githubusercontent.com/.../evidence/b0-baseline/p18/heartbeat.json`. Batimento ausente, malformado ou com mais de 15 min gera alerta, **mesmo que o pedido tenha voltado 200/204** | Runner que não iniciou, monitor falhando, push de evidência falhando |
 | Monitor | Runner do GitHub (Azure) | Sonda as páginas de venda e grava `runs-*.jsonl` (início real, `window_id`, `dispatch_to_start_s`), `heartbeat.json` e `cf-dispatch.json` | Vendas fora do ar (issue `[P18]`) |
-| Vigia | Runner do GitHub (schedule) | Lê `heartbeat.json`. Com `vars.P18_CF_DISPATCH_EXPECTED=true`, também lê `cf-dispatch.json`: mais de 15 min sem início pedido pela Cloudflare abre a issue `[P18-VIGIA] Gatilho Cloudflare parado` | **Cloudflare inteira parada**, quando o GitHub roda o vigia |
+| Vigia | Runner do GitHub (schedule) | Lê `heartbeat.json` e `cf-dispatch.json`. O caminho Cloudflare só fica **ativo** com `vars.P18_CF_DISPATCH_EXPECTED=true` **e** uma 1ª prova válida (ver seção 1.1). Ativo, mais de 15 min sem início pedido pela Cloudflare (ou documento quebrado) abre a issue `[P18-VIGIA] Gatilho Cloudflare parado` | **Cloudflare inteira parada**, quando o GitHub roda o vigia |
+
+### 1.1 Estados do vigia do caminho Cloudflare (Ordens Sol 259–263)
+
+O `cf-dispatch.json` é avaliado em três níveis: (1) o documento existe (senão `MISSING`; erro de leitura = `UNREADABLE`);
+(2) a estrutura é válida (senão `MALFORMED`); (3) há **prova coerente** de uma execução pedida pela Cloudflare que
+iniciou: `run_id` numérico, `window_id` válido, `dispatched_at` e `started_at` ISO, início da janela ≤ `dispatched_at` ≤
+`started_at`, `dispatch_to_start_s` coerente e início não no futuro (senão `INVALID_PROOF` ou `FUTURE`). Só `FRESH` e
+`STALE` são prova válida. O monitor grava a 1ª prova válida no batimento (`cf_first_proof_at`) e a leva adiante.
+
+| Estado do vigia | Quando | Efeito |
+|---|---|---|
+| `NOT_EXPECTED` | `P18_CF_DISPATCH_EXPECTED` diferente de `true` | Só registra no log |
+| `AWAITING_FIRST_PROOF` | Variável `true`, mas ainda sem prova válida (nem `cf-dispatch.json` válido agora, nem `cf_first_proof_at` no batimento) | Registra. Se o documento existir mas for `MALFORMED`, `UNREADABLE`, `INVALID_PROOF` ou `FUTURE`, emite o aviso **não paginante** `::warning P18_WATCHDOG_CF_PENDING`: sem issue e sem falhar o job. Ausência simples (`MISSING`) não gera aviso |
+| `ACTIVE` | Variável `true` **e** prova válida (agora ou `cf_first_proof_at`) | Mais de 15 min sem início pedido pela Cloudflare, ou documento ausente, quebrado, ilegível ou incoerente, abre ou atualiza a issue `[P18-VIGIA] Gatilho Cloudflare parado` e falha o job. A issue fecha quando volta a haver prova `FRESH` |
 
 Os dois caminhos se cobrem. A Cloudflare lê o batimento do GitHub, e o GitHub lê o batimento da Cloudflare. Uma queda
 completa da Cloudflare **não** é vista pelo Worker. Quem a detecta são as execuções do GitHub, e só quando o GitHub roda.
@@ -89,7 +103,10 @@ mutante M09 provam isso com o `scheduled()` real e a rede do P18 travada.
    existir no ramo `evidence/b0-baseline`. O primeiro alerta "batimento inexistente", se chegar antes da primeira
    execução terminar, é esperado e serve como ensaio R0 do canal.
 6. **Ligar o vigia do caminho Cloudflare.** GitHub → repositório → **Settings** → **Secrets and variables** →
-   **Actions** → **Variables** → `P18_CF_DISPATCH_EXPECTED` = `true`.
+   **Actions** → **Variables** → `P18_CF_DISPATCH_EXPECTED` = `true`. Ligar a variável não ativa o alerta sozinha: o
+   vigia fica em `AWAITING_FIRST_PROOF` até existir a 1ª prova válida (seção 1.1). Antes disso, documento quebrado gera
+   só o aviso não paginante `P18_WATCHDOG_CF_PENDING`. Conferir no log do vigia `cf_gate=ACTIVE` e `cf_first_proof_at`
+   preenchido.
 7. **Rotação (antes do dia 90).** Gerar um token novo com o mesmo escopo e substituir o segredo `P18_DISPATCH_TOKEN`
    (mesmo nome). Esperar uma janela com `accepted` e então apagar o token antigo (Fine-grained tokens → **Delete**).
    **Revogação de emergência:** apagar o token no GitHub. As janelas seguintes dão `auth` (401) e o alerta segue no
@@ -110,7 +127,7 @@ seção 9 (10 min) trata do alerta de vendas fora do ar emitido pelo próprio mo
 | R1 | GitHub recusa (401) | Trocar o segredo por um valor inválido por 40 min e depois restaurar | Estado `checks.dispatch=failing/auth`, alerta, e-mail, status de falha em *Past Cron Events*, linha de recuperação 30 min ou mais após o alerta | Alerta e recuperação recebidos. Latências registradas |
 | R2 | Atraso do runner | Natural, 24 h de operação | `runs-*.jsonl`: `dispatch_to_start_s`. Campo diário `alert_latency.max/p95_dispatch_to_start_s`, `dispatched_runs`, `duplicate_runs` | p95 publicado. Lacuna entre sondagens (`max_check_gap_s`) menor que 10 min para a seção 9 |
 | R3 | Batimento ausente (204 sem monitoramento) | Desativar o workflow `P18 external monitor` (Actions → ⋯ → Disable) por 25 min | Linha `p18_ext_trigger` com o HTTP **real** do pedido para workflow desativado (a doc não fixa o código; registrar o observado) e `heartbeat=STALE` após 15 min. Alerta e e-mail | Alerta emitido com o batimento velho, mesmo se o pedido voltar 2xx |
-| R4 | Cloudflare parada e recuperação | Remover o Cron Trigger do Worker no painel por 30 min (ou deploy com `crons=[]`) e depois restaurar | Sem linhas `p18_ext_trigger`. Com `P18_CF_DISPATCH_EXPECTED=true`, a issue `[P18-VIGIA] Gatilho Cloudflare parado` **quando o vigia rodar** (agendador estrangulado: pode levar horas, então registrar o real). A issue fecha na volta | Issue aberta e fechada. Latência registrada, mesmo que alta (vira risco residual) |
+| R4 | Cloudflare parada e recuperação | Remover o Cron Trigger do Worker no painel por 30 min (ou deploy com `crons=[]`) e depois restaurar | Sem linhas `p18_ext_trigger`. Com o vigia em `ACTIVE` (variável `true` e 1ª prova válida já registrada em `cf_first_proof_at`), a issue `[P18-VIGIA] Gatilho Cloudflare parado` **quando o vigia rodar** (agendador estrangulado: pode levar horas, então registrar o real). A issue fecha na volta | Issue aberta e fechada. Latência registrada, mesmo que alta (vira risco residual) |
 | R5 | GitHub indisponível ou limite | Sem provocação segura. Observar ocorrências reais de 5xx, 429 e timeout | Linhas com `unavailable`, `rate_limited` (com `retry_after_s`) e `timeout`, e os alertas correspondentes | Registro de ao menos uma ocorrência real, ou BLOCKED com motivo |
 | R6 | Orçamento de KV | 24 h de operação | Linhas `{"kvw":"p18-ext:v1:state"...}` e `{"kvw":"zpc-alert:v1"...}` com `src: panel:cron` | 24/dia ou menos sem falhas, 6/h ou menos sempre |
 | R7 | CPU e duração | 24 h de operação | Painel do Worker → Metrics → CPU time do cron (p50/p99) antes e depois. Campo `ms` da linha | p99 menor que 10 ms. Tarefas antigas sem regressão nos minutos 0/15/30/45 |
