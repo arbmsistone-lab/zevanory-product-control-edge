@@ -1,5 +1,6 @@
 import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
+import {assertWranglerConfigHasNoCredentialVars,migrationFlagVarArgs} from './operator-token-migration-flag.mjs';
 const expected=process.env.EXPECTED_ZPC_SHA||'';
 const token=process.env.CLOUDFLARE_API_TOKEN||'';
 if(!/^[0-9a-f]{40}$/.test(expected)) throw new Error('EXPECTED_ZPC_SHA_REQUIRED');
@@ -17,7 +18,14 @@ const rs=base.indexOf('routes = [');
 const re=rs>=0?base.indexOf(']\n\n',rs):-1;
 const routeFree=rs>=0&&re>=0?base.slice(0,rs)+base.slice(re+3):base;
 fs.writeFileSync('cf-worker/wrangler.script-only.toml',routeFree);
-execFileSync('npx',['--yes','wrangler@4.135.0','deploy','--config','cf-worker/wrangler.script-only.toml','--var','WORKER_COMMIT:'+expected,'--tag='+expected,'--message=ZPC-canonical-'+expected],{stdio:'inherit',env:process.env});
+// R9-D1: non-secret migration-window flag (scripts/operator-token-migration-flag.mjs), supplied by the publisher from
+// vars.OPERATOR_TOKEN_MIGRATION_UNTIL; absent => not passed => window closed. Malformed/beyond the ceiling => refused.
+// The credential itself (ZEVANORY_OPERATOR_TOKEN) is a Worker SECRET set by the owner out of band
+// (wrangler secret put ZEVANORY_OPERATOR_TOKEN --name zevanory-product-control-portable); wrangler deploy keeps secrets.
+assertWranglerConfigHasNoCredentialVars(routeFree);
+const migration=migrationFlagVarArgs(process.env.OPERATOR_TOKEN_MIGRATION_UNTIL);
+console.log('ZPC_OPERATOR_TOKEN_MIGRATION_FLAG='+(migration.state==='set'?'set until='+migration.until:'absent (window closed)'));
+execFileSync('npx',['--yes','wrangler@4.135.0','deploy','--config','cf-worker/wrangler.script-only.toml',...migration.args,'--var','WORKER_COMMIT:'+expected,'--tag='+expected,'--message=ZPC-canonical-'+expected],{stdio:'inherit',env:process.env});
 console.log('ZPC_CLOUDFLARE_DEPLOY=PASS sha='+expected);
 process.env.EXPECTED_DEPLOY_SHA=expected;
 execFileSync(process.execPath,['scripts/production-readback.mjs'],{stdio:'inherit',env:process.env});

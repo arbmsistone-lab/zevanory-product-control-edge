@@ -3,6 +3,7 @@ import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
 import { globalTrustResponse } from './global-trust.ts';
+import { COMMERCIAL_AUTH_PROBE_PURPOSE, CREATIVE_FACTORY_PURPOSE, CREATIVE_UPLOAD_PURPOSE, operatorTokenMigration, verifyCommercialSignature } from './commercial-hmac.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
 const CANONICAL_PUBLIC_ORIGIN = 'https://controle.zevanory.api.br';
@@ -187,21 +188,8 @@ function t2AngleHook(slug: string, angle: T2Angle) {
 const T2_CREATIVE_BUCKET = 'zpc_commercial_creatives';
 
 async function verifyFactoryRequest(request: Request, env: Record<string, unknown>) {
-  const secrets = [env.COMMERCIAL_ROBOT_TICK_SECRET, env.CERTIFICATION_E2E_TOKEN]
-    .map(value => String(value || ''))
-    .filter(value => value.length >= 32);
-  const timestamp = String(request.headers.get('x-commercial-timestamp') || '');
-  const nonce = String(request.headers.get('x-commercial-nonce') || '');
-  const signature = String(request.headers.get('x-commercial-signature') || '').toLowerCase();
-  if (!secrets.length || !/^\d{13}$/.test(timestamp) || !/^[0-9a-f-]{36}$/i.test(nonce) || !/^[0-9a-f]{64}$/.test(signature)) return false;
-  if (Math.abs(Date.now() - Number(timestamp)) > 5 * 60 * 1000) return false;
-  const bytes = Uint8Array.from(signature.match(/.{2}/g) || [], pair => parseInt(pair, 16));
-  const message = new TextEncoder().encode(['zevanory-commercial-creative-factory-v1', timestamp, nonce].join('\n'));
-  for (const secret of secrets) {
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
-    if (await crypto.subtle.verify('HMAC', key, bytes, message)) return true;
-  }
-  return false;
+  // R9-D1: candidates, migration window and category logging live in commercial-hmac.ts (single rule for every route).
+  return (await verifyCommercialSignature(request.headers, env, CREATIVE_FACTORY_PURPOSE)) !== 'none';
 }
 
 async function t2StoreCall(env: Record<string, unknown>, payload: Record<string, unknown>) {
@@ -282,21 +270,7 @@ async function t2Sha256Hex(bytes: ArrayBuffer) {
 }
 
 async function verifyCreativeUploadRequest(request: Request, env: Record<string, unknown>, slug: string, bodyHash: string) {
-  const secrets = [env.COMMERCIAL_ROBOT_TICK_SECRET, env.CERTIFICATION_E2E_TOKEN]
-    .map(value => String(value || ''))
-    .filter(value => value.length >= 32);
-  const timestamp = String(request.headers.get('x-commercial-timestamp') || '');
-  const nonce = String(request.headers.get('x-commercial-nonce') || '');
-  const signature = String(request.headers.get('x-commercial-signature') || '').toLowerCase();
-  if (!secrets.length || !/^\d{13}$/.test(timestamp) || !/^[0-9a-f-]{36}$/i.test(nonce) || !/^[0-9a-f]{64}$/.test(signature)) return false;
-  if (Math.abs(Date.now() - Number(timestamp)) > 5 * 60 * 1000) return false;
-  const bytes = Uint8Array.from(signature.match(/.{2}/g) || [], pair => parseInt(pair, 16));
-  const message = new TextEncoder().encode(['zevanory-commercial-creative-upload-v1', timestamp, nonce, slug, bodyHash].join('\n'));
-  for (const secret of secrets) {
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
-    if (await crypto.subtle.verify('HMAC', key, bytes, message)) return true;
-  }
-  return false;
+  return (await verifyCommercialSignature(request.headers, env, CREATIVE_UPLOAD_PURPOSE, [slug, bodyHash])) !== 'none';
 }
 
 function t2JpegSize(bytes: Uint8Array) {
@@ -985,6 +959,16 @@ export default {
       headers.set('x-zpc-image-size', '1080x1080');
       headers.set('x-zpc-image-source', 'edge-transform');
       return new Response(request.method === 'HEAD' ? null : transformed.body, { status: transformed.status, headers });
+    }
+
+    // R9-D1 proof route: verifies the SAME candidate set as the T2 routes (commercial-hmac.ts) over a domain-separated
+    // canonical string, so the owner can prove that a credential is accepted without generating, storing, publishing,
+    // charging or mutating anything. Answers only categories (never values); 401 when no candidate matches.
+    if (url.pathname === '/api/commercial/auth/probe') {
+      if (request.method !== 'POST') return Response.json({ ok: false, error: 'method_not_allowed' }, { status: 405, headers: { 'cache-control': 'no-store' } });
+      const category = await verifyCommercialSignature(request.headers, env, COMMERCIAL_AUTH_PROBE_PURPOSE);
+      if (category === 'none') return Response.json({ ok: false, error: 'commercial_auth_probe_auth_required' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+      return Response.json({ ok: true, category, migration: operatorTokenMigration(env).state, sideEffects: 'none' }, { headers: { 'cache-control': 'no-store' } });
     }
 
     if (url.pathname === '/api/commercial/creative/background') {
