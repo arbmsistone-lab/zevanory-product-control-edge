@@ -21,7 +21,8 @@
 // p18/cf-dispatch.json, when GitHub runs it). The two paths cover each other; neither alone proves sections 9/11.
 //
 // Budget per invocation (Workers Free: 10 ms CPU, 50 subrequests, 6 simultaneous connections, 1000 KV ops,
-// 1000 KV writes/day per account): at most 2 fetch subrequests (dispatch + heartbeat, in parallel), at most 1 KV
+// 1000 KV writes/day per account): normally 2 fetch subrequests (dispatch + heartbeat, in parallel); at minute 00
+// the hourly watchdog wake-up adds 1 fetch, 1 KV read and 1 KV marker write. The primary path uses at most 1 KV
 // read + 2 KV writes, hard wall budget 10 s, no retries (the next window is the retry). KV writes are bounded:
 // state only on alert, on a status change (>= 15 min after the last write) or an hourly checkpoint, and never more
 // than WRITE_CAP_PER_HOUR per hour (nominal 24/day, hard ceiling 144/day).
@@ -31,8 +32,10 @@
 
 export const P18_REPO = 'arbmsistone-lab/zevanory-public-mirror';
 export const P18_WORKFLOW = 'p18-external-monitor.yml';
+export const P18_WATCHDOG_WORKFLOW = 'p18-monitor-watchdog.yml';
 export const P18_REF = 'gh-pages';
 export const P18_DISPATCH_URL = `https://api.github.com/repos/${P18_REPO}/actions/workflows/${P18_WORKFLOW}/dispatches`;
+export const P18_WATCHDOG_DISPATCH_URL = `https://api.github.com/repos/${P18_REPO}/actions/workflows/${P18_WATCHDOG_WORKFLOW}/dispatches`;
 export const P18_HEARTBEAT_URL = `https://raw.githubusercontent.com/${P18_REPO}/evidence/b0-baseline/p18/heartbeat.json`;
 export const HEARTBEAT_SCHEMA = 'zevanory.p18.heartbeat.v1';
 export const WINDOW_MIN = 5;
@@ -50,7 +53,10 @@ export const STATE_WRITE_ON_CHANGE_MIN_MS = 15 * 60_000;
 export const CHECKPOINT_MS = 60 * 60_000;
 export const WRITE_CAP_PER_HOUR = 6;
 export const MAX_FETCH_SUBREQUESTS = 2;
+export const MAX_CRON_FETCH_SUBREQUESTS = 3;
 export const STATE_KEY = 'p18-ext:v1:state';
+export const WATCHDOG_STATE_KEY = 'p18-watchdog-dispatch:v1:last-hour';
+export const WATCHDOG_STATE_TTL_S = 48 * 3600;
 export const ALERT_PREFIX = 'zpc-alert:v1:';
 export const ALERT_CATEGORY = 'channel_down';      // allow-listed by the central digest (ALLOWED_OWNER_ALERTS)
 export const ALERT_CHANNEL = 'p18-monitor-externo';
@@ -92,6 +98,13 @@ export function windowStartMs(ms: number) { const p = WINDOW_MIN * 60_000; retur
 export function windowIdOf(ms: number) {
   const s = iso(windowStartMs(ms));
   return 'p18w-' + s.slice(0, 4) + s.slice(5, 7) + s.slice(8, 10) + 'T' + s.slice(11, 13) + s.slice(14, 16) + 'Z';
+}
+export function watchdogWindowIdOf(ms: number) {
+  const s = iso(Math.floor(ms / 3_600_000) * 3_600_000);
+  return 'p18wd-' + s.slice(0, 4) + s.slice(5, 7) + s.slice(8, 10) + 'T' + s.slice(11, 13) + 'Z';
+}
+export function isWatchdogDispatchMinute(scheduledTime: number) {
+  return Number.isFinite(scheduledTime) && new Date(scheduledTime).getUTCMinutes() === 0;
 }
 // The legacy cron duties (commercial robot tick, Meta publisher, shared activity) keep the former */15 cadence.
 export function isLegacyDutyMinute(scheduledTime: number) {
@@ -137,7 +150,7 @@ export async function dispatchMonitor(opts: { token: string; windowId: string; d
   const t0 = clock();
   const done = (outcome: DispatchOutcome, http_status: number | null, extra: Partial<DispatchResult> = {}): DispatchResult =>
     ({ outcome, http_status, run_id: null, run_url: null, retry_after_s: null, ...extra, elapsed_ms: Math.max(0, clock() - t0) });
-  if (!opts.token) return done('unconfigured', null);
+  if (!opts.token || !opts.windowId) return done('unconfigured', null);
   let response: Response;
   try {
     response = await fetchWithTimeout(opts.fetchImpl, P18_DISPATCH_URL, {
@@ -169,6 +182,97 @@ export async function dispatchMonitor(opts: { token: string; windowId: string; d
     try { await response.body?.cancel(); } catch { /* ignore */ }
   }
   return done(outcome, response.status, { run_id, run_url, retry_after_s });
+}
+
+// Hourly independent wake-up for the watchdog. The workflow has no inputs; the deterministic hour window is
+// therefore enforced at the caller with a KV marker before another invocation may request the same hour.
+export async function dispatchWatchdog(opts: { token: string; fetchImpl: FetchLike; timeoutMs?: number; clock?: () => number }): Promise<DispatchResult> {
+  const clock = opts.clock || Date.now;
+  const t0 = clock();
+  const done = (outcome: DispatchOutcome, http_status: number | null, extra: Partial<DispatchResult> = {}): DispatchResult =>
+    ({ outcome, http_status, run_id: null, run_url: null, retry_after_s: null, ...extra, elapsed_ms: Math.max(0, clock() - t0) });
+  if (!opts.token) return done('unconfigured', null);
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(opts.fetchImpl, P18_WATCHDOG_DISPATCH_URL, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + opts.token,
+        accept: 'application/vnd.github+json',
+        'x-github-api-version': '2022-11-28',
+        'content-type': 'application/json',
+        'user-agent': 'zevanory-control-p18-watchdog-dispatch',
+      },
+      body: JSON.stringify({ ref: P18_REF, return_run_details: true }),
+    }, opts.timeoutMs ?? DISPATCH_TIMEOUT_MS);
+  } catch (error) {
+    return done(abortKind(error), null);
+  }
+  const outcome = classifyDispatch(response.status, response.headers);
+  const ra = Number(response.headers.get('retry-after'));
+  const retry_after_s = Number.isFinite(ra) && ra >= 0 && response.headers.has('retry-after') ? Math.min(ra, 86_400) : null;
+  let run_id: number | null = null, run_url: string | null = null;
+  if (response.status === 200) {
+    try {
+      const body = JSON.parse((await response.text()).slice(0, 4096)) as { workflow_run_id?: unknown; html_url?: unknown };
+      if (Number.isSafeInteger(body.workflow_run_id) && Number(body.workflow_run_id) > 0) run_id = Number(body.workflow_run_id);
+      if (typeof body.html_url === 'string' && body.html_url.startsWith(`https://github.com/${P18_REPO}/actions/runs/`)) run_url = body.html_url.slice(0, 200);
+    } catch { /* accepted without parseable run details */ }
+  } else {
+    try { await response.body?.cancel(); } catch { /* ignore */ }
+  }
+  return done(outcome, response.status, { run_id, run_url, retry_after_s });
+}
+
+export type WatchdogDispatchRunResult = {
+  window_id: string; due: boolean; duplicate: boolean; dispatch: DispatchResult | null;
+  kv: 'ok' | 'unavailable' | 'read_failed' | 'write_failed'; fetch_subrequests: number; elapsed_ms: number;
+};
+
+export async function runHourlyWatchdogDispatch(opts: {
+  env: Record<string, unknown>; scheduledTime: number; fetchImpl?: FetchLike; now?: () => number;
+  log?: (line: string) => void; dispatchTimeoutMs?: number;
+}): Promise<WatchdogDispatchRunResult> {
+  const now = opts.now || Date.now;
+  const log = opts.log || ((line: string) => console.info(line));
+  const t0 = now();
+  const scheduled = Number.isFinite(opts.scheduledTime) ? opts.scheduledTime : t0;
+  const windowId = watchdogWindowIdOf(scheduled);
+  const due = isWatchdogDispatchMinute(scheduled);
+  const empty: WatchdogDispatchRunResult = { window_id: windowId, due, duplicate: false, dispatch: null, kv: 'ok', fetch_subrequests: 0, elapsed_ms: 0 };
+  if (!due) return empty;
+  const kv = opts.env.T2_CREATIVE_ASSETS as KvLike | undefined;
+  if (!kv?.get || !kv?.put) {
+    const r = { ...empty, kv: 'unavailable' as const, elapsed_ms: Math.max(0, now() - t0) };
+    log('p18_watchdog_dispatch ' + JSON.stringify({ window_id: windowId, outcome: 'not_dispatched', kv: r.kv, http: null, run_id: null, ms: r.elapsed_ms }));
+    return r;
+  }
+  let previous: string | null;
+  try { previous = await kv.get(WATCHDOG_STATE_KEY); }
+  catch {
+    const r = { ...empty, kv: 'read_failed' as const, elapsed_ms: Math.max(0, now() - t0) };
+    log('p18_watchdog_dispatch ' + JSON.stringify({ window_id: windowId, outcome: 'not_dispatched', kv: r.kv, http: null, run_id: null, ms: r.elapsed_ms }));
+    return r;
+  }
+  if (previous === windowId) {
+    const r = { ...empty, duplicate: true, elapsed_ms: Math.max(0, now() - t0) };
+    log('p18_watchdog_dispatch ' + JSON.stringify({ window_id: windowId, outcome: 'duplicate', kv: r.kv, http: null, run_id: null, ms: r.elapsed_ms }));
+    return r;
+  }
+  const token = typeof opts.env.P18_DISPATCH_TOKEN === 'string' ? opts.env.P18_DISPATCH_TOKEN.trim() : '';
+  let fetches = 0;
+  const dispatch = await dispatchWatchdog({
+    token,
+    fetchImpl: (input, init) => { fetches += 1; return (opts.fetchImpl || ((i: string, n?: RequestInit) => fetch(i, n)))(input, init); },
+    timeoutMs: opts.dispatchTimeoutMs,
+    clock: now,
+  });
+  let kvState: WatchdogDispatchRunResult['kv'] = 'ok';
+  try { await kv.put(WATCHDOG_STATE_KEY, windowId, { expirationTtl: WATCHDOG_STATE_TTL_S }); }
+  catch { kvState = 'write_failed'; }
+  const result: WatchdogDispatchRunResult = { window_id: windowId, due, duplicate: false, dispatch, kv: kvState, fetch_subrequests: fetches, elapsed_ms: Math.max(0, now() - t0) };
+  log('p18_watchdog_dispatch ' + JSON.stringify({ window_id: windowId, outcome: dispatch.outcome, kv: kvState, http: dispatch.http_status, run_id: dispatch.run_id, ms: dispatch.elapsed_ms, fetches }));
+  return result;
 }
 
 export async function readHeartbeat(opts: { fetchImpl: FetchLike; nowMs: number; timeoutMs?: number; clock?: () => number }): Promise<HeartbeatResult> {

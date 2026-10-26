@@ -3,47 +3,54 @@
 // suite fails on the assertion label declared below (the label written BEFORE running, from the rule it breaks).
 // Anything else (suite passes, other label, anchor missing) is SURVIVED/INCONCLUSIVE and the runner exits 1.
 // Usage: node scripts/p18-dispatch.mutants.mjs   (needs node_modules installed; no network)
-import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(new URL('..', import.meta.url).pathname);
+const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const MOD = 'cf-worker/p18-dispatch.ts', WRK = 'cf-worker/worker.ts';
 const COPY = ['cf-worker', 'src', 'backend', 'scripts/p18-dispatch.test.ts', 'package.json', 'tsconfig.json'];
 const M = [
   ['M01_403_rate_limit_as_scope_error', MOD, "return headers?.get('x-ratelimit-remaining') === '0' || headers?.has('retry-after') ? 'rate_limited' : 'forbidden';", "return 'forbidden';", 'C1-403-limited'],
   ['M02_http_204_counts_as_monitoring', MOD, "heartbeat: { failing: h.state !== 'FRESH', detail: h.state },", "heartbeat: { failing: h.state !== 'FRESH' && d.outcome !== 'accepted', detail: h.state },", 'A2-204-stale-alerts'],
-  ['M03_no_run_details', MOD, ", return_run_details: true }),", " }),", 'D1-body'],
+  ['M03_no_run_details', MOD, "body: JSON.stringify({ ref: P18_REF, inputs: { window_id: opts.windowId, dispatched_at: opts.dispatchedAt, dispatch_source: 'cloudflare-cron' }, return_run_details: true }),", "body: JSON.stringify({ ref: P18_REF, inputs: { window_id: opts.windowId, dispatched_at: opts.dispatchedAt, dispatch_source: 'cloudflare-cron' } }),", 'D1-body'],
   ['M04_window_not_5min', MOD, 'export function windowStartMs(ms: number) { const p = WINDOW_MIN * 60_000;', 'export function windowStartMs(ms: number) { const p = 60_000;', 'W1-floor'],
   ['M05_alert_every_window', MOD, "if (sinceAlert >= need) kind = 'failure';", "kind = 'failure';", 'A1-no-repeat-within-60min'],
   ['M06_no_recovery_line', MOD, "kind = 'recovery';  // an announced failure", "kind = null;  // an announced failure", 'A1-recovery-announced'],
   ['M07_no_write_cap', MOD, 'const capped = wantWrite && used + needed > WRITE_CAP_PER_HOUR;', 'const capped = false;', 'B1-cap-per-hour'],
   ['M08_legacy_duties_every_5min', WRK, 'if (!isLegacyDutyMinute(Number(controller?.scheduledTime))) return;', '', 'S1-no-legacy-at-05'],
-  ['M09_p18_blocks_duties', WRK, 'if (ctx?.waitUntil) ctx.waitUntil(p18); else p18.catch(() => undefined);', 'await p18.catch(() => undefined);', 'S1-own-waituntil'],
+  ['M09_watchdog_waits_for_primary', WRK, 'const p18Watchdog = runHourlyWatchdogDispatch({ env, scheduledTime: Number(controller?.scheduledTime) }).then((r) => {', 'const p18Watchdog = p18.then(() => runHourlyWatchdogDispatch({ env, scheduledTime: Number(controller?.scheduledTime) })).then((r) => {', 'S1-watchdog-at-hour'],
   ['M10_writes_without_dedupe_state', MOD, "if (!readOk) kvState = 'read_failed';", "if (false) kvState = 'read_failed';", 'E3-read-failed'],
   ['M11_heartbeat_edge_900', MOD, "if (age_s > HEARTBEAT_STALE_S) return out('STALE', extra);", "if (age_s >= HEARTBEAT_STALE_S) return out('STALE', extra);", 'H1-900'],
-  ['M12_dispatch_without_token', MOD, "if (!opts.token) return done('unconfigured', null);", '', 'D1-unconfigured'],
+  ['M12_dispatch_without_token', MOD, "if (!opts.token || !opts.windowId) return done('unconfigured', null);", '', 'D1-unconfigured'],
   ['M13_category_not_in_digest', MOD, "export const ALERT_CATEGORY = 'channel_down';", "export const ALERT_CATEGORY = 'p18';", 'E1-digest-accepts-category'],
   ['M14_timeout_trusts_dependency', MOD, '      reject(err);', '      void reject;', 'E5-within-budget'],
   ['M15_heartbeat_ignored', MOD, "if (age_s > HEARTBEAT_STALE_S) return out('STALE', extra);", '', 'H1-901'],
+  ['M16_watchdog_every_5min', MOD, 'return Number.isFinite(scheduledTime) && new Date(scheduledTime).getUTCMinutes() === 0;', 'return Number.isFinite(scheduledTime);', 'W2-not-due-5'],
+  ['M17_watchdog_duplicate_dispatched', MOD, 'if (previous === windowId) {', 'if (false) {', 'WD2-duplicate'],
+  ['M18_watchdog_wrong_workflow', MOD, "export const P18_WATCHDOG_WORKFLOW = 'p18-monitor-watchdog.yml';", "export const P18_WATCHDOG_WORKFLOW = 'p18-external-monitor.yml';", 'WD1-url'],
+  ['M19_watchdog_identity_lost', MOD, "'user-agent': 'zevanory-control-p18-watchdog-dispatch',", "'user-agent': 'zevanory-control-p18-dispatch',", 'WD1-user-agent'],
+  ['M20_watchdog_marker_not_written', MOD, 'try { await kv.put(WATCHDOG_STATE_KEY, windowId, { expirationTtl: WATCHDOG_STATE_TTL_S }); }', 'try { void windowId; }', 'WD2-marker'],
+  ['M21_workers_logs_disabled', 'cf-worker/wrangler.toml', 'head_sampling_rate = 1', 'head_sampling_rate = 0', 'S2-workers-logs'],
 ];
 
 function stage() {
-  const d = mkdtempSync(join(tmpdir(), 'zpc-p18-mut-'));
+  // Keep the disposable tree below ROOT so Node can resolve ROOT/node_modules on
+  // Windows without creating a privileged symlink/junction.
+  const d = mkdtempSync(join(ROOT, '.tmp-p18-mut-'));
   for (const rel of COPY) cpSync(join(ROOT, rel), join(d, rel), { recursive: true });
-  symlinkSync(join(ROOT, 'node_modules'), join(d, 'node_modules'));
   return d;
 }
 function run(d) {
-  const r = spawnSync(join(ROOT, 'node_modules', '.bin', 'tsx'), ['scripts/p18-dispatch.test.ts'], { cwd: d, encoding: 'utf8', timeout: 180_000 });
+  const r = spawnSync(process.execPath, [join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs'), 'scripts/p18-dispatch.test.ts'], { cwd: d, encoding: 'utf8', timeout: 180_000 });
   return { code: r.status, out: (r.stdout || '') + (r.stderr || '') };
 }
 
 const base = stage();
 const b = run(base);
 rmSync(base, { recursive: true, force: true });
-const baseOk = b.code === 0 && /p18-dispatch: 16 tests passed/.test(b.out);
+const baseOk = b.code === 0 && /p18-dispatch: 21 tests passed/.test(b.out);
 console.log(JSON.stringify({ mutant_id: 'BASELINE', ok: baseOk }));
 if (!baseOk) { console.log(b.out.slice(-2000)); process.exit(2); }
 const results = [];

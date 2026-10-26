@@ -1,7 +1,7 @@
 import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
-import { isLegacyDutyMinute, runP18ExternalTrigger } from './p18-dispatch.ts';
+import { isLegacyDutyMinute, runHourlyWatchdogDispatch, runP18ExternalTrigger } from './p18-dispatch.ts';
 import { buildOwnerAlertEntry } from './owner-alert-entry.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
 import { globalTrustResponse } from './global-trust.ts';
@@ -898,13 +898,18 @@ export default {
   async scheduled(controller: ScheduledController, rawEnv: Record<string, unknown>, ctx?: { waitUntil?: (p: Promise<unknown>) => void }) {
     const env = meteredEnv(rawEnv, 'cron');
     // P18 external trigger (AVAL Sol 253/254): every */5 invocation, in its own ctx.waitUntil promise, with a hard
-    // 10 s budget, <= 2 fetch subrequests and no retries. It never awaits or blocks the legacy duties below; a failed
+    // 10 s budget, <= 2 fetch subrequests and no retries. At minute 00, the hourly watchdog wake-up adds one request
+    // (total <= 3, still on this trigger) and a KV idempotency marker. Neither path blocks the legacy duties; a failed
     // window rejects only this promise (recorded as the invocation status in Past Cron Events) after it has been
     // recorded in KV and alerted. See cf-worker/p18-dispatch.ts and docs/ops/p18-cf-dispatch-runbook.md.
     const p18 = runP18ExternalTrigger({ env, scheduledTime: Number(controller?.scheduledTime) }).then((r) => {
       if (r.dispatch.outcome !== 'accepted' || r.heartbeat.state !== 'FRESH') throw new Error('p18_ext_trigger_not_ok dispatch=' + r.dispatch.outcome + ' heartbeat=' + r.heartbeat.state);
     });
-    if (ctx?.waitUntil) ctx.waitUntil(p18); else p18.catch(() => undefined);
+    const p18Watchdog = runHourlyWatchdogDispatch({ env, scheduledTime: Number(controller?.scheduledTime) }).then((r) => {
+      if (r.due && !r.duplicate && (r.dispatch?.outcome !== 'accepted' || r.kv !== 'ok')) throw new Error('p18_watchdog_dispatch_not_ok dispatch=' + (r.dispatch?.outcome || 'none') + ' kv=' + r.kv);
+    });
+    const p18Background = Promise.all([p18, p18Watchdog]);
+    if (ctx?.waitUntil) ctx.waitUntil(p18Background); else p18Background.catch(() => undefined);
     // The cron expression moved from */15 to */5 for P18 only (same single Cron Trigger: Workers Free allows 5 per
     // account). The legacy duties keep their former 15-minute cadence (minutes 0, 15, 30, 45).
     if (!isLegacyDutyMinute(Number(controller?.scheduledTime))) return;

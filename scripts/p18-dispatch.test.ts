@@ -5,8 +5,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   ALERT_CATEGORY, ALERT_CHANNEL, ALERT_PREFIX, CHECKPOINT_MS, HEARTBEAT_SCHEMA, MAX_FETCH_SUBREQUESTS, P18_DISPATCH_URL, P18_HEARTBEAT_URL,
-  P18_REF, STATE_KEY, WRITE_CAP_PER_HOUR, classifyDispatch, decide, dispatchMonitor, isLegacyDutyMinute, readHeartbeat,
-  runP18ExternalTrigger, windowIdOf, type DispatchResult, type HeartbeatResult, type P18State,
+  MAX_CRON_FETCH_SUBREQUESTS, P18_REF, P18_WATCHDOG_DISPATCH_URL, STATE_KEY, WATCHDOG_STATE_KEY, WATCHDOG_STATE_TTL_S,
+  WRITE_CAP_PER_HOUR, classifyDispatch, decide, dispatchMonitor, dispatchWatchdog, isLegacyDutyMinute, isWatchdogDispatchMinute,
+  readHeartbeat, runHourlyWatchdogDispatch, runP18ExternalTrigger, watchdogWindowIdOf, windowIdOf,
+  type DispatchResult, type HeartbeatResult, type P18State,
 } from '../cf-worker/p18-dispatch.ts';
 
 const TOKEN = 'github_pat_FAKE_TEST_VALUE_0123456789abcdef_NOT_A_REAL_TOKEN';
@@ -63,6 +65,13 @@ await test('W1 window id: 5-minute window from scheduledTime, aligned to minute 
   for (const m of [5, 10, 20, 25, 35, 40, 50, 55]) assert.equal(isLegacyDutyMinute(T(`10:${String(m).padStart(2, '0')}:00`)), false, 'W1-not-legacy ' + m);
 });
 
+await test('W2 watchdog window: deterministic UTC hour and due only at minute 00 of the existing */5 cron', () => {
+  assert.equal(watchdogWindowIdOf(T('10:59:59')), 'p18wd-20261025T10Z', 'W2-hour-floor');
+  assert.equal(watchdogWindowIdOf(T('11:00:00')), 'p18wd-20261025T11Z', 'W2-hour-edge');
+  assert.equal(isWatchdogDispatchMinute(T('10:00:00')), true, 'W2-due-00');
+  for (const m of [5, 10, 15, 30, 55]) assert.equal(isWatchdogDispatchMinute(T(`10:${String(m).padStart(2, '0')}:00`)), false, 'W2-not-due-' + m);
+});
+
 await test('C1 every GitHub status code is classified (200/204 accepted; 401/403/404/422/429/5xx/other)', () => {
   const h = (o: Record<string, string>) => new Headers(o);
   const cases: [number, Headers | undefined, string][] = [
@@ -114,6 +123,42 @@ await test('D2 timeout and network: a hung GitHub is cut by the AbortSignal with
   assert.equal(hb.state, 'TIMEOUT', 'D2-heartbeat-timeout');
   const ra = await dispatchMonitor({ token: TOKEN, windowId: 'w', dispatchedAt: 'x', fetchImpl: net({ dispatchStatus: 429, dispatchHeaders: { 'retry-after': '120' } }, { t: 0 }).f });
   assert.equal(ra.outcome, 'rate_limited', 'D2-429'); assert.equal(ra.retry_after_s, 120, 'D2-retry-after-recorded');
+});
+
+await test('WD1 watchdog request: exact workflow, same token, no invented inputs, run details recorded', async () => {
+  const { calls, f } = fakeFetch(() => new Response(JSON.stringify({ workflow_run_id: 99001, html_url: 'https://github.com/arbmsistone-lab/zevanory-public-mirror/actions/runs/99001' }), { status: 200 }));
+  const r = await dispatchWatchdog({ token: TOKEN, fetchImpl: f });
+  assert.equal(r.outcome, 'accepted', 'WD1-accepted'); assert.equal(r.run_id, 99001, 'WD1-run-id');
+  assert.equal(calls.length, 1, 'WD1-one-fetch');
+  assert.equal(calls[0].url, 'https://api.github.com/repos/arbmsistone-lab/zevanory-public-mirror/actions/workflows/p18-monitor-watchdog.yml/dispatches', 'WD1-url');
+  assert.deepEqual(JSON.parse(String(calls[0].init.body)), { ref: P18_REF, return_run_details: true }, 'WD1-body');
+  assert.equal((calls[0].init.headers as Record<string, string>).authorization, 'Bearer ' + TOKEN, 'WD1-same-token');
+  assert.equal((calls[0].init.headers as Record<string, string>)['user-agent'], 'zevanory-control-p18-watchdog-dispatch', 'WD1-user-agent');
+});
+
+await test('WD2 hourly idempotency: one request and one marker write; repeats and non-hour slots do no work', async () => {
+  const kv = fakeKv(), lines: string[] = [];
+  const { calls, f } = fakeFetch(() => new Response(null, { status: 204 }));
+  const env = { P18_DISPATCH_TOKEN: TOKEN, T2_CREATIVE_ASSETS: kv };
+  const first = await runHourlyWatchdogDispatch({ env, scheduledTime: T('10:00:00'), fetchImpl: f, now: () => T('10:00:02'), log: l => lines.push(l) });
+  assert.equal(first.dispatch?.outcome, 'accepted', 'WD2-first-accepted'); assert.equal(first.window_id, 'p18wd-20261025T10Z');
+  assert.equal(kv.store.get(WATCHDOG_STATE_KEY), first.window_id, 'WD2-marker');
+  assert.equal(kv.puts.find(p => p.key === WATCHDOG_STATE_KEY)?.ttl, WATCHDOG_STATE_TTL_S, 'WD2-marker-ttl');
+  const duplicate = await runHourlyWatchdogDispatch({ env, scheduledTime: T('10:00:00'), fetchImpl: f, now: () => T('10:00:03'), log: l => lines.push(l) });
+  assert.equal(duplicate.duplicate, true, 'WD2-duplicate'); assert.equal(calls.length, 1, 'WD2-no-second-fetch');
+  const quiet = await runHourlyWatchdogDispatch({ env, scheduledTime: T('10:05:00'), fetchImpl: f, now: () => T('10:05:01'), log: l => lines.push(l) });
+  assert.equal(quiet.due, false, 'WD2-non-hour'); assert.equal(calls.length, 1, 'WD2-non-hour-no-fetch');
+  assert.match(lines[0], /^p18_watchdog_dispatch \{/); assert.match(lines[0], /"window_id":"p18wd-20261025T10Z"/); assert.match(lines[0], /"http":204/);
+});
+
+await test('WD3 fail closed without KV idempotency; token is never logged or stored', async () => {
+  const noKvCalls = fakeFetch(() => new Response(null, { status: 204 })), lines: string[] = [];
+  const missing = await runHourlyWatchdogDispatch({ env: { P18_DISPATCH_TOKEN: TOKEN }, scheduledTime: T('10:00:00'), fetchImpl: noKvCalls.f, log: l => lines.push(l) });
+  assert.equal(missing.kv, 'unavailable', 'WD3-no-kv'); assert.equal(noKvCalls.calls.length, 0, 'WD3-no-dispatch-without-idempotency');
+  assert.ok(!lines.join('\n').includes(TOKEN), 'WD3-no-token-log');
+  const kv = fakeKv(); kv.setFailGet(true);
+  const readFail = await runHourlyWatchdogDispatch({ env: { P18_DISPATCH_TOKEN: TOKEN, T2_CREATIVE_ASSETS: kv }, scheduledTime: T('10:00:00'), fetchImpl: noKvCalls.f, log: () => {} });
+  assert.equal(readFail.kv, 'read_failed', 'WD3-read-failed'); assert.equal(noKvCalls.calls.length, 0, 'WD3-read-failed-no-fetch');
 });
 
 await test('H1 heartbeat: fresh/stale at the 900/901 s edge, missing (404), malformed, oversize, future, unreadable', async () => {
@@ -293,7 +338,7 @@ await test('S1 real scheduled(): P18 every */5 in its own waitUntil; legacy duti
   globalThis.fetch = ((input: RequestInfo | URL) => {
     const url = String(input instanceof Request ? input.url : input);
     seen.push(url);
-    if (url === P18_DISPATCH_URL || url === P18_HEARTBEAT_URL) return hang ? new Promise<Response>(() => {}) : Promise.resolve(new Response(null, { status: 204 }));
+    if (url === P18_DISPATCH_URL || url === P18_HEARTBEAT_URL || url === P18_WATCHDOG_DISPATCH_URL) return hang ? new Promise<Response>(() => {}) : Promise.resolve(new Response(null, { status: 204 }));
     return Promise.resolve(new Response('{}', { status: 200 }));
   }) as typeof fetch;
   const waited: Promise<unknown>[] = [];
@@ -309,14 +354,20 @@ await test('S1 real scheduled(): P18 every */5 in its own waitUntil; legacy duti
   await worker.scheduled({ cron: '*/5 * * * *', scheduledTime: T('10:15:00') }, env, ctx);
   assert.ok(kvOps.some(o => o === 'list:zpc-activity:v1:'), 'S1-legacy-at-15');
   assert.equal(waited.length, 2);
+  // Minute 00: the same trigger also starts exactly one hourly watchdog dispatch; total GitHub/raw fetches <= 3.
+  seen.length = 0; kvOps.length = 0;
+  await worker.scheduled({ cron: '*/5 * * * *', scheduledTime: T('11:00:00') }, env, ctx);
+  assert.ok(seen.includes(P18_WATCHDOG_DISPATCH_URL), 'S1-watchdog-at-hour');
+  assert.ok(seen.length <= MAX_CRON_FETCH_SUBREQUESTS, 'S1-total-subrequests');
   hang = false;
   globalThis.fetch = realFetch;
 });
 
 await test('S2 config: one Cron Trigger, */5; worker passes scheduledTime and never awaits P18 before the duties', () => {
-  const toml = readFileSync(new URL('../cf-worker/wrangler.toml', import.meta.url), 'utf8');
+  const toml = readFileSync(new URL('../cf-worker/wrangler.toml', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
   assert.match(toml, /\[triggers\]\ncrons = \["\*\/5 \* \* \* \*"\]\n/, 'S2-single-trigger');
   assert.doesNotMatch(toml, /^\s*P18_DISPATCH_TOKEN\s*=/m, 'S2-token-never-in-config');
+  assert.match(toml, /\[observability\]\nenabled = true\nhead_sampling_rate = 1\n/, 'S2-workers-logs');
   const src = readFileSync(new URL('../cf-worker/worker.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /await runP18ExternalTrigger|await p18\b/, 'S2-not-awaited');
   const mod = readFileSync(new URL('../cf-worker/p18-dispatch.ts', import.meta.url), 'utf8');
@@ -335,6 +386,28 @@ await test('P1 CPU per invocation with instant fakes (Workers Free: 10 ms per Cr
   const perMs = (c.user + c.system) / 1000 / N;
   console.log(`P18_CPU_PER_INVOCATION_MS=${perMs.toFixed(3)} (Node ${process.version}, fakes incl. Response objects; workerd differs, measure live)`);
   assert.ok(perMs < 3, 'P1-cpu-under-3ms');
+});
+
+await test('P2 CPU for the top-of-hour combined primary + watchdog paths stays below the Free-plan budget', async () => {
+  const kv = fakeKv();
+  let current = T('00:00:02', '2026-10-01');
+  const f = async (url: string) => url === P18_HEARTBEAT_URL
+    ? new Response(hbDoc(current - 60_000), { status: 200 })
+    : new Response(JSON.stringify({ workflow_run_id: 1 }), { status: 200 });
+  const N = 120;
+  const c0 = process.cpuUsage();
+  for (let i = 0; i < N; i++) {
+    current = T('00:00:02', '2026-10-01') + i * 3_600_000;
+    const scheduled = current - 2_000;
+    await Promise.all([
+      runP18ExternalTrigger({ env: { P18_DISPATCH_TOKEN: TOKEN, T2_CREATIVE_ASSETS: kv }, scheduledTime: scheduled, fetchImpl: f, now: () => current, log: () => {} }),
+      runHourlyWatchdogDispatch({ env: { P18_DISPATCH_TOKEN: TOKEN, T2_CREATIVE_ASSETS: kv }, scheduledTime: scheduled, fetchImpl: f, now: () => current, log: () => {} }),
+    ]);
+  }
+  const c = process.cpuUsage(c0);
+  const perMs = (c.user + c.system) / 1000 / N;
+  console.log(`P18_TOP_OF_HOUR_CPU_MS=${perMs.toFixed(3)} (Node ${process.version}, instant fakes; workerd differs, measure live)`);
+  assert.ok(perMs < 5, 'P2-combined-cpu-under-5ms');
 });
 
 clearInterval(keepAlive);
