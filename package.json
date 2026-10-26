@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run audit:runtime && npm run test:session-security && npm run test:global-trust && npm run test:incident-lifecycle && npm run test:creative-media && npm run test:panel-alert-category && npm run test:edge-body-once && npm run test:kv-bootstrap-writes && npm run test:owner-sales-switch && npm run audit:commercial && npm run test:commercial-robot-auth && npm run test:commercial-hmac && npm run test:commercial-contract && npm run test:commercial-cleanup && npm run test:prospect-signal && npm run test:ads-readiness && npm run test:zevanory-sales-contract && npm run test:zevanory-sales-tenant && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
+    "build": "npm run audit:runtime && npm run test:session-security && npm run test:global-trust && npm run test:incident-lifecycle && npm run test:creative-media && npm run test:panel-alert-category && npm run test:p18-dispatch && npm run test:edge-body-once && npm run test:kv-bootstrap-writes && npm run test:owner-sales-switch && npm run audit:commercial && npm run test:commercial-robot-auth && npm run test:commercial-hmac && npm run test:commercial-contract && npm run test:commercial-cleanup && npm run test:prospect-signal && npm run test:ads-readiness && npm run test:zevanory-sales-contract && npm run test:zevanory-sales-tenant && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
     "start": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "audit:commercial": "node scripts/ped-commercial-audit.mjs",
@@ -27,7 +27,9 @@
     "test:global-trust": "tsx scripts/global-trust.test.ts",
     "test:incident-lifecycle": "tsx scripts/incident-lifecycle.test.ts",
     "test:creative-media": "tsx scripts/creative-media.test.ts",
-    "test:panel-alert-category": "tsx scripts/panel-alert-category.test.ts"
+    "test:panel-alert-category": "tsx scripts/panel-alert-category.test.ts",
+    "test:p18-dispatch": "tsx scripts/p18-dispatch.test.ts",
+    "mutants:p18-dispatch": "node scripts/p18-dispatch.mutants.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",

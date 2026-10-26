@@ -36,5 +36,11 @@ name = "PIN_LIMITER"
 namespace_id = "1701"
 simple = { limit = 5, period = 60 }
 
+# One Cron Trigger (Workers Free: 5 per account, shared with the central Worker's 3). */5 since AVAL Sol 253/254:
+# every invocation requests the P18 external monitor (workflow_dispatch, window id) and reads its heartbeat; the
+# legacy duties (commercial robot tick, Meta publisher, shared activity) still run only at minutes 0/15/30/45.
+# Secret (owner, never in this file): P18_DISPATCH_TOKEN, a fine-grained token with Actions: write on
+# arbmsistone-lab/zevanory-public-mirror only. Without it the dispatch is "unconfigured" (alerted daily) and the
+# heartbeat watch still runs.
 [triggers]
-crons = ["*/15 * * * *"]
+crons = ["*/5 * * * *"]
