@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const MOD = 'cf-worker/p18-dispatch.ts', WRK = 'cf-worker/worker.ts';
-const COPY = ['cf-worker', 'src', 'backend', 'scripts/p18-dispatch.test.ts', 'package.json', 'tsconfig.json'];
+const COPY = ['cf-worker', 'src', 'backend', 'scripts/p18-dispatch.test.ts', 'docs/ops/p18-cf-dispatch-runbook.md',
+  'docs/ops/p18-segunda-via-independente.md', 'package.json', 'tsconfig.json'];
 const M = [
   ['M01_403_rate_limit_as_scope_error', MOD, "return headers?.get('x-ratelimit-remaining') === '0' || headers?.has('retry-after') ? 'rate_limited' : 'forbidden';", "return 'forbidden';", 'C1-403-limited'],
   ['M02_http_204_counts_as_monitoring', MOD, "heartbeat: { failing: h.state !== 'FRESH', detail: h.state },", "heartbeat: { failing: h.state !== 'FRESH' && d.outcome !== 'accepted', detail: h.state },", 'A2-204-stale-alerts'],

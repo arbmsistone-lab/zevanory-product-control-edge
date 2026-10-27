@@ -329,6 +329,14 @@ await test('S2 config: one Cron Trigger, */5; worker passes scheduledTime and ne
   assert.ok(Array.isArray(config.routes), 'S2-routes-root-array');
   assert.equal(config.routes.length, 2, 'S2-routes-root-count');
   assert.deepEqual(config.observability, { enabled: true, head_sampling_rate: 0.05 }, 'S2-workers-logs-sampled');
+  const runbook = readFileSync(new URL('../docs/ops/p18-cf-dispatch-runbook.md', import.meta.url), 'utf8');
+  assert.match(runbook, /Workers Logs persiste só uma amostra de 5%[\s\S]*não é fonte de completude/, 'S2-sampled-logs-not-proof');
+  assert.match(runbook, /wrangler tail --format json[\s\S]*head_sampling_rate = 1/, 'S2-complete-trial-evidence');
+  assert.match(runbook, /invocation_logs=false[^\n]*avaliado e rejeitado/, 'S2-invocation-logs-decision');
+  const independent = readFileSync(new URL('../docs/ops/p18-segunda-via-independente.md', import.meta.url), 'utf8');
+  assert.match(independent, /baixa atividade por 7 dias podem ser pausados/, 'S2-supabase-free-pause');
+  assert.match(independent, /Uso comercial é permitido[\s\S]*proibido revender/, 'S2-uptimerobot-commercial-terms');
+  assert.match(independent, /apenas o cron parar[\s\S]*não detecta a falha/, 'S2-url-monitor-misses-cron-only');
   const src = readFileSync(new URL('../cf-worker/worker.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /await runP18ExternalTrigger|await p18\b/, 'S2-not-awaited');
   const mod = readFileSync(new URL('../cf-worker/p18-dispatch.ts', import.meta.url), 'utf8');

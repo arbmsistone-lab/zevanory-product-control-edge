@@ -105,7 +105,8 @@ no Worker também podem entrar na amostra; por isso a taxa não é 100% e o aces
    25/10 anotou "reconciler paused". Portanto o merge **não** pede publicação. O deploy só acontece com a autorização do
    proprietário: pelo publicador canônico (`zpc-control-worker-deploy.yml`, Environment protegido) ou ao liberar a
    trava, o que publicaria todo o `main` à frente da produção. A mudança do cron leva até 15 min para propagar.
-5. **Conferir.** Na primeira janela após o deploy, a linha `p18_ext_trigger` no log (Workers Logs ou `wrangler tail`)
+5. **Conferir.** Antes da primeira janela após o deploy, iniciar `npx wrangler tail zevanory-product-control-portable
+   --format json` e salvar a sessão completa da janela. A linha `p18_ext_trigger` no **tail em tempo real**
    deve mostrar `dispatch.outcome=accepted` e um `run_id`. No GitHub deve aparecer a execução
    `P18 monitor p18w-…` com `event=workflow_dispatch`. Em seguida, `p18/heartbeat.json` e `p18/cf-dispatch.json` devem
    existir no ramo `evidence/b0-baseline`. O primeiro alerta "batimento inexistente", se chegar antes da primeira
@@ -125,6 +126,13 @@ no Worker também podem entrar na amostra; por isso a taxa não é 100% e o aces
 
 Para cada ensaio, registrar t_falha (início provocado), t_detecção (`at` do `zpc-alert:v1:*` e linha `p18_ext_trigger`),
 t_alerta (chegada do e-mail do resumo, ou criação da issue) e t_recuperação. **Latência real = t_alerta − t_falha.**
+Workers Logs persiste só uma amostra de 5% e, portanto, **não é fonte de completude** destes ensaios. Em R1 e R3,
+abrir `wrangler tail --format json` antes de provocar a falha, confirmar uma invocação normal no fluxo, salvar a
+sessão até a recuperação e anexar o arquivo bruto. Em R6 e R7 (24 h), o proprietário deve autorizar um deploy
+temporário com `head_sampling_rate = 1`, registrar o SHA/configuração e restaurar 0,05 ao terminar; sem isso, as
+linhas persistidas servem apenas como exemplos e o ensaio fica **BLOCKED**, nunca aprovado por extrapolação.
+`invocation_logs=false` foi avaliado e rejeitado: reduziria contexto de exceção e desfecho necessário à investigação;
+os invocation logs permanecem habilitados, enquanto a retenção normal continua limitada pela amostragem de 5%.
 Limite esperado pelo desenho: detecção em até 5 min (mais até 5 min de cache do raw para o batimento), e e-mail no
 próximo resumo horário do central (até 60 min). Ou seja, o canal Cloudflare leva **até cerca de 70 min**, não 10 min. A
 seção 9 (10 min) trata do alerta de vendas fora do ar emitido pelo próprio monitor (issue `[P18]`), não deste meta-alerta.
@@ -132,13 +140,13 @@ seção 9 (10 min) trata do alerta de vendas fora do ar emitido pelo próprio mo
 | # | Ensaio | Como provocar (proprietário) | Evidência produzida | Aprovação |
 |---|---|---|---|---|
 | R0 | Canal de alerta ponta a ponta | Primeiro deploy, antes do primeiro batimento | `zpc-alert:v1:*` (`channel_down`, canal `p18-monitor-externo`), e-mail do resumo, `owner_alert_sent` no ledger | E-mail recebido. Latência medida |
-| R1 | GitHub recusa (401) | Trocar o segredo por um valor inválido por 40 min e depois restaurar | Estado `checks.dispatch=failing/auth`, alerta, e-mail, status de falha em *Past Cron Events*, linha de recuperação 30 min ou mais após o alerta | Alerta e recuperação recebidos. Latências registradas |
+| R1 | GitHub recusa (401) | Trocar o segredo por um valor inválido por 40 min e depois restaurar | Sessão completa de `wrangler tail` iniciada antes da falha, estado `checks.dispatch=failing/auth`, alerta, e-mail, status de falha em *Past Cron Events*, linha de recuperação 30 min ou mais após o alerta | Alerta e recuperação recebidos. Latências registradas; Workers Logs amostrado não substitui o tail |
 | R2 | Atraso do runner | Natural, 24 h de operação | `runs-*.jsonl`: `dispatch_to_start_s`. Campo diário `alert_latency.max/p95_dispatch_to_start_s`, `dispatched_runs`, `duplicate_runs` | p95 publicado. Lacuna entre sondagens (`max_check_gap_s`) menor que 10 min para a seção 9 |
-| R3 | Batimento ausente (204 sem monitoramento) | Desativar o workflow `P18 external monitor` (Actions → ⋯ → Disable) por 25 min | Linha `p18_ext_trigger` com o HTTP **real** do pedido para workflow desativado (a doc não fixa o código; registrar o observado) e `heartbeat=STALE` após 15 min. Alerta e e-mail | Alerta emitido com o batimento velho, mesmo se o pedido voltar 2xx |
+| R3 | Batimento ausente (204 sem monitoramento) | Desativar o workflow `P18 external monitor` (Actions → ⋯ → Disable) por 25 min | Sessão completa de `wrangler tail` iniciada antes da falha; linha `p18_ext_trigger` com o HTTP **real** do pedido para workflow desativado (a doc não fixa o código; registrar o observado) e `heartbeat=STALE` após 15 min. Alerta e e-mail | Alerta emitido com o batimento velho, mesmo se o pedido voltar 2xx; Workers Logs amostrado não basta |
 | R4 | Cloudflare parada e recuperação | Remover o Cron Trigger do Worker no painel por 30 min (ou deploy com `crons=[]`) e depois restaurar | Sem linhas `p18_ext_trigger`. Com o vigia em `ACTIVE`, a issue `[P18-VIGIA] Gatilho Cloudflare parado` só aparece **quando o schedule do GitHub rodar**; o atraso observado de 5–7 h permanece risco aberto | Este PR não aprova R4. Só uma segunda via independente, ativada e ensaiada, pode estabelecer um teto |
 | R5 | GitHub indisponível ou limite | Sem provocação segura. Observar ocorrências reais de 5xx, 429 e timeout | Linhas com `unavailable`, `rate_limited` (com `retry_after_s`) e `timeout`, e os alertas correspondentes | Registro de ao menos uma ocorrência real, ou BLOCKED com motivo |
-| R6 | Orçamento de KV | 24 h de operação | Linhas `{"kvw":"p18-ext:v1:state"...}` e `{"kvw":"zpc-alert:v1"...}` com `src: panel:cron` | 24/dia ou menos sem falhas, 6/h ou menos sempre |
-| R7 | CPU e duração | 24 h de operação | Painel do Worker → Metrics → CPU time do cron (p50/p99) antes e depois. Campo `ms` da linha | p99 menor que 10 ms. Tarefas antigas sem regressão nos minutos 0/15/30/45 |
+| R6 | Orçamento de KV | 24 h de operação com amostragem temporária 1 autorizada e registrada | Conjunto completo das linhas `{"kvw":"p18-ext:v1:state"...}` e `{"kvw":"zpc-alert:v1"...}` com `src: panel:cron`, mais leituras inicial/final do estado. Com 0,05, marcar BLOCKED | 24/dia ou menos sem falhas, 6/h ou menos sempre |
+| R7 | CPU e duração | 24 h de operação com amostragem temporária 1 autorizada e registrada | Painel do Worker → Metrics → CPU time do cron (p50/p99) antes e depois; conjunto completo do campo `ms`. Com 0,05, o painel ainda prova CPU, mas a correlação por invocação fica BLOCKED | p99 menor que 10 ms. Tarefas antigas sem regressão nos minutos 0/15/30/45 |
 
 O CI prova o comportamento com rede e KV falsos: cada código HTTP, a janela, a idempotência, o orçamento de tempo, o
 teto de gravações e o `scheduled()` real. Ele **não** prova entrega de e-mail, propagação do KV, cache do raw, latência
