@@ -2,7 +2,7 @@ name: P18 dispatch gate
 
 # AVAL Sol 253/254: behavioural tests (mocked fetch/KV, real scheduled()) and mutants of the P18 external trigger
 # (cf-worker/p18-dispatch.ts). Pull request only: never fires on merge, no secrets, no network beyond checkout and
-# npm install. Exact counts: 21 tests, 21 mutants KILLED.
+# npm install. Exact counts: 16 tests, 16 mutants KILLED.
 on:
   pull_request:
     branches: [main]
@@ -11,7 +11,6 @@ on:
       - 'scripts/p18-dispatch.test.ts'
       - 'scripts/p18-dispatch.mutants.mjs'
       - 'package.json'
-      - 'package-lock.json'
       - '.github/workflows/p18-dispatch-gate.yml'
 
 permissions:
@@ -30,15 +29,14 @@ jobs:
           node-version: '24'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Tests (exact count 21)
+      - name: Tests (exact count 16)
         run: |
           set -euo pipefail
           npm run test:p18-dispatch 2>&1 | tee p18.txt
-          grep -qx "p18-dispatch: 21 tests passed" p18.txt
+          grep -qx "p18-dispatch: 16 tests passed" p18.txt
           grep -E "^P18_CPU_PER_INVOCATION_MS=" p18.txt | sed 's/^/::notice title=P18_CPU::/'
-          grep -E "^P18_TOP_OF_HOUR_CPU_MS=" p18.txt | sed 's/^/::notice title=P18_CPU_HOURLY::/'
-      - name: Mutants (21, all KILLED)
+      - name: Mutants (16, all KILLED)
         run: |
           set -euo pipefail
           npm run mutants:p18-dispatch 2>&1 | tee mut.txt
-          grep -q '"mutants":21,"KILLED":21,"other":\[\]' mut.txt
+          grep -q '"mutants":16,"KILLED":16,"other":\[\]' mut.txt

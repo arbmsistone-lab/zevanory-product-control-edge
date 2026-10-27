@@ -2,14 +2,17 @@ name = "zevanory-product-control-portable"
 main = "worker.ts"
 compatibility_date = "2026-09-19"
 
-[observability]
-enabled = true
-head_sampling_rate = 1
-
 routes = [
   { pattern = "controle.zevanory.api.br", custom_domain = true },
   { pattern = "zevanory.api.br/control*", zone_name = "zevanory.api.br" }
 ]
+
+# Workers Logs samples 5% of invocations. This limits request metadata retained by
+# Cloudflare while preserving enough operational traces for diagnosis; P18 alerts
+# continue to use KV and do not depend on a sampled log line.
+[observability]
+enabled = true
+head_sampling_rate = 0.05
 
 [assets]
 directory = "../dist"
