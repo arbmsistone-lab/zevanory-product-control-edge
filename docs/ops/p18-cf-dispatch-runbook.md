@@ -4,8 +4,10 @@ AVAL Sol 253/254. O agendador do GitHub está estrangulado em `arbmsistone-lab/z
 (`p18-external-monitor.yml`, cron `2-59/5`) não rodou nenhuma vez desde a ativação (15:29 UTC, 25/10). Um workflow `*/15`
 do mesmo repositório rodou só às 01:25, 06:26 e 11:52 UTC. Por isso o cron **existente** deste Worker de controle passa a
 pedir `workflow_dispatch` do monitor a cada 5 min. O agendador do GitHub continua como caminho extra, de melhor esforço.
-
-Nada aqui declara conformidade com as seções 9 ou 11 do Roteiro. Essa conformidade só pode ser afirmada depois dos ensaios da seção 5, com evidência.
+Nada aqui resolve o R4 nem declara conformidade com as seções 9 ou 11 do Roteiro. Um disparo feito pelo mesmo cron da
+Cloudflare seria apenas reforço do caminho primário: ele também para numa queda total da Cloudflare. A segunda via
+independente continua pendente de decisão do Sol e do proprietário; as opções estão em
+[`p18-segunda-via-independente.md`](./p18-segunda-via-independente.md).
 
 ## 1. O que roda, e onde
 
@@ -54,24 +56,30 @@ completa da Cloudflare **não** é vista pelo Worker. Quem a detecta são as exe
    (Metadata: read é obrigatório e automático), com validade de 90 dias ou menos. Fica guardado como segredo do Worker
    `P18_DISPATCH_TOKEN`. Claude nunca vê o valor (seção 4).
 5. **Prova operacional.** Ensaios na seção 5. O que é testável no CI está em `scripts/p18-dispatch.test.ts` (16 testes)
-   e `scripts/p18-dispatch.mutants.mjs` (15 mutantes, todos KILLED), no gate `p18-dispatch-gate.yml`, e no lado mirror
+   e `scripts/p18-dispatch.mutants.mjs` (16 mutantes, todos KILLED), no gate `p18-dispatch-gate.yml`, e no lado mirror
    (`tests/b0-baseline.test.mjs` com 24 testes e 33 mutantes).
 
 ## 3. Orçamento por invocação (Workers Free)
 
 | Recurso | Limite Free ([Workers limits](https://developers.cloudflare.com/workers/platform/limits/), [KV limits](https://developers.cloudflare.com/kv/platform/limits/)) | P18 por invocação |
 |---|---|---|
-| CPU | 10 ms por Cron Trigger | ~0,15 ms medido em Node 22 com rede falsa (`P18_CPU_PER_INVOCATION_MS`). Medir ao vivo no painel (ensaio R7) |
+| CPU | 10 ms por Cron Trigger | valor medido e impresso por `P18_CPU_PER_INVOCATION_MS` no gate com rede/KV falsos; registrar o número real de cada execução. O ensaio local não substitui p50/p99 no workerd (R7) |
 | Subrequisições | 50 | **no máximo 2** (pedido + batimento), com teto rígido no código. Sem retentativa: a próxima janela é a retentativa |
 | Conexões simultâneas | 6 | 2, em paralelo. As tarefas antigas rodam em sequência (no máximo 1 conexão) |
 | Operações KV | 1000 | 1 leitura + até 2 gravações |
 | Gravações KV/dia (conta, compartilhado) | 1000 | nominal 24/dia (checkpoint horário). Teto rígido de 6 por hora (144/dia) mesmo com as duas verificações oscilando |
 | Tempo de parede | 15 min por cron | orçamento de 10 s: pedido 8 s e batimento 5 s, com timer próprio que vale mesmo se a dependência ignorar o abort |
 | Cron Triggers | 5 por conta | **nenhum novo**: o mesmo trigger passa de `*/15` para `*/5`. A conta continua com 4 (3 do central + 1 deste) |
+| Workers Logs | sujeito aos limites do plano | habilitado com `head_sampling_rate = 0.05`. A amostra reduz metadados de requisição retidos; não é canal de alerta nem prova de cobertura integral |
 
 As tarefas antigas (robô comercial, publicador Meta, atividade compartilhada) continuam só nos minutos 0, 15, 30 e 45
 (`isLegacyDutyMinute`). Nesses minutos o P18 roda no próprio `ctx.waitUntil` e não é aguardado por elas. O teste S1 e o
 mutante M09 provam isso com o `scheduled()` real e a rede do P18 travada.
+O teste de configuração usa `tomllib`, não correspondência textual: prova que o TOML é válido, que `routes` continua
+como array no nível raiz e que a amostragem está configurada. A linha estruturada `p18_ext_trigger` contém somente
+janela, códigos/estados HTTP, identificadores de execução, idades/durações, contagens e estado do KV. Não contém token,
+headers, corpo da requisição, e-mail ou conteúdo de vendas. Outros `console.*` e metadados de invocação já existentes
+no Worker também podem entrar na amostra; por isso a taxa não é 100% e o acesso aos logs deve seguir o acesso ao Worker.
 
 ## 4. Passos do proprietário, em ordem
 
@@ -97,7 +105,8 @@ mutante M09 provam isso com o `scheduled()` real e a rede do P18 travada.
    25/10 anotou "reconciler paused". Portanto o merge **não** pede publicação. O deploy só acontece com a autorização do
    proprietário: pelo publicador canônico (`zpc-control-worker-deploy.yml`, Environment protegido) ou ao liberar a
    trava, o que publicaria todo o `main` à frente da produção. A mudança do cron leva até 15 min para propagar.
-5. **Conferir.** Na primeira janela após o deploy, a linha `p18_ext_trigger` no log (Workers Logs ou `wrangler tail`)
+5. **Conferir.** Antes da primeira janela após o deploy, iniciar `npx wrangler tail zevanory-product-control-portable
+   --format json` e salvar a sessão completa da janela. A linha `p18_ext_trigger` no **tail em tempo real**
    deve mostrar `dispatch.outcome=accepted` e um `run_id`. No GitHub deve aparecer a execução
    `P18 monitor p18w-…` com `event=workflow_dispatch`. Em seguida, `p18/heartbeat.json` e `p18/cf-dispatch.json` devem
    existir no ramo `evidence/b0-baseline`. O primeiro alerta "batimento inexistente", se chegar antes da primeira
@@ -117,6 +126,13 @@ mutante M09 provam isso com o `scheduled()` real e a rede do P18 travada.
 
 Para cada ensaio, registrar t_falha (início provocado), t_detecção (`at` do `zpc-alert:v1:*` e linha `p18_ext_trigger`),
 t_alerta (chegada do e-mail do resumo, ou criação da issue) e t_recuperação. **Latência real = t_alerta − t_falha.**
+Workers Logs persiste só uma amostra de 5% e, portanto, **não é fonte de completude** destes ensaios. Em R1 e R3,
+abrir `wrangler tail --format json` antes de provocar a falha, confirmar uma invocação normal no fluxo, salvar a
+sessão até a recuperação e anexar o arquivo bruto. Em R6 e R7 (24 h), o proprietário deve autorizar um deploy
+temporário com `head_sampling_rate = 1`, registrar o SHA/configuração e restaurar 0,05 ao terminar; sem isso, as
+linhas persistidas servem apenas como exemplos e o ensaio fica **BLOCKED**, nunca aprovado por extrapolação.
+`invocation_logs=false` foi avaliado e rejeitado: reduziria contexto de exceção e desfecho necessário à investigação;
+os invocation logs permanecem habilitados, enquanto a retenção normal continua limitada pela amostragem de 5%.
 Limite esperado pelo desenho: detecção em até 5 min (mais até 5 min de cache do raw para o batimento), e e-mail no
 próximo resumo horário do central (até 60 min). Ou seja, o canal Cloudflare leva **até cerca de 70 min**, não 10 min. A
 seção 9 (10 min) trata do alerta de vendas fora do ar emitido pelo próprio monitor (issue `[P18]`), não deste meta-alerta.
@@ -124,13 +140,13 @@ seção 9 (10 min) trata do alerta de vendas fora do ar emitido pelo próprio mo
 | # | Ensaio | Como provocar (proprietário) | Evidência produzida | Aprovação |
 |---|---|---|---|---|
 | R0 | Canal de alerta ponta a ponta | Primeiro deploy, antes do primeiro batimento | `zpc-alert:v1:*` (`channel_down`, canal `p18-monitor-externo`), e-mail do resumo, `owner_alert_sent` no ledger | E-mail recebido. Latência medida |
-| R1 | GitHub recusa (401) | Trocar o segredo por um valor inválido por 40 min e depois restaurar | Estado `checks.dispatch=failing/auth`, alerta, e-mail, status de falha em *Past Cron Events*, linha de recuperação 30 min ou mais após o alerta | Alerta e recuperação recebidos. Latências registradas |
+| R1 | GitHub recusa (401) | Trocar o segredo por um valor inválido por 40 min e depois restaurar | Sessão completa de `wrangler tail` iniciada antes da falha, estado `checks.dispatch=failing/auth`, alerta, e-mail, status de falha em *Past Cron Events*, linha de recuperação 30 min ou mais após o alerta | Alerta e recuperação recebidos. Latências registradas; Workers Logs amostrado não substitui o tail |
 | R2 | Atraso do runner | Natural, 24 h de operação | `runs-*.jsonl`: `dispatch_to_start_s`. Campo diário `alert_latency.max/p95_dispatch_to_start_s`, `dispatched_runs`, `duplicate_runs` | p95 publicado. Lacuna entre sondagens (`max_check_gap_s`) menor que 10 min para a seção 9 |
-| R3 | Batimento ausente (204 sem monitoramento) | Desativar o workflow `P18 external monitor` (Actions → ⋯ → Disable) por 25 min | Linha `p18_ext_trigger` com o HTTP **real** do pedido para workflow desativado (a doc não fixa o código; registrar o observado) e `heartbeat=STALE` após 15 min. Alerta e e-mail | Alerta emitido com o batimento velho, mesmo se o pedido voltar 2xx |
-| R4 | Cloudflare parada e recuperação | Remover o Cron Trigger do Worker no painel por 30 min (ou deploy com `crons=[]`) e depois restaurar | Sem linhas `p18_ext_trigger`. Com o vigia em `ACTIVE` (variável `true` e 1ª prova válida já registrada em `cf_first_proof_at`), a issue `[P18-VIGIA] Gatilho Cloudflare parado` **quando o vigia rodar** (agendador estrangulado: pode levar horas, então registrar o real). A issue fecha na volta | Issue aberta e fechada. Latência registrada, mesmo que alta (vira risco residual) |
+| R3 | Batimento ausente (204 sem monitoramento) | Desativar o workflow `P18 external monitor` (Actions → ⋯ → Disable) por 25 min | Sessão completa de `wrangler tail` iniciada antes da falha; linha `p18_ext_trigger` com o HTTP **real** do pedido para workflow desativado (a doc não fixa o código; registrar o observado) e `heartbeat=STALE` após 15 min. Alerta e e-mail | Alerta emitido com o batimento velho, mesmo se o pedido voltar 2xx; Workers Logs amostrado não basta |
+| R4 | Cloudflare parada e recuperação | Remover o Cron Trigger do Worker no painel por 30 min (ou deploy com `crons=[]`) e depois restaurar | Sem linhas `p18_ext_trigger`. Com o vigia em `ACTIVE`, a issue `[P18-VIGIA] Gatilho Cloudflare parado` só aparece **quando o schedule do GitHub rodar**; o atraso observado de 5–7 h permanece risco aberto | Este PR não aprova R4. Só uma segunda via independente, ativada e ensaiada, pode estabelecer um teto |
 | R5 | GitHub indisponível ou limite | Sem provocação segura. Observar ocorrências reais de 5xx, 429 e timeout | Linhas com `unavailable`, `rate_limited` (com `retry_after_s`) e `timeout`, e os alertas correspondentes | Registro de ao menos uma ocorrência real, ou BLOCKED com motivo |
-| R6 | Orçamento de KV | 24 h de operação | Linhas `{"kvw":"p18-ext:v1:state"...}` e `{"kvw":"zpc-alert:v1"...}` com `src: panel:cron` | 24/dia ou menos sem falhas, 6/h ou menos sempre |
-| R7 | CPU e duração | 24 h de operação | Painel do Worker → Metrics → CPU time do cron (p50/p99) antes e depois. Campo `ms` da linha | p99 menor que 10 ms. Tarefas antigas sem regressão nos minutos 0/15/30/45 |
+| R6 | Orçamento de KV | 24 h de operação com amostragem temporária 1 autorizada e registrada | Conjunto completo das linhas `{"kvw":"p18-ext:v1:state"...}` e `{"kvw":"zpc-alert:v1"...}` com `src: panel:cron`, mais leituras inicial/final do estado. Com 0,05, marcar BLOCKED | 24/dia ou menos sem falhas, 6/h ou menos sempre |
+| R7 | CPU e duração | 24 h de operação com amostragem temporária 1 autorizada e registrada | Painel do Worker → Metrics → CPU time do cron (p50/p99) antes e depois; conjunto completo do campo `ms`. Com 0,05, o painel ainda prova CPU, mas a correlação por invocação fica BLOCKED | p99 menor que 10 ms. Tarefas antigas sem regressão nos minutos 0/15/30/45 |
 
 O CI prova o comportamento com rede e KV falsos: cada código HTTP, a janela, a idempotência, o orçamento de tempo, o
 teto de gravações e o `scheduled()` real. Ele **não** prova entrega de e-mail, propagação do KV, cache do raw, latência
@@ -146,7 +162,8 @@ do GitHub nem limites reais da Cloudflare. Isso fica para os ensaios acima.
   `category`. O resumo do central filtra por categoria e **apaga sem enviar**. Fora do escopo deste PR, mas registrado.
 - `raw.githubusercontent.com` responde com `Cache-Control: max-age=300` e ignora query string (medido em 25/10). A idade
   do batimento vem do conteúdo, que pode estar até cerca de 5 min atrasado.
-- Uma queda total da Cloudflare só é vista quando o GitHub roda o vigia, e o agendador está estrangulado.
+- Uma queda total da Cloudflare só é vista quando o GitHub roda o vigia, e o agendador observado está estrangulado
+  (5–7 h). Não existe neste PR teto de ~75 min, solução de R4 ou prova da seção 11.
 - O token fica visível para quem pode editar o Worker. A validade de 90 dias ou menos limita a janela de abuso, e o
   escopo (Actions: write em um único repositório) limita o dano a disparar ou cancelar workflows desse repositório.
 - Se o estado não for gravado durante a trava de 30 min entre alertas, `since` é aproximado. O tempo da falha fica na

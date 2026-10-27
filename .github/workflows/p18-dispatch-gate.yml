@@ -2,7 +2,7 @@ name: P18 dispatch gate
 
 # AVAL Sol 253/254: behavioural tests (mocked fetch/KV, real scheduled()) and mutants of the P18 external trigger
 # (cf-worker/p18-dispatch.ts). Pull request only: never fires on merge, no secrets, no network beyond checkout and
-# npm install. Exact counts: 16 tests, 15 mutants KILLED.
+# npm install. Exact counts: 16 tests, 16 mutants KILLED.
 on:
   pull_request:
     branches: [main]
@@ -35,8 +35,8 @@ jobs:
           npm run test:p18-dispatch 2>&1 | tee p18.txt
           grep -qx "p18-dispatch: 16 tests passed" p18.txt
           grep -E "^P18_CPU_PER_INVOCATION_MS=" p18.txt | sed 's/^/::notice title=P18_CPU::/'
-      - name: Mutants (15, all KILLED)
+      - name: Mutants (16, all KILLED)
         run: |
           set -euo pipefail
           npm run mutants:p18-dispatch 2>&1 | tee mut.txt
-          grep -q '"mutants":15,"KILLED":15,"other":\[\]' mut.txt
+          grep -q '"mutants":16,"KILLED":16,"other":\[\]' mut.txt

@@ -3,10 +3,12 @@
 // No network: every fetch is a fake; a test that reaches the real network fails (globalThis.fetch is replaced).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import {
   ALERT_CATEGORY, ALERT_CHANNEL, ALERT_PREFIX, CHECKPOINT_MS, HEARTBEAT_SCHEMA, MAX_FETCH_SUBREQUESTS, P18_DISPATCH_URL, P18_HEARTBEAT_URL,
   P18_REF, STATE_KEY, WRITE_CAP_PER_HOUR, classifyDispatch, decide, dispatchMonitor, isLegacyDutyMinute, readHeartbeat,
-  runP18ExternalTrigger, windowIdOf, type DispatchResult, type HeartbeatResult, type P18State,
+  runP18ExternalTrigger, windowIdOf,
+  type DispatchResult, type HeartbeatResult, type P18State,
 } from '../cf-worker/p18-dispatch.ts';
 
 const TOKEN = 'github_pat_FAKE_TEST_VALUE_0123456789abcdef_NOT_A_REAL_TOKEN';
@@ -314,9 +316,27 @@ await test('S1 real scheduled(): P18 every */5 in its own waitUntil; legacy duti
 });
 
 await test('S2 config: one Cron Trigger, */5; worker passes scheduledTime and never awaits P18 before the duties', () => {
-  const toml = readFileSync(new URL('../cf-worker/wrangler.toml', import.meta.url), 'utf8');
+  const toml = readFileSync(new URL('../cf-worker/wrangler.toml', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
   assert.match(toml, /\[triggers\]\ncrons = \["\*\/5 \* \* \* \*"\]\n/, 'S2-single-trigger');
   assert.doesNotMatch(toml, /^\s*P18_DISPATCH_TOKEN\s*=/m, 'S2-token-never-in-config');
+  const parsed = spawnSync('python', ['-c', [
+    'import json,sys,tomllib',
+    'd=tomllib.loads(sys.stdin.buffer.read().decode())',
+    'print(json.dumps({"routes":d.get("routes"),"observability":d.get("observability")}))',
+  ].join(';')], { input: toml, encoding: 'utf8' });
+  assert.equal(parsed.status, 0, 'S2-tomllib-parses ' + parsed.stderr);
+  const config = JSON.parse(parsed.stdout);
+  assert.ok(Array.isArray(config.routes), 'S2-routes-root-array');
+  assert.equal(config.routes.length, 2, 'S2-routes-root-count');
+  assert.deepEqual(config.observability, { enabled: true, head_sampling_rate: 0.05 }, 'S2-workers-logs-sampled');
+  const runbook = readFileSync(new URL('../docs/ops/p18-cf-dispatch-runbook.md', import.meta.url), 'utf8');
+  assert.match(runbook, /Workers Logs persiste só uma amostra de 5%[\s\S]*não é fonte de completude/, 'S2-sampled-logs-not-proof');
+  assert.match(runbook, /wrangler tail --format json[\s\S]*head_sampling_rate = 1/, 'S2-complete-trial-evidence');
+  assert.match(runbook, /invocation_logs=false[^\n]*avaliado e rejeitado/, 'S2-invocation-logs-decision');
+  const independent = readFileSync(new URL('../docs/ops/p18-segunda-via-independente.md', import.meta.url), 'utf8');
+  assert.match(independent, /baixa atividade por 7 dias podem ser pausados/, 'S2-supabase-free-pause');
+  assert.match(independent, /Uso comercial é permitido[\s\S]*proibido revender/, 'S2-uptimerobot-commercial-terms');
+  assert.match(independent, /apenas o cron parar[\s\S]*não detecta a falha/, 'S2-url-monitor-misses-cron-only');
   const src = readFileSync(new URL('../cf-worker/worker.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /await runP18ExternalTrigger|await p18\b/, 'S2-not-awaited');
   const mod = readFileSync(new URL('../cf-worker/p18-dispatch.ts', import.meta.url), 'utf8');
