@@ -1,0 +1,41 @@
+name: Sales lock publishers gate
+
+# Trava de vendas nos publicadores T2/T3 (cf-worker/sales-lock.ts + cf-worker/worker.ts): testes comportamentais
+# (rotas HMAC reais do Worker, rede e CORE_WORKER simulados) e mutantes. Só pull request: nunca dispara no merge,
+# sem segredos, sem rede além de checkout e npm install. Contagem exata: 18 casos, 17 mutantes KILLED.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cf-worker/**'
+      - 'scripts/sales-lock-publishers.test.ts'
+      - 'scripts/sales-lock-publishers.mutants.mjs'
+      - 'package.json'
+      - '.github/workflows/sales-lock-publishers-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sales-lock-publishers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Tests (exact count 18)
+        run: |
+          set -euo pipefail
+          npm run test:sales-lock-publishers 2>&1 | tee sl.txt
+          grep -q '"sales_lock_publishers":"PASS","cases":18,' sl.txt
+      - name: Mutants (17, all KILLED)
+        run: |
+          set -euo pipefail
+          npm run mutants:sales-lock-publishers 2>&1 | tee mut.txt
+          grep -q '"mutants":17,"KILLED":17,"other":\[\]' mut.txt

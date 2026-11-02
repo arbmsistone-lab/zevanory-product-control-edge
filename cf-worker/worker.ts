@@ -5,6 +5,7 @@ import { isLegacyDutyMinute, runP18ExternalTrigger } from './p18-dispatch.ts';
 import { buildOwnerAlertEntry } from './owner-alert-entry.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
 import { globalTrustResponse } from './global-trust.ts';
+import { creativePublicText, noteSalesLockHold, readCoreSalesOpen, salesLockViolations } from './sales-lock.ts';
 import { COMMERCIAL_AUTH_PROBE_PURPOSE, CREATIVE_FACTORY_PURPOSE, CREATIVE_UPLOAD_PURPOSE, operatorTokenMigration, verifyCommercialSignature } from './commercial-hmac.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
@@ -236,15 +237,23 @@ async function t2SupportFact(slug: string, question: string) {
   return { answered: true, product: slug, answer, sources: [productUrl], catalog: { name, description, price } };
 }
 
-async function t2ValidateCaption(caption: string, contentFact: any, priceFact: any, productUrl: string) {
+// Trava de vendas (fail-closed): só com salesOpen === true a legenda PRECISA do preço de tabela; fechada
+// (padrão, inclusive status desconhecido) a legenda é RECUSADA se tiver preço, link de checkout ou chamada de compra.
+async function t2ValidateCaption(caption: string, contentFact: any, priceFact: any, productUrl: string, salesOpen = false) {
+  const open = salesOpen === true;
   const required = [
     String(contentFact?.catalog?.name || ''),
     String(contentFact?.catalog?.description || ''),
-    'R$ ' + String(priceFact?.catalog?.price || '') + ',00',
+    ...(open ? ['R$ ' + String(priceFact?.catalog?.price || '') + ',00'] : []),
     productUrl,
   ];
   if (required.some(value => !value || !caption.includes(value))) {
     throw new Error('t2_catalog_caption_mismatch');
+  }
+  if (!open) {
+    const violations = salesLockViolations(caption + '\n' + productUrl);
+    if (violations.length) throw new Error('t2_caption_sales_closed_' + violations.join('_'));
+    return { ok: true, source: 'published-sales-page', checks: ['name', 'description', 'url', 'sales-closed:no-price-no-checkout'] };
   }
   return { ok: true, source: 'published-sales-page', checks: ['name', 'description', 'price', 'url'] };
 }
@@ -309,12 +318,13 @@ async function t2StoreComposedCreative(env: Record<string, any>, slug: string, i
   const bytes = new Uint8Array(image);
   const size = t2JpegSize(bytes);
   if (!size || size.width !== 1080 || size.height !== 1080) throw new Error('t2_composed_image_must_be_1080_jpeg');
-  const [contentFact, priceFact] = await Promise.all([t2SupportFact(slug, 'conteúdo'), t2SupportFact(slug, 'preço')]);
+  const salesOpen = await readCoreSalesOpen(env);
+  const [contentFact, priceFact] = await Promise.all([t2SupportFact(slug, 'conteúdo'), salesOpen ? t2SupportFact(slug, 'preço') : Promise.resolve(null)]);
   const productUrl = 'https://vendas.zevanory.api.br/' + slug;
   const name = String(contentFact.catalog.name);
   const hook = t2AngleHook(slug, angle).hook;
-  const caption = (hook ? hook + '\n\n' : '') + String(contentFact.answer).trim() + '\n\n' + String(priceFact.answer).trim() + '\n' + productUrl;
-  await t2ValidateCaption(caption, contentFact, priceFact, productUrl);
+  const caption = (hook ? hook + '\n\n' : '') + String(contentFact.answer).trim() + '\n\n' + (salesOpen && priceFact ? String(priceFact.answer).trim() + '\n' : '') + productUrl;
+  await t2ValidateCaption(caption, contentFact, priceFact, productUrl, salesOpen);
   if (!env.T2_CREATIVE_ASSETS?.put) throw new Error('t2_asset_kv_binding_missing');
   const now = new Date().toISOString();
   const assetId = crypto.randomUUID();
@@ -380,16 +390,17 @@ async function runT2CreativeFactory(
     const ready = existing.find((item: any) => item?.sourceKey === sourceKey && item?.status === 'approval' && /^https:\/\//.test(String(item?.imageUrl || '')));
     if (ready && !forceRegenerate) { skipped.push(slug); continue; }
 
+    const salesOpen = await readCoreSalesOpen(env);
     const [contentFact, priceFact] = await Promise.all([
       t2SupportFact(slug, 'conteúdo'),
-      t2SupportFact(slug, 'preço'),
+      salesOpen ? t2SupportFact(slug, 'preço') : Promise.resolve(null),
     ]);
-    const productUrl = [...(contentFact.sources || []), ...(priceFact.sources || [])].find((value: unknown) => typeof value === 'string' && String(value).includes('/' + slug));
+    const productUrl = [...(contentFact.sources || []), ...(priceFact?.sources || [])].find((value: unknown) => typeof value === 'string' && String(value).includes('/' + slug));
     if (!productUrl) throw new Error('t2_product_url_missing_' + slug);
     const name = String(contentFact.answer).split(':')[0].trim();
     if (!name) throw new Error('t2_product_name_missing_' + slug);
-    const caption = String(contentFact.answer).trim() + '\n\n' + String(priceFact.answer).trim() + '\n' + String(productUrl);
-    await t2ValidateCaption(caption, contentFact, priceFact, String(productUrl));
+    const caption = String(contentFact.answer).trim() + '\n\n' + (salesOpen && priceFact ? String(priceFact.answer).trim() + '\n' : '') + String(productUrl);
+    await t2ValidateCaption(caption, contentFact, priceFact, String(productUrl), salesOpen);
 
     const visualConceptBySlug: Record<string, string> = {
       'ia-na-pratica': 'abstract luminous neural network made only of glowing blue nodes, flowing light paths and geometric depth',
@@ -553,10 +564,29 @@ async function metaPublishStatus(env: Record<string, any>) {
 }
 
 async function runT3Publisher(env: Record<string, any>, limit = 1) {
+  // Trava de vendas (fail-closed) lida ANTES de qualquer chamada à Meta: fechada ou desconhecida, todo item
+  // aprovado cuja legenda/link tenha preço, checkout (/comprar, Hotmart) ou chamada de compra fica na fila
+  // (status 'approved' intacto, sem 'failed' nem 'published') e o dono recebe um aviso por dia.
+  const salesOpen = await readCoreSalesOpen(env);
   const listed = await t2StoreCall(env, { op: 'list', bucket: T2_CREATIVE_BUCKET, limit: 1000 });
-  const items = (Array.isArray(listed?.items) ? listed.items : [])
+  const approved = (Array.isArray(listed?.items) ? listed.items : [])
     .filter((item: any) => item?.kind === 'creative' && item?.status === 'approved' && !item?.publishedAt && /^https:\/\//.test(String(item?.imageUrl || '')));
-  if (!items.length) return { ok: true, published: [], pending: 0 };
+  const held = salesOpen ? [] : approved
+    .map((item: any) => ({ id: item.id, reasons: salesLockViolations(creativePublicText(item)) }))
+    .filter((h: { reasons: string[] }) => h.reasons.length);
+  const heldIds = new Set(held.map((h: { id: unknown }) => h.id));
+  const items = approved.filter((item: any) => !heldIds.has(item.id));
+  if (held.length) {
+    await noteSalesLockHold(env, held, summary => recordCommercialActivity(env, 'event', {
+      title: 'Publicação Meta retida: vendas fechadas',
+      detail: summary,
+      status: 'blocked',
+      channel: 'instagram,facebook',
+      sourceKey: 't3-sales-lock-hold:' + new Date().toISOString().slice(0, 10),
+      evidence: ['sales-lock:closed', ...held.map((h: { id: unknown }) => 'held:' + String(h.id))].slice(0, 20),
+    }));
+  }
+  if (!items.length) return { ok: true, published: [], pending: 0, held: held.length, salesOpen };
   const targets = await metaTargets(env);
   const published: any[] = [];
   for (const item of items.slice(0, limit)) {
@@ -609,7 +639,7 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
       evidence: ['instagram_media_id:' + igPost.id, 'facebook_post_id:' + (fbPost.post_id || fbPost.id), 'approved-by-owner', now],
     });
   }
-  return { ok: true, published, pending: items.length - published.length };
+  return { ok: true, published, pending: items.length - published.length, held: held.length, salesOpen };
 }
 
 // T4 — Inbound capture on Instagram/Facebook: grounded replies to comments and DMs. No cold outreach:
