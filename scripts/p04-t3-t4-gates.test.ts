@@ -60,6 +60,9 @@ function makeEnv({open=true, validCert=true, revokeAt=Number.POSITIVE_INFINITY, 
    return Response.json({error:'missing'},{status:404});
   }},
   P06_META_RESERVATION_SERVICE:{async fetch(url:string,init:RequestInit){
+   if(url==='https://zevanory.api.br/api/p06/meta/legacy-seed/status')return Response.json({
+     contract:'p06-d7-legacy-seed/v1',status:'ready',uniqueCount:349,recordCount:368,
+     manifestSha256:'16d2c00dfbf85e31d61457c95c4be1bad6bff46e108b2068079d5bd780393a8d'});
    assert.equal(url,'https://zevanory.api.br/api/p06/meta/reserve');
    const b=JSON.parse(String(init.body));
    assert.equal(b.mediaSha256,hash(IMAGE));
