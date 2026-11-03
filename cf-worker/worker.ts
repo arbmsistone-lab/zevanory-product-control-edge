@@ -603,6 +603,25 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
   if (!p06Service || typeof p06Service.fetch !== 'function') {
     return { ok: true, published: [], pending: 0, held: held.length + p04Held.length + publishable.length, salesHeld: held.length, p04Held, salesOpen, p04Certified: true, reason: 'p06_atomic_reservation_missing' };
   }
+  // NC-006/A04: a reservation service MUST prove it imported the D7 history first.
+  // 349 unique hashes / 368 records / 11 duplicate groups. Never clear the legacy seed
+  // during retry or treat an unseeded new service as safe for publishing.
+  try {
+    const seedResponse = await p06Service.fetch('https://zevanory.api.br/api/p06/meta/legacy-seed/status', {
+      method: 'GET', headers: { accept: 'application/json', 'cache-control': 'no-store' },
+      signal: AbortSignal.timeout(5000),
+    });
+    const seed = seedResponse?.ok ? await seedResponse.json() : null;
+    if (seed?.contract !== 'p06-d7-legacy-seed/v1' ||
+        seed?.status !== 'ready' || seed?.uniqueCount !== 349 || seed?.recordCount !== 368 ||
+        seed?.manifestSha256 !== '16d2c00dfbf85e31d61457c95c4be1bad6bff46e108b2068079d5bd780393a8d') {
+      return { ok:true, published:[], pending:0, held:held.length + p04Held.length + publishable.length,
+        salesHeld:held.length, p04Held, salesOpen, p04Certified:true, reason:'p06_d7_legacy_seed_unverified' };
+    }
+  } catch {
+    return { ok:true, published:[], pending:0, held:held.length + p04Held.length + publishable.length,
+      salesHeld:held.length, p04Held, salesOpen, p04Certified:true, reason:'p06_d7_legacy_seed_unavailable' };
+  }
   const authorized: { item: any; digest: string; reservationId: string }[] = [];
   for (const candidate of publishable.slice(0, limit)) {
     // The reservation binding must implement an atomic claim by MEDIA HASH across all
