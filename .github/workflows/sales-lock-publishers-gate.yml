@@ -9,6 +9,7 @@ on:
     paths:
       - 'cf-worker/**'
       - 'scripts/sales-lock-publishers.test.ts'
+      - 'scripts/p04-t3-t4-gates.test.ts'
       - 'scripts/sales-lock-publishers.mutants.mjs'
       - 'package.json'
       - '.github/workflows/sales-lock-publishers-gate.yml'
@@ -34,6 +35,11 @@ jobs:
           set -euo pipefail
           npm run test:sales-lock-publishers 2>&1 | tee sl.txt
           grep -q '"sales_lock_publishers":"PASS","cases":18,' sl.txt
+      - name: NC-006 T3/T4 valid certificate, revocation and fail-closed
+        run: |
+          set -euo pipefail
+          npm run test:p04-t3-t4-gates 2>&1 | tee nc006.txt
+          grep -q '"nc006_t3_t4":"PASS","cases":5,' nc006.txt
       - name: Mutants (17, all KILLED)
         run: |
           set -euo pipefail
