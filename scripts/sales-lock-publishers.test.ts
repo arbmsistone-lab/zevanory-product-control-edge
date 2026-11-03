@@ -110,6 +110,7 @@ try {
     const r = await tick(env, items);
     assert.equal(r.status, 200, mode);
     assert.equal(r.body.held, 5, mode + ': todos os itens comerciais retidos');
+    assert.equal(r.body.salesHeld, 5, mode + ': trava comercial comprovada independente de P04');
     assert.equal(r.body.salesOpen, false, mode);
     assert.deepEqual(r.body.published, [], mode);
     assert.deepEqual(r.log.graph, [], mode + ': nenhuma chamada à Meta com vendas fechadas');
@@ -128,23 +129,24 @@ try {
     const r = await tick(baseEnv('closed', kv), [creative('c-preco', PRICE_CAPTION)]);
     assert.equal(r.body.held, 1); assert.equal(alerts(r.log).length, 0); results['fechada:kv-dedupe'] = 'PASS';
   }
-  // 2. Fechada: item limpo (sem preço/checkout/CTA) segue publicando: o portão é seletivo.
+  // 2. Fechada: mesmo conteúdo limpo é retido se P04 não está certificado.
   {
     resetSalesLockHoldMemo();
     const r = await tick(baseEnv('closed'), [creative('c-limpo', CLEAN_CAPTION)]);
-    assert.equal(r.body.held, 0); assert.equal(r.body.published.length, 1);
-    assert.ok(r.log.graph.some(g => g.endsWith('/photos')) && r.log.graph.some(g => g.endsWith('/media_publish')));
-    assert.ok(creativeWrites(r.log).some(u => u.p_items[0].record.status === 'published'));
-    results['fechada:item-limpo-publica'] = 'PASS';
+    assert.equal(r.body.held, 1); assert.equal(r.body.salesHeld, 0); assert.equal(r.body.published.length, 0);
+    assert.deepEqual(r.log.graph, []); assert.deepEqual(creativeWrites(r.log), []);
+    assert.equal(r.body.reason, 'p04_uncertified');
+    results['fechada:item-limpo-retido-sem-p04'] = 'PASS';
   }
-  // 3. Aberta: item com preço publica normalmente (comportamento atual preservado).
+  // 3. Aberta: certificado P04 ausente continua segurando também itens com preço.
   {
     resetSalesLockHoldMemo();
     const env = baseEnv('open');
     const r = await tick(env, [creative('c-preco', PRICE_CAPTION)]);
-    assert.equal(r.body.salesOpen, true); assert.equal(r.body.held, 0); assert.equal(r.body.published.length, 1);
+    assert.equal(r.body.salesOpen, true); assert.equal(r.body.held, 1); assert.equal(r.body.published.length, 0);
+    assert.deepEqual(r.log.graph, []); assert.equal(r.body.reason, 'p04_uncertified');
     assert.equal(alerts(r.log).length, 0); assert.equal(env.CORE_WORKER.calls, 1);
-    results['aberta:publica-com-preco'] = 'PASS';
+    results['aberta:retido-sem-p04'] = 'PASS';
   }
 
   // 4. T2 legenda: rota real de upload do criativo composto.
