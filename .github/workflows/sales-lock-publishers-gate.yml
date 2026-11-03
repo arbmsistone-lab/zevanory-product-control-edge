@@ -40,6 +40,11 @@ jobs:
           set -euo pipefail
           npm run test:p04-t3-t4-gates 2>&1 | tee nc006.txt
           grep -q '"nc006_t3_t4":"PASS","cases":5,' nc006.txt
+      - name: NC-006 D7 legacy SHA seed integrity
+        run: |
+          set -euo pipefail
+          npm run test:p06-legacy-seed 2>&1 | tee legacy.txt
+          grep -q '"nc006_legacy_seed":"PASS","records":368,"unique":349,"groups":11,' legacy.txt
       - name: Mutants (17, all KILLED)
         run: |
           set -euo pipefail
