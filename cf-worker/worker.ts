@@ -6,6 +6,7 @@ import { buildOwnerAlertEntry } from './owner-alert-entry.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
 import { globalTrustResponse } from './global-trust.ts';
 import { creativePublicText, noteSalesLockHold, readCoreSalesOpen, salesLockViolations } from './sales-lock.ts';
+import { readP04Certificate, verifyP04RenderedReceipt } from './p04-meta-policy.ts';
 import { COMMERCIAL_AUTH_PROBE_PURPOSE, CREATIVE_FACTORY_PURPOSE, CREATIVE_UPLOAD_PURPOSE, operatorTokenMigration, verifyCommercialSignature } from './commercial-hmac.ts';
 
 const PAGES_ORIGIN = 'https://arbmsistone-lab.github.io/zevanory-product-control-edge';
@@ -145,27 +146,13 @@ function applyPanelSecurityHeaders(headers: Headers) {
 }
 
 async function wakeCommercialRobot(env: Record<string, unknown>) {
-  const secret = String(env.COMMERCIAL_ROBOT_TICK_SECRET || '');
-  const renderBase = String(env.RENDER_BACKEND_URL || '').replace(/\/$/, '');
-  if (secret.length < 32 || !renderBase) throw new Error('commercial_robot_tick_unconfigured');
-  const timestamp = String(Date.now());
-  const nonce = crypto.randomUUID();
-  const signature = await commercialRobotTickSignature(secret, timestamp, nonce);
-  const response = await fetch(renderBase + '/api/commercial/robot/tick', {
-    method: 'POST',
-    headers: {
-      'x-commercial-timestamp': timestamp,
-      'x-commercial-nonce': nonce,
-      'x-commercial-signature': signature,
-      'cache-control': 'no-store',
-    },
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!response.ok) {
-    const detail = (await response.text()).slice(0, 240);
-    throw new Error('commercial_robot_tick_http_' + response.status + '_' + detail);
-  }
-  return await response.json();
+  // D7/NC-005: no autonomous approvals before a *per-item* P04 visual gate is certified.
+  // This conservative hold intentionally prevents the Render approval bot from running,
+  // even if a global certificate becomes available. A future, separately audited change
+  // must implement individualized receipt checks before lifting the hold.
+  const commercialOpen = await readCoreSalesOpen(env as Record<string, any>);
+  const certified = commercialOpen ? await readP04Certificate(env as Record<string, any>) : null;
+  return { ok: true, held: true, reason: !commercialOpen ? 'sales_closed' : !certified ? 'p04_uncertified' : 'p04_robot_individual_receipts_pending' };
 }
 
 
@@ -586,10 +573,68 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
       evidence: ['sales-lock:closed', ...held.map((h: { id: unknown }) => 'held:' + String(h.id))].slice(0, 20),
     }));
   }
-  if (!items.length) return { ok: true, published: [], pending: 0, held: held.length, salesOpen };
+  // NC-005: global Meta hold is independent of the sales text filter. No valid P04 certificate
+  // means ZERO Meta calls, even for a historically approved, apparently clean creative.
+  const p04Certificate = await readP04Certificate(env);
+  if (!p04Certificate) {
+    return { ok: true, published: [], pending: 0, held: held.length + items.length, salesHeld: held.length, salesOpen, p04Certified: false, reason: 'p04_uncertified' };
+  }
+  // Each item must carry an independent receipt bound to the rendered bytes and caption.
+  // A historical 'approved' record without a receipt is never grandfathered in.
+  const previouslyPublished = new Set<string>((Array.isArray(listed?.items) ? listed.items : [])
+    .filter((record: any) => record?.status === 'published')
+    .flatMap((record: any) => (Array.isArray(record?.evidence) ? record.evidence : [])
+      .filter((entry: unknown) => typeof entry === 'string' && /^sha256:[0-9a-f]{64}$/i.test(String(entry)))
+      .map((entry: string) => entry.slice(7).toLowerCase())));
+  const p04Held: { id: unknown; reason: string }[] = [];
+  const publishable: { item: any; digest: string }[] = [];
+  const seen = new Set<string>();
+  for (const item of items) {
+    const proof = await verifyP04RenderedReceipt(env, item, p04Certificate);
+    if (!proof.ok || !proof.mediaSha256) { p04Held.push({ id: item.id, reason: proof.reason }); continue; }
+    const digest = proof.mediaSha256.toLowerCase();
+    if (previouslyPublished.has(digest) || seen.has(digest)) { p04Held.push({ id: item.id, reason: 'p06_duplicate_media_sha256' }); continue; }
+    seen.add(digest); publishable.push({ item, digest });
+  }
+  if (!publishable.length) return { ok: true, published: [], pending: 0, held: held.length + p04Held.length, salesHeld: held.length, p04Held, salesOpen, p04Certified: true };
+  // Atomic reservation service is a *separate mandatory gate*: if absent/not yet certified,
+  // hold the entire queue. KV read/put is NOT cross-POP CAS and cannot replace this service.
+  const p06Service = env?.P06_META_RESERVATION_SERVICE;
+  if (!p06Service || typeof p06Service.fetch !== 'function') {
+    return { ok: true, published: [], pending: 0, held: held.length + p04Held.length + publishable.length, salesHeld: held.length, p04Held, salesOpen, p04Certified: true, reason: 'p06_atomic_reservation_missing' };
+  }
+  const authorized: { item: any; digest: string; reservationId: string }[] = [];
+  for (const candidate of publishable.slice(0, limit)) {
+    // The reservation binding must implement an atomic claim by MEDIA HASH across all
+    // creatives, separate from (and before) any Instagram/Facebook provider POST.
+    // A retry after an ambiguous provider failure must remain pending for reconciliation.
+    try {
+      const rr = await p06Service.fetch('https://zevanory.api.br/api/p06/meta/reserve', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mediaSha256: candidate.digest, creativeId: String(candidate.item.id), destinations: ['instagram', 'facebook'], contract: 'p06-atomic-media-v1' }),
+        signal: AbortSignal.timeout(5000),
+      });
+      const proof = rr?.ok ? await rr.json() : null;
+      if (proof?.contract !== 'p06-atomic-media-v1' || proof?.status !== 'reserved' || typeof proof.reservationId !== 'string' || proof.reservationId.length < 16 || proof.mediaSha256 !== candidate.digest) {
+        p04Held.push({ id: candidate.item.id, reason: 'p06_reservation_unverified' });
+        continue;
+      }
+      authorized.push({ ...candidate, reservationId: proof.reservationId });
+    } catch { p04Held.push({ id: candidate.item.id, reason: 'p06_reservation_error' }); }
+  }
+  if (!authorized.length) return { ok: true, published: [], pending: 0, held: held.length + p04Held.length, salesHeld: held.length, p04Held, salesOpen, p04Certified: true };
+  // Re-evaluate certificate, pixels AND sales lock immediately before each provider POST.
+  // This check intentionally does NOT trust an old 'approved' flag or an earlier preflight.
+  const recheckBeforeMetaPost = async (item: any, expectedDigest: string) => {
+    const currentCertificate = await readP04Certificate(env);
+    if (!currentCertificate || currentCertificate.id !== p04Certificate.id) throw new Error('p04_revoked_or_changed_before_post');
+    const receipt = await verifyP04RenderedReceipt(env, item, currentCertificate);
+    if (!receipt.ok || receipt.mediaSha256 !== expectedDigest) throw new Error('p04_receipt_changed_before_post');
+    if (!await readCoreSalesOpen(env) && salesLockViolations(creativePublicText(item)).length) throw new Error('sales_closed_before_post');
+  };
   const targets = await metaTargets(env);
   const published: any[] = [];
-  for (const item of items.slice(0, limit)) {
+  for (const { item, digest } of authorized) {
     const caption = String(item.detail || '').slice(0, 2100);
     const evidence: string[] = Array.isArray(item.evidence) ? item.evidence.map(String) : [];
     const findEvidence = (prefix: string) => evidence.find(e => e.startsWith(prefix))?.slice(prefix.length) || '';
@@ -597,6 +642,7 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
     // other network never causes a duplicate post on retry.
     let igId = findEvidence('instagram_media_id:');
     if (!igId) {
+      await recheckBeforeMetaPost(item, digest);
       const container = await metaCall(env, targets.igId + '/media', { image_url: String(item.imageUrl), caption }, 'POST', targets.pageToken);
       let ready = false;
       for (let i = 0; i < 10 && !ready; i++) {
@@ -606,6 +652,7 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
         else await new Promise(r => setTimeout(r, 3000));
       }
       if (!ready) throw new Error('meta_ig_container_timeout');
+      await recheckBeforeMetaPost(item, digest);
       const igPost = await metaCall(env, targets.igId + '/media_publish', { creation_id: String(container.id) }, 'POST', targets.pageToken);
       igId = String(igPost.id);
       evidence.push('instagram_media_id:' + igId);
@@ -613,6 +660,7 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
     }
     let fbId = findEvidence('facebook_post_id:');
     if (!fbId) {
+      await recheckBeforeMetaPost(item, digest);
       const fbPost = await metaCall(env, targets.pageId + '/photos', { url: String(item.imageUrl), message: caption, published: 'true' }, 'POST', targets.pageToken);
       fbId = String(fbPost.post_id || fbPost.id);
       evidence.push('facebook_post_id:' + fbId);
@@ -639,7 +687,7 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
       evidence: ['instagram_media_id:' + igPost.id, 'facebook_post_id:' + (fbPost.post_id || fbPost.id), 'approved-by-owner', now],
     });
   }
-  return { ok: true, published, pending: items.length - published.length, held: held.length, salesOpen };
+  return { ok: true, published, pending: Math.max(0, authorized.length - published.length), held: held.length + p04Held.length, salesHeld: held.length, p04Held, salesOpen, p04Certified: true };
 }
 
 // T4 — Inbound capture on Instagram/Facebook: grounded replies to comments and DMs. No cold outreach:
