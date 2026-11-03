@@ -10,6 +10,9 @@ on:
       - 'cf-worker/**'
       - 'scripts/sales-lock-publishers.test.ts'
       - 'scripts/p04-t3-t4-gates.test.ts'
+      - 'scripts/p04-custodial-calibration-nc010.mjs'
+      - 'scripts/p04-custodial-calibration-nc010.test.mjs'
+      - 'data/d7-legacy-media-seed.json'
       - 'scripts/sales-lock-publishers.mutants.mjs'
       - 'package.json'
       - '.github/workflows/sales-lock-publishers-gate.yml'
@@ -45,6 +48,12 @@ jobs:
           set -euo pipefail
           npm run test:p06-legacy-seed 2>&1 | tee legacy.txt
           grep -q '"nc006_legacy_seed":"PASS","records":368,"unique":349,"groups":11,' legacy.txt
+      - name: NC-010 R38 custodial blind split, metrics and critical mutant
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap scripts/p04-custodial-calibration-nc010.test.mjs | tee p04-plan.txt
+          grep -qx '# tests 1' <(grep '^# tests ' p04-plan.txt)
+          grep -qx '# pass 1' <(grep '^# pass ' p04-plan.txt)
       - name: Mutants (17, all KILLED)
         run: |
           set -euo pipefail
