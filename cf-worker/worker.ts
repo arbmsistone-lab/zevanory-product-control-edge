@@ -661,6 +661,9 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
         sourceKey: 't3-post-reservation-hold:' + new Date().toISOString().slice(0, 10),
         evidence: ['p06:reservation-retained', 'reason:' + reason, 'creative:' + String(item.id)],
       }));
+      // Separate reliable owner-alert path: daily sales-hold dedupe must NOT suppress this alert.
+      await alertOwner(env, { channel:'instagram-facebook', reason:'p06_post_reservation_failclosed',
+        excerpt:reason, eventId:'p06:'+String(item.id) });
       console.error('meta_post_reservation_hold', JSON.stringify({ id: String(item.id), reason }));
       throw error;
     }
