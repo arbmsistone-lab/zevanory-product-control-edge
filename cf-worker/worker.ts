@@ -626,11 +626,25 @@ async function runT3Publisher(env: Record<string, any>, limit = 1) {
   // Re-evaluate certificate, pixels AND sales lock immediately before each provider POST.
   // This check intentionally does NOT trust an old 'approved' flag or an earlier preflight.
   const recheckBeforeMetaPost = async (item: any, expectedDigest: string) => {
-    const currentCertificate = await readP04Certificate(env);
-    if (!currentCertificate || currentCertificate.id !== p04Certificate.id) throw new Error('p04_revoked_or_changed_before_post');
-    const receipt = await verifyP04RenderedReceipt(env, item, currentCertificate);
-    if (!receipt.ok || receipt.mediaSha256 !== expectedDigest) throw new Error('p04_receipt_changed_before_post');
-    if (!await readCoreSalesOpen(env) && salesLockViolations(creativePublicText(item)).length) throw new Error('sales_closed_before_post');
+    try {
+      const currentCertificate = await readP04Certificate(env);
+      if (!currentCertificate || currentCertificate.id !== p04Certificate.id) throw new Error('p04_revoked_or_changed_before_post');
+      const receipt = await verifyP04RenderedReceipt(env, item, currentCertificate);
+      if (!receipt.ok || receipt.mediaSha256 !== expectedDigest) throw new Error('p04_receipt_changed_before_post');
+      if (!await readCoreSalesOpen(env) && salesLockViolations(creativePublicText(item)).length) throw new Error('sales_closed_before_post');
+    } catch (error) {
+      // A P06 reservation is already held. Never release/retry blindly after an ambiguous result.
+      const reason = error instanceof Error && /^(p04_|sales_closed_before_post)/.test(error.message)
+        ? error.message : 'meta_prep_recheck_unverified';
+      await noteSalesLockHold(env, [{ id: item.id, reasons: [reason] }], summary => recordCommercialActivity(env, 'event', {
+        title: 'Publicação Meta bloqueada após reserva P06',
+        detail: summary, status: 'blocked', channel: 'instagram,facebook',
+        sourceKey: 't3-post-reservation-hold:' + new Date().toISOString().slice(0, 10),
+        evidence: ['p06:reservation-retained', 'reason:' + reason, 'creative:' + String(item.id)],
+      }));
+      console.error('meta_post_reservation_hold', JSON.stringify({ id: String(item.id), reason }));
+      throw error;
+    }
   };
   const targets = await metaTargets(env);
   const published: any[] = [];
@@ -864,6 +878,12 @@ async function handleMetaWebhook(request: Request, env: Record<string, any>) {
   if (!await metaVerifySignature(request, raw, env)) return new Response('invalid_signature', { status: 401 });
   let body: any = {};
   try { body = JSON.parse(raw); } catch { return new Response('ok'); }
+  // D7 T4: webhooks bypass Cron. No Meta replies without certified P04 AND open sales.
+  const mayReplyToMeta = async () => Boolean(await readP04Certificate(env)) && (await readCoreSalesOpen(env)) === true;
+  if (!await mayReplyToMeta()) {
+    console.warn('t4_meta_replies_held', JSON.stringify({ reason: 'sales_closed_or_p04_uncertified' }));
+    return new Response('ok');
+  }
   let targets: any = null;
   const handled: string[] = [];
   for (const entry of Array.isArray(body?.entry) ? body.entry : []) {
@@ -875,6 +895,7 @@ async function handleMetaWebhook(request: Request, env: Record<string, any>) {
         if (body.object === 'instagram' && change.field === 'comments' && v.id && v.text && !own.has(String(v.from?.id || ''))) {
           if (await seenBefore(env, 'igc:' + v.id)) continue;
           const answer = await groundedAnswer(v.text);
+          if (!await mayReplyToMeta()) continue;
           await metaCall(env, String(v.id) + '/replies', { message: answer.text }, 'POST', targets.pageToken);
           await markSeen(env, 'igc:' + v.id);
           handled.push('ig_comment');
@@ -884,6 +905,7 @@ async function handleMetaWebhook(request: Request, env: Record<string, any>) {
         if (body.object === 'page' && change.field === 'feed' && v.item === 'comment' && v.verb === 'add' && v.comment_id && v.message && !own.has(String(v.from?.id || ''))) {
           if (await seenBefore(env, 'fbc:' + v.comment_id)) continue;
           const answer = await groundedAnswer(v.message);
+          if (!await mayReplyToMeta()) continue;
           await metaCall(env, String(v.comment_id) + '/comments', { message: answer.text }, 'POST', targets.pageToken);
           await markSeen(env, 'fbc:' + v.comment_id);
           handled.push('fb_comment');
@@ -898,6 +920,7 @@ async function handleMetaWebhook(request: Request, env: Record<string, any>) {
         const dmId = 'dm:' + String(m?.message?.mid || sender + ':' + m?.timestamp);
         if (await seenBefore(env, dmId)) continue;
         const answer = await groundedAnswer(text);
+        if (!await mayReplyToMeta()) continue;
         await metaCall(env, targets.pageId + '/messages', {
           recipient: JSON.stringify({ id: sender }),
           messaging_type: 'RESPONSE',
