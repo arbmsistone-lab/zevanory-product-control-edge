@@ -24,7 +24,7 @@ function certificate() {
  };
 }
 function headers() {
- const ts = String(Date.now()), nonce = 'nc006-'+crypto.randomUUID();
+ const ts = String(Date.now()), nonce = crypto.randomUUID();
  const signature = createHmac('sha256', SECRET).update([CREATIVE_FACTORY_PURPOSE,ts,nonce].join('\n')).digest('hex');
  return {'x-commercial-timestamp':ts,'x-commercial-nonce':nonce,'x-commercial-signature':signature};
 }
