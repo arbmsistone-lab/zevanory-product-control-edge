@@ -124,6 +124,7 @@ const metrics:Record<string,string>={};
  assert.deepEqual(getPosts(r).map(x=>x.path.split('/').at(-1)),['media'],'revoke after creation: ZERO live posts');
  assert.equal(d.state.reservations,1);
  assert.ok(r.writes.some(x=>x.p_bucket==='zpc_commercial_events' && x.p_items[0].record.title.includes('bloqueada após reserva')), 'A06 alert retained after P06 reservation');
+ assert.ok([...d.state.kv.keys()].some(k=>k.startsWith('zpc-alert:v1:')),'A06 produces independent owner-alert KV entry even with daily sales hold');
  metrics['T3_REVOCATION_AFTER_MEDIA_AND_ALERT']='PASS';
 }
 {
