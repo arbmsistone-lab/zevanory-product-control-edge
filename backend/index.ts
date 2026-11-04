@@ -1,4 +1,4 @@
-import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
+import { adminPinState, db, error, json, portableHealth, router, secrets } from './platform.ts';
 import { activeIncidents, planIncidentWrites, TELEMETRY_UNAVAILABLE_TITLE } from './incident-lifecycle.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
 import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialCleanup, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesLifecycle, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
@@ -2477,13 +2477,9 @@ async function executeAudit() {
 }
 
 type PinSessionRecord = { token: string; expiresAt: string; createdAt: string };
-type PinSecurityRecord = { failedAttempts: number; lockedUntil: string | null; updatedAt: string; pinFingerprint?: string };
 const PIN_SESSIONS = 'acs_pin_sessions';
 const PIN_CURRENT_SESSION = 'acs_pin_current_session';
-const PIN_SECURITY = 'acs_pin_security';
 const SESSION_HOURS = 8;
-const MAX_PIN_ATTEMPTS = 5;
-const LOCK_MINUTES = 15;
 
 function base64UrlEncode(value: string) {
   const bytes = new TextEncoder().encode(value);
@@ -2585,26 +2581,6 @@ async function verifyCanonicalEdgeSession(token: string) {
   }
 }
 
-async function securityState(fingerprint: string) {
-  const state = await db.list<PinSecurityRecord>(PIN_SECURITY, { limit: 1 });
-  if (state.items[0]) {
-    const current = state.items[0];
-    if (current.pinFingerprint !== fingerprint) {
-      const reset: PinSecurityRecord = { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint };
-      await db.update(PIN_SECURITY, [{ id: current.id, record: reset }]);
-      return { ...reset, id: current.id };
-    }
-    return current;
-  }
-  const record: PinSecurityRecord = { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint };
-  const [id] = await db.add(PIN_SECURITY, [record]);
-  return { ...record, id: id || '' };
-}
-
-async function updateSecurity(id: string, record: PinSecurityRecord) {
-  if (id) await db.update(PIN_SECURITY, [{ id, record }]);
-}
-
 async function requirePinSession(token: unknown) {
   const value = String(token || '').trim();
   if (!value) return false;
@@ -2615,31 +2591,6 @@ async function requirePinSession(token: unknown) {
   if (current.items.some(item => item.token === value && Date.parse(item.expiresAt) > now)) return true;
   const legacy = await db.list<PinSessionRecord>(PIN_SESSIONS, { limit: 50 });
   return legacy.items.some(item => item.token === value && Date.parse(item.expiresAt) > now);
-}
-
-async function pinLogin(pin: unknown) {
-  const strongMode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase';
-  const candidate = String(pin ?? '');
-  if (strongMode && (Array.from(candidate).length < 12 || Array.from(candidate).length > 256)) return { ok: false, status: 400, message: 'Informe uma frase-senha com 12 ou mais caracteres.' };
-  if (!strongMode && !/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 números.' };
-  const verification = await verifyAdminPin(candidate);
-  const fingerprint = verification.fingerprint;
-  const state = await securityState(fingerprint);
-  // Even a correct phrase is rejected during a lockout.
-  if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
-    return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
-  }
-  if (verification.valid) {
-    if (state.failedAttempts) await updateSecurity(state.id, { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
-    return { ok: true, status: 200, ...(await createEdgeSession()) };
-  }
-
-  const failedAttempts = state.failedAttempts + 1;
-  const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
-    ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
-    : null;
-  await updateSecurity(state.id, { failedAttempts: lockedUntil ? 0 : failedAttempts, lockedUntil, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
-  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'Credencial incorreta.' };
 }
 
 type GlobalTrust = {
