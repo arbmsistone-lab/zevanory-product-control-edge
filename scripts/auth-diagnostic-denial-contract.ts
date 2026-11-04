@@ -31,4 +31,7 @@ for(const code of [edgeRoute,originRoute]){
   assert.doesNotMatch(code,/pinLogin|db\.add|createEdgeSession|PIN_CURRENT_SESSION|ADMIN_PIN/,'diagnostic must not mint a session');
 }
 assert.doesNotMatch(workflow,/curl[^\n]*api\/_auth_diagnostic/,'workflow must not call legacy endpoint');
+const legacyAlias = origin.slice(origin.indexOf("'POST /api/pin/login-origin-disabled'"),origin.indexOf("'POST /api/pin/logout'",origin.indexOf("'POST /api/pin/login-origin-disabled'")));
+assert.match(legacyAlias,/403/,'origin alias must remain forbidden');
+assert.doesNotMatch(legacyAlias,/pinLogin\(/,'origin alias must not reach authentication');
 console.log('AUTH_DIAGNOSTIC_DENIED_PASS edge=403 origin=403 modes=pin,passphrase side_effects=none');
