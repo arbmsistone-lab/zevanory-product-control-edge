@@ -2629,9 +2629,6 @@ async function pinLogin(pin: unknown) {
     return { ok: true, status: 200, ...(await createEdgeSession()) };
   }
 
-  if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
-    return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
-  }
   const failedAttempts = state.failedAttempts + 1;
   const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
     ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
