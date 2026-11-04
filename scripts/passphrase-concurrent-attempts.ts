@@ -19,7 +19,7 @@ const limiter = {
 };
 const nextMinute = () => counters.clear();
 
-// ---- In-memory portable store (zpc_worker_* RPC) ----
+// ---- In-memory portable store (including the transactional RPC contract) ----
 const STORE = 'https://store.example.invalid';
 const records = new Map<string, Map<string, any>>();
 const bucket = (name: string) => { if (!records.has(name)) records.set(name, new Map()); return records.get(name)!; };
@@ -31,6 +31,32 @@ globalThis.fetch = (async (input: any, init?: any) => {
   if (storeDown) throw new Error('store-unavailable');
   const rpc = url.slice((STORE + '/rest/v1/rpc/').length);
   const body = JSON.parse(String(init?.body || '{}'));
+  if (rpc === 'zpc_passphrase_attempt') {
+    const sid = String(body.p_source_id);
+    const fingerprint = String(body.p_fingerprint);
+    const source = bucket('acs_passphrase_source_security');
+    const aggregate = bucket('acs_passphrase_aggregate_security');
+    const aid = '00000000-0000-8000-8000-00000000da13';
+    const previous = source.get(sid);
+    const state = previous?.fingerprint === fingerprint ? previous : { failedAttempts: 0, locks: 0, lockedUntil: null, fingerprint };
+    const now = Date.now();
+    if (state.lockedUntil && Date.parse(state.lockedUntil) > now)
+      return new Response(JSON.stringify({status:429,locked:true}),{headers:{'content-type':'application/json'}});
+    if (body.p_valid === true) {
+      source.set(sid,{failedAttempts:0,locks:0,lockedUntil:null,fingerprint,updatedAt:new Date(now).toISOString()});
+      return new Response(JSON.stringify({status:200,locked:false}),{headers:{'content-type':'application/json'}});
+    }
+    const priorAggregate = aggregate.get(aid);
+    const windowOpen = priorAggregate && now-Date.parse(priorAggregate.windowStart)<15*60_000;
+    const total = (windowOpen ? priorAggregate.failures : 0)+1;
+    aggregate.set(aid,{windowStart:windowOpen?priorAggregate.windowStart:new Date(now).toISOString(),failures:total,updatedAt:new Date(now).toISOString()});
+    const threshold = total>=25 && !body.p_trusted ? 3 : 5;
+    const failures = Number(state.failedAttempts||0)+1;
+    const locking = failures>=threshold;
+    const locks = Number(state.locks||0)+(locking?1:0);
+    source.set(sid,{failedAttempts:locking?0:failures,locks,lockedUntil:locking?new Date(now+Math.min(120,15*2**Math.max(0,locks-1))*60_000).toISOString():null,fingerprint,updatedAt:new Date(now).toISOString()});
+    return new Response(JSON.stringify({status:401,locked:locking}),{headers:{'content-type':'application/json'}});
+  }
   const b = bucket(String(body.p_bucket));
   const ok = (value: unknown) => new Response(JSON.stringify(value), { status: 200, headers: { 'content-type': 'application/json' } });
   if (rpc === 'zpc_worker_list') return ok({ items: [...b.entries()].slice(0, body.p_limit).map(([id, r]) => ({ ...r, id })) });
@@ -177,4 +203,4 @@ globalThis.fetch = realFetch;
 console.log(`PASSPHRASE_CONCURRENT_LIMITER_PASS parallel_12_all_evaluated=true global_lock=none per_source_lock=true owner_during_attack=200 trusted_bypass=true fail_closed_503=4 pin_mode_unchanged=true attackers=${attackers}`);
 // Note: the limiter mock verifies wiring/order, not Cloudflare's per-colo eventual consistency; the
 // durable store mock applies the same monotonic-updatedAt upsert as zpc_worker_upsert but does not
-// emulate concurrent read-modify-write races (bounded by the per-source edge limit; see DEC-13(a)).
+// prove transaction isolation. The PostgreSQL integration gate must do that.
