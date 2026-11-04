@@ -1676,35 +1676,8 @@ export const dailyAuditHandler = async () => {
 };
 
 export const handler = router({
-  'GET /api/_auth_diagnostic': [async () => {
-    try {
-      if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') return json({ stage: 'diagnostic_disabled_in_passphrase_mode' }, 403);
-      const configuredPin = String(await secrets.readSecret('ADMIN_PIN') || '').trim();
-      if (!/^\d{4}$/.test(configuredPin)) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_unconfigured' });
-      const startedAt = Date.now();
-      const login = await pinLogin(configuredPin);
-      const loginMs = Date.now() - startedAt;
-      if (!login.ok || !('token' in login)) return json({ secretValid: true, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'edge_login_failed', loginMs });
-      const sessionRoundtrip = await verifyEdgeSession(login.token);
-      let providerRoundtrip = false;
-      try {
-        const renderBase = String(await secrets.readSecret('RENDER_BACKEND_URL') || '').replace(/\/$/, '');
-        if (renderBase) {
-          const response = await fetch(`${renderBase}/api/_session_verify`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ sessionToken: login.token }),
-            signal: AbortSignal.timeout(2500),
-          });
-          const data = await response.json() as { valid?: boolean };
-          providerRoundtrip = response.ok && data.valid === true;
-        }
-      } catch {}
-      return json({ secretValid: true, locked: false, sessionRoundtrip, bootstrapOk: sessionRoundtrip, providerRoundtrip, loginMs, stage: sessionRoundtrip ? 'edge_fastpath_ready' : 'edge_fastpath_failed' });
-    } catch {
-      return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, providerRoundtrip: false, stage: 'failed:edge_fastpath' });
-    }
-  }],
+  // Legacy unauthenticated diagnostic has been permanently retired. Never log in or mint sessions from GET.
+  'GET /api/_auth_diagnostic': [async () => error('Diagnóstico interno indisponível.', 403)],
   'POST /api/_session_verify': [async ctx => {
     const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
     return json({ valid: await verifyEdgeSession(token) });
