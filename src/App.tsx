@@ -336,7 +336,7 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
   };
 
   return (
-    <main className='loginShell'>
+    <main className='loginShell' aria-busy={restoringSession}>
       <section className='loginCard'>
         <ShieldCheck size={34} />
         <p className='eyebrow'>ZEVANORY · ACESSO ADMINISTRATIVO</p>
