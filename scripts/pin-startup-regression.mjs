@@ -4,7 +4,11 @@ import assert from 'node:assert/strict';
 import {PNG} from 'pngjs';
 const out='pin-regression';fs.mkdirSync(out,{recursive:true});
 const fixture={dashboard:{systems:[],audits:[],improvements:[],incidents:[],policy:{zeroSpend:true,failClosed:true,destructiveActions:false,greenRule:'FALSE_GREEN=0'},lastEngineRun:'2026-09-30T00:00:00Z',certificationRuns:[]},globalTrust:{state:'BLOCKED',sha:null,evidenceRoot:null,policyVersion:'ZEA-10',quorum:{passed:0,total:3,required:3,conflicts:0,independentKeys:0},zea10:{proven:0,partial:0,blocked:10},engines:[],checkedAt:'2026-09-30T00:00:00Z'},operations:null,commercial:null,cfo:null,products:[],certificationTargets:[],summary:{total:0,salesEnabled:0,commercialReady:0,blocked:0,certified:0,inCertification:0,zeesBlocked:0}};
-const browser=await chromium.launch();const checks={};
+// Partial raster re-rasterizes only invalidated tiles after the injected normalization/freeze styles,
+// which produced non-deterministic anti-aliasing at tile edges (e.g. the .ccFresh status dot and the
+// active .ccTabs pill, 7-15 px with channel delta up to 14). Full-tile raster is deterministic and is
+// applied to BOTH previews; the raster tolerance below stays exactly <=1.
+const browser=await chromium.launch({args:['--disable-partial-raster']});const checks={};
 const fulfill=(r,status,body)=>r.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
 async function setup(base,cached=false,viewport={width:1365,height:900},theme='dark'){
  const context=await browser.newContext({viewport});await context.addInitScript(({cached,theme})=>{localStorage.setItem('zpc_theme',theme);if(cached&&!localStorage.getItem('arbm_admin_session'))localStorage.setItem('arbm_admin_session','old-test-session');},{cached,theme});
