@@ -1465,7 +1465,7 @@ async function pinLogin(pin: unknown) {
   if (strongMode && (Array.from(candidate).length < 12 || Array.from(candidate).length > 256)) {
     return { ok: false, status: 400, message: 'Informe uma frase-senha com pelo menos 12 caracteres.' };
   }
-  if (!strongMode && !/^\\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 números.' };
+  if (!strongMode && !/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 números.' };
   const verification = await verifyAdminPin(candidate);
   const fingerprint = verification.fingerprint;
   const state = await securityState(fingerprint);
