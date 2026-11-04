@@ -46,11 +46,29 @@ A versão nova do frontend exige frase-senha de 12+ caracteres, enquanto o backe
    - **Dispositivo confiável:** cookie `__Host-zpc_td` (HttpOnly, Secure, SameSite=Strict, 30 dias), emitido somente após login bem-sucedido, HMAC com `SESSION_SIGNING_KEY` (separação de domínio). Só isenta do endurecimento agregado; não é fator de autenticação nem ignora o limite por origem.
 5. **Fail closed:** limitador ausente ou com erro (inclusive no bucket agregado) e store indisponível => 503.
 
-**Modo PIN legado inalterado** (por IP `pin:<IP>` + bloqueio global progressivo): um espaço de 4 dígitos não sobrevive a ataque distribuído só com limite por origem. O risco de DoS do titular nesse modo permanece até o corte para frase-senha.
+**Modo PIN legado inalterado em autenticação, após o filtro de host canônico:** o Worker retorna 403 em `POST /api/pin/login` quando `Host` difere de `controle.zevanory.api.br`, inclusive em `workers.dev` e URLs de prévia, ANTES de executar o limitador de qualquer modo. Na origem canônica, o PIN legado mantém `pin:<IP>` e o bloqueio global progressivo, intocados. O risco de DoS nesse modo permanece até o corte para frase-senha.
 
 **Limites conhecidos:** a RPC NC01 é transacional apenas depois de aplicada em banco mediante autorização específica; o rate-limit da Cloudflare continua por colo e eventualmente consistente. Titular atrás do mesmo NAT/CGNAT de um atacante compartilha a origem e pode receber 429 dessa origem. Turnstile/ASN e recuperação independente do painel continuam evoluções. O registro de contador ainda precisa de verificação de replicação/DR para não perder estado numa troca de banco.
 
-**Contrato:** `npm run test:passphrase-concurrent` (`scripts/passphrase-concurrent-attempts.ts`): 12 origens simultâneas avaliadas (nenhum 429 global), origem repetida bloqueada (edge e durável), XFF falso ignorado, login do titular por origem limpa durante ataque distribuído contínuo, isenção por dispositivo confiável, 4 casos de fail-closed 503 e modo PIN inalterado. Integra `build`.
+**Contratos:** `npm run test:passphrase-concurrent` (`scripts/passphrase-concurrent-attempts.ts`) cobre 12 origens simultâneas (nenhum 429 global), origem repetida, XFF falso ignorado, titular em origem limpa durante ataque distribuído, cookie confiável, fail-closed 503, modo PIN e **403 de host não canônico** (`workers.dev`/preview). O CI `postgres-atomic` (`scripts/passphrase-postgres-atomic.ts`) usa **PostgreSQL 17 real**, 24 requisições simultâneas na mesma origem, verificação de incremento agregado sem perdas, resistência a `public.hashtextextended` falsa, `pg_proc.proconfig` para os timeouts e **paridade das seis constantes** entre SQL e TypeScript. O teste Postgres não executa contra produção. Ambos precisam passar no mesmo SHA; o primeiro integra `build`.
+
+## Rollback da RPC PostgreSQL (somente com autorização independente)
+
+A função `public.zpc_passphrase_attempt(text, uuid, text, boolean, boolean)` é criada pela migração `supabase/migrations/20261104180000_dec13_atomic_passphrase_attempt.sql`. O rollback de **schema** exige uma mudança de banco autorizada e janela coordenada de frontend, Worker, modo de autenticação e segredos. **Não aplicar rollback isolado em produção**: o Worker em modo frase-senha passará a 503 (fail-closed) se a função não existir.
+
+Com o tráfego administrativo temporariamente protegido e o plano de corte aprovado, o comando SQL de reversão é:
+
+```sql
+drop function if exists public.zpc_passphrase_attempt(text, uuid, text, boolean, boolean);
+```
+
+Este `DROP FUNCTION` **não apaga** `acs_passphrase_source_security` nem `acs_passphrase_aggregate_security` de `public.zpc_records`, para preservar trilhas de investigação. Exige avaliação de dependências, controle de acesso e procedimentos próprios para dados residuais. Recuperação funcional somente por versão compatível previamente validada; não reabrir PIN fraco como atalho.
+
+### NC01 | Segurança transacional e alinhamento de políticas
+
+A RPC `SECURITY DEFINER` fixa `search_path = pg_catalog, public`, qualifica `pg_catalog.pg_advisory_xact_lock` e `pg_catalog.hashtextextended` e fixa `lock_timeout = '2s'` e `statement_timeout = '2s'`, abaixo do timeout de 2,5s do Worker. Cancelamentos e falhas do banco resultam em 503 no Worker sem fallback. O contrato PostgreSQL 17 testa a tentativa de shadowing por `public.hashtextextended`, a configuração da função e concorrência.
+
+As seis constantes da política TS (`SOURCE_MAX_FAILURES`, `SOURCE_MAX_FAILURES_UNDER_ATTACK`, `SOURCE_LOCK_MINUTES`, `SOURCE_LOCK_CAP_MINUTES`, `AGGREGATE_WINDOW_MINUTES`, `AGGREGATE_HOT_FAILURES`) permanecem duplicadas no SQL por exigência do código executado no banco; **a regressão `postgres-atomic` deve detectar qualquer divergência**. O workflow é acionado por mudanças em `supabase/migrations/**`, `cf-worker/admin-auth-throttle.ts` e os arquivos do contrato. O mecanismo e seus tempos precisam de teste pré-publicação em ambiente real isolado, sem executar migração no banco produtivo.
 
 ## NC02 | Inventário de caminhos de entrada e procedência do IP
 
@@ -58,7 +76,7 @@ A versão nova do frontend exige frase-senha de 12+ caracteres, enquanto o backe
 |---|---|---|
 | `https://controle.zevanory.api.br/api/pin/login` | `cf-worker/wrangler.toml`, custom_domain; `cf-worker/worker.ts` força `edgeAuthPath` para backend Edge local | Caminho canônico, aplica `PIN_LIMITER` antes da RPC; `CF-Connecting-IP` só é confiável se entregue pela infraestrutura Cloudflare, não por um proxy arbitrário |
 | `https://zevanory.api.br/control*` | Segunda rota declarada em `wrangler.toml`; redirecionamento 308 do domínio legado ao canônico no Worker | Não deve possuir rota de login paralela; verificar comportamento com requisição HTTP de leitura no readback autorizado |
-| `*.workers.dev` / URL de prévia do mesmo Worker | `wrangler.toml` não declara `workers_dev=false` e o valor atual da configuração Cloudflare não foi lido | **NÃO COMPROVADO DESATIVADO.** Se estiver exposto, deve executar o mesmo limitador ou ser desativado na configuração Cloudflare por autorização independente. Não confiar na ausência de endereço no repositório |
+| `*.workers.dev` / URL de prévia do mesmo Worker | `cf-worker/worker.ts` exige host canônico antes do login em qualquer modo; `scripts/passphrase-concurrent-attempts.ts` valida casos `workers.dev` e preview | **403 em POST `/api/pin/login` em host não canônico**, antes de autenticação. A configuração efetiva de `workers.dev`/previews na conta Cloudflare continua não verificada; eventuais outras rotas devem ser auditadas no readback |
 | Render/origem `https://zevanory-product-control-edge.onrender.com` | `RENDER_BACKEND_URL` em `wrangler.toml`; `backend/index.ts` responde 404 em `POST /api/pin/login`, 403 no alias `/api/pin/login-origin-disabled` | Login direto negado em código, mas acesso público e regras de firewall do Render **não foram confirmados**. Testar host e caminhos de alias antes do corte |
 | Backend Edge `cf-worker/backend-index.ts` | `POST /api/pin/login` é interno ao roteador Edge e recebe request encaminhado pelo Worker | Não publicar outro entrypoint que invoque `handler` sem filtro da borda. `CF-Connecting-IP` neste módulo depende do Worker externo ter preservado o cabeçalho da Cloudflare |
 | Apps e hosts auxiliares | Não existe inventário autenticado de todos os domínios customizados, rotas de ambiente, previews e rotas Cloudflare ativadas | **PENDENTE** consultar configuração Cloudflare (routes, custom domains, workers.dev, previews), Render, DNS e testes reais de bloqueio de portas/aliases. Sem isso NC02 NÃO tem prova de topologia completa |
