@@ -1213,6 +1213,14 @@ export default {
       );
     }
 
+    if (normalizedPath === '/api/pin/login' && url.hostname !== 'controle.zevanory.api.br') {
+      // NC02: any workers.dev/preview/unknown host is denied before authentication.
+      // The canonical Cloudflare custom domain is the sole public login entrypoint.
+      return Response.json({ ok: false, error: 'auth_canonical_host_required' }, {
+        status: 403, headers: { 'cache-control': 'no-store' },
+      });
+    }
+
     if (normalizedPath === '/api/pin/login') {
       const limiter = (env as any).PIN_LIMITER;
       const strongMode = String((env as any).ADMIN_AUTH_MODE || '') === 'passphrase';
