@@ -99,6 +99,16 @@ assert.notEqual(adminAuthSourceKey(h({ 'cf-connecting-ip': '2001:db8:1:2::1' }))
 assert.equal(adminAuthSourceKey(h({ 'cf-connecting-ip': '::ffff:198.51.100.7' })), 'ip4:198.51.100.7');
 assert.equal(adminAuthSourceKey(h({ 'cf-connecting-ip': 'not-an-ip' })), 'unattributed');
 
+// NC02: workers.dev/preview host cannot execute the login endpoint even if exposed.
+for (const host of ['zevanory-product-control-portable.workers.dev', 'example.preview.workers.dev']) {
+  const response = await worker.fetch(new Request('https://' + host + '/api/pin/login', {
+    method: 'POST', headers: { 'content-type': 'application/json', 'cf-connecting-ip': '203.0.113.99' },
+    body: JSON.stringify({ pin: OWNER_PHRASE }),
+  }), env);
+  assert.equal(response.status, 403, 'noncanonical host must deny login: ' + host);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+}
+
 // ---- 1. Per-source limit is consumed FIRST; aggregate bucket is consulted only afterwards ----
 limiter.calls.length = 0;
 assert.equal((await attempt('192.0.2.200')).status, 401);
