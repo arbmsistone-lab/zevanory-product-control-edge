@@ -32,7 +32,7 @@ try {
   // SECURITY DEFINER search_path hijack and function-local timeout settings.
   const policy = await fs.readFile(new URL('../cf-worker/admin-auth-throttle.ts', import.meta.url), 'utf8');
   const constants: Record<string,number> = {};
-  for (const [,name,value] of policy.matchAll(/export const (SOURCE_MAX_FAILURES|SOURCE_MAX_FAILURES_UNDER_ATTACK|SOURCE_LOCK_MINUTES|SOURCE_LOCK_CAP_MINUTES|AGGREGATE_WINDOW_MINUTES|AGGREGATE_HOT_FAILURES) = (\\d+);/g))
+  for (const [,name,value] of policy.matchAll(/export const (SOURCE_MAX_FAILURES|SOURCE_MAX_FAILURES_UNDER_ATTACK|SOURCE_LOCK_MINUTES|SOURCE_LOCK_CAP_MINUTES|AGGREGATE_WINDOW_MINUTES|AGGREGATE_HOT_FAILURES) = (\d+);/g))
     constants[name]=Number(value);
   assert.equal(Object.keys(constants).length,6,'all six policy constants must be compared with SQL');
   assert.match(migration, new RegExp('total >= ' + constants.AGGREGATE_HOT_FAILURES + ' and not p_trusted then ' + constants.SOURCE_MAX_FAILURES_UNDER_ATTACK + ' else ' + constants.SOURCE_MAX_FAILURES + ' end'));
@@ -40,7 +40,7 @@ try {
   assert.match(migration, new RegExp('least\\(' + constants.SOURCE_LOCK_CAP_MINUTES + ',\\s*' + constants.SOURCE_LOCK_MINUTES + ' \\* power'));
   // A malicious public overload cannot intercept the system hashing function.
   await pool.query(`create or replace function public.hashtextextended(text,bigint)
-    returns bigint language plpgsql as $ begin raise exception 'shadowed_hash'; end; $`);
+    returns bigint language plpgsql as 'begin raise exception ''shadowed_hash''; end;'`);
   const config = await pool.query(`select p.proconfig from pg_catalog.pg_proc p
     join pg_catalog.pg_namespace n on n.oid=p.pronamespace
     where n.nspname='public' and p.proname='zpc_passphrase_attempt'`);
