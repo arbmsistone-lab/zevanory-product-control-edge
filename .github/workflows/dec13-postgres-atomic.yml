@@ -2,7 +2,8 @@ name: DEC-13 PostgreSQL atomic authentication
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261104180000_dec13_atomic_passphrase_attempt.sql'
+      - 'supabase/migrations/**'
+      - 'cf-worker/admin-auth-throttle.ts'
       - 'scripts/passphrase-postgres-atomic.ts'
       - '.github/workflows/dec13-postgres-atomic.yml'
       - 'cf-worker/backend-index.ts'
