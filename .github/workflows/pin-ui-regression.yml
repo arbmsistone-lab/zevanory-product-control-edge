@@ -1,0 +1,66 @@
+name: PIN and Passphrase UI Regression
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/App.tsx'
+      - 'src/**'
+      - 'scripts/pin-startup-regression.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'cf-worker/backend-index.ts'
+      - 'cf-worker/worker.ts'
+      - 'backend/index.ts'
+      - '.github/workflows/pin-ui-regression.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pin-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout PR candidate
+        uses: actions/checkout@v4
+      - name: Checkout main reference into baseline folder
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Candidate dependencies and browser
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Baseline dependencies
+        working-directory: baseline
+        run: npm install --no-audit --no-fund
+      - name: Compile both previews without deployment
+        run: |
+          npm run typecheck
+          npx vite build
+          cd baseline
+          npx vite build
+      - name: Launch previews 4173 and 4174
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 >/tmp/zpc-new.log 2>&1 &
+          (cd baseline && nohup npx vite preview --host 127.0.0.1 --port 4174 >/tmp/zpc-baseline.log 2>&1 &)
+          for port in 4173 4174; do
+            ok=0
+            for i in $(seq 1 40); do
+              if curl -fsS "http://127.0.0.1:$port/" >/dev/null; then ok=1; break; fi
+              sleep 1
+            done
+            if [ "$ok" != 1 ]; then cat /tmp/zpc-new.log /tmp/zpc-baseline.log; exit 1; fi
+          done
+      - name: Run existing PIN startup and authenticated UI contract
+        run: node scripts/pin-startup-regression.mjs
+      - name: Archive actual regression proofs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pin-ui-regression
+          path: pin-regression/
+          if-no-files-found: warn
