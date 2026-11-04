@@ -21,24 +21,24 @@ if(process.env.REPRODUCE_BASELINE==='true'){
 const base='http://127.0.0.1:4173';
 {
  const {context,page}=await setup(base,true);let diagnosticCalls=0;page.on('request',r=>{if(r.url().includes('_auth_diagnostic'))diagnosticCalls++;});let pending;const request=new Promise(resolve=>pending=resolve);await page.route('**/api/admin/bootstrap',async r=>{pending(r);await new Promise(()=>{});});
- const t=Date.now();await page.goto(base,{waitUntil:'domcontentloaded'});await request;const pin=page.getByLabel('PIN de 4 números');await pin.waitFor({timeout:3000});await pin.fill('a123');assert.equal(await pin.inputValue(),'123');assert.equal(await page.locator('.zpcAppShell').count(),0);assert(Date.now()-t<3000);assert.equal(diagnosticCalls,0);checks.no_duplicate_diagnostic_bootstrap=true;checks.pin_independent_of_hung_bootstrap=true;await page.screenshot({path:out+'/pending-bootstrap.png'});await context.close();
+ const t=Date.now();await page.goto(base,{waitUntil:'domcontentloaded'});await request;const pin=page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)');await pin.waitFor({timeout:3000});await pin.fill('senha curta');assert.equal(await pin.inputValue(),'senha curta');assert.equal(await page.locator('.zpcAppShell').count(),0);assert(Date.now()-t<3000);assert.equal(diagnosticCalls,0);checks.no_duplicate_diagnostic_bootstrap=true;checks.pin_independent_of_hung_bootstrap=true;await page.screenshot({path:out+'/pending-bootstrap.png'});await context.close();
 }
 {
- const {context,page}=await setup(base);let loginCalls=0;await page.route('**/api/pin/login',r=>{loginCalls++;return fulfill(r,401,{error:'PIN incorreto.'});});
- await page.goto(base);const pin=page.getByLabel('PIN de 4 números');await pin.fill('123');await pin.press('Enter');assert.equal(loginCalls,0);await pin.fill('1234');await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.getByText('PIN incorreto.',{exact:true}).waitFor();assert.equal(await page.locator('.zpcAppShell').count(),0);checks.pin_validation_and_denial=true;await context.close();
+ const {context,page}=await setup(base);let loginCalls=0;await page.route('**/api/pin/login',r=>{loginCalls++;return fulfill(r,401,{error:'Credencial incorreta.'});});
+ await page.goto(base);const pin=page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)');await pin.fill('1234');await pin.press('Enter');assert.equal(loginCalls,0);await pin.fill('frase-senha-forte-de-teste-2026');await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.getByText('Credencial incorreta.',{exact:true}).waitFor();assert.equal(await page.locator('.zpcAppShell').count(),0);checks.pin_validation_and_denial=true;await context.close();
 }
 {
  const {context,page}=await setup(base,true);let releaseOld;const oldReleased=new Promise(resolve=>releaseOld=resolve);let oldStarted;const oldRequest=new Promise(resolve=>oldStarted=resolve);
  await page.route('**/api/admin/bootstrap',async r=>{const body=r.request().postDataJSON();if(body.sessionToken==='old-test-session'){oldStarted();await oldReleased;try{await fulfill(r,401,{error:'expired'});}catch{}}else await fulfill(r,200,fixture);});
  await page.route('**/api/pin/login',r=>fulfill(r,200,{sessionToken:'new-test-session'}));await page.route('**/api/pin/logout',r=>fulfill(r,200,{ok:true}));
- await page.goto(base,{waitUntil:'domcontentloaded'});await oldRequest;await page.getByLabel('PIN de 4 números').fill('1234');await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.locator('.zpcAppShell').waitFor();releaseOld();await page.waitForLoadState('networkidle');assert.equal(await page.evaluate(()=>localStorage.getItem('arbm_admin_session')),'new-test-session');assert.equal(await page.locator('.zpcAppShell').count(),1);checks.stale_response_cannot_revoke_new_session=true;
- await page.reload();await page.locator('.zpcAppShell').waitFor();checks.valid_session_reload=true;await page.getByRole('button',{name:'Sair',exact:true}).click();await page.getByLabel('PIN de 4 números').waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('arbm_admin_session')),null);checks.logout=true;await context.close();
+ await page.goto(base,{waitUntil:'domcontentloaded'});await oldRequest;await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').fill('frase-senha-forte-de-teste-2026');await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.locator('.zpcAppShell').waitFor();releaseOld();await page.waitForLoadState('networkidle');assert.equal(await page.evaluate(()=>localStorage.getItem('arbm_admin_session')),'new-test-session');assert.equal(await page.locator('.zpcAppShell').count(),1);checks.stale_response_cannot_revoke_new_session=true;
+ await page.reload();await page.locator('.zpcAppShell').waitFor();checks.valid_session_reload=true;await page.getByRole('button',{name:'Sair',exact:true}).click();await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('arbm_admin_session')),null);checks.logout=true;await context.close();
 }
 // Intentional PIN-screen change: no public diagnostic. Authenticated UI retains visual-parity coverage.
 for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const theme of ['dark','light']){
  const {context,page}=await setup('http://127.0.0.1:4173',false,viewport,theme);
  await page.goto('http://127.0.0.1:4173');
- await page.getByLabel('PIN de 4 números').waitFor();
+ await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').waitFor();
  assert.equal(await page.locator('.authDiagnostic').count(),0,'internal diagnostic must not render');
  assert.equal(await page.getByText(/PIN:OK|LOCK:|SESSÃO:|BOOT:|ETAPA:/).count(),0,'no diagnostic status before login');
  assert(await page.getByText('Controle de produtos, governança e certificação.',{exact:false}).isVisible());
