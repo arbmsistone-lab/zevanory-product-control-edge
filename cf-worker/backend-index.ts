@@ -1,4 +1,5 @@
 import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform-worker.ts';
+import { adminAuthSourceKey, AGGREGATE_HOT_FAILURES, AGGREGATE_RECORD_ID, AGGREGATE_WINDOW_MINUTES, hasTrustedDevice, SOURCE_LOCK_CAP_MINUTES, SOURCE_LOCK_MINUTES, SOURCE_MAX_FAILURES, SOURCE_MAX_FAILURES_UNDER_ATTACK, sourceRecordId } from './admin-auth-throttle.ts';
 import { activeIncidents, planIncidentWrites, TELEMETRY_UNAVAILABLE_TITLE } from '../backend/incident-lifecycle.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
 
@@ -1464,13 +1465,66 @@ async function requirePinSession(token: unknown) {
   return legacy.items.some(item => item.token === value && Date.parse(item.expiresAt) > now);
 }
 
-async function pinLogin(pin: unknown) {
+type SourceSecurityRecord = { failedAttempts: number; lockedUntil: string | null; locks: number; updatedAt: string; fingerprint: string };
+type AggregateSecurityRecord = { windowStart: string; failures: number; updatedAt: string };
+const PASSPHRASE_SOURCE_SECURITY = 'acs_passphrase_source_security';
+const PASSPHRASE_AGGREGATE_SECURITY = 'acs_passphrase_aggregate_security';
+
+// DEC-13(a): passphrase mode never uses the shared PIN_SECURITY record. Each source (CF-Connecting-IP,
+// IPv6 /64) has its own durable progressive lock; the aggregate window only tightens the threshold for
+// untrusted sources and can never lock the owner account. Store errors propagate (fail closed, 503).
+async function passphraseLogin(candidate: string, request: Request | undefined) {
+  const headers = request?.headers || new Headers();
+  const source = adminAuthSourceKey(headers);
+  const signingKey = String(await secrets.readSecret('SESSION_SIGNING_KEY') || '');
+  const [verification, sourceId, trusted] = await Promise.all([
+    verifyAdminPin(candidate),
+    sourceRecordId(source),
+    hasTrustedDevice(headers, signingKey),
+  ]);
+  const fingerprint = verification.fingerprint;
+  const [stored] = await db.get<SourceSecurityRecord>(PASSPHRASE_SOURCE_SECURITY, [sourceId]);
+  // A rotated passphrase starts every source from zero.
+  const state: SourceSecurityRecord = stored && stored.fingerprint === fingerprint
+    ? { failedAttempts: Number(stored.failedAttempts || 0), lockedUntil: stored.lockedUntil || null, locks: Number(stored.locks || 0), updatedAt: stored.updatedAt, fingerprint }
+    : { failedAttempts: 0, lockedUntil: null, locks: 0, updatedAt: new Date().toISOString(), fingerprint };
+  // The lock applies to every attempt FROM THIS SOURCE, including the correct phrase.
+  if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
+    return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
+  }
+  const now = new Date().toISOString();
+  if (verification.valid) {
+    if (stored && (state.failedAttempts || state.locks || stored.fingerprint !== fingerprint)) {
+      await db.update(PASSPHRASE_SOURCE_SECURITY, [{ id: sourceId, record: { failedAttempts: 0, lockedUntil: null, locks: 0, updatedAt: now, fingerprint } }]);
+    }
+    return { ok: true, status: 200, ...(await createEdgeSession()) };
+  }
+  // Aggregate signal (best effort; lossy under concurrency by design, it never blocks by itself).
+  const [aggregate] = await db.get<AggregateSecurityRecord>(PASSPHRASE_AGGREGATE_SECURITY, [AGGREGATE_RECORD_ID]);
+  const windowOpen = aggregate && Date.now() - Date.parse(aggregate.windowStart) < AGGREGATE_WINDOW_MINUTES * 60e3;
+  const aggregateFailures = (windowOpen ? Number(aggregate!.failures || 0) : 0) + 1;
+  await db.update(PASSPHRASE_AGGREGATE_SECURITY, [{ id: AGGREGATE_RECORD_ID, record: { windowStart: windowOpen ? aggregate!.windowStart : now, failures: aggregateFailures, updatedAt: now } }]);
+  const hot = aggregateFailures >= AGGREGATE_HOT_FAILURES;
+  const threshold = hot && !trusted ? SOURCE_MAX_FAILURES_UNDER_ATTACK : SOURCE_MAX_FAILURES;
+  const failedAttempts = state.failedAttempts + 1;
+  const locking = failedAttempts >= threshold;
+  const locks = state.locks + (locking ? 1 : 0);
+  const lockMinutes = Math.min(SOURCE_LOCK_CAP_MINUTES, SOURCE_LOCK_MINUTES * 2 ** Math.max(0, locks - 1));
+  const lockedUntil = locking ? new Date(Date.now() + lockMinutes * 60e3).toISOString() : null;
+  await db.update(PASSPHRASE_SOURCE_SECURITY, [{ id: sourceId, record: { failedAttempts: locking ? 0 : failedAttempts, lockedUntil, locks, updatedAt: now, fingerprint } }]);
+  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'Credencial incorreta.' };
+}
+
+async function pinLogin(pin: unknown, request?: Request) {
   const strongMode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase';
   const candidate = String(pin ?? '');
   if (strongMode && (Array.from(candidate).length < 12 || Array.from(candidate).length > 256)) {
     return { ok: false, status: 400, message: 'Informe uma frase-senha com pelo menos 12 caracteres.' };
   }
-  if (!strongMode && !/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 números.' };
+  if (strongMode) return passphraseLogin(candidate, request);
+  // Legacy 4-digit PIN mode: behaviour intentionally unchanged (per-IP edge throttle + global
+  // progressive lock; a 4-digit space cannot rely on per-source limits alone).
+  if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 números.' };
   const verification = await verifyAdminPin(candidate);
   const fingerprint = verification.fingerprint;
   const state = await securityState(fingerprint);
@@ -1684,7 +1738,7 @@ export const handler = router({
   }],
   'POST /api/pin/login': [async ctx => {
     try {
-      const result = await pinLogin((ctx.body as { pin?: string })?.pin);
+      const result = await pinLogin((ctx.body as { pin?: string })?.pin, ctx.request);
       if (!result.ok || !('token' in result)) return error(result.message || 'Acesso negado.', result.status);
       return json({ ok: true, sessionToken: result.token, expiresAt: result.expiresAt });
     } catch {

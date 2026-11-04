@@ -1,6 +1,7 @@
 import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
+import { adminAuthSourceKey, hasTrustedDevice, mintTrustedDevice, PASSPHRASE_AGGREGATE_BUCKET, PASSPHRASE_SOURCE_BUCKET_PREFIX, trustedDeviceSetCookie } from './admin-auth-throttle.ts';
 import { isLegacyDutyMinute, runP18ExternalTrigger } from './p18-dispatch.ts';
 import { buildOwnerAlertEntry } from './owner-alert-entry.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
@@ -1213,27 +1214,35 @@ export default {
     }
 
     if (normalizedPath === '/api/pin/login') {
-      // Per-IP throttle (Cloudflare rate-limit binding, free): 5 attempts/minute per address, on top
-      // of the global progressive lock inside pinLogin.
       const limiter = (env as any).PIN_LIMITER;
       const strongMode = String((env as any).ADMIN_AUTH_MODE || '') === 'passphrase';
       const unavailable = () => Response.json({ ok: false, error: 'authentication_throttle_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
-      if (!limiter?.limit) {
-        if (strongMode) return unavailable(); // Strong mode must never silently bypass its limiter.
-      } else {
+      const tooMany = () => Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
+      if (strongMode) {
+        // DEC-13(a). Order matters: per-source bucket FIRST, keyed only on CF-Connecting-IP (IPv6 /64).
+        // The aggregate bucket is a signal, never a global block: when it is exhausted, sources without
+        // a valid trusted-device cookie pay a second per-source token per attempt (5 -> 2 per minute).
+        // The durable per-source progressive lock lives in backend-index.ts (passphraseLogin).
+        if (!limiter?.limit) return unavailable(); // Strong mode must never silently bypass its limiter.
+        const sourceKey = PASSPHRASE_SOURCE_BUCKET_PREFIX + adminAuthSourceKey(request.headers);
+        try {
+          if (!(await limiter.limit({ key: sourceKey })).success) return tooMany();
+          const trusted = await hasTrustedDevice(request.headers, String((env as any).SESSION_SIGNING_KEY || ''));
+          if (!trusted) {
+            const aggregate = await limiter.limit({ key: PASSPHRASE_AGGREGATE_BUCKET });
+            if (!aggregate.success && !(await limiter.limit({ key: sourceKey })).success) return tooMany();
+          }
+        } catch {
+          return unavailable();
+        }
+      } else if (limiter?.limit) {
+        // Legacy PIN mode, unchanged: 5 attempts/minute per address on top of the global
+        // progressive lock inside pinLogin.
         const ip = request.headers.get('cf-connecting-ip') || 'unknown';
         try {
-          // Two distinct buckets, shared global quota and per-IP, reduce parallel/distributed spraying.
-          // The provider may be eventually consistent across regions; server-side lock remains required.
-          if (strongMode) {
-            const globalLimit = await limiter.limit({ key: 'admin-passphrase-global' });
-            if (!globalLimit.success) return Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
-          }
           const { success } = await limiter.limit({ key: 'pin:' + ip });
-          if (!success) return Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
-        } catch {
-          if (strongMode) return unavailable();
-        }
+          if (!success) return tooMany();
+        } catch {}
       }
     }
 
@@ -1448,6 +1457,15 @@ export default {
         } catch {}
       }
       const edgeResponse = await handler(copy(normalizedUrl.toString()));
+      if (normalizedPath === '/api/pin/login' && edgeResponse.status === 200 && String((env as any).ADMIN_AUTH_MODE || '') === 'passphrase') {
+        // Successful owner login marks this browser as a trusted device (aggregate-throttle bypass only).
+        const device = await mintTrustedDevice(String((env as any).SESSION_SIGNING_KEY || '')).catch(() => null);
+        if (device) {
+          const headers = new Headers(edgeResponse.headers);
+          headers.append('set-cookie', trustedDeviceSetCookie(device.value, device.maxAge));
+          return new Response(edgeResponse.body, { status: edgeResponse.status, headers });
+        }
+      }
       if (edgeResponse.status === 404 && renderBase) {
         // Only when the ROUTE is missing at the edge (exists only on the auxiliary server, which did
         // not complete the request). A real "not found" from an edge route passes through.

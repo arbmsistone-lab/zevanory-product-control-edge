@@ -8,6 +8,8 @@ on:
       - 'cf-worker/worker.ts'
       - 'backend/index.ts'
       - 'scripts/auth-diagnostic-denial-contract.ts'
+      - 'scripts/passphrase-concurrent-attempts.ts'
+      - 'cf-worker/admin-auth-throttle.ts'
       - 'package.json'
       - 'package-lock.json'
   push:
@@ -18,6 +20,8 @@ on:
       - 'cf-worker/worker.ts'
       - 'backend/index.ts'
       - 'scripts/auth-diagnostic-denial-contract.ts'
+      - 'scripts/passphrase-concurrent-attempts.ts'
+      - 'cf-worker/admin-auth-throttle.ts'
       - 'package.json'
       - 'package-lock.json'
   workflow_dispatch:
@@ -36,3 +40,5 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Anonymous diagnostic contract in both auth modes
         run: npm run test:auth-diagnostic-denial
+      - name: Passphrase anti-lockout contract (DEC-13a)
+        run: npm run test:passphrase-concurrent

@@ -10,6 +10,7 @@ on:
       - 'package-lock.json'
       - 'cf-worker/backend-index.ts'
       - 'cf-worker/worker.ts'
+      - 'cf-worker/admin-auth-throttle.ts'
       - 'backend/index.ts'
       - '.github/workflows/pin-ui-regression.yml'
   workflow_dispatch:
