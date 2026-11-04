@@ -1342,14 +1342,14 @@ async function signEdgeSessionPayload(payload: string, secret: string) {
   return base64UrlBytes(new Uint8Array(signature));
 }
 
-function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string } | null {
+function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string; authMode?: string } | null {
   try {
     const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((encoded.length + 3) % 4);
     const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
     const payload = JSON.parse(json) as { exp?: number; jti?: string; nonce?: string };
     const exp = Number(payload.exp || 0);
     const jti = String(payload.jti || payload.nonce || '').trim();
-    return exp > 0 && jti ? { exp, jti } : null;
+    return exp > 0 && jti ? { exp, jti, authMode: typeof (payload as any).authMode === 'string' ? String((payload as any).authMode) : undefined } : null;
   } catch {
     return null;
   }
@@ -1359,7 +1359,8 @@ export async function createEdgeSession() {
   const secret = await sessionSigningKey();
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
-  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), jti: crypto.randomUUID() }));
+  const passphraseMode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase';
+  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), jti: crypto.randomUUID(), authMode: passphraseMode ? 'passphrase-v1' : 'pin-legacy' }));
   const signature = await signEdgeSessionPayload(payload, secret);
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
@@ -1369,6 +1370,7 @@ export async function verifyEdgeSession(token: string) {
   if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
   const payload = decodeEdgeSessionPayload(parts[1]);
   if (!payload || payload.exp <= Date.now()) return false;
+  if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase' && payload.authMode !== 'passphrase-v1') return false;
   const keys = await sessionVerificationKeys();
   if (!keys.length) return false;
   let verified = false;
@@ -1448,6 +1450,8 @@ async function requirePinSession(token: unknown) {
   const value = String(token || '').trim();
   if (!value) return false;
   if (await verifyEdgeSession(value)) return true;
+  // Once strong authentication is enabled, never accept legacy DB or PIN sessions.
+  if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') return false;
   const now = Date.now();
   const current = await db.list<PinSessionRecord>(PIN_CURRENT_SESSION, { limit: 10 });
   if (current.items.some(item => item.token === value && Date.parse(item.expiresAt) > now)) return true;
@@ -1456,8 +1460,12 @@ async function requirePinSession(token: unknown) {
 }
 
 async function pinLogin(pin: unknown) {
-  const candidate = String(pin || '').trim();
-  if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
+  const strongMode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase';
+  const candidate = String(pin ?? '');
+  if (strongMode && (Array.from(candidate).length < 12 || Array.from(candidate).length > 256)) {
+    return { ok: false, status: 400, message: 'Informe uma frase-senha com pelo menos 12 caracteres.' };
+  }
+  if (!strongMode && !/^\\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 números.' };
   const verification = await verifyAdminPin(candidate);
   const fingerprint = verification.fingerprint;
   const state = await securityState(fingerprint);
@@ -1477,7 +1485,7 @@ async function pinLogin(pin: unknown) {
   const lockMinutes = Math.min(120, LOCK_MINUTES * 2 ** Math.max(0, locks - 1));
   const lockedUntil = locking ? new Date(Date.now() + lockMinutes * 60 * 1000).toISOString() : null;
   await updateSecurity(state.id, { failedAttempts: locking ? 0 : failedAttempts, lockedUntil, locks, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
-  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
+  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'Credencial incorreta.' };
 }
 
 type GlobalTrust = {
@@ -1665,6 +1673,7 @@ export const dailyAuditHandler = async () => {
 export const handler = router({
   'GET /api/_auth_diagnostic': [async () => {
     try {
+      if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') return json({ stage: 'diagnostic_disabled_in_passphrase_mode' }, 403);
       const configuredPin = String(await secrets.readSecret('ADMIN_PIN') || '').trim();
       if (!/^\d{4}$/.test(configuredPin)) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_unconfigured' });
       const startedAt = Date.now();
