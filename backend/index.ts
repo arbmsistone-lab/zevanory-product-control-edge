@@ -2523,7 +2523,8 @@ async function createEdgeSession() {
   const secret = await sessionSigningKey();
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
-  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID() }));
+  const mode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase' ? 'passphrase-v1' : 'pin-legacy';
+  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID(), authMode: mode }));
   const signature = await signEdgeSessionPayload(payload, secret);
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
@@ -2553,7 +2554,8 @@ async function verifyEdgeSession(token: string) {
   try {
     const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((parts[1].length + 3) % 4);
     const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
-    const payload = JSON.parse(json) as { exp?: number };
+    const payload = JSON.parse(json) as { exp?: number; authMode?: string };
+    if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase' && payload.authMode !== 'passphrase-v1') return false;
     return Number(payload.exp || 0) > Date.now();
   } catch {
     return false;
@@ -2602,6 +2604,7 @@ async function requirePinSession(token: unknown) {
   const value = String(token || '').trim();
   if (!value) return false;
   if (await verifyCanonicalEdgeSession(value)) return true;
+  if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') return false;
   const now = Date.now();
   const current = await db.list<PinSessionRecord>(PIN_CURRENT_SESSION, { limit: 10 });
   if (current.items.some(item => item.token === value && Date.parse(item.expiresAt) > now)) return true;
@@ -2610,15 +2613,22 @@ async function requirePinSession(token: unknown) {
 }
 
 async function pinLogin(pin: unknown) {
-  const candidate = String(pin || '').trim();
-  if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
+  const strongMode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase';
+  const candidate = String(pin ?? '');
+  if (strongMode && (Array.from(candidate).length < 12 || Array.from(candidate).length > 256)) return { ok: false, status: 400, message: 'Informe uma frase-senha com 12 ou mais caracteres.' };
+  if (!strongMode && !/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 números.' };
   const verification = await verifyAdminPin(candidate);
   const fingerprint = verification.fingerprint;
+  const state = await securityState(fingerprint);
+  // Even a correct phrase is rejected during a lockout.
+  if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
+    return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
+  }
   if (verification.valid) {
+    if (state.failedAttempts) await updateSecurity(state.id, { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
     return { ok: true, status: 200, ...(await createEdgeSession()) };
   }
 
-  const state = await securityState(fingerprint);
   if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
     return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
   }
@@ -2627,7 +2637,7 @@ async function pinLogin(pin: unknown) {
     ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
     : null;
   await updateSecurity(state.id, { failedAttempts: lockedUntil ? 0 : failedAttempts, lockedUntil, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
-  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
+  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'Credencial incorreta.' };
 }
 
 type GlobalTrust = {
