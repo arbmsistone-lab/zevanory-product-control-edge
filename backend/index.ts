@@ -2515,7 +2515,8 @@ async function signEdgeSessionPayload(payload: string, secret: string) {
   return base64UrlBytes(new Uint8Array(signature));
 }
 
-async function createEdgeSession() {
+// Internal compatibility utility; no public origin route invokes session issuance.
+export async function createEdgeSession() {
   const secret = await sessionSigningKey();
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
