@@ -3185,15 +3185,8 @@ const routedHandler = router({
     // so the public Render URL cannot be used to brute-force the admin PIN.
     return error('Login disponivel apenas pelo painel oficial.', 404);
   }],
-  'POST /api/pin/login-origin-disabled': [async ctx => {
-    try {
-      const result = await pinLogin((ctx.body as { pin?: string })?.pin);
-      if (!result.ok || !('token' in result)) return error(result.message || 'Acesso negado.', result.status);
-      return json({ ok: true, sessionToken: result.token, expiresAt: result.expiresAt });
-    } catch {
-      return error('PIN administrativo nao configurado.', 503);
-    }
-  }],
+  // Deny the legacy origin login alias in every authentication mode.
+  'POST /api/pin/login-origin-disabled': [async () => error('Login exclusivo na borda autenticada.', 403)],
   'POST /api/pin/logout': [async ctx => {
     const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
     const [current, legacy] = await Promise.all([
