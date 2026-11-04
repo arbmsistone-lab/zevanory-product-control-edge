@@ -315,32 +315,9 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [diagnostic, setDiagnostic] = useState('DIAGNÓSTICO: carregando...');
-
-  useEffect(() => {
-    // Diagnostics execute a full backend bootstrap; do not duplicate session restoration.
-    if (restoringSession) return;
-    let active = true;
-    api.get('/api/_auth_diagnostic')
-      .then(response => {
-        if (!active) return;
-        const d = response.data || {};
-        const parts = [
-          `PIN:${d.secretValid ? 'OK' : 'FALHA'}`,
-          `LOCK:${d.locked ? 'ATIVO' : 'LIVRE'}`,
-          `SESSÃO:${d.sessionRoundtrip ? 'OK' : 'FALHA'}`,
-          `BOOT:${d.bootstrapOk ? 'OK' : 'FALHA'}`,
-          d.stage ? `ETAPA:${d.stage}` : '',
-        ].filter(Boolean);
-        setDiagnostic(`DIAGNÓSTICO: ${parts.join(' · ')}`);
-      })
-      .catch(() => { if (active) setDiagnostic('DIAGNÓSTICO: indisponível'); });
-    return () => { active = false; };
-  }, [restoringSession]);
-
   const login = async () => {
     if (!/^\d{4}$/.test(pin)) {
-      setError('Digite os 4 numeros do PIN.');
+      setError('Digite os 4 números do PIN.');
       return;
     }
     setBusy(true);
@@ -364,7 +341,7 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
         <ShieldCheck size={34} />
         <p className='eyebrow'>ZEVANORY · ACESSO ADMINISTRATIVO</p>
         <h1>ZEVANORY</h1>
-        <p>Controle de produtos, governanca e certificacao. Digite seu PIN de 4 numeros.</p>
+        <p>Controle de produtos, governança e certificação. Digite seu PIN de 4 números.</p>
         <input
           className='pinInput'
           type='password'
@@ -374,14 +351,13 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
           value={pin}
           onChange={event => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
           onKeyDown={event => { if (event.key === 'Enter') void login(); }}
-          aria-label='PIN de 4 numeros'
+          aria-label='PIN de 4 números'
         />
         <button className='primary' onClick={login} disabled={busy || pin.length !== 4}>
           <LogIn size={17} />
           {busy ? 'Entrando...' : 'Entrar'}
         </button>
         {error && <div className='errorbox'>{error}</div>}
-        <div className='authDiagnostic'>{diagnostic}</div>
       </section>
     </main>
   );
