@@ -1,0 +1,36 @@
+name: DEC-13 PostgreSQL atomic authentication
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261104180000_dec13_atomic_passphrase_attempt.sql'
+      - 'scripts/passphrase-postgres-atomic.ts'
+      - '.github/workflows/dec13-postgres-atomic.yml'
+      - 'cf-worker/backend-index.ts'
+      - 'cf-worker/platform-worker.ts'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres-atomic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: dec13_isolated
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d dec13_isolated"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DEC13_TEST_DATABASE_URL: postgres://postgres:ci-only@127.0.0.1:5432/dec13_isolated
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsx scripts/passphrase-postgres-atomic.ts
