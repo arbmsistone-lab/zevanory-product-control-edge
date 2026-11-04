@@ -1216,12 +1216,24 @@ export default {
       // Per-IP throttle (Cloudflare rate-limit binding, free): 5 attempts/minute per address, on top
       // of the global progressive lock inside pinLogin.
       const limiter = (env as any).PIN_LIMITER;
-      if (limiter?.limit) {
+      const strongMode = String((env as any).ADMIN_AUTH_MODE || '') === 'passphrase';
+      const unavailable = () => Response.json({ ok: false, error: 'authentication_throttle_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+      if (!limiter?.limit) {
+        if (strongMode) return unavailable(); // Strong mode must never silently bypass its limiter.
+      } else {
         const ip = request.headers.get('cf-connecting-ip') || 'unknown';
         try {
+          // Two distinct buckets, shared global quota and per-IP, reduce parallel/distributed spraying.
+          // The provider may be eventually consistent across regions; server-side lock remains required.
+          if (strongMode) {
+            const globalLimit = await limiter.limit({ key: 'admin-passphrase-global' });
+            if (!globalLimit.success) return Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
+          }
           const { success } = await limiter.limit({ key: 'pin:' + ip });
           if (!success) return Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
-        } catch {}
+        } catch {
+          if (strongMode) return unavailable();
+        }
       }
     }
 
