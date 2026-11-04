@@ -34,6 +34,7 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
+          npm install --no-save --no-package-lock --no-audit --no-fund pngjs@7.0.0
       - name: Baseline dependencies
         working-directory: baseline
         run: npm install --no-audit --no-fund
