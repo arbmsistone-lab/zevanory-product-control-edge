@@ -1,23 +1,38 @@
 name: Deprecated diagnostic endpoint guard
 on:
-  push:
+  pull_request:
+    branches: [main]
     paths:
       - '.github/workflows/temp-cert-diagnostic.yml'
       - 'cf-worker/backend-index.ts'
       - 'cf-worker/worker.ts'
       - 'backend/index.ts'
       - 'scripts/auth-diagnostic-denial-contract.ts'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-cert-diagnostic.yml'
+      - 'cf-worker/backend-index.ts'
+      - 'cf-worker/worker.ts'
+      - 'backend/index.ts'
+      - 'scripts/auth-diagnostic-denial-contract.ts'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   diagnostic-denied:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm ci
-      - name: Assert anonymous diagnostic disabled without calling live endpoints
-        run: npx tsx scripts/auth-diagnostic-denial-contract.ts
+      - name: Strict lockfile install
+        run: npm ci --no-audit --no-fund
+      - name: Anonymous diagnostic contract in both auth modes
+        run: npm run test:auth-diagnostic-denial
