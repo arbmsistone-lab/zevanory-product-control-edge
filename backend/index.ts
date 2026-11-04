@@ -2524,7 +2524,9 @@ async function createEdgeSession() {
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
   const mode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase' ? 'passphrase-v1' : 'pin-legacy';
-  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID(), authMode: mode }));
+  const authState = mode === 'passphrase-v1' ? await adminPinState() : null;
+  if (mode === 'passphrase-v1' && !authState?.configured) throw new Error('admin_passphrase_unconfigured');
+  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID(), authMode: mode, authEpoch: authState?.fingerprint }));
   const signature = await signEdgeSessionPayload(payload, secret);
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
@@ -2554,8 +2556,11 @@ async function verifyEdgeSession(token: string) {
   try {
     const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((parts[1].length + 3) % 4);
     const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
-    const payload = JSON.parse(json) as { exp?: number; authMode?: string };
-    if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase' && payload.authMode !== 'passphrase-v1') return false;
+    const payload = JSON.parse(json) as { exp?: number; authMode?: string; authEpoch?: string };
+    if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') {
+      const authState = await adminPinState();
+      if (!authState.configured || payload.authMode !== 'passphrase-v1' || payload.authEpoch !== authState.fingerprint) return false;
+    }
     return Number(payload.exp || 0) > Date.now();
   } catch {
     return false;
