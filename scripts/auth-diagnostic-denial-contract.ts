@@ -23,8 +23,8 @@ for(const env of modes){
 const edge = await readFile(new URL('../cf-worker/backend-index.ts',import.meta.url),'utf8');
 const origin = await readFile(new URL('../backend/index.ts',import.meta.url),'utf8');
 const workflow = await readFile(new URL('../.github/workflows/temp-cert-diagnostic.yml',import.meta.url),'utf8');
-const edgeRoute = edge.slice(edge.indexOf("'GET /api/_auth_diagnostic'"),edge.indexOf("'POST /api/_session_verify'"));
-const originRoute = origin.slice(origin.indexOf("'GET /api/_auth_diagnostic'"),origin.indexOf("'POST /api/_session_verify'"));
+const edgeRoute = edge.slice(edge.indexOf("'GET /api/_auth_diagnostic'"),edge.indexOf("'POST /api/_session_verify'",edge.indexOf("'GET /api/_auth_diagnostic'")));
+const originRoute = origin.slice(origin.indexOf("'GET /api/_auth_diagnostic'"),origin.indexOf("'POST /api/_session_verify'",origin.indexOf("'GET /api/_auth_diagnostic'")));
 assert.match(edgeRoute,/status|403|error\(/);
 assert.match(originRoute,/403/);
 for(const code of [edgeRoute,originRoute]){
