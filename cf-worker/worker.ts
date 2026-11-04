@@ -1392,6 +1392,10 @@ export default {
       return Response.json({ ok: true, requested: sw?.enabled === true, open: sw?.enabled === true && preflight?.ok === true && fresh, switchedAt: sw?.at || null, preflight, preflightFresh: fresh }, { headers: { 'cache-control': 'no-store' } });
     }
 
+    if (normalizedPath === '/api/_auth_diagnostic') {
+      return Response.json({ ok: false, error: 'diagnostic_disabled' }, { status: 403, headers: { 'cache-control': 'no-store' } });
+    }
+
     if (normalizedPath.startsWith('/api/')) {
       const edgeAuthPath = normalizedPath === '/api/_auth_diagnostic' || normalizedPath === '/api/_session_verify' || normalizedPath === '/api/pin/login' || normalizedPath === '/api/pin/logout';
       const forceDirect = edgeAuthPath || url.searchParams.get('runtime') === 'cloudflare';
