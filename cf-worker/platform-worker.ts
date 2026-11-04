@@ -203,6 +203,8 @@ async function migrateLegacyBootstrap(bootstrap: any) {
 }
 
 export async function completePortableAccessMigration(candidate: string, migrationToken: string) {
+  // A historic 4-digit PIN must never be reset or reintroduced after passphrase cutover.
+  if (env('ADMIN_AUTH_MODE') === 'passphrase') return { ok: false, status: 403, message: 'Migração legada desabilitada.' };
   const expected = env('ZPC_MIGRATION_TOKEN');
   if (!expected || migrationToken !== expected) {
     return { ok: false, status: 403, message: 'Link de migracao invalido.' };
