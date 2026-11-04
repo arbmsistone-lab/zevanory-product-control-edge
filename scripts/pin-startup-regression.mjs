@@ -50,6 +50,11 @@ for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const
   const {context,page}=await setup('http://127.0.0.1:'+port,true,viewport,theme);
   await page.route('**/api/admin/bootstrap',r=>fulfill(r,200,fixture));
   await page.goto('http://127.0.0.1:'+port);await page.locator('.zpcAppShell').waitFor();
+  if(port===4173) assert(await page.getByText('ACESSO ADMINISTRATIVO ATIVO',{exact:false}).count()>0,'candidate administrative label must be correct');
+  // Normalize ONLY the intentionally renamed authenticated chip for structural/raster regression;
+  // every other pixel and geometry must remain identical to baseline.
+  await page.evaluate(()=>{const x=document.querySelector('.adminChip');if(x){const t=Array.from(x.childNodes).find(n=>n.nodeType===Node.TEXT_NODE);if(t)t.textContent=' ACESSO ADMINISTRATIVO';}});
+
   await page.evaluate(()=>document.fonts.ready);await page.waitForLoadState('networkidle');
   geometries.push(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().width&&e.getBoundingClientRect().height).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height}})));
   const image=await page.screenshot({animations:'disabled'});images.push(image);await context.close();
