@@ -4,7 +4,10 @@
 create or replace function public.zpc_passphrase_attempt(
   p_token text, p_source_id uuid, p_fingerprint text, p_trusted boolean, p_valid boolean
 ) returns jsonb
-language plpgsql security definer set search_path = public
+language plpgsql security definer
+set search_path = pg_catalog, public
+set lock_timeout = '2s'
+set statement_timeout = '2s'
 as $$
 declare
   src_bucket constant text := 'acs_passphrase_source_security';
@@ -30,7 +33,7 @@ begin
   end if;
   -- Serializes identical sources across Cloudflare colo/regions. Correct logins NEVER wait
   -- for the global aggregate lock, and a different source cannot lock this one.
-  perform pg_advisory_xact_lock(hashtextextended('zpc-passphrase-src:' || p_source_id::text, 0));
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('zpc-passphrase-src:' || p_source_id::text, 0));
   select r.record into src from public.zpc_records r where bucket = src_bucket and id = p_source_id for update;
   if src is null or src->>'fingerprint' is distinct from p_fingerprint then
     src := jsonb_build_object('failedAttempts',0,'locks',0,'lockedUntil',null,'fingerprint',p_fingerprint);
@@ -52,7 +55,7 @@ begin
   end if;
   -- Aggregate is a pressure signal, NEVER a shared lockout. Serialize increments to
   -- avoid a lossy read/modify/write even during a distributed spray.
-  perform pg_advisory_xact_lock(hashtextextended('zpc-passphrase-aggregate-v1',0));
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('zpc-passphrase-aggregate-v1',0));
   select r.record into agg from public.zpc_records r where bucket=agg_bucket and id=agg_id for update;
   begin
     start_ts := nullif(agg->>'windowStart','')::timestamptz;
