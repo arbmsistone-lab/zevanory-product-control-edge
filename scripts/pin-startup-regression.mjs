@@ -55,6 +55,9 @@ for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const
   // every other pixel and geometry must remain identical to baseline.
   await page.evaluate(()=>{const x=document.querySelector('.adminChip');if(x){const t=Array.from(x.childNodes).find(n=>n.nodeType===Node.TEXT_NODE);if(t)t.textContent=' ACESSO ADMINISTRATIVO';}});
 
+  // Freeze CSS transitions and animations in BOTH previews before measuring geometry.
+  // Keep the exact raster tolerance; do not hide genuine layout differences.
+  await page.addStyleTag({content:'*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; caret-color: transparent !important; }'});
   await page.evaluate(()=>document.fonts.ready);await page.waitForLoadState('networkidle');
   geometries.push(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().width&&e.getBoundingClientRect().height).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height}})));
   const image=await page.screenshot({animations:'disabled'});images.push(image);await context.close();
