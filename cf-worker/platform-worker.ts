@@ -62,6 +62,29 @@ async function storeCall(payload: Record<string, unknown>) {
   return await response.json() as any;
 }
 
+// DEC-13(a) NC01: one authenticated Postgres transaction owns every source decision.
+// A missing migration, malformed response or unavailable store MUST deny authentication.
+export async function atomicPassphraseAttempt(input: {
+  sourceId: string; fingerprint: string; trusted: boolean; valid: boolean;
+}): Promise<{status: 200 | 401 | 429; locked: boolean}> {
+  const url = env('SUPABASE_URL').replace(/\/$/, '');
+  const key = env('SUPABASE_PUBLISHABLE_KEY');
+  const token = env('ZPC_REPLICATION_SECRET');
+  if (!url || !key || !token) throw new Error('atomic_passphrase_store_unconfigured');
+  const response = await fetch(url + '/rest/v1/rpc/zpc_passphrase_attempt', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', apikey: key, authorization: 'Bearer ' + key },
+    body: JSON.stringify({ p_token: token, p_source_id: input.sourceId,
+      p_fingerprint: input.fingerprint, p_trusted: input.trusted, p_valid: input.valid }),
+    signal: AbortSignal.timeout(2500),
+  });
+  if (!response.ok) throw new Error('atomic_passphrase_store_http_' + response.status);
+  const result: any = await response.json();
+  if (![200,401,429].includes(result?.status) || typeof result?.locked !== 'boolean')
+    throw new Error('atomic_passphrase_store_invalid_response');
+  return { status: result.status, locked: result.locked };
+}
+
 export const db = {
   async list<T>(bucket: string, options: { limit?: number } = {}): Promise<ListResult<T>> {
     const result = await storeCall({
