@@ -28,6 +28,28 @@ try {
     returns boolean language sql stable as $$ select p_token = 'contract-test-only-secret' $$`);
   const migration = await fs.readFile(new URL('../supabase/migrations/20261104180000_dec13_atomic_passphrase_attempt.sql', import.meta.url),'utf8');
   await pool.query(migration);
+  // NC01/DEC-13: SQL policy must remain identical to TS policy. Regression for
+  // SECURITY DEFINER search_path hijack and function-local timeout settings.
+  const policy = await fs.readFile(new URL('../cf-worker/admin-auth-throttle.ts', import.meta.url), 'utf8');
+  const constants: Record<string,number> = {};
+  for (const [,name,value] of policy.matchAll(/export const (SOURCE_MAX_FAILURES|SOURCE_MAX_FAILURES_UNDER_ATTACK|SOURCE_LOCK_MINUTES|SOURCE_LOCK_CAP_MINUTES|AGGREGATE_WINDOW_MINUTES|AGGREGATE_HOT_FAILURES) = (\\d+);/g))
+    constants[name]=Number(value);
+  assert.equal(Object.keys(constants).length,6,'all six policy constants must be compared with SQL');
+  assert.match(migration, new RegExp('total >= ' + constants.AGGREGATE_HOT_FAILURES + ' and not p_trusted then ' + constants.SOURCE_MAX_FAILURES_UNDER_ATTACK + ' else ' + constants.SOURCE_MAX_FAILURES + ' end'));
+  assert.match(migration, new RegExp("interval '" + constants.AGGREGATE_WINDOW_MINUTES + " minutes'"));
+  assert.match(migration, new RegExp('least\\(' + constants.SOURCE_LOCK_CAP_MINUTES + ',\\s*' + constants.SOURCE_LOCK_MINUTES + ' \\* power'));
+  // A malicious public overload cannot intercept the system hashing function.
+  await pool.query(`create or replace function public.hashtextextended(text,bigint)
+    returns bigint language plpgsql as $ begin raise exception 'shadowed_hash'; end; $`);
+  const config = await pool.query(`select p.proconfig from pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public' and p.proname='zpc_passphrase_attempt'`);
+  assert.equal(config.rowCount,1);
+  assert.ok(config.rows[0].proconfig.includes('search_path=pg_catalog, public'));
+  assert.ok(config.rows[0].proconfig.includes('lock_timeout=2s'));
+  assert.ok(config.rows[0].proconfig.includes('statement_timeout=2s'));
+  assert.equal((await attempt(uuid(500),true)).status,200,'shadowed public.hashtextextended must not be executed');
+  await pool.query('drop function public.hashtextextended(text,bigint)');
   await assert.rejects(pool.query('select public.zpc_passphrase_attempt($1,$2::uuid,$3,$4,$5)',
     ['wrong',uuid(1),fingerprint,false,false]),/unauthorized/);
   const source = uuid(1);
