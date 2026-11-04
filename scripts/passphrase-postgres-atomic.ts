@@ -17,6 +17,8 @@ async function attempt(source: string, valid = false, trusted = false, fp = fing
 }
 try {
   // Disposable CI PostgreSQL service, never a connected project database.
+  await pool.query('create role anon nologin');
+  await pool.query('create role authenticated nologin');
   await pool.query(`create table public.zpc_records (
     bucket text not null, id uuid not null, record jsonb not null,
     updated_at timestamptz not null default now(),
