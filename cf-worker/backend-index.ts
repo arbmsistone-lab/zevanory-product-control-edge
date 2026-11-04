@@ -1342,14 +1342,14 @@ async function signEdgeSessionPayload(payload: string, secret: string) {
   return base64UrlBytes(new Uint8Array(signature));
 }
 
-function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string; authMode?: string } | null {
+function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string; authMode?: string; authEpoch?: string } | null {
   try {
     const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((encoded.length + 3) % 4);
     const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
     const payload = JSON.parse(json) as { exp?: number; jti?: string; nonce?: string };
     const exp = Number(payload.exp || 0);
     const jti = String(payload.jti || payload.nonce || '').trim();
-    return exp > 0 && jti ? { exp, jti, authMode: typeof (payload as any).authMode === 'string' ? String((payload as any).authMode) : undefined } : null;
+    return exp > 0 && jti ? { exp, jti, authMode: typeof (payload as any).authMode === 'string' ? String((payload as any).authMode) : undefined, authEpoch: typeof (payload as any).authEpoch === 'string' ? String((payload as any).authEpoch) : undefined } : null;
   } catch {
     return null;
   }
@@ -1360,7 +1360,9 @@ export async function createEdgeSession() {
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
   const passphraseMode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase';
-  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), jti: crypto.randomUUID(), authMode: passphraseMode ? 'passphrase-v1' : 'pin-legacy' }));
+  const authState = passphraseMode ? await adminPinState() : null;
+  if (passphraseMode && !authState?.configured) throw new Error('admin_passphrase_unconfigured');
+  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), jti: crypto.randomUUID(), authMode: passphraseMode ? 'passphrase-v1' : 'pin-legacy', authEpoch: authState?.fingerprint }));
   const signature = await signEdgeSessionPayload(payload, secret);
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
@@ -1370,7 +1372,10 @@ export async function verifyEdgeSession(token: string) {
   if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
   const payload = decodeEdgeSessionPayload(parts[1]);
   if (!payload || payload.exp <= Date.now()) return false;
-  if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase' && payload.authMode !== 'passphrase-v1') return false;
+  if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') {
+    const authState = await adminPinState();
+    if (!authState.configured || payload.authMode !== 'passphrase-v1' || payload.authEpoch !== authState.fingerprint) return false;
+  }
   const keys = await sessionVerificationKeys();
   if (!keys.length) return false;
   let verified = false;
