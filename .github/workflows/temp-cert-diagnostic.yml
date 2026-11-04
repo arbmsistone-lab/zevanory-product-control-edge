@@ -1,17 +1,23 @@
-name: Temporary Certification Diagnostic Trigger
+name: Deprecated diagnostic endpoint guard
 on:
   push:
     paths:
       - '.github/workflows/temp-cert-diagnostic.yml'
+      - 'cf-worker/backend-index.ts'
+      - 'cf-worker/worker.ts'
+      - 'backend/index.ts'
+      - 'scripts/auth-diagnostic-denial-contract.ts'
 permissions:
   contents: read
 jobs:
-  trigger:
+  diagnostic-denied:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Trigger safe internal certification diagnostic
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --max-time 90 --retry 3 --retry-delay 5 \
-            https://zevanory-product-control-edge.onrender.com/api/_auth_diagnostic
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Assert anonymous diagnostic disabled without calling live endpoints
+        run: npx tsx scripts/auth-diagnostic-denial-contract.ts
