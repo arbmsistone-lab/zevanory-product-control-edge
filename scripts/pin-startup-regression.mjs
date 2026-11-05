@@ -64,6 +64,42 @@ const base='http://127.0.0.1:4173';
   checks.r111_enabled_challenge_ui_token_single_attempt=true;
   await context.close();
 }
+{
+  // R112: a failed config lookup must NOT lock the owner out when Turnstile isn't enforced.
+  // The Worker remains authoritative for a later enabled=true environment.
+  const {context,page}=await setup(base);
+  await page.unroute('**/api/auth/turnstile-config');
+  await page.route('**/api/auth/turnstile-config',r=>fulfill(r,503,{error:'simulated-config-down'}));
+  let loginCalls=0,token=null;
+  await page.route('**/api/pin/login',r=>{loginCalls++;token=r.request().postDataJSON()?.turnstileToken;return fulfill(r,401,{error:'Credencial incorreta.'});});
+  await page.goto(base);
+  await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').fill('frase-senha-forte-de-teste-2026');
+  const submit=page.getByRole('button',{name:'Entrar',exact:true});
+  await page.getByText('O servidor verificará sua tentativa.',{exact:false}).waitFor();
+  assert.equal(await submit.isEnabled(),true,'R112 config failure must not disable login');
+  await submit.click();
+  await page.getByText('Credencial incorreta.',{exact:true}).waitFor();
+  assert.equal(loginCalls,1,'R112 owner login reaches Worker even when config endpoint is down');
+  assert.ok(!token,'R112 no token is allowed by client only; Worker is authority');
+  checks.r112_config_unavailable_owner_login_possible=true;
+  await context.close();
+}
+{
+  // /control prefix is the same normalized API entrypoint as the existing login.
+  const {context,page}=await setup('http://127.0.0.1:4173/control');
+  await page.unroute('**/api/auth/turnstile-config');
+  let seenConfig=false;
+  await page.route('**/control/api/auth/turnstile-config',r=>{seenConfig=true;return fulfill(r,200,{enabled:false,sitekey:null,action:'zpc_owner_login'});});
+  await page.goto('http://127.0.0.1:4173/control');
+  await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').waitFor();
+  // Candidate may redirect legacy /control; only assert API router directly if path remains /control.
+  if(new URL(page.url()).pathname.startsWith('/control')) {
+    await page.waitForFunction(()=>document.querySelector('.loginCard .primary') !== null);
+    assert.equal(seenConfig,true,'R112 config must use /control prefix');
+  }
+  checks.r112_config_uses_api_prefix=true;
+  await context.close();
+}
 // Intentional PIN-screen change: no public diagnostic. Authenticated UI retains visual-parity coverage.
 for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const theme of ['dark','light']){
  const {context,page}=await setup('http://127.0.0.1:4173',false,viewport,theme);
