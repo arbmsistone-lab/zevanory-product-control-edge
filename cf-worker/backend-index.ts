@@ -1,4 +1,5 @@
-import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform-worker.ts';
+import { adminPinState, atomicPassphraseAttempt, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform-worker.ts';
+import { adminAuthSourceKey, hasTrustedDevice, sourceRecordId } from './admin-auth-throttle.ts';
 import { activeIncidents, planIncidentWrites, TELEMETRY_UNAVAILABLE_TITLE } from '../backend/incident-lifecycle.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
 
@@ -1342,14 +1343,14 @@ async function signEdgeSessionPayload(payload: string, secret: string) {
   return base64UrlBytes(new Uint8Array(signature));
 }
 
-function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string } | null {
+function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string; authMode?: string; authEpoch?: string } | null {
   try {
     const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((encoded.length + 3) % 4);
     const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
     const payload = JSON.parse(json) as { exp?: number; jti?: string; nonce?: string };
     const exp = Number(payload.exp || 0);
     const jti = String(payload.jti || payload.nonce || '').trim();
-    return exp > 0 && jti ? { exp, jti } : null;
+    return exp > 0 && jti ? { exp, jti, authMode: typeof (payload as any).authMode === 'string' ? String((payload as any).authMode) : undefined, authEpoch: typeof (payload as any).authEpoch === 'string' ? String((payload as any).authEpoch) : undefined } : null;
   } catch {
     return null;
   }
@@ -1359,7 +1360,10 @@ export async function createEdgeSession() {
   const secret = await sessionSigningKey();
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
-  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), jti: crypto.randomUUID() }));
+  const passphraseMode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase';
+  const authState = passphraseMode ? await adminPinState() : null;
+  if (passphraseMode && !authState?.configured) throw new Error('admin_passphrase_unconfigured');
+  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), jti: crypto.randomUUID(), authMode: passphraseMode ? 'passphrase-v1' : 'pin-legacy', authEpoch: authState?.fingerprint }));
   const signature = await signEdgeSessionPayload(payload, secret);
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
@@ -1369,6 +1373,10 @@ export async function verifyEdgeSession(token: string) {
   if (parts.length !== 3 || parts[0] !== 'zpc1') return false;
   const payload = decodeEdgeSessionPayload(parts[1]);
   if (!payload || payload.exp <= Date.now()) return false;
+  if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') {
+    const authState = await adminPinState();
+    if (!authState.configured || payload.authMode !== 'passphrase-v1' || payload.authEpoch !== authState.fingerprint) return false;
+  }
   const keys = await sessionVerificationKeys();
   if (!keys.length) return false;
   let verified = false;
@@ -1448,6 +1456,8 @@ async function requirePinSession(token: unknown) {
   const value = String(token || '').trim();
   if (!value) return false;
   if (await verifyEdgeSession(value)) return true;
+  // Once strong authentication is enabled, never accept legacy DB or PIN sessions.
+  if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') return false;
   const now = Date.now();
   const current = await db.list<PinSessionRecord>(PIN_CURRENT_SESSION, { limit: 10 });
   if (current.items.some(item => item.token === value && Date.parse(item.expiresAt) > now)) return true;
@@ -1455,9 +1465,39 @@ async function requirePinSession(token: unknown) {
   return legacy.items.some(item => item.token === value && Date.parse(item.expiresAt) > now);
 }
 
-async function pinLogin(pin: unknown) {
-  const candidate = String(pin || '').trim();
-  if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
+// DEC-13(a) NC01: source lock and aggregate pressure update are one real Postgres
+// transaction. No local read-modify-write and no fallback to the global PIN lock.
+async function passphraseLogin(candidate: string, request: Request | undefined) {
+  const headers = request?.headers || new Headers();
+  const signingKey = String(await secrets.readSecret('SESSION_SIGNING_KEY') || '');
+  const [verification, sourceId, trusted] = await Promise.all([
+    verifyAdminPin(candidate),
+    sourceRecordId(adminAuthSourceKey(headers)),
+    hasTrustedDevice(headers, signingKey),
+  ]);
+  // Missing RPC/migration/provider always throws; route translates to 503.
+  const result = await atomicPassphraseAttempt({ sourceId, fingerprint: verification.fingerprint,
+    trusted, valid: verification.valid });
+  if (result.status === 200) {
+    if (!verification.valid) throw new Error('atomic_passphrase_inconsistent_grant');
+    return { ok: true, status: 200, ...(await createEdgeSession()) };
+  }
+  return { ok: false, status: result.status,
+    message: result.status === 429 || result.locked
+      ? 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.'
+      : 'Credencial incorreta.' };
+}
+
+async function pinLogin(pin: unknown, request?: Request) {
+  const strongMode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase';
+  const candidate = String(pin ?? '');
+  if (strongMode && (Array.from(candidate).length < 12 || Array.from(candidate).length > 256)) {
+    return { ok: false, status: 400, message: 'Informe uma frase-senha com pelo menos 12 caracteres.' };
+  }
+  if (strongMode) return passphraseLogin(candidate, request);
+  // Legacy 4-digit PIN mode: behaviour intentionally unchanged (per-IP edge throttle + global
+  // progressive lock; a 4-digit space cannot rely on per-source limits alone).
+  if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 números.' };
   const verification = await verifyAdminPin(candidate);
   const fingerprint = verification.fingerprint;
   const state = await securityState(fingerprint);
@@ -1477,7 +1517,7 @@ async function pinLogin(pin: unknown) {
   const lockMinutes = Math.min(120, LOCK_MINUTES * 2 ** Math.max(0, locks - 1));
   const lockedUntil = locking ? new Date(Date.now() + lockMinutes * 60 * 1000).toISOString() : null;
   await updateSecurity(state.id, { failedAttempts: locking ? 0 : failedAttempts, lockedUntil, locks, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
-  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
+  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'Credencial incorreta.' };
 }
 
 type GlobalTrust = {
@@ -1663,41 +1703,15 @@ export const dailyAuditHandler = async () => {
 };
 
 export const handler = router({
-  'GET /api/_auth_diagnostic': [async () => {
-    try {
-      const configuredPin = String(await secrets.readSecret('ADMIN_PIN') || '').trim();
-      if (!/^\d{4}$/.test(configuredPin)) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_unconfigured' });
-      const startedAt = Date.now();
-      const login = await pinLogin(configuredPin);
-      const loginMs = Date.now() - startedAt;
-      if (!login.ok || !('token' in login)) return json({ secretValid: true, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'edge_login_failed', loginMs });
-      const sessionRoundtrip = await verifyEdgeSession(login.token);
-      let providerRoundtrip = false;
-      try {
-        const renderBase = String(await secrets.readSecret('RENDER_BACKEND_URL') || '').replace(/\/$/, '');
-        if (renderBase) {
-          const response = await fetch(`${renderBase}/api/_session_verify`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ sessionToken: login.token }),
-            signal: AbortSignal.timeout(2500),
-          });
-          const data = await response.json() as { valid?: boolean };
-          providerRoundtrip = response.ok && data.valid === true;
-        }
-      } catch {}
-      return json({ secretValid: true, locked: false, sessionRoundtrip, bootstrapOk: sessionRoundtrip, providerRoundtrip, loginMs, stage: sessionRoundtrip ? 'edge_fastpath_ready' : 'edge_fastpath_failed' });
-    } catch {
-      return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, providerRoundtrip: false, stage: 'failed:edge_fastpath' });
-    }
-  }],
+  // Legacy unauthenticated diagnostic has been permanently retired. Never log in or mint sessions from GET.
+  'GET /api/_auth_diagnostic': [async () => error('Diagnóstico interno indisponível.', 403)],
   'POST /api/_session_verify': [async ctx => {
     const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
     return json({ valid: await verifyEdgeSession(token) });
   }],
   'POST /api/pin/login': [async ctx => {
     try {
-      const result = await pinLogin((ctx.body as { pin?: string })?.pin);
+      const result = await pinLogin((ctx.body as { pin?: string })?.pin, ctx.request);
       if (!result.ok || !('token' in result)) return error(result.message || 'Acesso negado.', result.status);
       return json({ ok: true, sessionToken: result.token, expiresAt: result.expiresAt });
     } catch {

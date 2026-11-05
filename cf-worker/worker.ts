@@ -1,6 +1,7 @@
 import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
+import { adminAuthSourceKey, hasTrustedDevice, mintTrustedDevice, PASSPHRASE_AGGREGATE_BUCKET, PASSPHRASE_SOURCE_BUCKET_PREFIX, trustedDeviceSetCookie } from './admin-auth-throttle.ts';
 import { isLegacyDutyMinute, runP18ExternalTrigger } from './p18-dispatch.ts';
 import { buildOwnerAlertEntry } from './owner-alert-entry.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
@@ -30,7 +31,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#050d16;border:1px sol
 </style></head>
 <body><main>
 <div class="card"><span class="pill">CLOUDFLARE DIRECT · ZEES-16</span><h1>ZEVANORY PRODUCT CONTROL</h1><p>Console independente de certificação. Não depende de Render, Vercel, Netlify ou Railway para executar P01–P16.</p></div>
-<div class="card" id="loginCard"><h2>Acesso administrativo</h2><div class="row"><input id="pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="PIN de 4 dígitos"><button class="primary" id="login">Entrar</button></div><p id="auth"></p></div>
+<div class="card" id="loginCard"><h2>Acesso administrativo</h2><div class="row"><input id="pin" type="password" maxlength="256" autocomplete="current-password" placeholder="Frase-senha administrativa (12+ caracteres)"><button class="primary" id="login">Entrar</button></div><p id="auth"></p></div>
 <div class="card" id="execCard" hidden><h2>Executor de certificação</h2><div class="row"><select id="target"></select><button class="primary" id="run">Executar certificação</button><button id="reload">Atualizar</button></div>
 <div class="grid" id="summary"></div><div id="sealTitle"></div><div class="seals" id="seals"></div><div class="legend"><span class="proved">■ PROVADO</span><span class="partial">■ PARCIAL</span><span class="blocked">■ BLOQUEADO</span><span>■ N/A</span></div><p id="state"></p><pre id="output">Aguardando execução.</pre></div>
 </main><script>
@@ -42,7 +43,7 @@ let bootstrapData=null;
 async function load(){const data=await api('/api/admin/bootstrap?runtime=cloudflare',{sessionToken});bootstrapData=data;const select=qs('target');select.innerHTML='';for(const t of data.certificationTargets||[]){const o=document.createElement('option');o.value=t.id;o.textContent=t.name+' · '+t.certification.summary.proved+'/'+t.certification.summary.applicable;select.appendChild(o)}renderSummary(data.summary);renderSeals();return data}
 function renderSummary(s){qs('summary').innerHTML=[['Produtos',s.total],['Certificados',s.certified],['Em certificação',s.inCertification],['ZEES bloqueados',s.zeesBlocked]].map(([a,b])=>'<div class="metric"><b>'+b+'</b><small>'+a+'</small></div>').join('')}
 function renderSeals(){const id=qs('target').value;const t=(bootstrapData?.certificationTargets||[]).find(x=>x.id===id);if(!t){qs('seals').innerHTML='';qs('sealTitle').innerHTML='';return}qs('sealTitle').innerHTML='<p><b>'+t.name+'</b> · '+t.certification.summary.proved+'/'+t.certification.summary.applicable+' aplicáveis</p>';qs('seals').innerHTML=(t.certification.pillars||[]).map(p=>'<span class="seal '+p.status+'" title="'+p.id+' · '+p.name+' · '+p.status+'">'+p.id+'</span>').join('')}
-qs('login').onclick=async()=>{const pin=qs('pin').value.trim();if(!/^\d{4}$/.test(pin)){qs('auth').textContent='Informe 4 dígitos.';return}qs('login').disabled=true;try{const j=await api('/api/pin/login?runtime=cloudflare',{pin});sessionToken=j.sessionToken;qs('pin').value='';qs('auth').innerHTML='<span class="ok">PIN OK · sessão criada.</span>';qs('execCard').hidden=false;await load()}catch(e){qs('auth').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('login').disabled=false}}
+qs('login').onclick=async()=>{const pin=qs('pin').value;if(Array.from(pin).length<12){qs('auth').textContent='Informe uma frase-senha de 12 ou mais caracteres.';return}qs('login').disabled=true;try{const j=await api('/api/pin/login?runtime=cloudflare',{pin});sessionToken=j.sessionToken;qs('pin').value='';qs('auth').innerHTML='<span class="ok">Acesso autenticado · sessão criada.</span>';qs('execCard').hidden=false;await load()}catch(e){qs('auth').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('login').disabled=false}}
 qs('target').onchange=renderSeals;
 qs('reload').onclick=async()=>{try{await load();qs('state').textContent='Atualizado.'}catch(e){qs('state').textContent=e.message}}
 qs('run').onclick=async()=>{qs('run').disabled=true;qs('state').innerHTML='<span class="warn">Executando P01–P16...</span>';try{const j=await api('/api/certification/run?runtime=cloudflare',{sessionToken,targetId:qs('target').value});qs('output').textContent=JSON.stringify(j,null,2);qs('state').innerHTML=j.certification?.ready?'<span class="ok">CERTIFICADO integralmente.</span>':'<span class="warn">Execução concluída; gate permanece fail-closed.</span>';await load()}catch(e){qs('state').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('run').disabled=false}}
@@ -1335,15 +1336,43 @@ export default {
       );
     }
 
+    if (normalizedPath === '/api/pin/login' && url.hostname !== 'controle.zevanory.api.br') {
+      // NC02: any workers.dev/preview/unknown host is denied before authentication.
+      // The canonical Cloudflare custom domain is the sole public login entrypoint.
+      return Response.json({ ok: false, error: 'auth_canonical_host_required' }, {
+        status: 403, headers: { 'cache-control': 'no-store' },
+      });
+    }
+
     if (normalizedPath === '/api/pin/login') {
-      // Per-IP throttle (Cloudflare rate-limit binding, free): 5 attempts/minute per address, on top
-      // of the global progressive lock inside pinLogin.
       const limiter = (env as any).PIN_LIMITER;
-      if (limiter?.limit) {
+      const strongMode = String((env as any).ADMIN_AUTH_MODE || '') === 'passphrase';
+      const unavailable = () => Response.json({ ok: false, error: 'authentication_throttle_unavailable' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+      const tooMany = () => Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
+      if (strongMode) {
+        // DEC-13(a). Order matters: per-source bucket FIRST, keyed only on CF-Connecting-IP (IPv6 /64).
+        // The aggregate bucket is a signal, never a global block: when it is exhausted, sources without
+        // a valid trusted-device cookie pay a second per-source token per attempt (5 -> 2 per minute).
+        // The durable per-source progressive lock lives in backend-index.ts (passphraseLogin).
+        if (!limiter?.limit) return unavailable(); // Strong mode must never silently bypass its limiter.
+        const sourceKey = PASSPHRASE_SOURCE_BUCKET_PREFIX + adminAuthSourceKey(request.headers);
+        try {
+          if (!(await limiter.limit({ key: sourceKey })).success) return tooMany();
+          const trusted = await hasTrustedDevice(request.headers, String((env as any).SESSION_SIGNING_KEY || ''));
+          if (!trusted) {
+            const aggregate = await limiter.limit({ key: PASSPHRASE_AGGREGATE_BUCKET });
+            if (!aggregate.success && !(await limiter.limit({ key: sourceKey })).success) return tooMany();
+          }
+        } catch {
+          return unavailable();
+        }
+      } else if (limiter?.limit) {
+        // Legacy PIN mode, unchanged: 5 attempts/minute per address on top of the global
+        // progressive lock inside pinLogin.
         const ip = request.headers.get('cf-connecting-ip') || 'unknown';
         try {
           const { success } = await limiter.limit({ key: 'pin:' + ip });
-          if (!success) return Response.json({ ok: false, error: 'Muitas tentativas. Aguarde um minuto.' }, { status: 429, headers: { 'cache-control': 'no-store', 'retry-after': '60' } });
+          if (!success) return tooMany();
         } catch {}
       }
     }
@@ -1515,6 +1544,10 @@ export default {
       return Response.json({ ok: true, requested: sw?.enabled === true, open: sw?.enabled === true && preflight?.ok === true && fresh, switchedAt: sw?.at || null, preflight, preflightFresh: fresh }, { headers: { 'cache-control': 'no-store' } });
     }
 
+    if (normalizedPath === '/api/_auth_diagnostic') {
+      return Response.json({ ok: false, error: 'diagnostic_disabled' }, { status: 403, headers: { 'cache-control': 'no-store' } });
+    }
+
     if (normalizedPath.startsWith('/api/')) {
       const edgeAuthPath = normalizedPath === '/api/_auth_diagnostic' || normalizedPath === '/api/_session_verify' || normalizedPath === '/api/pin/login' || normalizedPath === '/api/pin/logout';
       const forceDirect = edgeAuthPath || url.searchParams.get('runtime') === 'cloudflare';
@@ -1555,6 +1588,15 @@ export default {
         } catch {}
       }
       const edgeResponse = await handler(copy(normalizedUrl.toString()));
+      if (normalizedPath === '/api/pin/login' && edgeResponse.status === 200 && String((env as any).ADMIN_AUTH_MODE || '') === 'passphrase') {
+        // Successful owner login marks this browser as a trusted device (aggregate-throttle bypass only).
+        const device = await mintTrustedDevice(String((env as any).SESSION_SIGNING_KEY || '')).catch(() => null);
+        if (device) {
+          const headers = new Headers(edgeResponse.headers);
+          headers.append('set-cookie', trustedDeviceSetCookie(device.value, device.maxAge));
+          return new Response(edgeResponse.body, { status: edgeResponse.status, headers });
+        }
+      }
       if (edgeResponse.status === 404 && renderBase) {
         // Only when the ROUTE is missing at the edge (exists only on the auxiliary server, which did
         // not complete the request). A real "not found" from an edge route passes through.

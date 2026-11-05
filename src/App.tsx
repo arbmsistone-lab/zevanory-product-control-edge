@@ -312,41 +312,18 @@ function certificationProfileLabel(profile: string) {
 }
 
 function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (token: string) => void; restoringSession?: boolean }) {
-  const [pin, setPin] = useState('');
+  const [passphrase, setPassphrase] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [diagnostic, setDiagnostic] = useState('DIAGNÓSTICO: carregando...');
-
-  useEffect(() => {
-    // Diagnostics execute a full backend bootstrap; do not duplicate session restoration.
-    if (restoringSession) return;
-    let active = true;
-    api.get('/api/_auth_diagnostic')
-      .then(response => {
-        if (!active) return;
-        const d = response.data || {};
-        const parts = [
-          `PIN:${d.secretValid ? 'OK' : 'FALHA'}`,
-          `LOCK:${d.locked ? 'ATIVO' : 'LIVRE'}`,
-          `SESSÃO:${d.sessionRoundtrip ? 'OK' : 'FALHA'}`,
-          `BOOT:${d.bootstrapOk ? 'OK' : 'FALHA'}`,
-          d.stage ? `ETAPA:${d.stage}` : '',
-        ].filter(Boolean);
-        setDiagnostic(`DIAGNÓSTICO: ${parts.join(' · ')}`);
-      })
-      .catch(() => { if (active) setDiagnostic('DIAGNÓSTICO: indisponível'); });
-    return () => { active = false; };
-  }, [restoringSession]);
-
   const login = async () => {
-    if (!/^\d{4}$/.test(pin)) {
-      setError('Digite os 4 numeros do PIN.');
+    if (Array.from(passphrase).length < 12 || Array.from(passphrase).length > 256) {
+      setError('Digite uma frase-senha com pelo menos 12 caracteres.');
       return;
     }
     setBusy(true);
     setError('');
     try {
-      const response = await api.post('/api/pin/login', { pin });
+      const response = await api.post('/api/pin/login', { pin: passphrase });
       const token = response.data.sessionToken as string;
       localStorage.setItem('arbm_admin_session', token);
       onSuccess(token);
@@ -359,29 +336,28 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
   };
 
   return (
-    <main className='loginShell'>
+    <main className='loginShell' aria-busy={restoringSession}>
       <section className='loginCard'>
         <ShieldCheck size={34} />
         <p className='eyebrow'>ZEVANORY · ACESSO ADMINISTRATIVO</p>
         <h1>ZEVANORY</h1>
-        <p>Controle de produtos, governanca e certificacao. Digite seu PIN de 4 numeros.</p>
+        <p>Controle de produtos, governança e certificação. Use sua frase-senha administrativa.</p>
         <input
           className='pinInput'
           type='password'
-          inputMode='numeric'
-          autoComplete='one-time-code'
-          maxLength={4}
-          value={pin}
-          onChange={event => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
+          inputMode='text'
+          autoComplete='current-password'
+          maxLength={256}
+          value={passphrase}
+          onChange={event => setPassphrase(event.target.value)}
           onKeyDown={event => { if (event.key === 'Enter') void login(); }}
-          aria-label='PIN de 4 numeros'
+          aria-label='Frase-senha administrativa (12 caracteres ou mais)'
         />
-        <button className='primary' onClick={login} disabled={busy || pin.length !== 4}>
+        <button className='primary' onClick={login} disabled={busy || Array.from(passphrase).length < 12}>
           <LogIn size={17} />
           {busy ? 'Entrando...' : 'Entrar'}
         </button>
         {error && <div className='errorbox'>{error}</div>}
-        <div className='authDiagnostic'>{diagnostic}</div>
       </section>
     </main>
   );
@@ -1013,7 +989,7 @@ function App() {
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
             {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
           </button>
-          <span className='adminChip'><ShieldCheck size={15} />PIN ADMIN ATIVO</span>
+          <span className='adminChip'><ShieldCheck size={15} />ACESSO ADMINISTRATIVO ATIVO</span>
           {view === 'products' && <button className='primary' onClick={openNew}><PackagePlus size={17} />Novo produto</button>}
           <button className='secondary' onClick={logout}><LogOut size={17} />Sair</button>
         </div>

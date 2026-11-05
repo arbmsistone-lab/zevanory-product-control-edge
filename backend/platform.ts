@@ -351,7 +351,30 @@ async function configRecord(key: string) {
   return current.items.find(item => item.key === key) || null;
 }
 
+async function activePassphrase() {
+  if (env('ADMIN_AUTH_MODE') !== 'passphrase') return null;
+  // Owner-controlled secrets; never persist the passphrase, pepper, or their cleartext in code or DB.
+  const value = env('ADMIN_PASSPHRASE');
+  const pepper = env('SESSION_SIGNING_KEY');
+  if (Array.from(value).length < 12 || Array.from(value).length > 256 || pepper.length < 32) {
+    return { configured: false as const, fingerprint: 'unconfigured' };
+  }
+  const fingerprint = await sha256(pepper + '\u0000zpc-passphrase-v1\u0000' + value);
+  return { configured: true as const, fingerprint, value, pepper };
+}
+
+function digestEqual(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
+}
+
 export async function adminPinState() {
+  const phrase = await activePassphrase();
+  if (phrase) return phrase.configured
+    ? { configured: true, fingerprint: phrase.fingerprint, source: 'runtime-passphrase' }
+    : { configured: false, fingerprint: 'unconfigured', source: 'passphrase-unconfigured' };
   const legacyPin = String(env('ADMIN_PIN') || '').trim();
   if (/^\d{4}$/.test(legacyPin)) {
     return { configured: true, fingerprint: await sha256(legacyPin), source: 'runtime-secret' };
@@ -369,6 +392,13 @@ export async function adminPinState() {
 }
 
 export async function verifyAdminPin(candidate: string) {
+  const phrase = await activePassphrase();
+  if (phrase) {
+    if (!phrase.configured) return { valid: false, fingerprint: 'unconfigured' };
+    const validLength = Array.from(candidate).length >= 12 && Array.from(candidate).length <= 256;
+    const candidateHash = await sha256(phrase.pepper + '\u0000zpc-passphrase-v1\u0000' + (validLength ? candidate : 'invalid-candidate'));
+    return { valid: validLength && digestEqual(candidateHash, phrase.fingerprint), fingerprint: phrase.fingerprint };
+  }
   const legacyPin = String(env('ADMIN_PIN') || '').trim();
   if (/^\d{4}$/.test(legacyPin)) {
     const fingerprint = await sha256(legacyPin);
