@@ -1,25 +1,16 @@
-name: Creative approval auto-decision
-
-# The approval queue is decided by the quality gate against the official catalog; the owner
-# only sees owner acts. Runs every 3 hours and on demand. Logs ids and reasons only.
+name: Creative compliance offline validator (R109; manual only)
+# INCIDENT P04: legacy autonomous approvals decommissioned. This workflow stays manually disabled.
+# Never add schedule, ADMIN_PIN, network access or a mutation endpoint. No live creative data.
 on:
-  schedule:
-    - cron: "23 */3 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: creative-auto-decision
-  cancel-in-progress: false
-
 jobs:
-  decide:
+  offline-review-contract:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,5 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --test tests/creative-auto-decision.test.mjs
-      - run: node scripts/creative-auto-decision.mjs
+      - name: Prove no automatic decision and fail-closed table C/P04 gates
+        run: node --test tests/creative-auto-decision.test.mjs
+      - name: Explicitly deny live approvals
+        run: echo 'R109=READ_ONLY; P04=NOT_CERTIFIED; OWNER_DECISION=REQUIRED; LIVE_MUTATIONS=ZERO'
