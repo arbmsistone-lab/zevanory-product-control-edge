@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {handleOwnerBlogApproval} from '../cf-worker/blog-owner-approval.ts';
+const mk=()=>{
+ const map=new Map<string,string>();
+ const kv={get:async(k:string)=>map.get(k)||null,put:async(k:string,v:string)=>{map.set(k,v)}};
+ const env:any={T2_CREATIVE_ASSETS:kv,ADMIN_AUTH_MODE:'passphrase',SESSION_SIGNING_KEY:'r122-synthetic-signing-key-32-bytes-minimum'};
+ const day='2026-11-05',digest='b'.repeat(64),slug='guia-correto';
+ map.set('zpc:blog:draft:v1:'+day,JSON.stringify({schema:'zpc.blog.draft.v1',day,slug,digest,article:{slug}}));
+ const req=(path:string,body:any,headers:any={})=>new Request('https://controle.zevanory.api.br'+path,{method:'POST',headers:{origin:'https://controle.zevanory.api.br','content-type':'application/json',...headers},body:JSON.stringify(body)});
+ const verify=async(t:string)=>t==='zpc1.sess.fakesignature';
+ return {env,map,day,digest,slug,req,verify};
+};
+const run=async(r:ReturnType<typeof mk>,path:string,body:any,headers:any={})=>{const response=await handleOwnerBlogApproval(r.req(path,body,headers),r.env,r.verify);return {status:response!.status,body:await response!.json() as any}};
+const candidate=(r:ReturnType<typeof mk>)=>({sessionToken:'zpc1.sess.fakesignature',day:r.day,digest:r.digest});
+async function challenge(r:ReturnType<typeof mk>){const c=await run(r,'/api/blog/approval/challenge',candidate(r));assert.equal(c.status,200);return c.body.csrf;}
+const a=mk();
+assert.equal((await run(a,'/api/blog/approval',candidate(a))).status,403,'CSRF missing denied');
+assert.equal((await run(a,'/api/blog/approval',candidate(a),{'origin':'https://evil.example'})).status,403,'foreign origin denied');
+assert.equal((await run(a,'/api/blog/approval',{...candidate(a),sessionToken:'invalid'})).status,401,'unauthenticated denied');
+const b=mk();b.env.ADMIN_AUTH_MODE='pin';
+assert.equal((await run(b,'/api/blog/approval/challenge',candidate(b))).status,503,'legacy PIN mode denied');
+const c=mk();
+assert.equal((await run(c,'/api/blog/approval/challenge',{...candidate(c),digest:'c'.repeat(64)})).status,409,'mismatched draft denied');
+const d=mk(),csrf=await challenge(d);
+assert.equal((await run(d,'/api/blog/approval',candidate(d),{'x-zpc-csrf':'f'.repeat(64)})).status,403,'forged CSRF denied');
+const success=await run(d,'/api/blog/approval',candidate(d),{'x-zpc-csrf':csrf});
+assert.equal(success.status,200);assert.equal(success.body.approved,true);
+const stored=JSON.parse(d.map.get('zpc:blog:owner-approval:v1:'+d.day)!);
+assert.equal(stored.digest,d.digest);assert.equal(stored.source,'owner');assert.equal(stored.proof,'session-passphrase-csrf-v1');
+const again=await run(d,'/api/blog/approval',candidate(d),{'x-zpc-csrf':csrf});
+assert.equal(again.status,200);assert.equal(again.body.already_approved,true);
+console.log('R122_OWNER_BLOG_APPROVAL=PASS authenticated_or_denied=8');
