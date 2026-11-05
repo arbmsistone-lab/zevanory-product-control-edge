@@ -62,6 +62,29 @@ async function storeCall(payload: Record<string, unknown>) {
   return await response.json() as any;
 }
 
+// DEC-13(a) NC01: one authenticated Postgres transaction owns every source decision.
+// A missing migration, malformed response or unavailable store MUST deny authentication.
+export async function atomicPassphraseAttempt(input: {
+  sourceId: string; fingerprint: string; trusted: boolean; valid: boolean;
+}): Promise<{status: 200 | 401 | 429; locked: boolean}> {
+  const url = env('SUPABASE_URL').replace(/\/$/, '');
+  const key = env('SUPABASE_PUBLISHABLE_KEY');
+  const token = env('ZPC_REPLICATION_SECRET');
+  if (!url || !key || !token) throw new Error('atomic_passphrase_store_unconfigured');
+  const response = await fetch(url + '/rest/v1/rpc/zpc_passphrase_attempt', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', apikey: key, authorization: 'Bearer ' + key },
+    body: JSON.stringify({ p_token: token, p_source_id: input.sourceId,
+      p_fingerprint: input.fingerprint, p_trusted: input.trusted, p_valid: input.valid }),
+    signal: AbortSignal.timeout(2500),
+  });
+  if (!response.ok) throw new Error('atomic_passphrase_store_http_' + response.status);
+  const result: any = await response.json();
+  if (![200,401,429].includes(result?.status) || typeof result?.locked !== 'boolean')
+    throw new Error('atomic_passphrase_store_invalid_response');
+  return { status: result.status, locked: result.locked };
+}
+
 export const db = {
   async list<T>(bucket: string, options: { limit?: number } = {}): Promise<ListResult<T>> {
     const result = await storeCall({
@@ -203,6 +226,8 @@ async function migrateLegacyBootstrap(bootstrap: any) {
 }
 
 export async function completePortableAccessMigration(candidate: string, migrationToken: string) {
+  // A historic 4-digit PIN must never be reset or reintroduced after passphrase cutover.
+  if (env('ADMIN_AUTH_MODE') === 'passphrase') return { ok: false, status: 403, message: 'Migração legada desabilitada.' };
   const expected = env('ZPC_MIGRATION_TOKEN');
   if (!expected || migrationToken !== expected) {
     return { ok: false, status: 403, message: 'Link de migracao invalido.' };
@@ -224,7 +249,30 @@ export async function completePortableAccessMigration(candidate: string, migrati
   return { ok: true, status: 200 };
 }
 
+async function activePassphrase() {
+  if (env('ADMIN_AUTH_MODE') !== 'passphrase') return null;
+  // Owner-controlled secrets; never persist the passphrase, pepper, or their cleartext in code or DB.
+  const value = env('ADMIN_PASSPHRASE');
+  const pepper = env('SESSION_SIGNING_KEY');
+  if (Array.from(value).length < 12 || Array.from(value).length > 256 || pepper.length < 32) {
+    return { configured: false as const, fingerprint: 'unconfigured' };
+  }
+  const fingerprint = await sha256(pepper + '\u0000zpc-passphrase-v1\u0000' + value);
+  return { configured: true as const, fingerprint, value, pepper };
+}
+
+function digestEqual(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
+}
+
 export async function adminPinState() {
+  const phrase = await activePassphrase();
+  if (phrase) return phrase.configured
+    ? { configured: true, fingerprint: phrase.fingerprint, source: 'runtime-passphrase' }
+    : { configured: false, fingerprint: 'unconfigured', source: 'passphrase-unconfigured' };
   const legacyPin = String(env('ADMIN_PIN') || '').trim();
   if (/^\d{4}$/.test(legacyPin)) {
     return { configured: true, fingerprint: await sha256(legacyPin), source: 'runtime-secret' };
@@ -242,6 +290,13 @@ export async function adminPinState() {
 }
 
 export async function verifyAdminPin(candidate: string) {
+  const phrase = await activePassphrase();
+  if (phrase) {
+    if (!phrase.configured) return { valid: false, fingerprint: 'unconfigured' };
+    const validLength = Array.from(candidate).length >= 12 && Array.from(candidate).length <= 256;
+    const candidateHash = await sha256(phrase.pepper + '\u0000zpc-passphrase-v1\u0000' + (validLength ? candidate : 'invalid-candidate'));
+    return { valid: validLength && digestEqual(candidateHash, phrase.fingerprint), fingerprint: phrase.fingerprint };
+  }
   const legacyPin = String(env('ADMIN_PIN') || '').trim();
   if (/^\d{4}$/.test(legacyPin)) {
     const fingerprint = await sha256(legacyPin);

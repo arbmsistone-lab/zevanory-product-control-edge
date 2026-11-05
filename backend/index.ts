@@ -1,4 +1,4 @@
-import { adminPinState, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform.ts';
+import { adminPinState, db, error, json, portableHealth, router, secrets } from './platform.ts';
 import { activeIncidents, planIncidentWrites, TELEMETRY_UNAVAILABLE_TITLE } from './incident-lifecycle.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
 import { commercialAdminCreate, commercialAdminUpdate, commercialApprovalAction, commercialAdapterIngest, commercialCleanup, commercialSalesDecision, commercialSalesExecuteAction, commercialSalesInbound, commercialSalesLifecycle, commercialSalesProof, commercialSalesPromoteDiscovery, commercialSalesQualifyLead, commercialWorkspace } from './commercial.ts';
@@ -2477,13 +2477,9 @@ async function executeAudit() {
 }
 
 type PinSessionRecord = { token: string; expiresAt: string; createdAt: string };
-type PinSecurityRecord = { failedAttempts: number; lockedUntil: string | null; updatedAt: string; pinFingerprint?: string };
 const PIN_SESSIONS = 'acs_pin_sessions';
 const PIN_CURRENT_SESSION = 'acs_pin_current_session';
-const PIN_SECURITY = 'acs_pin_security';
 const SESSION_HOURS = 8;
-const MAX_PIN_ATTEMPTS = 5;
-const LOCK_MINUTES = 15;
 
 function base64UrlEncode(value: string) {
   const bytes = new TextEncoder().encode(value);
@@ -2519,11 +2515,15 @@ async function signEdgeSessionPayload(payload: string, secret: string) {
   return base64UrlBytes(new Uint8Array(signature));
 }
 
-async function createEdgeSession() {
+// Internal compatibility utility; no public origin route invokes session issuance.
+export async function createEdgeSession() {
   const secret = await sessionSigningKey();
   if (!secret) throw new Error('session_signing_key_unconfigured');
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
-  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID() }));
+  const mode = String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase' ? 'passphrase-v1' : 'pin-legacy';
+  const authState = mode === 'passphrase-v1' ? await adminPinState() : null;
+  if (mode === 'passphrase-v1' && !authState?.configured) throw new Error('admin_passphrase_unconfigured');
+  const payload = base64UrlEncode(JSON.stringify({ exp: Date.parse(expiresAt), nonce: crypto.randomUUID(), authMode: mode, authEpoch: authState?.fingerprint }));
   const signature = await signEdgeSessionPayload(payload, secret);
   return { token: `zpc1.${payload}.${signature}`, expiresAt };
 }
@@ -2553,7 +2553,11 @@ async function verifyEdgeSession(token: string) {
   try {
     const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((parts[1].length + 3) % 4);
     const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
-    const payload = JSON.parse(json) as { exp?: number };
+    const payload = JSON.parse(json) as { exp?: number; authMode?: string; authEpoch?: string };
+    if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') {
+      const authState = await adminPinState();
+      if (!authState.configured || payload.authMode !== 'passphrase-v1' || payload.authEpoch !== authState.fingerprint) return false;
+    }
     return Number(payload.exp || 0) > Date.now();
   } catch {
     return false;
@@ -2578,56 +2582,16 @@ async function verifyCanonicalEdgeSession(token: string) {
   }
 }
 
-async function securityState(fingerprint: string) {
-  const state = await db.list<PinSecurityRecord>(PIN_SECURITY, { limit: 1 });
-  if (state.items[0]) {
-    const current = state.items[0];
-    if (current.pinFingerprint !== fingerprint) {
-      const reset: PinSecurityRecord = { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint };
-      await db.update(PIN_SECURITY, [{ id: current.id, record: reset }]);
-      return { ...reset, id: current.id };
-    }
-    return current;
-  }
-  const record: PinSecurityRecord = { failedAttempts: 0, lockedUntil: null, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint };
-  const [id] = await db.add(PIN_SECURITY, [record]);
-  return { ...record, id: id || '' };
-}
-
-async function updateSecurity(id: string, record: PinSecurityRecord) {
-  if (id) await db.update(PIN_SECURITY, [{ id, record }]);
-}
-
 async function requirePinSession(token: unknown) {
   const value = String(token || '').trim();
   if (!value) return false;
   if (await verifyCanonicalEdgeSession(value)) return true;
+  if (String(await secrets.readSecret('ADMIN_AUTH_MODE') || '') === 'passphrase') return false;
   const now = Date.now();
   const current = await db.list<PinSessionRecord>(PIN_CURRENT_SESSION, { limit: 10 });
   if (current.items.some(item => item.token === value && Date.parse(item.expiresAt) > now)) return true;
   const legacy = await db.list<PinSessionRecord>(PIN_SESSIONS, { limit: 50 });
   return legacy.items.some(item => item.token === value && Date.parse(item.expiresAt) > now);
-}
-
-async function pinLogin(pin: unknown) {
-  const candidate = String(pin || '').trim();
-  if (!/^\d{4}$/.test(candidate)) return { ok: false, status: 400, message: 'Informe um PIN de 4 numeros.' };
-  const verification = await verifyAdminPin(candidate);
-  const fingerprint = verification.fingerprint;
-  if (verification.valid) {
-    return { ok: true, status: 200, ...(await createEdgeSession()) };
-  }
-
-  const state = await securityState(fingerprint);
-  if (state.lockedUntil && Date.parse(state.lockedUntil) > Date.now()) {
-    return { ok: false, status: 429, message: 'Acesso temporariamente bloqueado por excesso de tentativas. Tente novamente mais tarde.' };
-  }
-  const failedAttempts = state.failedAttempts + 1;
-  const lockedUntil = failedAttempts >= MAX_PIN_ATTEMPTS
-    ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
-    : null;
-  await updateSecurity(state.id, { failedAttempts: lockedUntil ? 0 : failedAttempts, lockedUntil, updatedAt: new Date().toISOString(), pinFingerprint: fingerprint });
-  return { ok: false, status: 401, message: lockedUntil ? 'Muitas tentativas incorretas. Acesso bloqueado temporariamente.' : 'PIN incorreto.' };
 }
 
 type GlobalTrust = {
@@ -3162,60 +3126,8 @@ const ADMIN_SNAPSHOT_READ_ONLY = new Set([
 ]);
 
 const routedHandler = router({
-  'GET /api/_auth_diagnostic': [async () => {
-    let stage = 'secret';
-    let tempSessionId = '';
-    try {
-      const pinState = await adminPinState();
-      const secretValid = pinState.configured;
-      if (!secretValid) return json({ secretValid: false, locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: 'pin_unconfigured' });
-
-      stage = 'security';
-      const state = await securityState(pinState.fingerprint);
-      const locked = Boolean(state.lockedUntil && Date.parse(state.lockedUntil) > Date.now());
-
-      stage = 'session';
-      const now = new Date();
-      const token = `diag_${crypto.randomUUID().replace(/-/g, '')}`;
-      const expiresAt = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
-      const [id] = await db.add(PIN_CURRENT_SESSION, [{ token, createdAt: now.toISOString(), expiresAt }]);
-      tempSessionId = id || '';
-      const sessionRoundtrip = Boolean(tempSessionId && await requirePinSession(token));
-
-      stage = 'bootstrap';
-      let bootstrapOk = false;
-      if (sessionRoundtrip) {
-        const diagnosticData = await adminData();
-        bootstrapOk = true;
-        try {
-          const targets = Array.isArray(diagnosticData?.certificationTargets)
-            ? diagnosticData.certificationTargets.map((item:any)=>({
-                id:item.id,
-                name:item.name,
-                ready:item.certification?.ready,
-                summary:item.certification?.summary,
-                rootBlocker:item.certification?.rootBlocker,
-                pillars:Array.isArray(item.certification?.pillars)
-                  ? item.certification.pillars.map((pillar:any)=>({id:pillar.id,status:pillar.status,blocker:pillar.blocker}))
-                  : [],
-              }))
-            : [];
-          const systems = Array.isArray(diagnosticData?.dashboard?.systems)
-            ? diagnosticData.dashboard.systems.map((item:any)=>({name:item.name,sha:item.sha,ci:item.ci,status:item.status}))
-            : [];
-          console.info('zpc_certification_diagnostic', JSON.stringify({targets,systems}));
-        } catch {}
-      }
-
-      if (tempSessionId) await db.delete(PIN_CURRENT_SESSION, [tempSessionId]);
-      return json({ secretValid, locked, sessionRoundtrip, bootstrapOk, stage: bootstrapOk ? 'complete' : stage });
-    } catch {
-      if (tempSessionId) {
-        try { await db.delete(PIN_CURRENT_SESSION, [tempSessionId]); } catch { /* best-effort diagnostic cleanup */ }
-      }
-      return json({ secretValid: stage !== 'secret', locked: false, sessionRoundtrip: false, bootstrapOk: false, stage: `failed:${stage}` });
-    }
-  }],
+  // Legacy unauthenticated diagnostic has been permanently retired. Never log in or mint sessions from GET.
+  'GET /api/_auth_diagnostic': [async () => error('Diagnóstico interno indisponível.', 403)],
   'POST /api/_session_verify': [async ctx => {
     const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
     return json({ valid: await verifyCanonicalEdgeSession(token) });
@@ -3225,15 +3137,8 @@ const routedHandler = router({
     // so the public Render URL cannot be used to brute-force the admin PIN.
     return error('Login disponivel apenas pelo painel oficial.', 404);
   }],
-  'POST /api/pin/login-origin-disabled': [async ctx => {
-    try {
-      const result = await pinLogin((ctx.body as { pin?: string })?.pin);
-      if (!result.ok || !('token' in result)) return error(result.message || 'Acesso negado.', result.status);
-      return json({ ok: true, sessionToken: result.token, expiresAt: result.expiresAt });
-    } catch {
-      return error('PIN administrativo nao configurado.', 503);
-    }
-  }],
+  // Deny the legacy origin login alias in every authentication mode.
+  'POST /api/pin/login-origin-disabled': [async () => error('Login exclusivo na borda autenticada.', 403)],
   'POST /api/pin/logout': [async ctx => {
     const token = String((ctx.body as { sessionToken?: string })?.sessionToken || '');
     const [current, legacy] = await Promise.all([
