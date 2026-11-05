@@ -1,0 +1,35 @@
+name: NC-007 P18 monitor-only (Draft / offline)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "p18-monitor/**"
+      - "scripts/p18-monitor-only.test.ts"
+      - ".github/workflows/p18-monitor-only-gate.yml"
+      - "cf-worker/p18-dispatch.ts"
+permissions:
+  contents: read
+jobs:
+  p18-monitor-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install offline-test deps
+        run: npm install --no-audit --no-fund
+      - name: P18-01..04 tests with zero network providers
+        run: |
+          set -euo pipefail
+          npx --no-install tsx scripts/p18-monitor-only.test.ts 2>&1 | tee p18-isolated.txt
+          grep -qx 'NC007_P18_MONITOR_ONLY=PASS tests=4 windows=288' <(grep 'NC007_P18_MONITOR_ONLY=' p18-isolated.txt)
+      - name: Confirm no production alterations
+        run: |
+          set -euo pipefail
+          test -f p18-monitor/wrangler.toml
+          ! grep -Eq '^(routes|route)\s*=|^\[\[services\]\]' p18-monitor/wrangler.toml
+          git diff --exit-code -- p18-monitor scripts/p18-monitor-only.test.ts

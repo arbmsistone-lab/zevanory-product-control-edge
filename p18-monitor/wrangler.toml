@@ -1,0 +1,20 @@
+# ZEVANORY NC-007 P18 isolation candidate. DO NOT DEPLOY WITHOUT OWNER AUTHORISATION.
+name = "zevanory-p18-monitor-only"
+main = "worker.ts"
+compatibility_date = "2026-11-03"
+workers_dev = false
+
+# No HTTP routes, assets, service bindings, database, AI, Meta, Render or Telegram.
+# Existing shared KV only for monitor state and zpc-alert:v1:* owner alerts.
+[[kv_namespaces]]
+binding = "P18_STATE_KV"
+id = "728a45738e4047f29bcb89934fd533c1"
+
+# Activation is a production action requiring: AUTORIZO WORKER P18 SHA <sha>.
+# This file in a Draft PR does not install or enable the Cron.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[observability]
+enabled = true
+head_sampling_rate = 0.05
