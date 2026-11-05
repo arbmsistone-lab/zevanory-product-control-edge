@@ -1027,6 +1027,9 @@ a {
   box-shadow: var(--zpc-shadow-06);
 }
 
+.turnstileMount { min-height: 0; width: 100%; max-width: 100%; margin-top: var(--zpc-space-3); display: flex; justify-content: center; }
+.turnstileMount:empty { display: none; }
+
 .loginCard .primary,
 .loginCard .secondary {
   width: 100%;
