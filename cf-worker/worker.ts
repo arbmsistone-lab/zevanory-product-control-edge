@@ -2,6 +2,7 @@ import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdge
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 import { adminAuthSourceKey, hasTrustedDevice, mintTrustedDevice, PASSPHRASE_AGGREGATE_BUCKET, PASSPHRASE_SOURCE_BUCKET_PREFIX, trustedDeviceSetCookie } from './admin-auth-throttle.ts';
+import { TURNSTILE_ACTION, isTurnstileEnforced, verifyTurnstileLogin } from './admin-turnstile.ts';
 import { isLegacyDutyMinute, runP18ExternalTrigger } from './p18-dispatch.ts';
 import { buildOwnerAlertEntry } from './owner-alert-entry.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
@@ -1342,6 +1343,19 @@ export default {
       return Response.json({ ok: false, error: 'auth_canonical_host_required' }, {
         status: 403, headers: { 'cache-control': 'no-store' },
       });
+    }
+
+    if (normalizedPath === '/api/auth/turnstile-config' && request.method === 'GET') {
+      const enabled = isTurnstileEnforced(env);
+      const sitekey = String(env.TURNSTILE_SITE_KEY || '');
+      if (enabled && !sitekey) return Response.json({ ok: false, error: 'turnstile_not_configured' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+      return Response.json({ enabled, sitekey: enabled ? sitekey : null, action: TURNSTILE_ACTION }, { headers: { 'cache-control': 'no-store' } });
+    }
+
+    if (normalizedPath === '/api/pin/login' && request.method === 'POST') {
+      // DEC-18: Verify challenge BEFORE consuming a limiter token or touching the passphrase.
+      const proof = await verifyTurnstileLogin(request, env);
+      if (!proof.ok) return Response.json({ ok: false, error: proof.code }, { status: proof.status, headers: { 'cache-control': 'no-store' } });
     }
 
     if (normalizedPath === '/api/pin/login') {
