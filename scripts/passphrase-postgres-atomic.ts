@@ -26,8 +26,14 @@ try {
   )`);
   await pool.query(`create or replace function public.zpc_worker_auth_ok(p_token text)
     returns boolean language sql stable as $$ select p_token = 'contract-test-only-secret' $$`);
-  const migration = await fs.readFile(new URL('../supabase/migrations/20261104180000_dec13_atomic_passphrase_attempt.sql', import.meta.url),'utf8');
+  // Apply the DEC-13 migrations in order, exactly as production received them (R107 replaces the function).
+  await pool.query(await fs.readFile(new URL('../supabase/migrations/20261104180000_dec13_atomic_passphrase_attempt.sql', import.meta.url),'utf8'));
+  const migration = await fs.readFile(new URL('../supabase/migrations/20261105150000_dec13_r107_clock_after_lock.sql', import.meta.url),'utf8');
   await pool.query(migration);
+  // R107 regression: the clock must be read after each advisory lock, and a future windowStart must not reset the count.
+  assert.match(migration, /hashtextextended\('zpc-passphrase-src:'[^;]*;\s*(--[^\n]*\n\s*)*ts := clock_timestamp\(\);/);
+  assert.match(migration, /hashtextextended\('zpc-passphrase-aggregate-v1',0\)\);\s*(--[^\n]*\n\s*)*ts := clock_timestamp\(\);/);
+  assert.doesNotMatch(migration, /start_ts > ts/);
   // NC01/DEC-13: SQL policy must remain identical to TS policy. Regression for
   // SECURITY DEFINER search_path hijack and function-local timeout settings.
   const policy = await fs.readFile(new URL('../cf-worker/admin-auth-throttle.ts', import.meta.url), 'utf8');

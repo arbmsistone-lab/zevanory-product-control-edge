@@ -54,7 +54,7 @@ A versão nova do frontend exige frase-senha de 12+ caracteres, enquanto o backe
 
 ## Rollback da RPC PostgreSQL (somente com autorização independente)
 
-A função `public.zpc_passphrase_attempt(text, uuid, text, boolean, boolean)` é criada pela migração `supabase/migrations/20261104180000_dec13_atomic_passphrase_attempt.sql`. O rollback de **schema** exige uma mudança de banco autorizada e janela coordenada de frontend, Worker, modo de autenticação e segredos. **Não aplicar rollback isolado em produção**: o Worker em modo frase-senha passará a 503 (fail-closed) se a função não existir.
+A função `public.zpc_passphrase_attempt(text, uuid, text, boolean, boolean)` é criada pela migração `supabase/migrations/20261104180000_dec13_atomic_passphrase_attempt.sql`. A migração `supabase/migrations/20261105150000_dec13_r107_clock_after_lock.sql` (R107) substitui a função: o relógio passa a ser lido depois de cada lock consultivo, e um `windowStart` no futuro não zera mais a contagem. Sem isso, transações concorrentes perdiam incrementos do agregado (reproduzido localmente em 8 de 15 rodadas com 40 conexões simultâneas; 0 de 30 após a correção). O rollback de **schema** exige uma mudança de banco autorizada e janela coordenada de frontend, Worker, modo de autenticação e segredos. **Não aplicar rollback isolado em produção**: o Worker em modo frase-senha passará a 503 (fail-closed) se a função não existir.
 
 Com o tráfego administrativo temporariamente protegido e o plano de corte aprovado, o comando SQL de reversão é:
 
