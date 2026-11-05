@@ -2,6 +2,7 @@ import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdge
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 import { adminAuthSourceKey, hasTrustedDevice, mintTrustedDevice, PASSPHRASE_AGGREGATE_BUCKET, PASSPHRASE_SOURCE_BUCKET_PREFIX, trustedDeviceSetCookie } from './admin-auth-throttle.ts';
+import { TURNSTILE_ACTION, isTurnstileEnforced, verifyTurnstileLogin } from './admin-turnstile.ts';
 import { isLegacyDutyMinute, runP18ExternalTrigger } from './p18-dispatch.ts';
 import { buildOwnerAlertEntry } from './owner-alert-entry.ts';
 import { assessOwnerSalesSwitchRequest } from './sales-switch-owner-policy.ts';
@@ -31,19 +32,21 @@ pre{white-space:pre-wrap;word-break:break-word;background:#050d16;border:1px sol
 </style></head>
 <body><main>
 <div class="card"><span class="pill">CLOUDFLARE DIRECT · ZEES-16</span><h1>ZEVANORY PRODUCT CONTROL</h1><p>Console independente de certificação. Não depende de Render, Vercel, Netlify ou Railway para executar P01–P16.</p></div>
-<div class="card" id="loginCard"><h2>Acesso administrativo</h2><div class="row"><input id="pin" type="password" maxlength="256" autocomplete="current-password" placeholder="Frase-senha administrativa (12+ caracteres)"><button class="primary" id="login">Entrar</button></div><p id="auth"></p></div>
+<div class="card" id="loginCard"><h2>Acesso administrativo</h2><div class="row"><input id="pin" type="password" maxlength="256" autocomplete="current-password" placeholder="Frase-senha administrativa (12+ caracteres)"><button class="primary" id="login">Entrar</button></div><div id="ts-challenge"></div><p id="auth"></p></div>
 <div class="card" id="execCard" hidden><h2>Executor de certificação</h2><div class="row"><select id="target"></select><button class="primary" id="run">Executar certificação</button><button id="reload">Atualizar</button></div>
 <div class="grid" id="summary"></div><div id="sealTitle"></div><div class="seals" id="seals"></div><div class="legend"><span class="proved">■ PROVADO</span><span class="partial">■ PARCIAL</span><span class="blocked">■ BLOQUEADO</span><span>■ N/A</span></div><p id="state"></p><pre id="output">Aguardando execução.</pre></div>
 </main><script>
 let sessionToken='';
 const qs=(id)=>document.getElementById(id);
+const TS_KEY='__TURNSTILE_SITE_KEY__'; let tsToken='', tsId=null;
+if(TS_KEY){const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;script.onload=()=>{tsId=turnstile.render('#ts-challenge',{sitekey:TS_KEY,action:'zpc_owner_login',language:'pt-BR',callback:(token)=>{tsToken=token},'expired-callback':()=>{tsToken=''},'error-callback':()=>{tsToken='';qs('auth').textContent='Verificação anti-robô indisponível.'}})};document.head.appendChild(script)}
 const API_BASE=location.pathname.startsWith('/control')?'/control':'';
 async function api(path,body){const r=await fetch(API_BASE+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||j.message||('HTTP '+r.status));return j}
 let bootstrapData=null;
 async function load(){const data=await api('/api/admin/bootstrap?runtime=cloudflare',{sessionToken});bootstrapData=data;const select=qs('target');select.innerHTML='';for(const t of data.certificationTargets||[]){const o=document.createElement('option');o.value=t.id;o.textContent=t.name+' · '+t.certification.summary.proved+'/'+t.certification.summary.applicable;select.appendChild(o)}renderSummary(data.summary);renderSeals();return data}
 function renderSummary(s){qs('summary').innerHTML=[['Produtos',s.total],['Certificados',s.certified],['Em certificação',s.inCertification],['ZEES bloqueados',s.zeesBlocked]].map(([a,b])=>'<div class="metric"><b>'+b+'</b><small>'+a+'</small></div>').join('')}
 function renderSeals(){const id=qs('target').value;const t=(bootstrapData?.certificationTargets||[]).find(x=>x.id===id);if(!t){qs('seals').innerHTML='';qs('sealTitle').innerHTML='';return}qs('sealTitle').innerHTML='<p><b>'+t.name+'</b> · '+t.certification.summary.proved+'/'+t.certification.summary.applicable+' aplicáveis</p>';qs('seals').innerHTML=(t.certification.pillars||[]).map(p=>'<span class="seal '+p.status+'" title="'+p.id+' · '+p.name+' · '+p.status+'">'+p.id+'</span>').join('')}
-qs('login').onclick=async()=>{const pin=qs('pin').value;if(Array.from(pin).length<12){qs('auth').textContent='Informe uma frase-senha de 12 ou mais caracteres.';return}qs('login').disabled=true;try{const j=await api('/api/pin/login?runtime=cloudflare',{pin});sessionToken=j.sessionToken;qs('pin').value='';qs('auth').innerHTML='<span class="ok">Acesso autenticado · sessão criada.</span>';qs('execCard').hidden=false;await load()}catch(e){qs('auth').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('login').disabled=false}}
+qs('login').onclick=async()=>{const pin=qs('pin').value;if(Array.from(pin).length<12){qs('auth').textContent='Informe uma frase-senha de 12 ou mais caracteres.';return}qs('login').disabled=true;try{const j=await api('/api/pin/login?runtime=cloudflare',{pin,turnstileToken:tsToken||undefined});sessionToken=j.sessionToken;qs('pin').value='';qs('auth').innerHTML='<span class="ok">Acesso autenticado · sessão criada.</span>';qs('execCard').hidden=false;await load()}catch(e){qs('auth').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('login').disabled=false;if(TS_KEY){tsToken='';if(tsId!==null&&window.turnstile)turnstile.reset(tsId)}}}
 qs('target').onchange=renderSeals;
 qs('reload').onclick=async()=>{try{await load();qs('state').textContent='Atualizado.'}catch(e){qs('state').textContent=e.message}}
 qs('run').onclick=async()=>{qs('run').disabled=true;qs('state').innerHTML='<span class="warn">Executando P01–P16...</span>';try{const j=await api('/api/certification/run?runtime=cloudflare',{sessionToken,targetId:qs('target').value});qs('output').textContent=JSON.stringify(j,null,2);qs('state').innerHTML=j.certification?.ready?'<span class="ok">CERTIFICADO integralmente.</span>':'<span class="warn">Execução concluída; gate permanece fail-closed.</span>';await load()}catch(e){qs('state').innerHTML='<span class="bad">'+e.message+'</span>'}finally{qs('run').disabled=false}}
@@ -1222,12 +1225,15 @@ export default {
     }
 
     if (normalizedPath === '/certifier') {
-      return new Response(CERTIFIER_HTML, {
+      const tsKey = isTurnstileEnforced(env) ? String(env.TURNSTILE_SITE_KEY || '') : '';
+      if (isTurnstileEnforced(env) && !tsKey) return new Response('Anti-robô indisponível.', {status:503,headers:{'cache-control':'no-store'}});
+      if (tsKey && !/^[A-Za-z0-9_-]{8,150}$/.test(tsKey)) return new Response('Configuração inválida.',{status:503,headers:{'cache-control':'no-store'}});
+      return new Response(CERTIFIER_HTML.replace('__TURNSTILE_SITE_KEY__', tsKey), {
         headers: {
           'content-type': 'text/html; charset=utf-8',
           'cache-control': 'no-store',
           'x-robots-tag': 'noindex, nofollow',
-          'content-security-policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+          'content-security-policy': "default-src 'self'; script-src 'unsafe-inline' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'unsafe-inline'; connect-src 'self' https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
         },
       });
     }
@@ -1342,6 +1348,19 @@ export default {
       return Response.json({ ok: false, error: 'auth_canonical_host_required' }, {
         status: 403, headers: { 'cache-control': 'no-store' },
       });
+    }
+
+    if (normalizedPath === '/api/auth/turnstile-config' && request.method === 'GET') {
+      const enabled = isTurnstileEnforced(env);
+      const sitekey = String(env.TURNSTILE_SITE_KEY || '');
+      if (enabled && !sitekey) return Response.json({ ok: false, error: 'turnstile_not_configured' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+      return Response.json({ enabled, sitekey: enabled ? sitekey : null, action: TURNSTILE_ACTION }, { headers: { 'cache-control': 'no-store' } });
+    }
+
+    if (normalizedPath === '/api/pin/login' && request.method === 'POST') {
+      // DEC-18: Verify challenge BEFORE consuming a limiter token or touching the passphrase.
+      const proof = await verifyTurnstileLogin(request, env);
+      if (!proof.ok) return Response.json({ ok: false, error: proof.code }, { status: proof.status, headers: { 'cache-control': 'no-store' } });
     }
 
     if (normalizedPath === '/api/pin/login') {

@@ -12,7 +12,9 @@ const browser=await chromium.launch({args:['--disable-partial-raster']});const c
 const fulfill=(r,status,body)=>r.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
 async function setup(base,cached=false,viewport={width:1365,height:900},theme='dark'){
  const context=await browser.newContext({viewport});await context.addInitScript(({cached,theme})=>{localStorage.setItem('zpc_theme',theme);if(cached&&!localStorage.getItem('arbm_admin_session'))localStorage.setItem('arbm_admin_session','old-test-session');},{cached,theme});
- const page=await context.newPage();await page.route('**/api/_auth_diagnostic',r=>fulfill(r,200,{secretValid:true,locked:false,sessionRoundtrip:true,bootstrapOk:true}));await page.route('**/global-trust.json*',r=>fulfill(r,200,fixture.globalTrust));return {context,page,base};
+ const page=await context.newPage();await page.route('**/api/_auth_diagnostic',r=>fulfill(r,200,{secretValid:true,locked:false,sessionRoundtrip:true,bootstrapOk:true}));await page.route('**/global-trust.json*',r=>fulfill(r,200,fixture.globalTrust));
+  // R111: existing password regressions run with Turnstile deliberately inactive.
+  await page.route('**/api/auth/turnstile-config',r=>fulfill(r,200,{enabled:false,sitekey:null,action:'zpc_owner_login'}));return {context,page,base};
 }
 // Causal reproduction on the actual pre-hotfix domain. The 42s wait is explicitly injected,
 // not represented as an observed provider outage.
@@ -37,6 +39,68 @@ const base='http://127.0.0.1:4173';
  await page.route('**/api/pin/login',r=>fulfill(r,200,{sessionToken:'new-test-session'}));await page.route('**/api/pin/logout',r=>fulfill(r,200,{ok:true}));
  await page.goto(base,{waitUntil:'domcontentloaded'});await oldRequest;await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').fill('frase-senha-forte-de-teste-2026');await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.locator('.zpcAppShell').waitFor();releaseOld();await page.waitForLoadState('networkidle');assert.equal(await page.evaluate(()=>localStorage.getItem('arbm_admin_session')),'new-test-session');assert.equal(await page.locator('.zpcAppShell').count(),1);checks.stale_response_cannot_revoke_new_session=true;
  await page.reload();await page.locator('.zpcAppShell').waitFor();checks.valid_session_reload=true;await page.getByRole('button',{name:'Sair',exact:true}).click();await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('arbm_admin_session')),null);checks.logout=true;await context.close();
+}
+{
+  // R111: enabled-UI mock verifies a missing token disables login, and one accepted token is consumed.
+  const {context,page}=await setup(base);
+  await page.unroute('**/api/auth/turnstile-config');
+  await page.route('**/api/auth/turnstile-config',r=>fulfill(r,200,{enabled:true,sitekey:'1x00000000000000000000AA',action:'zpc_owner_login'}));
+  await page.route('https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',r=>r.fulfill({
+    status:200,contentType:'application/javascript',
+    body:'window.turnstile={render:(el,opts)=>{window.__r111TurnstileCallback=opts.callback;return "test-widget"},reset:()=>{},remove:()=>{}}'
+  }));
+  let supplied='';
+  await page.route('**/api/pin/login',async r=>{supplied=r.request().postDataJSON()?.turnstileToken || '';await fulfill(r,401,{error:'Credencial incorreta.'});});
+  await page.goto(base);
+  await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').fill('frase-senha-forte-de-teste-2026');
+  const submit=page.getByRole('button',{name:'Entrar',exact:true});
+  await page.waitForFunction(()=>typeof window.__r111TurnstileCallback === 'function');
+  assert.equal(await submit.isDisabled(),true,'enabled Turnstile cannot submit without token');
+  await page.evaluate(()=>window.__r111TurnstileCallback('fake-token-for-test'));
+  await submit.click();
+  await page.getByText('Credencial incorreta.',{exact:true}).waitFor();
+  assert.equal(supplied,'fake-token-for-test');
+  assert.equal(await submit.isDisabled(),true,'token must reset after attempted use');
+  checks.r111_enabled_challenge_ui_token_single_attempt=true;
+  await context.close();
+}
+{
+  // R112: a failed config lookup must NOT lock the owner out when Turnstile isn't enforced.
+  // The Worker remains authoritative for a later enabled=true environment.
+  const {context,page}=await setup(base);
+  await page.unroute('**/api/auth/turnstile-config');
+  await page.route('**/api/auth/turnstile-config',r=>fulfill(r,503,{error:'simulated-config-down'}));
+  let loginCalls=0,token=null;
+  await page.route('**/api/pin/login',r=>{loginCalls++;token=r.request().postDataJSON()?.turnstileToken;return fulfill(r,200,{sessionToken:'r112-owner-success-session'});});
+  await page.route('**/api/admin/bootstrap',r=>fulfill(r,200,fixture));
+  await page.goto(base);
+  await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').fill('frase-senha-forte-de-teste-2026');
+  const submit=page.getByRole('button',{name:'Entrar',exact:true});
+  await page.getByText('O servidor verificará sua tentativa.',{exact:false}).waitFor();
+  assert.equal(await submit.isEnabled(),true,'R112 config failure must not disable login');
+  await submit.click();
+  await page.locator('.zpcAppShell').waitFor({timeout:15000});
+  assert.equal(await page.evaluate(()=>localStorage.getItem('arbm_admin_session')),'r112-owner-success-session');
+  assert.equal(loginCalls,1,'R112 owner login succeeds when config endpoint is down and server allows it');
+  assert.ok(!token,'R112 no token is allowed by client only; Worker is authority');
+  checks.r112_config_unavailable_owner_login_possible=true;
+  await context.close();
+}
+{
+  // /control prefix is the same normalized API entrypoint as the existing login.
+  const {context,page}=await setup('http://127.0.0.1:4173/control');
+  await page.unroute('**/api/auth/turnstile-config');
+  let seenConfig=false;
+  await page.route('**/control/api/auth/turnstile-config',r=>{seenConfig=true;return fulfill(r,200,{enabled:false,sitekey:null,action:'zpc_owner_login'});});
+  await page.goto('http://127.0.0.1:4173/control');
+  await page.getByLabel('Frase-senha administrativa (12 caracteres ou mais)').waitFor();
+  // Candidate may redirect legacy /control; only assert API router directly if path remains /control.
+  if(new URL(page.url()).pathname.startsWith('/control')) {
+    await page.waitForFunction(()=>document.querySelector('.loginCard .primary') !== null);
+    assert.equal(seenConfig,true,'R112 config must use /control prefix');
+  }
+  checks.r112_config_uses_api_prefix=true;
+  await context.close();
 }
 // Intentional PIN-screen change: no public diagnostic. Authenticated UI retains visual-parity coverage.
 for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const theme of ['dark','light']){

@@ -315,15 +315,74 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
   const [passphrase, setPassphrase] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [turnstileEnabled, setTurnstileEnabled] = useState(false);
+  const [turnstileConfigLoading, setTurnstileConfigLoading] = useState(true);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const widgetIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    let script: HTMLScriptElement | null = null;
+    const load = async () => {
+      try {
+        // Uses the same /control prefix and host routing as all panel API calls.
+        const res = await api.get<{ enabled: boolean; sitekey: string | null; action: string }>('/api/auth/turnstile-config');
+        const config = res.data;
+        if (!active) return;
+        if (config.enabled !== true) { setTurnstileEnabled(false); return; }
+        // Once the server confirms enabled=true, never bypass the widget client-side.
+        setTurnstileEnabled(true);
+        if (!config.sitekey || config.action !== 'zpc_owner_login') throw new Error('Proteção anti-robô incompleta.');
+        const render = () => {
+          if (!active || !containerRef.current || widgetIdRef.current) return;
+          const ts = (window as any).turnstile;
+          if (!ts || typeof ts.render !== 'function') return;
+          widgetIdRef.current = String(ts.render(containerRef.current, {
+            sitekey: config.sitekey, action: 'zpc_owner_login', language: 'pt-BR',
+            callback: (token: string) => { if (active) setTurnstileToken(token); },
+            'expired-callback': () => { if (active) setTurnstileToken(''); },
+            'error-callback': () => { if (active) { setTurnstileToken(''); setError('Verificação anti-robô indisponível.'); } },
+          }));
+        };
+        const existing = document.querySelector<HTMLScriptElement>('script[data-zpc-turnstile]');
+        if (existing) { if ((window as any).turnstile) render(); else existing.addEventListener('load', render, { once: true }); return; }
+        script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.dataset.zpcTurnstile = '1';
+        script.onload = render;
+        script.onerror = () => { if (active) setError('Não foi possível carregar a proteção anti-robô.'); };
+        document.head.appendChild(script);
+      } catch (e) {
+        if (active) {
+          // Only a successful enabled=true response can require a token locally.
+          // Worker Siteverify remains authoritative and rejects no-token when enforced.
+          setError('Não foi possível consultar a proteção anti-robô. O servidor verificará sua tentativa.');
+        }
+      } finally { if (active) setTurnstileConfigLoading(false); }
+    };
+    void load();
+    return () => {
+      active = false;
+      const ts = (window as any).turnstile;
+      if (widgetIdRef.current && ts?.remove) ts.remove(widgetIdRef.current);
+      widgetIdRef.current = null;
+      if (script) script.onload = null;
+    };
+  }, []);
   const login = async () => {
     if (Array.from(passphrase).length < 12 || Array.from(passphrase).length > 256) {
       setError('Digite uma frase-senha com pelo menos 12 caracteres.');
       return;
     }
+    if (turnstileEnabled && !turnstileToken) {
+      setError('Complete a verificação anti-robô para entrar.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      const response = await api.post('/api/pin/login', { pin: passphrase });
+      const response = await api.post('/api/pin/login', { pin: passphrase, turnstileToken: turnstileToken || undefined });
       const token = response.data.sessionToken as string;
       localStorage.setItem('arbm_admin_session', token);
       onSuccess(token);
@@ -332,6 +391,11 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
       setError(message);
     } finally {
       setBusy(false);
+      if (turnstileEnabled) {
+        setTurnstileToken('');
+        const ts = (window as any).turnstile;
+        if (widgetIdRef.current && ts?.reset) ts.reset(widgetIdRef.current);
+      }
     }
   };
 
@@ -353,10 +417,12 @@ function LoginScreen({ onSuccess, restoringSession = false }: { onSuccess: (toke
           onKeyDown={event => { if (event.key === 'Enter') void login(); }}
           aria-label='Frase-senha administrativa (12 caracteres ou mais)'
         />
-        <button className='primary' onClick={login} disabled={busy || Array.from(passphrase).length < 12}>
+        <div className='turnstileMount' ref={containerRef} aria-label='Verificação anti-robô' />
+        <button className='primary' onClick={login} disabled={busy || (turnstileEnabled && !turnstileToken) || Array.from(passphrase).length < 12}>
           <LogIn size={17} />
           {busy ? 'Entrando...' : 'Entrar'}
         </button>
+        {turnstileConfigLoading && <p role='status'>Verificando proteção anti-robô...</p>}
         {error && <div className='errorbox'>{error}</div>}
       </section>
     </main>

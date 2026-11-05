@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run audit:runtime && npm run test:session-security && npm run test:passphrase-migration && npm run test:auth-diagnostic-denial && npm run test:passphrase-concurrent && npm run test:global-trust && npm run test:incident-lifecycle && npm run test:creative-media && npm run test:p04-offline-r109 && npm run test:panel-alert-category && npm run test:p18-dispatch && npm run test:sales-lock-publishers && npm run test:p04-meta-policy && npm run test:p04-t3-t4-gates && npm run test:p06-legacy-seed && npm run test:edge-body-once && npm run test:kv-bootstrap-writes && npm run test:owner-sales-switch && npm run audit:commercial && npm run test:commercial-robot-auth && npm run test:commercial-hmac && npm run test:commercial-contract && npm run test:commercial-cleanup && npm run test:prospect-signal && npm run test:ads-readiness && npm run test:zevanory-sales-contract && npm run test:zevanory-sales-tenant && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
+    "build": "npm run audit:runtime && npm run test:session-security && npm run test:passphrase-migration && npm run test:auth-diagnostic-denial && npm run test:passphrase-concurrent && npm run test:admin-turnstile && npm run test:global-trust && npm run test:incident-lifecycle && npm run test:creative-media && npm run test:p04-offline-r109 && npm run test:panel-alert-category && npm run test:p18-dispatch && npm run test:sales-lock-publishers && npm run test:p04-meta-policy && npm run test:p04-t3-t4-gates && npm run test:p06-legacy-seed && npm run test:edge-body-once && npm run test:kv-bootstrap-writes && npm run test:owner-sales-switch && npm run audit:commercial && npm run test:commercial-robot-auth && npm run test:commercial-hmac && npm run test:commercial-contract && npm run test:commercial-cleanup && npm run test:prospect-signal && npm run test:ads-readiness && npm run test:zevanory-sales-contract && npm run test:zevanory-sales-tenant && npm run audit:zevanory-sales-integration && npm run audit:cfo && npm run test:cfo-contract && vite build",
     "start": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "audit:commercial": "node scripts/ped-commercial-audit.mjs",
@@ -38,7 +38,8 @@
     "test:passphrase-migration": "tsx scripts/passphrase-migration-contract.ts",
     "test:auth-diagnostic-denial": "tsx scripts/auth-diagnostic-denial-contract.ts",
     "test:passphrase-concurrent": "tsx scripts/passphrase-concurrent-attempts.ts",
-    "test:p04-offline-r109": "node --test tests/creative-auto-decision.test.mjs"
+    "test:p04-offline-r109": "node --test tests/creative-auto-decision.test.mjs",
+    "test:admin-turnstile": "tsx scripts/admin-turnstile-contract.test.ts"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
