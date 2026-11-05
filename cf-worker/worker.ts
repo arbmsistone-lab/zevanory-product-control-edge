@@ -1,4 +1,5 @@
 import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
+import {handleOwnerBlogApproval} from './blog-owner-approval.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 import { adminAuthSourceKey, hasTrustedDevice, mintTrustedDevice, PASSPHRASE_AGGREGATE_BUCKET, PASSPHRASE_SOURCE_BUCKET_PREFIX, trustedDeviceSetCookie } from './admin-auth-throttle.ts';
@@ -1200,6 +1201,11 @@ export default {
     const normalizedUrl = new URL(request.url);
     normalizedUrl.pathname = normalizedPath;
     const normalizedRequest = new Request(normalizedUrl.toString(), request);
+    // R122 NC-01: only the authenticated owner session can approve an exact preexisting blog draft.
+    if (normalizedPath === '/api/blog/approval' || normalizedPath === '/api/blog/approval/challenge') {
+      const blogResult=await handleOwnerBlogApproval(normalizedRequest,env,verifyEdgeSession);
+      if(blogResult)return blogResult;
+    }
 
     // Global trust is derived live from ZEVANORY Control Core on every read (30 s shared edge
     // cache). It is never served from a deploy-time file again: a baked artifact kept showing
