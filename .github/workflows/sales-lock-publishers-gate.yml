@@ -1,0 +1,61 @@
+name: Sales lock publishers gate
+
+# Trava de vendas nos publicadores T2/T3 (cf-worker/sales-lock.ts + cf-worker/worker.ts): testes comportamentais
+# (rotas HMAC reais do Worker, rede e CORE_WORKER simulados) e mutantes. Só pull request: nunca dispara no merge,
+# sem segredos, sem rede além de checkout e npm install. Contagem exata: 18 casos, 17 mutantes KILLED.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cf-worker/**'
+      - 'scripts/sales-lock-publishers.test.ts'
+      - 'scripts/p04-t3-t4-gates.test.ts'
+      - 'scripts/p04-custodial-calibration-nc010.mjs'
+      - 'scripts/p04-custodial-calibration-nc010.test.mjs'
+      - 'data/d7-legacy-media-seed.json'
+      - 'scripts/sales-lock-publishers.mutants.mjs'
+      - 'package.json'
+      - '.github/workflows/sales-lock-publishers-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sales-lock-publishers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Tests (exact count 18)
+        run: |
+          set -euo pipefail
+          npm run test:sales-lock-publishers 2>&1 | tee sl.txt
+          grep -q '"sales_lock_publishers":"PASS","cases":18,' sl.txt
+      - name: NC-006 T3/T4 valid certificate, revocation and fail-closed
+        run: |
+          set -euo pipefail
+          npm run test:p04-t3-t4-gates 2>&1 | tee nc006.txt
+          grep -q '"nc006_t3_t4":"PASS","cases":5,' nc006.txt
+      - name: NC-006 D7 legacy SHA seed integrity
+        run: |
+          set -euo pipefail
+          npm run test:p06-legacy-seed 2>&1 | tee legacy.txt
+          grep -q '"nc006_legacy_seed":"PASS","records":368,"unique":349,"groups":11,' legacy.txt
+      - name: NC-010 R38 custodial blind split, metrics and critical mutant
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap scripts/p04-custodial-calibration-nc010.test.mjs | tee p04-plan.txt
+          grep -qx '# tests 1' <(grep '^# tests ' p04-plan.txt)
+          grep -qx '# pass 1' <(grep '^# pass ' p04-plan.txt)
+      - name: Mutants (17, all KILLED)
+        run: |
+          set -euo pipefail
+          npm run mutants:sales-lock-publishers 2>&1 | tee mut.txt
+          grep -q '"mutants":17,"KILLED":17,"other":\[\]' mut.txt
