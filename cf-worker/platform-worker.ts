@@ -14,6 +14,10 @@ function env(name: string) {
   return WORKER_ENV[name] || '';
 }
 
+export function workerEnvValue(name: string) {
+  return env(name);
+}
+
 async function storeCall(payload: Record<string, unknown>) {
   const url = env('SUPABASE_URL').replace(/\/$/, '');
   const key = env('SUPABASE_PUBLISHABLE_KEY');
@@ -93,6 +97,24 @@ export const db = {
       limit: Math.max(1, Math.min(options.limit || 100, 1000)),
     });
     return { items: (result?.items || []) as Row<T>[] };
+  },
+
+  // Strict read (NC-221-02): the response contract is validated BEFORE any conversion, so an invalid
+  // read ({}, items:null, an error body, a non-object row) fails instead of becoming an empty list.
+  // Only {"items":[...]} with object rows carrying a string id is a valid (possibly empty) result.
+  async listStrict<T>(bucket: string, options: { limit?: number } = {}): Promise<ListResult<T>> {
+    const result = await storeCall({
+      op: 'list',
+      bucket,
+      limit: Math.max(1, Math.min(options.limit || 100, 1000)),
+    });
+    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('portable_store_invalid_list_response');
+    if (Object.prototype.hasOwnProperty.call(result, 'error')) throw new Error('portable_store_list_error');
+    if (!Array.isArray(result.items)) throw new Error('portable_store_invalid_list_items');
+    if (!result.items.every((item: unknown) => !!item && typeof item === 'object' && !Array.isArray(item) && typeof (item as AnyRecord).id === 'string')) {
+      throw new Error('portable_store_invalid_list_row');
+    }
+    return { items: result.items as Row<T>[] };
   },
 
   async get<T>(bucket: string, ids: string[]): Promise<(Row<T> | null)[]> {
