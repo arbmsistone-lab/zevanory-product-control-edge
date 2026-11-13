@@ -1,4 +1,5 @@
-import { adminPinState, atomicPassphraseAttempt, db, error, json, portableHealth, router, secrets, verifyAdminPin } from './platform-worker.ts';
+import { adminPinState, atomicPassphraseAttempt, db, error, json, portableHealth, router, secrets, verifyAdminPin, workerEnvValue } from './platform-worker.ts';
+import { computeCommercialMetrics, deriveCommercialRobotState, type CommercialRecord, type CommercialRecordKind, type CommercialWorkspaceData } from '../src/commercial-model.ts';
 import { adminAuthSourceKey, hasTrustedDevice, sourceRecordId } from './admin-auth-throttle.ts';
 import { activeIncidents, planIncidentWrites, TELEMETRY_UNAVAILABLE_TITLE } from '../backend/incident-lifecycle.ts';
 import { executeZeesVerifier } from './zees-verifiers.ts';
@@ -1601,6 +1602,50 @@ function recentUnique<T extends { system: string; title: string; createdAt: stri
     .slice(0, 20);
 }
 
+// Commercial workspace served by the edge from the same replicated store (zpc_records) the
+// auxiliary server mirrors to. Same buckets, tenant rule and shape as backend/commercial.ts, so the
+// Conteúdo section (Criativos, Aprovações, Publicações) loads even when the auxiliary server is
+// unreachable (Cloudflare challenge on its subrequests, 13/11). No operations feed exists at the
+// edge, so the robot state is derived from the heartbeat alone (fail-closed).
+const EDGE_COMMERCIAL_BUCKETS: Record<CommercialRecordKind, string> = {
+  lead: 'zpc_commercial_leads',
+  creative: 'zpc_commercial_creatives',
+  publication: 'zpc_commercial_publications',
+  event: 'zpc_commercial_events',
+  support: 'zpc_commercial_support',
+  finance: 'zpc_commercial_finance',
+  evidence: 'zpc_commercial_evidence',
+};
+function edgeSalesTenantId() {
+  const raw = String(workerEnvValue('ZEVANORY_SALES_TENANT_ID') || 'zevanory').trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{2,63}$/.test(raw)) throw new Error('zevanory_sales_tenant_invalid');
+  return raw;
+}
+async function edgeListKind(kind: CommercialRecordKind, limit: number): Promise<CommercialRecord[]> {
+  const tenant = edgeSalesTenantId();
+  const bucket = tenant === 'zevanory' ? EDGE_COMMERCIAL_BUCKETS[kind] : `${EDGE_COMMERCIAL_BUCKETS[kind]}__tenant_${tenant}`;
+  const result = await db.list<Omit<CommercialRecord, 'id'>>(bucket, { limit });
+  return result.items.map(item => ({ ...item, kind, id: item.id })) as CommercialRecord[];
+}
+export async function edgeCommercialWorkspace(): Promise<CommercialWorkspaceData> {
+  const tenant = edgeSalesTenantId();
+  const [leads, creatives, publications, events, support, finance, evidence] = await Promise.all([
+    edgeListKind('lead', 300), edgeListKind('creative', 300), edgeListKind('publication', 300),
+    edgeListKind('event', 500), edgeListKind('support', 300), edgeListKind('finance', 300), edgeListKind('evidence', 500),
+  ]);
+  const sortRecent = (items: CommercialRecord[]) => [...items].sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+  const heartbeat = sortRecent(events.filter(item => item.status === 'heartbeat'))[0] || null;
+  return {
+    generatedAt: new Date().toISOString(),
+    tenant: { id: tenant, defaultTenant: tenant === 'zevanory', tenantSource: 'server-environment', isolation: 'server-owned-bucket-v1', clientSelectable: false },
+    metrics: computeCommercialMetrics({ leads, creatives, publications, events, finance }),
+    robot: deriveCommercialRobotState(null, heartbeat?.updatedAt ?? null),
+    leads: sortRecent(leads), creatives: sortRecent(creatives), publications: sortRecent(publications),
+    events: sortRecent(events), support: sortRecent(support), finance: sortRecent(finance), evidence: sortRecent(evidence),
+    counts: { leads: leads.length, creatives: creatives.length, publications: publications.length, events: events.length, support: support.length, finance: finance.length, evidence: evidence.length },
+  };
+}
+
 async function adminData() {
   const [systems, audits, improvements, incidents, engine, products, certificationEvidence, certificationRuns, globalTrust] = await Promise.all([
     db.list<SystemRecord>(SYSTEMS, { limit: 50 }),
@@ -1740,7 +1785,10 @@ export const handler = router({
   'POST /api/admin/bootstrap': [async ctx => {
     const token = (ctx.body as { sessionToken?: string })?.sessionToken;
     if (!await requirePinSession(token)) return error('Sessao invalida ou expirada.', 401);
-    return json(await adminData());
+    // The commercial workspace is loaded beside the dashboard; if the store cannot serve it the
+    // dashboard still answers and says so explicitly (never an empty workspace presented as real).
+    const [data, commercial] = await Promise.all([adminData(), edgeCommercialWorkspace().catch(() => null)]);
+    return json(commercial ? { ...data, commercial } : { ...data, commercialUnavailable: 'edge_store_error' });
   }],
   'POST /api/products/create': [async ctx => {
     const body = ctx.body as { sessionToken?: string } & Partial<ProductRecord>;

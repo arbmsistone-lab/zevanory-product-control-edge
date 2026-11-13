@@ -1607,7 +1607,10 @@ export default {
           // never reached it: the panel showed Conteúdo empty with 429 on bootstrap/stream (13/11).
           // Nothing ran there, so the edge handler answers instead. An application-level 429 from the
           // auxiliary server itself (no cf-mitigated) still passes through unchanged.
-          const upstreamChallenged = primaryResponse.headers.has('cf-mitigated');
+          // Strictly the documented value: only `cf-mitigated: challenge` on a non-success status.
+          // Any other value, or a success, is the auxiliary server's own answer and passes through.
+          const upstreamChallenged = primaryResponse.status >= 400
+            && String(primaryResponse.headers.get('cf-mitigated') || '').trim().toLowerCase() === 'challenge';
           if (primaryResponse.status < 500 && !edgeSessionValid && !upstreamChallenged) return invalidate(primaryResponse);
         } catch {}
       }

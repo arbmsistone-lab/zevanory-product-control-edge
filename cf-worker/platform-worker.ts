@@ -14,6 +14,10 @@ function env(name: string) {
   return WORKER_ENV[name] || '';
 }
 
+export function workerEnvValue(name: string) {
+  return env(name);
+}
+
 async function storeCall(payload: Record<string, unknown>) {
   const url = env('SUPABASE_URL').replace(/\/$/, '');
   const key = env('SUPABASE_PUBLISHABLE_KEY');
