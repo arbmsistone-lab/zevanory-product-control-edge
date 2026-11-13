@@ -101,5 +101,37 @@ try {
     assert.equal(d.commercialUnavailable, 'edge_store_error');
   }
   results.bootstrap_store_falho = degraded.status;
+  // NC-221-02 residual: an invalid HTTP 200 from the store is a failure, never a valid empty workspace.
+  for (const [label, payload, valid] of [
+    ['objeto_vazio', {}, false],
+    ['items_null', { items: null }, false],
+    ['corpo_de_erro', { error: 'synthetic_failure' }, false],
+    ['linha_invalida', { items: [null] }, false],
+    ['linha_sem_id', { items: [{ title: 'x' }] }, false],
+    ['lista_vazia_valida', { items: [] }, true],
+  ] as const) {
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.startsWith('https://render.invalid')) return new Response('challenge', { status: 429, headers: { 'cf-mitigated': 'challenge' } });
+      if (url.includes('zpc_worker_list')) {
+        const body = JSON.parse(String(init?.body || '{}'));
+        if (String(body.p_bucket).startsWith('zpc_commercial_')) return Response.json(payload);
+        return Response.json({ items: [] });
+      }
+      return Response.json({ items: [] });
+    }) as typeof fetch;
+    const r = await post('/api/admin/bootstrap', {});
+    assert.equal(r.status, 200, label + ': dashboard still answers');
+    const d: any = await r.json();
+    if (valid) {
+      assert.ok(d.commercial, label + ': valid empty list is a real (empty) workspace');
+      assert.equal(d.commercial.counts.creatives, 0);
+      assert.equal(d.commercialUnavailable, undefined);
+    } else {
+      assert.equal(d.commercial, undefined, label + ': invalid store read must not become a workspace');
+      assert.equal(d.commercialUnavailable, 'edge_store_error', label + ': explicit unavailability');
+    }
+    results['contrato_' + label] = valid ? 'vazio_valido' : d.commercialUnavailable;
+  }
 } finally { globalThis.fetch = original; }
 console.log(JSON.stringify({ edge_commercial_bootstrap: 'PASS', results }));

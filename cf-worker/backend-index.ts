@@ -1624,7 +1624,7 @@ function edgeSalesTenantId() {
 async function edgeListKind(kind: CommercialRecordKind, limit: number): Promise<CommercialRecord[]> {
   const tenant = edgeSalesTenantId();
   const bucket = tenant === 'zevanory' ? EDGE_COMMERCIAL_BUCKETS[kind] : `${EDGE_COMMERCIAL_BUCKETS[kind]}__tenant_${tenant}`;
-  const result = await db.list<Omit<CommercialRecord, 'id'>>(bucket, { limit });
+  const result = await db.listStrict<Omit<CommercialRecord, 'id'>>(bucket, { limit });
   return result.items.map(item => ({ ...item, kind, id: item.id })) as CommercialRecord[];
 }
 export async function edgeCommercialWorkspace(): Promise<CommercialWorkspaceData> {
