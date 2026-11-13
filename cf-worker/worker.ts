@@ -1603,7 +1603,12 @@ export default {
           // start, callback timeout), not an expired session: never surface it as "sessão
           // inválida". Fall through to the edge handler instead.
           const edgeSessionValid = primaryResponse.status === 401 && bodyToken.startsWith('zpc1.') && await verifyEdgeSession(bodyToken).catch(() => false);
-          if (primaryResponse.status < 500 && !edgeSessionValid) return invalidate(primaryResponse);
+          // A Cloudflare challenge in front of the auxiliary server (cf-mitigated) means the request
+          // never reached it: the panel showed Conteúdo empty with 429 on bootstrap/stream (13/11).
+          // Nothing ran there, so the edge handler answers instead. An application-level 429 from the
+          // auxiliary server itself (no cf-mitigated) still passes through unchanged.
+          const upstreamChallenged = primaryResponse.headers.has('cf-mitigated');
+          if (primaryResponse.status < 500 && !edgeSessionValid && !upstreamChallenged) return invalidate(primaryResponse);
         } catch {}
       }
       const edgeResponse = await handler(copy(normalizedUrl.toString()));
