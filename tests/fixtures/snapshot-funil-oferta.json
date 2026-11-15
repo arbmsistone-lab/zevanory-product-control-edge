@@ -1,21 +1,86 @@
 {
- "since": "2026-10-12",
- "abriuOferta": {
-  "value": 3,
-  "source": "Site",
-  "updatedAt": "2026-11-15T21:22:39.264Z",
-  "definition": "Abriu a página da oferta (/hotmart/<produto>) desde 2026-10-12; sem testes de diagnóstico",
-  "integrity": "aggregated"
+ "leituraOk": {
+  "since": "2026-10-12",
+  "abriuOferta": {
+   "value": 3,
+   "source": "Site",
+   "updatedAt": "2026-11-15T21:40:18.638Z",
+   "definition": "Abriu a página da oferta (/hotmart/<produto>) desde 2026-10-12; sem testes de diagnóstico",
+   "integrity": "aggregated"
+  },
+  "clicouCheckout": {
+   "value": 2,
+   "source": "Site",
+   "updatedAt": "2026-11-15T21:40:18.638Z",
+   "definition": "Clicou para ir ao checkout (/hotmart/<produto>/ir) desde 2026-10-12; sem testes de diagnóstico; a venda só conta com a confirmação da Hotmart",
+   "integrity": "aggregated"
+  },
+  "diagnostico": {
+   "abriuOferta": 1,
+   "clicouCheckout": 1
+  }
  },
- "clicouCheckout": {
-  "value": 2,
-  "source": "Site",
-  "updatedAt": "2026-11-15T21:22:39.264Z",
-  "definition": "Clicou para ir ao checkout (/hotmart/<produto>/ir) desde 2026-10-12; sem testes de diagnóstico; a venda só conta com a confirmação da Hotmart",
-  "integrity": "aggregated"
+ "vazia": {
+  "since": "2026-10-12",
+  "abriuOferta": {
+   "value": 0,
+   "source": "Site",
+   "updatedAt": "2026-11-15T21:40:18.713Z",
+   "definition": "Abriu a página da oferta (/hotmart/<produto>) desde 2026-10-12; sem testes de diagnóstico",
+   "integrity": "aggregated"
+  },
+  "clicouCheckout": {
+   "value": 0,
+   "source": "Site",
+   "updatedAt": "2026-11-15T21:40:18.713Z",
+   "definition": "Clicou para ir ao checkout (/hotmart/<produto>/ir) desde 2026-10-12; sem testes de diagnóstico; a venda só conta com a confirmação da Hotmart",
+   "integrity": "aggregated"
+  },
+  "diagnostico": {
+   "abriuOferta": 0,
+   "clicouCheckout": 0
+  }
  },
- "diagnostico": {
-  "abriuOferta": 1,
-  "clicouCheckout": 1
+ "falhou": {
+  "since": "2026-10-12",
+  "abriuOferta": {
+   "value": null,
+   "source": "Site",
+   "updatedAt": "2026-11-15T21:40:18.726Z",
+   "definition": "Abriu a página da oferta (/hotmart/<produto>) desde 2026-10-12; sem testes de diagnóstico; sem total exato (leitura falhou ou resumo antigo)",
+   "integrity": "missing"
+  },
+  "clicouCheckout": {
+   "value": null,
+   "source": "Site",
+   "updatedAt": "2026-11-15T21:40:18.726Z",
+   "definition": "Clicou para ir ao checkout (/hotmart/<produto>/ir) desde 2026-10-12; sem testes de diagnóstico; a venda só conta com a confirmação da Hotmart; sem total exato (leitura falhou ou resumo antigo)",
+   "integrity": "missing"
+  },
+  "diagnostico": {
+   "abriuOferta": null,
+   "clicouCheckout": null
+  }
+ },
+ "ausente": {
+  "since": null,
+  "abriuOferta": {
+   "value": null,
+   "source": "Site",
+   "updatedAt": null,
+   "definition": "Abriu a página da oferta (/hotmart/<produto>); sem testes de diagnóstico; resumo do funil ausente",
+   "integrity": "missing"
+  },
+  "clicouCheckout": {
+   "value": null,
+   "source": "Site",
+   "updatedAt": null,
+   "definition": "Clicou para ir ao checkout (/hotmart/<produto>/ir); sem testes de diagnóstico; a venda só conta com a confirmação da Hotmart; resumo do funil ausente",
+   "integrity": "missing"
+  },
+  "diagnostico": {
+   "abriuOferta": null,
+   "clicouCheckout": null
+  }
  }
 }

@@ -1,9 +1,10 @@
 // GPT-6 (15/11): o painel mostra os dois indicadores da oferta com os rótulos combinados e, à parte, os testes
 // de diagnóstico (utm_source=diagnostico), que nunca entram nos números comerciais. Lê snapshot.funnel.oferta,
-// gravado pelo command-center-snapshot do zevanory-public-mirror (PR #1061). Snapshot antigo (sem oferta) → "—".
+// gravado pelo command-center-snapshot do zevanory-public-mirror (PR #1061). Leitura vazia → zeros; leitura falha,
+// resumo ausente ou snapshot antigo (sem oferta) → "—" (missing) nos três blocos, nunca 0.
 export type Integrity = 'real' | 'aggregated' | 'webhook_authenticated' | 'no_events' | 'estimated' | 'stale' | 'missing';
 export type OfertaMetric = { value: number | null; source: string; updatedAt: string | null; definition: string; integrity: Integrity };
-export type FunilOferta = { since: string | null; abriuOferta: OfertaMetric; clicouCheckout: OfertaMetric; diagnostico: { abriuOferta: number; clicouCheckout: number } };
+export type FunilOferta = { since: string | null; abriuOferta: OfertaMetric; clicouCheckout: OfertaMetric; diagnostico: { abriuOferta: number | null; clicouCheckout: number | null } };
 export type OfertaTile = { label: string; value: string; source: string; at: string | null; integrity: Integrity; definition: string };
 
 export const ROTULOS_OFERTA = Object.freeze({ abriu: 'Abriu a página da oferta', clicou: 'Clicou para ir ao checkout', diagnostico: 'Testes de diagnóstico' });
