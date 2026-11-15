@@ -1,0 +1,21 @@
+{
+ "since": "2026-10-12",
+ "abriuOferta": {
+  "value": 3,
+  "source": "Site",
+  "updatedAt": "2026-11-15T21:22:39.264Z",
+  "definition": "Abriu a página da oferta (/hotmart/<produto>) desde 2026-10-12; sem testes de diagnóstico",
+  "integrity": "aggregated"
+ },
+ "clicouCheckout": {
+  "value": 2,
+  "source": "Site",
+  "updatedAt": "2026-11-15T21:22:39.264Z",
+  "definition": "Clicou para ir ao checkout (/hotmart/<produto>/ir) desde 2026-10-12; sem testes de diagnóstico; a venda só conta com a confirmação da Hotmart",
+  "integrity": "aggregated"
+ },
+ "diagnostico": {
+  "abriuOferta": 1,
+  "clicouCheckout": 1
+ }
+}

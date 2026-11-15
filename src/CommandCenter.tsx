@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Activity, Bot, ChevronLeft, ChevronRight, CircleDollarSign, Compass, Gauge, RadioTower, ThumbsUp } from 'lucide-react';
 import { api } from './api';
+import { funilOfertaTiles, type FunilOferta } from './funil-oferta';
 import type { CommercialRecord } from './commercial-model';
 
 // ZEVANORY Revenue Command Center. Seven tabs answer the owner's seven questions.
@@ -25,7 +26,7 @@ type Snapshot = {
   day: string;
   goals: { id: string; label: string; target: number; unit: string; deadline: string | null; current: number }[];
   revenue: Record<string, any>;
-  funnel: { visitors7: Metric; views7: Metric; leads7: Metric; views30: Metric; intents30: Metric; sales30: Metric; sources: Record<string, Record<string, number>>; pages: { page: string; views: number }[] };
+  funnel: { visitors7: Metric; views7: Metric; leads7: Metric; views30: Metric; intents30: Metric; sales30: Metric; oferta?: FunilOferta; sources: Record<string, Record<string, number>>; pages: { page: string; views: number }[] };
   acquisition: {
     reachAt: string;
     channels: { channel: string; audience: Metric; views?: Metric; delta7?: number | null; viewsDelta7?: number | null; note?: string }[];
@@ -273,6 +274,7 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
       <TileCard key='funnel' title='Funil' subtitle='Visitas e intenção: site · vendas: Hotmart'>
         {tileOf('Visitas com origem (30d)', s.funnel.views30)}
         {tileOf('Intenção de compra (30d)', s.funnel.intents30)}
+        {funilOfertaTiles(s.funnel.oferta, s.generatedAt).map(t => <Tile key={t.label} {...t} />)}
         {tileOf('Leads (7d)', s.funnel.leads7)}
         {hot('Vendas (30d)', num(s.funnel.sales30?.value ?? 0), 'Compras aprovadas em 30 dias')}
         <Tile label='Conversão visita → venda' value={s.funnel.views30.value ? ((100 * (s.funnel.sales30?.value || 0)) / s.funnel.views30.value).toFixed(2) + '%' : '—'} source='Site + Hotmart' at={s.generatedAt} integrity={s.funnel.views30.value ? 'aggregated' : 'missing'} definition='Vendas ÷ visitas com origem, 30 dias' />
