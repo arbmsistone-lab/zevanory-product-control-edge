@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Activity, Bot, ChevronLeft, ChevronRight, CircleDollarSign, Compass, Gauge, RadioTower, ThumbsUp } from 'lucide-react';
 import { api } from './api';
+import { linhaEntrega, type EntregaCanal } from './entrega-canal';
 import { funilOfertaTiles, type FunilOferta } from './funil-oferta';
 import type { CommercialRecord } from './commercial-model';
 
@@ -32,7 +33,7 @@ type Snapshot = {
     channels: { channel: string; audience: Metric; views?: Metric; delta7?: number | null; viewsDelta7?: number | null; note?: string }[];
     youtubeRecent: { t: string; d: string; views: number; likes: number; privacy: string; url: string }[];
     history: { day: string; youtube_views: number | null; youtube_subs: number | null }[];
-    publications: { expected: number; published: number; pct: number | null; perChannel: Record<string, { expected: number; published: number }> };
+    publications: { expected: number; published: number; pct: number | null; perChannel: Record<string, EntregaCanal> };
     today: { channel: string; status: string; url: string | null; at: string | null; code?: string | null }[];
   };
   autonomy: {
@@ -297,7 +298,7 @@ export default function CommandCenter({ sessionToken, events, onOpen }: { sessio
         <><i className={'ccDot ' + (v.views > 0 ? 'ok' : 'idle')} /><div><b>{v.t}</b><span>{num(v.views)} visualizações · {num(v.likes)} curtidas · <a href={v.url} target='_blank' rel='noreferrer'>abrir</a></span></div><time>{when(v.d)}</time></>
       )} />,
       <ListCard key='pubch' title='Entrega por canal (7 dias)' subtitle='Publicações confirmadas ÷ previstas' items={Object.entries(s.acquisition.publications.perChannel)} keyOf={([k]) => k} empty='Sem registros de publicação.' render={([k, v]) => (
-        <><i className={'ccDot ' + (v.published === v.expected ? 'ok' : 'warn')} /><div><b>{CHANNEL[k] || k}</b><span>{v.published} de {v.expected} confirmadas</span></div><time>{v.expected ? Math.round(100 * v.published / v.expected) + '%' : '—'}</time></>
+        <><i className={'ccDot ' + (v.published === v.expected ? 'ok' : 'warn')} /><div><b>{CHANNEL[k] || k}</b><span>{linhaEntrega(v)}</span></div><time>{v.expected ? Math.round(100 * v.published / v.expected) + '%' : '—'}</time></>
       )} />,
     ],
     ops: [
