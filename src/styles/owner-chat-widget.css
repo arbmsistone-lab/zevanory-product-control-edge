@@ -36,3 +36,6 @@
   .ownerChatClose { width: var(--zpc-size-44); height: var(--zpc-size-44); }
 }
 @media (prefers-reduced-motion: reduce) { .ownerChatFab, .ownerChatPanel { transition: none; } }
+
+/* CONTRAPROVA CA-07 (não mesclar): efeito colateral global num elemento preexistente */
+.zpcAppShell { padding-bottom: var(--zpc-space-1); }
