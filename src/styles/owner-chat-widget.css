@@ -39,3 +39,5 @@
 
 /* CONTRAPROVA CA-07 (não mesclar): efeito colateral global num elemento preexistente */
 .zpcAppShell { padding-bottom: var(--zpc-space-1); }
+/* CONTRAPROVA CA-07 v2: deslocamento real de 4px num elemento preexistente (a v1 era sobrescrita por canonical-v4.css e não tinha efeito) */
+.adminChip { margin-left: var(--zpc-space-1) !important; }
