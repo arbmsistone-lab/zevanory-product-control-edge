@@ -325,6 +325,7 @@ for (const [name, fn] of Object.entries(TESTS)) {
   }
   await closeAll();
   console.log((results.positives[name].pass ? 'PASS ' : 'FAIL ') + name + (results.positives[name].error ? ' :: ' + results.positives[name].error : ''));
+  if (results.positives[name].diag) console.log('DIAG ' + name + ' ' + JSON.stringify(results.positives[name].diag));
 }
 for (const [mutation, name] of NEGATIVES) {
   if (ONLY.length && !ONLY.includes(name)) continue;

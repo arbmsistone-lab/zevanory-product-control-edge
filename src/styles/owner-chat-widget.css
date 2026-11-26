@@ -9,9 +9,9 @@
 }
 .zpcHeaderActions>.ownerChatFab:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: var(--zpc-space-1); }
 .ownerChatPanel {
-  position: fixed; top: var(--zpc-size-72); right: var(--zpc-space-4); z-index: var(--zpc-z-overlay);
+  position: fixed; top: calc(var(--owner-chat-top, 72) * 1px); right: var(--zpc-space-4); z-index: var(--zpc-z-overlay);
   width: 420px; max-width: calc(100% - var(--zpc-space-8)); /* % de um elemento fixo = viewport sem a barra de rolagem */
-  height: 640px; max-height: calc(100% - var(--zpc-size-72) - var(--zpc-space-4));
+  bottom: var(--zpc-space-4); height: auto; max-height: 640px; /* entre o botão e a borda inferior, no máximo 640px */
   display: none; flex-direction: column; overflow: hidden;
   border-radius: var(--zpc-radius-lg); border: 1px solid var(--border); background: var(--surface);
   box-shadow: 0 var(--zpc-space-4) var(--zpc-space-12) var(--palette-alpha-03);

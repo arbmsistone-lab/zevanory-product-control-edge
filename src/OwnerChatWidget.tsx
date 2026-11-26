@@ -15,6 +15,7 @@ export function OwnerChatWidget() {
   const [mounted, setMounted] = useState(false);
   const fabRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const wasOpen = useRef(false);
   const toggle = () => { setMounted(true); setOpen(value => !value); };
   // Teclado (E3): ao abrir, o foco vai para "Fechar"; Esc fecha; ao fechar, o foco volta para o botão flutuante.
@@ -24,13 +25,21 @@ export function OwnerChatWidget() {
     wasOpen.current = open;
     if (!open) return undefined;
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
+    // A conversa abre logo abaixo do botão, onde quer que o cabeçalho o coloque (inclusive quando as ações quebram linha).
+    const place = () => {
+      const button = fabRef.current; const panel = panelRef.current;
+      if (!button || !panel) return;
+      panel.style.setProperty('--owner-chat-top', String(Math.ceil(button.getBoundingClientRect().bottom) + 8));
+    };
+    place();
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    window.addEventListener('resize', place);
+    return () => { document.removeEventListener('keydown', onKey); window.removeEventListener('resize', place); };
   }, [open]);
   return (
     <>
       {mounted && createPortal(
-        <section data-owner-chat-widget='' className={`ownerChatPanel${open ? ' isOpen' : ''}`} aria-label='Chat com o Epaminondas' aria-hidden={!open}>
+        <section ref={panelRef} data-owner-chat-widget='' className={`ownerChatPanel${open ? ' isOpen' : ''}`} aria-label='Chat com o Epaminondas' aria-hidden={!open}>
           <header className='ownerChatHeader'>
             <span><strong>Epaminondas</strong> · chat da ZEVANORY</span>
             <button ref={closeRef} type='button' className='ownerChatClose' onClick={() => setOpen(false)} aria-label='Fechar chat'><X size={18} /></button>
