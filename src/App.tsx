@@ -1036,6 +1036,7 @@ function App() {
     <div className='zpcAppShell'>
       <header className='topbar premiumShellTopbar' aria-label='Ações globais'>
         <div className='actions zpcHeaderActions'>
+          <OwnerChatWidget />
           <a
             className='secondary linkButton'
             href='/solucoes'
@@ -1588,7 +1589,6 @@ function App() {
         </div>
       )}
       </main>
-      <OwnerChatWidget />
     </div>
   );
 }

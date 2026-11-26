@@ -259,8 +259,9 @@ const TESTS = {
     await page.keyboard.press('Enter'); await page.locator('.ownerChatPanel.isOpen').waitFor(); await page.keyboard.press('Enter');
     assert.equal(await page.locator('.ownerChatPanel.isOpen').count(), 0, 'Enter em Fechar fecha');
     await page.keyboard.press(' '); await page.locator('.ownerChatPanel.isOpen').waitFor();
-    await page.keyboard.press('Tab'); // do Fechar para dentro do iframe
-    const pinFocused = await waitUntil(() => chatFrame(page).locator('#p').evaluate((e) => e === document.activeElement).catch(() => false), 3000);
+    // Do Fechar para dentro do iframe: até 3 toques de Tab (o Firefox para primeiro no próprio documento do iframe).
+    let pinFocused = false;
+    for (let i = 0; i < 3 && !pinFocused; i++) { await page.keyboard.press('Tab'); pinFocused = await waitUntil(() => chatFrame(page).locator('#p').evaluate((e) => e === document.activeElement && document.hasFocus()).catch(() => false), 1000); }
     assert(pinFocused, 'Tab leva ao campo de PIN dentro do chat');
     await context.close();
   },
@@ -304,13 +305,24 @@ const TESTS = {
 const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-ttl', 'expiry_12h_boundaries'], ['csrf-off', 'admin_api_protection']];
 
 const results = { browser: browserName, version: browser.version(), positives: {}, negatives: {} };
+// Diagnóstico de falha: captura de cada página aberta, URLs dos frames e cookies (sem valores).
+async function diagnose(name) {
+  const d = [];
+  for (const [ci, c] of openContexts.entries()) for (const [pi, pg] of c.pages().entries()) {
+    try { await pg.screenshot({ path: `${out}/FALHA-${name}-${ci}-${pi}.png` }); } catch {}
+    d.push({ url: pg.url(), frames: pg.frames().map((f) => f.url()), cookies: (await c.cookies().catch(() => [])).map((k) => ({ name: k.name, domain: k.domain, sameSite: k.sameSite, httpOnly: k.httpOnly, secure: k.secure })) });
+  }
+  return d;
+}
 const closeAll = async () => { while (openContexts.length) await openContexts.pop().close().catch(() => {}); };
 const ONLY = (process.env.E3_ONLY || '').split(',').filter(Boolean);
 for (const [name, fn] of Object.entries(TESTS)) {
   if (ONLY.length && !ONLY.includes(name)) continue;
   const t = Date.now();
   try { await fn(); results.positives[name] = { pass: true, ms: Date.now() - t }; }
-  catch (e) { results.positives[name] = { pass: false, ms: Date.now() - t, error: String(e && e.message || e).slice(0, 500) }; }
+  catch (e) {
+    results.positives[name] = { pass: false, ms: Date.now() - t, error: String(e && e.message || e).slice(0, 500), diag: await diagnose(name) };
+  }
   await closeAll();
   console.log((results.positives[name].pass ? 'PASS ' : 'FAIL ') + name + (results.positives[name].error ? ' :: ' + results.positives[name].error : ''));
 }

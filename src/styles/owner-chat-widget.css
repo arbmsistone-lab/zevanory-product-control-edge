@@ -1,17 +1,17 @@
 /* Chat do proprietário (Epaminondas): só tokens do design system — cores e geometria vêm de tokens.css/premium-shell.css,
-   então o widget acompanha o tema claro/escuro do painel. */
-.ownerChatFab {
-  position: fixed; right: var(--zpc-space-4); bottom: var(--zpc-space-4); z-index: var(--zpc-z-overlay);
-  width: var(--zpc-size-56); height: var(--zpc-size-56); border-radius: var(--zpc-radius-pill); border: 0; cursor: pointer;
+   então o widget acompanha o tema claro/escuro do painel.
+   E3: o botão fica na barra superior (primeiro item das ações, alinhadas à direita), não mais flutuando sobre o conteúdo. */
+.zpcHeaderActions>.ownerChatFab {
+  flex: 0 0 auto; width: var(--zpc-size-44); min-width: var(--zpc-size-44); height: var(--zpc-size-44); min-height: var(--zpc-size-44);
+  padding: 0; border: 0; border-radius: var(--zpc-radius-pill); cursor: pointer;
   display: grid; place-items: center;
   color: var(--action-primary-text); background: var(--action-primary);
-  box-shadow: 0 var(--zpc-space-2) var(--zpc-space-6) var(--palette-alpha-03);
 }
-.ownerChatFab:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: var(--zpc-space-1); }
+.zpcHeaderActions>.ownerChatFab:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: var(--zpc-space-1); }
 .ownerChatPanel {
-  position: fixed; right: var(--zpc-space-4); bottom: calc(var(--zpc-size-56) + var(--zpc-space-8)); z-index: var(--zpc-z-overlay);
+  position: fixed; top: var(--zpc-size-72); right: var(--zpc-space-4); z-index: var(--zpc-z-overlay);
   width: 420px; max-width: calc(100% - var(--zpc-space-8)); /* % de um elemento fixo = viewport sem a barra de rolagem */
-  height: 640px; max-height: calc(100% - var(--zpc-size-56) - var(--zpc-space-16));
+  height: 640px; max-height: calc(100% - var(--zpc-size-72) - var(--zpc-space-4));
   display: none; flex-direction: column; overflow: hidden;
   border-radius: var(--zpc-radius-lg); border: 1px solid var(--border); background: var(--surface);
   box-shadow: 0 var(--zpc-space-4) var(--zpc-space-12) var(--palette-alpha-03);
@@ -32,7 +32,8 @@
 @media (max-width: 640px) {
   /* CA-06: tela cheia por inset, sem unidades de viewport; nunca passa da largura visível */
   .ownerChatPanel { inset: 0; width: auto; height: auto; max-width: none; max-height: none; border-radius: 0; }
-  .ownerChatFab.isOpen { display: none; }
+  /* coberto pelo painel em tela cheia; visibility (não display) para não mexer no cabeçalho */
+  .zpcHeaderActions>.ownerChatFab.isOpen { visibility: hidden; }
   .ownerChatClose { width: var(--zpc-size-44); height: var(--zpc-size-44); }
 }
 @media (prefers-reduced-motion: reduce) { .ownerChatFab, .ownerChatPanel { transition: none; } }

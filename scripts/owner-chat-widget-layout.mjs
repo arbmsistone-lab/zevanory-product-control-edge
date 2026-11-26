@@ -1,6 +1,6 @@
 // E2: owner-chat widget layout certification on the candidate preview (127.0.0.1:4173), fictitious data only.
 // The chat iframe origin is fulfilled locally with a fixture page: no production dependency, no real PIN.
-// Checks per viewport x theme: FAB inside viewport, topmost at its centre, not covering any pre-existing control;
+// E3: the button now sits in the top bar (first header action). Checks per viewport x theme: button inside viewport, topmost at its centre, not covering any pre-existing control;
 // widget adds no page scroll; open panel inside viewport (full-screen inset on <=640px); close/reopen keeps the iframe.
 // Built-in negative proofs show the detectors catch real overflow and real obstruction.
 import {chromium} from 'playwright';
@@ -56,8 +56,8 @@ for(const viewport of viewports)for(const theme of ['dark','light']){
  const panel=await rect(page,'.ownerChatPanel');assert(inside(panel,viewport),'open panel outside viewport '+id+' '+JSON.stringify(panel));
  const mobile=viewport.width<=640;
  if(mobile){assert(Math.abs(panel.x)<0.5&&Math.abs(panel.y)<0.5&&Math.abs(panel.w-viewport.width)<0.5&&Math.abs(panel.h-viewport.height)<0.5,'mobile panel must fill the viewport exactly '+id+' '+JSON.stringify(panel));
-  assert.equal((await rect(page,'.ownerChatFab')).display,'none','mobile FAB must hide while open '+id);}
- else{const f=await rect(page,'.ownerChatFab');assert(panel.y+panel.h<=f.y+0.5,'desktop panel must not overlap the FAB '+id);}
+  assert.equal((await rect(page,'.ownerChatFab')).visibility,'hidden','mobile FAB must hide (covered) while open '+id);}
+ else{const f=await rect(page,'.ownerChatFab');const ix=Math.min(panel.x+panel.w,f.x+f.w)-Math.max(panel.x,f.x),iy=Math.min(panel.y+panel.h,f.y+f.h)-Math.max(panel.y,f.y);assert(!(ix>0&&iy>0),'desktop panel must not overlap the chat button '+id);}
  const close=await rect(page,'.ownerChatClose');assert(close&&inside(close,viewport)&&close.w>=(mobile?44:36),'close button reachable '+id);
  assert.deepEqual(await scroll(page),sClosed,'open panel changed page scroll extents '+id);
  await page.screenshot({path:`${out}/${id}-open.png`});
