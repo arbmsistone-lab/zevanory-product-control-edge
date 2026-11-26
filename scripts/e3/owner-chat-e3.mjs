@@ -1,28 +1,47 @@
 // E3: certificação funcional integrada do chat do proprietário (painel #224 + Worker #1098), em ambiente isolado.
 // Navegador: E3_BROWSER = chromium | firefox | webkit. Painel: build do candidato servido em 127.0.0.1:4173.
-// Worker: PUBLIC_MIRROR_DIR aponta para o checkout do #1098. Todas as origens são interceptadas pelo Playwright:
+// Worker: PUBLIC_MIRROR_DIR aponta para o checkout do #1098. Os navegadores saem por um proxy HTTPS local
+// (e3-proxy.mjs, certificado autoassinado), então cookies, SameSite, CORS, CSP e redirecionamentos são do navegador:
 //   https://controle.zevanory.api.br -> build local do painel (APIs do painel com fixtures);
 //   https://zevanory.api.br          -> Worker real em Node (owner-chat-harness.mjs), dados e PIN fictícios;
 //   https://outro.zevanory.api.br e https://evil.example.test -> páginas atacantes do próprio teste;
-//   qualquer outra URL -> abortada e registrada (prova de que não há dependência de produção).
+//   qualquer outro host -> recusado e registrado (prova de que não há dependência de produção).
 // Cada teste usa harness e contexto novos. Depois, cada contraprova liga UM defeito no Worker e exige a reprovação.
 import * as pw from 'playwright';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { createHarness } from './owner-chat-harness.mjs';
+import { startProxy } from './e3-proxy.mjs';
 
 const browserName = process.env.E3_BROWSER || 'chromium';
 const PM = process.env.PUBLIC_MIRROR_DIR || 'public-mirror';
 const PANEL = process.env.PANEL_PREVIEW || 'http://127.0.0.1:4173';
 const out = `e3-evidence/${browserName}`; fs.mkdirSync(out, { recursive: true });
-const browser = await pw[browserName].launch();
+let currentH = null;
+const panelApi = (pathname) => {
+  if (/(^|\/)api\/admin\/bootstrap$/.test(pathname)) return [200, fixture];
+  if (/(^|\/)api\/_auth_diagnostic$/.test(pathname)) return [200, { secretValid: true, locked: false, sessionRoundtrip: true, bootstrapOk: true }];
+  if (/(^|\/)api\/auth\/turnstile-config$/.test(pathname)) return [200, { enabled: false, sitekey: null, action: 'zpc_owner_login' }];
+  if (/\/global-trust\.json$/.test(pathname)) return [200, fixture.globalTrust];
+  if (/^\/(control\/)?api\//.test(pathname)) return [404, { error: 'e3_not_mocked' }];
+  return null;
+};
+const proxy = await startProxy(async (host, request) => {
+  const u = new URL(request.url);
+  if (host === 'zevanory.api.br') { const h = new Headers(request.headers); h.set('cf-connecting-ip', currentH.ip); return currentH.fetch(new Request(request.url, { method: request.method, headers: h, body: ['GET', 'HEAD'].includes(request.method) ? undefined : await request.arrayBuffer() })); }
+  if (host === 'controle.zevanory.api.br') {
+    const api = panelApi(u.pathname); if (api) return new Response(JSON.stringify(api[1]), { status: api[0], headers: { 'content-type': 'application/json' } });
+    const r = await fetch(PANEL + u.pathname + u.search); return new Response(await r.arrayBuffer(), { status: r.status, headers: { 'content-type': r.headers.get('content-type') || 'application/octet-stream' } });
+  }
+  if (u.pathname === '/attack') return new Response(ATTACK(CHAT + '/admin/proprietario'), { headers: { 'content-type': 'text/html; charset=utf-8' } });
+  return new Response('not found', { status: 404 });
+});
+const browser = await pw[browserName].launch({ proxy: { server: 'http://127.0.0.1:' + proxy.port } });
 const fixture = { dashboard: { systems: [], audits: [], improvements: [], incidents: [], policy: { zeroSpend: true, failClosed: true, destructiveActions: false, greenRule: 'FALSE_GREEN=0' }, lastEngineRun: '2026-09-30T00:00:00Z', certificationRuns: [] }, globalTrust: { state: 'BLOCKED', sha: null, evidenceRoot: null, policyVersion: 'ZEA-10', quorum: { passed: 0, total: 3, required: 3, conflicts: 0, independentKeys: 0 }, zea10: { proven: 0, partial: 0, blocked: 10 }, engines: [], checkedAt: '2026-09-30T00:00:00Z' }, operations: null, commercial: null, cfo: null, products: [], certificationTargets: [], summary: { total: 0, salesEnabled: 0, commercialReady: 0, blocked: 0, certified: 0, inCertification: 0, zeesBlocked: 0 } };
 const PANEL_URL = 'https://controle.zevanory.api.br/';
 const CHAT = 'https://zevanory.api.br';
-const aborted = new Set();
 let forced = null; const mk = () => createHarness(PM, { mutation: forced });
 const openContexts = [];
-const json = (r, status, body) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const ATTACK = (src) => `<!doctype html><html><head><meta charset="utf-8"><title>atacante</title></head><body><iframe id="x" src="${src}" style="width:400px;height:400px"></iframe>
 <script>window.__r={};
 fetch('${CHAT}/api/admin/owner-chat/feed',{credentials:'include'}).then(r=>r.text()).then(t=>{window.__r.feed='LIDO:'+t.slice(0,200)}).catch(e=>{window.__r.feed='bloqueado'});
@@ -30,44 +49,12 @@ fetch('${CHAT}/api/admin/owner-chat/message',{method:'POST',credentials:'include
 fetch('${CHAT}/api/admin/owner-chat/message',{method:'POST',credentials:'include',headers:{'content-type':'application/json','x-owner-chat':'1'},body:JSON.stringify({text:'ordem forjada 2'})}).then(r=>r.text()).then(t=>{window.__r.post='LIDO:'+t.slice(0,200)}).catch(()=>{window.__r.post='bloqueado'});
 </script></body></html>`;
 
-async function bridge(route, H) {
-  const rq = route.request();
-  const headers = Object.fromEntries(Object.entries(await rq.allHeaders()).filter(([k]) => !k.startsWith(':') && k !== 'host' && k !== 'content-length'));
-  headers['cf-connecting-ip'] = H.ip;
-  const init = { method: rq.method(), headers };
-  if (!['GET', 'HEAD'].includes(init.method)) init.body = rq.postDataBuffer() ?? undefined;
-  let url = rq.url(); let res = await H.fetch(new Request(url, init));
-  // Redirecionamento do Worker é seguido aqui, dentro do harness: o Chromium não intercepta o pedido seguinte a um
-  // fulfill 3xx e iria para a rede real (produção). Só GET/HEAD; o navegador recebe a resposta final.
-  for (let hop = 0; hop < 5 && res.status >= 300 && res.status < 400 && res.headers.get('location') && ['GET', 'HEAD'].includes(init.method); hop++) {
-    url = new URL(res.headers.get('location'), url).href; res = await H.fetch(new Request(url, init));
-  }
-  const h = {}; res.headers.forEach((v, k) => { h[k] = v; });
-  await route.fulfill({ status: res.status, headers: h, body: Buffer.from(await res.arrayBuffer()) });
-}
 async function ctxFor(H, { viewport = { width: 1365, height: 900 }, theme = 'dark', mobile = false } = {}) {
-  const opts = { viewport };
+  currentH = H;
+  const opts = { viewport, ignoreHTTPSErrors: true };
   if (mobile && browserName !== 'firefox') Object.assign(opts, { isMobile: true, hasTouch: true });
   const context = await browser.newContext(opts); openContexts.push(context); context.setDefaultTimeout(15000);
   await context.addInitScript(({ theme }) => { if (location.hostname === 'controle.zevanory.api.br') { localStorage.setItem('zpc_theme', theme); localStorage.setItem('arbm_admin_session', 'e3-fixture-session'); } }, { theme });
-  // Ordem: o Playwright usa a rota registrada por último primeiro. Catch-all aborta (sem produção).
-  await context.route('**/*', (r) => { aborted.add(r.request().url().slice(0, 120)); return r.abort(); });
-  await context.route(/^https:\/\/controle\.zevanory\.api\.br\//, async (r) => {
-    try {
-      const u = new URL(r.request().url());
-      const res = await fetch(PANEL + u.pathname + u.search);
-      const h = {}; res.headers.forEach((v, k) => { if (!['content-encoding', 'content-length', 'transfer-encoding', 'connection'].includes(k)) h[k] = v; });
-      await r.fulfill({ status: res.status, headers: h, body: Buffer.from(await res.arrayBuffer()) });
-    } catch (e) { await r.fulfill({ status: 502, contentType: 'text/plain', body: 'e3 panel proxy: ' + e.message }).catch(() => {}); }
-  });
-  await context.route(/^https:\/\/controle\.zevanory\.api\.br\/(control\/)?api\//, (r) => json(r, 404, { error: 'e3_not_mocked' }));
-  await context.route('**/api/admin/bootstrap', (r) => json(r, 200, fixture));
-  await context.route('**/api/_auth_diagnostic', (r) => json(r, 200, { secretValid: true, locked: false, sessionRoundtrip: true, bootstrapOk: true }));
-  await context.route('**/api/auth/turnstile-config', (r) => json(r, 200, { enabled: false, sitekey: null, action: 'zpc_owner_login' }));
-  await context.route('**/global-trust.json*', (r) => json(r, 200, fixture.globalTrust));
-  await context.route(/^https:\/\/zevanory\.api\.br\//, (r) => bridge(r, H).catch((e) => r.fulfill({ status: 500, contentType: 'text/plain', body: 'e3 bridge: ' + e.message }).catch(() => {})));
-  await context.route(/^https:\/\/outro\.zevanory\.api\.br\/attack/, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: ATTACK(CHAT + '/admin/proprietario') }));
-  await context.route(/^https:\/\/evil\.example\.test\/attack/, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: ATTACK(CHAT + '/admin/proprietario') }));
   const page = await context.newPage();
   return { context, page };
 }
@@ -217,10 +204,9 @@ const TESTS = {
     await context.close();
   },
   async admin_api_protection() {
-    // Limite da ferramenta: ao responder um pedido interceptado (fulfill), o Playwright acrescenta cabeçalhos CORS
-    // permissivos, então a leitura entre origens NÃO é medida no navegador. A proteção é provada no HTTP do Worker:
-    // (1) nenhuma resposta do chat traz Access-Control-Allow-*; (2) de outro site o cookie SameSite=Strict não vai e a
-    // resposta é 401; (3) nenhuma ordem forjada é gravada, nem do vizinho do mesmo site (que envia o cookie).
+    // Navegador real (proxy, sem interceptação): (1) nenhuma resposta do chat traz Access-Control-Allow-*; (2) de outro
+    // site o cookie SameSite=Strict não vai e a resposta é 401; (3) o JS atacante não lê nada (CORS do navegador);
+    // (4) nenhuma ordem forjada é gravada, nem do vizinho do mesmo site (que envia o cookie).
     const H = await mk(); const { context, page } = await ctxFor(H);
     await loginInPanel(page, H); const before = H.rowCount();
     const token = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
@@ -242,8 +228,9 @@ const TESTS = {
     assert(evil.length >= 1 && evil.every((x) => !x.cookie && x.status === 401), 'outro site: sem cookie e 401 ' + JSON.stringify(evil));
     const sibling = cross.filter((x) => x.origin === 'https://outro.zevanory.api.br' && x.method === 'POST');
     assert(sibling.every((x) => x.status === 403 || x.status === 401), 'vizinho do mesmo site: POST recusado ' + JSON.stringify(sibling));
+    for (const [attacker, r] of Object.entries(seen)) { assert.equal(r.feed, 'bloqueado', 'JS de ' + attacker + ' leu o feed'); assert.equal(r.post, 'bloqueado', 'JS de ' + attacker + ' leu a resposta do POST'); }
     assert.equal(H.rowCount(), before, 'nenhuma mensagem forjada gravada');
-    fs.writeFileSync(`${out}/api-protection.json`, JSON.stringify({ note: 'leitura no navegador não é medida (fulfill do Playwright injeta CORS)', jsSaw: seen, serverLog: cross }, null, 2));
+    fs.writeFileSync(`${out}/api-protection.json`, JSON.stringify({ jsSaw: seen, serverLog: cross }, null, 2));
     await context.close();
   },
   async keyboard_focus() {
@@ -336,11 +323,11 @@ for (const [mutation, name] of NEGATIVES) {
   results.negatives[mutation + '->' + name] = { detected: failed, ms: Date.now() - t, error };
   console.log((failed ? 'DETECTED ' : 'MISSED ') + mutation + ' -> ' + name + (error ? ' :: ' + error : ''));
 }
-results.abortedNonFixtureUrls = [...aborted];
+results.refusedNonFixtureHosts = [...proxy.refused];
 const okP = Object.values(results.positives).every((x) => x.pass);
 const okN = Object.values(results.negatives).every((x) => x.detected);
 results.status = okP && okN ? 'PASS' : 'FAIL';
 fs.writeFileSync(`${out}/report.json`, JSON.stringify(results, null, 2));
-console.log(`OWNER_CHAT_E3_${browserName.toUpperCase()}=${results.status} positives=${Object.values(results.positives).filter((x) => x.pass).length}/${Object.keys(TESTS).length} negatives=${Object.values(results.negatives).filter((x) => x.detected).length}/${NEGATIVES.length} aborted=${aborted.size}`);
-await browser.close();
+console.log(`OWNER_CHAT_E3_${browserName.toUpperCase()}=${results.status} positives=${Object.values(results.positives).filter((x) => x.pass).length}/${Object.keys(TESTS).length} negatives=${Object.values(results.negatives).filter((x) => x.detected).length}/${NEGATIVES.length} refused=${proxy.refused.size}`);
+await browser.close(); proxy.close();
 process.exit(results.status === 'PASS' ? 0 : 1);

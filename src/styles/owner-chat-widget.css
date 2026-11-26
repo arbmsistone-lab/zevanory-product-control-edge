@@ -1,13 +1,16 @@
 /* Chat do proprietário (Epaminondas): só tokens do design system — cores e geometria vêm de tokens.css/premium-shell.css,
    então o widget acompanha o tema claro/escuro do painel.
    E3: o botão fica na barra superior (primeiro item das ações, alinhadas à direita), não mais flutuando sobre o conteúdo. */
-.zpcHeaderActions>.ownerChatFab {
-  flex: 0 0 auto; width: var(--zpc-size-44); min-width: var(--zpc-size-44); height: var(--zpc-size-44); min-height: var(--zpc-size-44);
-  padding: 0; border: 0; border-radius: var(--zpc-radius-pill); cursor: pointer;
+/* !important: o cabeçalho tem regras de altura/largura com !important por breakpoint (canonical-v4/shell); o alvo de
+   toque do chat fica sempre 44x44. */
+.zpcAppShell .zpcHeaderActions>.ownerChatFab {
+  flex: 0 0 auto; width: var(--zpc-size-44) !important; min-width: var(--zpc-size-44) !important;
+  height: var(--zpc-size-44) !important; min-height: var(--zpc-size-44) !important;
+  padding: 0 !important; border: 0; border-radius: var(--zpc-radius-pill); cursor: pointer;
   display: grid; place-items: center;
   color: var(--action-primary-text); background: var(--action-primary);
 }
-.zpcHeaderActions>.ownerChatFab:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: var(--zpc-space-1); }
+.zpcAppShell .zpcHeaderActions>.ownerChatFab:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: var(--zpc-space-1); }
 .ownerChatPanel {
   position: fixed; top: calc(var(--owner-chat-top, 72) * 1px); right: var(--zpc-space-4); z-index: var(--zpc-z-overlay);
   width: 420px; max-width: calc(100% - var(--zpc-space-8)); /* % de um elemento fixo = viewport sem a barra de rolagem */
@@ -33,7 +36,11 @@
   /* CA-06: tela cheia por inset, sem unidades de viewport; nunca passa da largura visível */
   .ownerChatPanel { inset: 0; width: auto; height: auto; max-width: none; max-height: none; border-radius: 0; }
   /* coberto pelo painel em tela cheia; visibility (não display) para não mexer no cabeçalho */
-  .zpcHeaderActions>.ownerChatFab.isOpen { visibility: hidden; }
+  .zpcAppShell .zpcHeaderActions>.ownerChatFab.isOpen { visibility: hidden; }
   .ownerChatClose { width: var(--zpc-size-44); height: var(--zpc-size-44); }
+}
+@media (max-width: 560px) {
+  /* as ações viram grade de 2 colunas aqui; o chat ganha uma terceira coluna fixa, sem criar segunda linha */
+  .zpcAppShell .zpcHeaderActions:has(>.ownerChatFab) { grid-template-columns: repeat(2, minmax(0, 1fr)) var(--zpc-size-44) !important; }
 }
 @media (prefers-reduced-motion: reduce) { .ownerChatFab, .ownerChatPanel { transition: none; } }
