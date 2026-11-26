@@ -10,7 +10,8 @@
 .ownerChatFab:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: var(--zpc-space-1); }
 .ownerChatPanel {
   position: fixed; right: var(--zpc-space-4); bottom: calc(var(--zpc-size-56) + var(--zpc-space-8)); z-index: var(--zpc-z-overlay);
-  width: min(420px, calc(100vw - var(--zpc-space-8))); height: min(640px, calc(100dvh - var(--zpc-size-56) - var(--zpc-space-16)));
+  width: 420px; max-width: calc(100% - var(--zpc-space-8)); /* % de um elemento fixo = viewport sem a barra de rolagem */
+  height: 640px; max-height: calc(100% - var(--zpc-size-56) - var(--zpc-space-16));
   display: none; flex-direction: column; overflow: hidden;
   border-radius: var(--zpc-radius-lg); border: 1px solid var(--border); background: var(--surface);
   box-shadow: 0 var(--zpc-space-4) var(--zpc-space-12) var(--palette-alpha-03);
@@ -29,7 +30,8 @@
 .ownerChatClose:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: 0; }
 .ownerChatFrame { flex: 1; width: 100%; border: 0; background: var(--bg-primary); }
 @media (max-width: 640px) {
-  .ownerChatPanel { right: 0; bottom: 0; width: 100vw; height: 100dvh; border-radius: 0; }
+  /* CA-06: tela cheia por inset, sem unidades de viewport; nunca passa da largura visível */
+  .ownerChatPanel { inset: 0; width: auto; height: auto; max-width: none; max-height: none; border-radius: 0; }
   .ownerChatFab.isOpen { display: none; }
   .ownerChatClose { width: var(--zpc-size-44); height: var(--zpc-size-44); }
 }

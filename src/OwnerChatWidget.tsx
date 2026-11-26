@@ -14,7 +14,7 @@ export function OwnerChatWidget() {
   return (
     <>
       {mounted && (
-        <section className={`ownerChatPanel${open ? ' isOpen' : ''}`} aria-label='Chat com o Epaminondas' aria-hidden={!open}>
+        <section data-owner-chat-widget='' className={`ownerChatPanel${open ? ' isOpen' : ''}`} aria-label='Chat com o Epaminondas' aria-hidden={!open}>
           <header className='ownerChatHeader'>
             <span><strong>Epaminondas</strong> · chat da ZEVANORY</span>
             <button type='button' className='ownerChatClose' onClick={() => setOpen(false)} aria-label='Fechar chat'><X size={18} /></button>
@@ -22,7 +22,7 @@ export function OwnerChatWidget() {
           <iframe className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat do proprietário' referrerPolicy='no-referrer' />
         </section>
       )}
-      <button type='button' className={`ownerChatFab${open ? ' isOpen' : ''}`} onClick={toggle} aria-expanded={open} aria-label={open ? 'Fechar chat' : 'Abrir chat com o Epaminondas'} title={open ? 'Fechar chat' : 'Falar com o Epaminondas'}>
+      <button type='button' data-owner-chat-widget='' className={`ownerChatFab${open ? ' isOpen' : ''}`} onClick={toggle} aria-expanded={open} aria-label={open ? 'Fechar chat' : 'Abrir chat com o Epaminondas'} title={open ? 'Fechar chat' : 'Falar com o Epaminondas'}>
         {open ? <X size={24} /> : <MessageCircle size={24} />}
       </button>
     </>
