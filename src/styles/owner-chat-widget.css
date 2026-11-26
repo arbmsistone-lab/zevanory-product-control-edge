@@ -6,6 +6,9 @@
 .zpcAppShell .zpcHeaderActions>.ownerChatFab {
   flex: 0 0 auto; width: var(--zpc-size-44) !important; min-width: var(--zpc-size-44) !important;
   height: var(--zpc-size-44) !important; min-height: var(--zpc-size-44) !important;
+  /* E3b/CA-07: alvo de toque 44x44, mas ocupa só 36px na linha das ações (a menor altura delas): o cabeçalho
+     nunca cresce por causa do chat (em 375px crescia 4px e empurrava todo o conteúdo). */
+  margin-block: calc((var(--zpc-size-36) - var(--zpc-size-44)) / 2) !important;
   padding: 0 !important; border: 0; border-radius: var(--zpc-radius-pill); cursor: pointer;
   display: grid; place-items: center;
   color: var(--action-primary-text); background: var(--action-primary);

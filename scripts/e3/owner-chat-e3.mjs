@@ -312,6 +312,24 @@ const TESTS = {
   async late_response_after_logout() { await lateResponse('logout'); },
   async late_response_after_expiry() { await lateResponse('expiry'); },
   async late_response_after_revocation() { await lateResponse('revocation'); },
+  // Sem navegação nenhuma (logout que o servidor não confirmou): a página fica viva e a resposta atrasada chega nela.
+  // Esta é a contraprova que vale nos três navegadores (Firefox e WebKit descartam respostas do documento antigo
+  // assim que uma navegação começa, o que mascara a falta da trava nos três cenários acima).
+  async late_response_during_unconfirmed_logout() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H);
+    const late = 'SEGREDO-ATRASADO-' + Math.random().toString(16).slice(2, 10);
+    H.holdNext('feed'); await H.addPrivate('Mensagem que chega atrasada: ' + late);
+    assert(await waitUntil(() => H.waiting.feed > 0, 9000), 'uma consulta ficou pendente');
+    H.logoutMode = '500'; await chatFrame(page).locator('#sair').click();
+    await chatFrame(page).locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: 8000 });
+    H.release('feed'); await page.waitForTimeout(2000);
+    const leaked = [];
+    for (const fr of page.frames()) { try { const t = await fr.evaluate(() => document.documentElement.innerText || ''); if (t.includes(late) || t.includes(H.secret)) leaked.push(fr.url()); } catch {} }
+    assert.deepEqual(leaked, [], 'resposta atrasada desenhou conteúdo privado com o logout pendente');
+    assert.equal(await chatFrame(page).locator('#log > *').count(), 0);
+    await context.close();
+  },
   // CA-09: sem confirmação do servidor, a interface apaga tudo mas NÃO diz que encerrou, não volta a consultar e
   // permite tentar de novo; com confirmação, volta ao PIN e a sessão some do servidor.
   async logout_failure_modes() {
@@ -412,7 +430,7 @@ const TESTS = {
   },
 };
 // Contraprova -> teste que deve reprovar com o defeito ligado.
-const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-ttl', 'expiry_12h_boundaries'], ['csrf-off', 'csrf_header_required'], ['no-render-guard', 'late_response_after_logout'], ['no-render-guard', 'late_response_after_expiry'], ['no-render-guard', 'late_response_after_revocation'], ['logout-unchecked', 'logout_failure_modes'], ['no-esc-bridge', 'escape_inside_chat'], ['origin-off', 'origin_rejection'], ['origin-off', 'admin_api_protection'], ['panel:no-origin-check', 'escape_spoofing_rejected']];
+const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-ttl', 'expiry_12h_boundaries'], ['csrf-off', 'csrf_header_required'], ['no-render-guard', 'late_response_during_unconfirmed_logout'], ['no-render-guard', 'late_response_after_logout', 'chromium'], ['no-render-guard', 'late_response_after_expiry', 'chromium'], ['no-render-guard', 'late_response_after_revocation', 'chromium'], ['logout-unchecked', 'logout_failure_modes'], ['no-esc-bridge', 'escape_inside_chat'], ['origin-off', 'origin_rejection'], ['origin-off', 'admin_api_protection'], ['panel:no-origin-check', 'escape_spoofing_rejected']];
 
 const results = { browser: browserName, version: browser.version(), positives: {}, negatives: {} };
 // Diagnóstico de falha: captura de cada página aberta, URLs dos frames e cookies (sem valores).
@@ -437,7 +455,8 @@ for (const [name, fn] of Object.entries(TESTS)) {
   console.log((results.positives[name].pass ? 'PASS ' : 'FAIL ') + name + (results.positives[name].error ? ' :: ' + results.positives[name].error : ''));
   if (results.positives[name].diag) console.log('DIAG ' + name + ' ' + JSON.stringify(results.positives[name].diag));
 }
-for (const [mutation, name] of NEGATIVES) {
+for (const [mutation, name, only] of NEGATIVES) {
+  if (only && only !== browserName) { results.negatives[mutation + '->' + name] = { detected: null, skipped: 'só em ' + only + ' (a navegação pendente já descarta respostas neste navegador)' }; continue; }
   if (ONLY.length && !ONLY.includes(name)) continue;
   const panelMut = mutation.startsWith('panel:');
   if (panelMut && !process.env.PANEL_MUTANT) { results.negatives[mutation + '->' + name] = { detected: false, error: 'PANEL_MUTANT ausente' }; console.log('MISSED ' + mutation + ' -> ' + name + ' :: PANEL_MUTANT ausente'); continue; }
@@ -451,9 +470,9 @@ for (const [mutation, name] of NEGATIVES) {
 results.refusedNonFixtureHosts = [...proxy.refused];
 console.log('REFUSED_HOSTS ' + JSON.stringify(results.refusedNonFixtureHosts));
 const okP = Object.values(results.positives).every((x) => x.pass);
-const okN = Object.values(results.negatives).every((x) => x.detected);
+const okN = Object.values(results.negatives).every((x) => x.detected || x.skipped);
 results.status = okP && okN ? 'PASS' : 'FAIL';
 fs.writeFileSync(`${out}/report.json`, JSON.stringify(results, null, 2));
-console.log(`OWNER_CHAT_E3_${browserName.toUpperCase()}=${results.status} positives=${Object.values(results.positives).filter((x) => x.pass).length}/${Object.keys(TESTS).length} negatives=${Object.values(results.negatives).filter((x) => x.detected).length}/${NEGATIVES.length} refused=${proxy.refused.size}`);
+console.log(`OWNER_CHAT_E3_${browserName.toUpperCase()}=${results.status} positives=${Object.values(results.positives).filter((x) => x.pass).length}/${Object.keys(TESTS).length} negatives=${Object.values(results.negatives).filter((x) => x.detected).length}/${Object.values(results.negatives).filter((x) => !x.skipped).length} refused=${proxy.refused.size}`);
 await browser.close(); proxy.close();
 process.exit(results.status === 'PASS' ? 0 : 1);
