@@ -6,6 +6,7 @@ on:
       - 'src/App.tsx'
       - 'src/**'
       - 'scripts/pin-startup-regression.mjs'
+      - 'scripts/owner-chat-widget-layout.mjs'
       - 'package.json'
       - 'package-lock.json'
       - 'cf-worker/backend-index.ts'
@@ -62,6 +63,8 @@ jobs:
           done
       - name: Run existing PIN startup and authenticated UI contract
         run: node scripts/pin-startup-regression.mjs
+      - name: Owner-chat widget layout (6 widths x 2 themes, fictitious data, negative proofs)
+        run: node scripts/owner-chat-widget-layout.mjs
       - name: Archive actual regression proofs
         if: always()
         uses: actions/upload-artifact@v4

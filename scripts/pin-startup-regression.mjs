@@ -114,7 +114,7 @@ for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const
  await context.close();
 }
 for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const theme of ['dark','light']){
- const images=[],geometries=[];for(const port of [4174,4173]){
+ const images=[],geometries=[],widgets=[];for(const port of [4174,4173]){
   const {context,page}=await setup('http://127.0.0.1:'+port,true,viewport,theme);
   await page.route('**/api/admin/bootstrap',r=>fulfill(r,200,fixture));
   await page.goto('http://127.0.0.1:'+port);await page.locator('.zpcAppShell').waitFor();
@@ -127,9 +127,31 @@ for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const
   // Keep the exact raster tolerance; do not hide genuine layout differences.
   await page.addStyleTag({content:'*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; caret-color: transparent !important; }'});
   await page.evaluate(()=>document.fonts.ready);await page.waitForLoadState('networkidle');
+  // E2/CA-07: the owner-chat FAB is the ONLY intentional addition to the authenticated shell.
+  // The candidate must render exactly one node tagged data-owner-chat-widget, and it must be the closed FAB
+  // (so the tag cannot be used to hide any other element). It is measured, captured and archived, then removed
+  // before the unchanged comparison below: every pre-existing node keeps exact geometry parity and raster delta <=1.
+  const widget=await page.evaluate(()=>[...document.querySelectorAll('[data-owner-chat-widget]')].map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height,descendants:e.querySelectorAll('*').length}}));
+  if(port===4173){
+   assert.equal(widget.length,1,'candidate must render exactly one owner-chat node while closed '+viewport.width+theme);
+   assert.equal(widget[0].tag+'.'+widget[0].cls,'BUTTON.ownerChatFab','only the closed FAB may carry data-owner-chat-widget');
+   assert(widget[0].x>=0&&widget[0].y>=0&&widget[0].x+widget[0].w<=viewport.width&&widget[0].y+widget[0].h<=viewport.height,'owner-chat FAB must stay inside the viewport');
+   await page.screenshot({path:out+'/owner-chat-fab-'+viewport.width+'-'+theme+'.png',animations:'disabled'});
+  } else assert.equal(widget.length,0,'baseline (main) must not contain the owner-chat widget');
+  widgets.push(widget);
+  await page.evaluate(()=>document.querySelectorAll('[data-owner-chat-widget]').forEach(e=>e.remove()));
   geometries.push(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().width&&e.getBoundingClientRect().height).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height}})));
+  if(port===4173&&viewport.width===1365&&theme==='dark'){
+   // CA-07 negative proof: after the normalization, a 4px change in a pre-existing element is still detected.
+   const mutated=await page.evaluate(()=>{const x=document.querySelector('.adminChip');x.style.marginLeft='4px';return [...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().width&&e.getBoundingClientRect().height).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height}})});
+   assert.notDeepEqual(mutated,geometries[0],'negative proof: pre-existing change must be detected');
+   await page.evaluate(()=>{document.querySelector('.adminChip').style.marginLeft='';});
+   checks.ca07_negative_preexisting_change_detected=true;
+  }
   const image=await page.screenshot({animations:'disabled'});images.push(image);await context.close();
  }
+ const diff=[];const n=Math.max(geometries[0].length,geometries[1].length);for(let i=0;i<n;i++)if(JSON.stringify(geometries[0][i])!==JSON.stringify(geometries[1][i]))diff.push({i,baseline:geometries[0][i]??null,candidate:geometries[1][i]??null});
+ fs.writeFileSync(out+'/owner-chat-geometry-diff-'+viewport.width+'-'+theme+'.json',JSON.stringify({viewport,theme,baseline_nodes:geometries[0].length,candidate_nodes_without_widget:geometries[1].length,widget_nodes_removed:widgets[1],preexisting_differences:diff.length,differences:diff.slice(0,50)},null,2));
  assert.deepEqual(geometries[0],geometries[1],'authenticated layout changed '+viewport.width+theme);
  const a=PNG.sync.read(images[0]),b=PNG.sync.read(images[1]);let maxChannelDelta=0;for(let i=0;i<a.data.length;i++)maxChannelDelta=Math.max(maxChannelDelta,Math.abs(a.data[i]-b.data[i]));
  assert(maxChannelDelta<=1,'authenticated raster changed');
