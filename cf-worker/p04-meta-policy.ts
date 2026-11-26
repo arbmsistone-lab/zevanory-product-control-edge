@@ -47,9 +47,10 @@ async function sha256Hex(bytes: ArrayBuffer | Uint8Array): Promise<string> {
 }
 
 // Receipt is resolved from independent certifier, never trusted from DB item.evidence alone.
-export async function verifyP04RenderedReceipt(env: Record<string, any>, item: any, cert: any): Promise<{ ok: boolean; mediaSha256?: string; reason: string }> {
+// `now` existe só para testes determinísticos (E1c); em produção os chamadores não o passam e vale o relógio real.
+export async function verifyP04RenderedReceipt(env: Record<string, any>, item: any, cert: any, now: number = Date.now()): Promise<{ ok: boolean; mediaSha256?: string; reason: string }> {
   try {
-    if (!cert || !validateP04Certificate(cert)) return { ok: false, reason: 'p04_certificate_invalid' };
+    if (!cert || !validateP04Certificate(cert, now)) return { ok: false, reason: 'p04_certificate_invalid' };
     const receiptId = String(item?.p04ReceiptId || '');
     if (!/^[a-zA-Z0-9_-]{16,100}$/.test(receiptId)) return { ok: false, reason: 'p04_receipt_missing' };
     const service = env?.P04_CERTIFIER_SERVICE;

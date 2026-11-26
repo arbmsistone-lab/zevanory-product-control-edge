@@ -19,9 +19,17 @@ const item={imageUrl:'https://controle.zevanory.api.br/api/commercial/creative/a
 const receipt={status:'approved',revoked:false,certificateId:cert.id,evaluatorVersion:cert.evaluatorVersion,pixelInspected:true,criticalPassed:true,mediaSha256:imageHash,captionSha256:captionSha};
 let calls=0;
 const env={P04_CERTIFIER_SERVICE:{async fetch(u: string){calls++;if(u===P04_CERTIFIER_URL)return Response.json(cert);if(u===P04_RECEIPT_URL+item.p04ReceiptId)return Response.json(receipt);throw Error('url');}}, T2_CREATIVE_ASSETS:{async get(k: string){assert.equal(k,'t2-creative/v1/'+uuid);return image.buffer;}}};
-assert.equal((await verifyP04RenderedReceipt(env,item,cert)).ok,true);
-assert.equal((await verifyP04RenderedReceipt(env,{...item,detail:caption+'!' },cert)).ok,false);
-assert.equal((await verifyP04RenderedReceipt(env,{...item,p04ReceiptId:''},cert)).ok,false);
-assert.equal((await verifyP04RenderedReceipt({...env,T2_CREATIVE_ASSETS:{async get(){return new Uint8Array([42]).buffer;}}},item,cert)).ok,false);
+assert.equal((await verifyP04RenderedReceipt(env,item,cert,now)).ok,true);
+assert.equal((await verifyP04RenderedReceipt(env,{...item,detail:caption+'!' },cert,now)).ok,false);
+assert.equal((await verifyP04RenderedReceipt(env,{...item,p04ReceiptId:''},cert,now)).ok,false);
+// E1c contraprovas: o mesmo certificado de referência, sem alteração, é recusado fora da validade e adulterado.
+assert.equal((await verifyP04RenderedReceipt(env,item,cert,Date.parse('2026-11-17T13:00:00Z'))).reason,'p04_certificate_invalid','vencido no instante exato');
+assert.equal((await verifyP04RenderedReceipt(env,item,cert,Date.parse('2026-11-26T12:00:00Z'))).reason,'p04_certificate_invalid','vencido hoje');
+assert.equal((await verifyP04RenderedReceipt(env,item,cert,Date.parse('2026-11-03T12:59:59Z'))).reason,'p04_certificate_invalid','antes da emissão');
+assert.equal((await verifyP04RenderedReceipt(env,item,{...cert,kappaOverall:.79},now)).reason,'p04_certificate_invalid','adulterado');
+assert.equal((await verifyP04RenderedReceipt(env,item,{...cert,expiresAt:'2026-12-31T00:00:00Z'},now)).reason,'p04_certificate_invalid','validade acima de 30 dias');
+// Sem `now` (como em produção) vale o relógio real: hoje o certificado de referência está vencido e é recusado.
+if (Date.now() >= Date.parse(cert.expiresAt)) assert.equal((await verifyP04RenderedReceipt(env,item,cert)).reason,'p04_certificate_invalid','relógio real');
+assert.equal((await verifyP04RenderedReceipt({...env,T2_CREATIVE_ASSETS:{async get(){return new Uint8Array([42]).buffer;}}},item,cert,now)).ok,false);
 assert.ok(calls >= 1);
-console.log(JSON.stringify({p04_gate:'PASS',cases:17,reason:'fail_closed_and_rendered_hash_checked'}));
+console.log(JSON.stringify({p04_gate:'PASS',cases:23,reason:'fail_closed_and_rendered_hash_checked'}));
