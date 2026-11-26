@@ -1,0 +1,88 @@
+name: Owner chat E3 integration (isolated)
+
+# E3: certificação funcional integrada do chat do proprietário — painel (este repositório) + Worker do
+# zevanory-public-mirror num SHA exato. Ambiente isolado: PIN, dados e sessões fictícios; nenhuma URL de produção
+# é acessada (o teste aborta e registra qualquer pedido fora das origens simuladas). Sem deploy, sem segredos.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/e3/**'
+      - '.github/workflows/owner-chat-e3-integration.yml'
+  workflow_dispatch:
+    inputs:
+      public_mirror_sha:
+        description: 'SHA exato do Worker candidato (zevanory-public-mirror, PR #1098)'
+        required: true
+        default: '59b9f6c6c03cdadb0c7b3dff961b8d1fbfaaa446'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owner-chat-e3-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  e3:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '59b9f6c6c03cdadb0c7b3dff961b8d1fbfaaa446' }}
+    steps:
+      - name: Checkout panel candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout Worker candidate (exact SHA)
+        uses: actions/checkout@v4
+        with:
+          repository: arbmsistone-lab/zevanory-public-mirror
+          ref: ${{ env.PM_SHA }}
+          path: public-mirror
+          persist-credentials: false
+      - name: Verify exact SHAs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C public-mirror rev-parse HEAD)" = "$PM_SHA"
+          echo "E3_PANEL_SHA=$(git rev-parse HEAD) E3_WORKER_SHA=$PM_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependencies and browser
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0
+          # E1b: só a fonte apt da Microsoft (403 na imagem do runner); a verificação de assinatura segue ativa nas demais.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.sources
+          npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Worker owner-chat unit tests (candidate SHA)
+        working-directory: public-mirror
+        run: node --test tests/owner-chat-pin.test.mjs tests/owner-chat.test.mjs
+      - name: Build panel candidate (no deploy)
+        run: npx vite build
+      - name: Start panel preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/zpc-e3-preview.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/zpc-e3-preview.log; exit 1
+      - name: E3 integration (${{ matrix.browser }})
+        env:
+          E3_BROWSER: ${{ matrix.browser }}
+          PUBLIC_MIRROR_DIR: public-mirror
+        run: node scripts/e3/owner-chat-e3.mjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-chat-e3-${{ matrix.browser }}
+          path: e3-evidence/
+          retention-days: 90
