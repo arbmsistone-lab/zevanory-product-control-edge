@@ -9,6 +9,9 @@ import './styles/owner-chat-widget.css';
 // A conversa em si é a página do Worker central (zevanory.api.br), com o PIN de 6 dígitos e a sessão de 12 h dela;
 // o painel só a enquadra. O iframe só é criado no primeiro clique e fica montado depois (não perde a conversa).
 export const OWNER_CHAT_URL = 'https://zevanory.api.br/admin/proprietario';
+// Único remetente aceito para o aviso de Esc vindo de dentro do chat (CA-10): esta origem E a janela deste iframe.
+const OWNER_CHAT_ORIGIN = new URL(OWNER_CHAT_URL).origin;
+const ESCAPE_MESSAGE = 'zv-owner-chat:escape';
 
 export function OwnerChatWidget() {
   const [open, setOpen] = useState(false);
@@ -16,6 +19,7 @@ export function OwnerChatWidget() {
   const fabRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
+  const frameRef = useRef<HTMLIFrameElement>(null);
   const wasOpen = useRef(false);
   const toggle = () => { setMounted(true); setOpen(value => !value); };
   // Teclado (E3): ao abrir, o foco vai para "Fechar"; Esc fecha; ao fechar, o foco volta para o botão flutuante.
@@ -31,10 +35,18 @@ export function OwnerChatWidget() {
       if (!button || !panel) return;
       panel.style.setProperty('--owner-chat-top', String(Math.ceil(button.getBoundingClientRect().bottom) + 8));
     };
+    // Esc com o foco dentro do chat (outra origem): a página do chat avisa por postMessage; só vale se vier da origem do
+    // chat E da janela deste iframe (outra aba, outro iframe ou o próprio painel são ignorados).
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== OWNER_CHAT_ORIGIN || !frameRef.current || event.source !== frameRef.current.contentWindow) return;
+      const data = event.data as { type?: unknown } | null;
+      if (data && data.type === ESCAPE_MESSAGE) setOpen(false);
+    };
     place();
     document.addEventListener('keydown', onKey);
     window.addEventListener('resize', place);
-    return () => { document.removeEventListener('keydown', onKey); window.removeEventListener('resize', place); };
+    window.addEventListener('message', onMessage);
+    return () => { document.removeEventListener('keydown', onKey); window.removeEventListener('resize', place); window.removeEventListener('message', onMessage); };
   }, [open]);
   return (
     <>
@@ -44,7 +56,7 @@ export function OwnerChatWidget() {
             <span><strong>Epaminondas</strong> · chat da ZEVANORY</span>
             <button ref={closeRef} type='button' className='ownerChatClose' onClick={() => setOpen(false)} aria-label='Fechar chat'><X size={18} /></button>
           </header>
-          <iframe className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat do proprietário' referrerPolicy='no-referrer' />
+          <iframe ref={frameRef} className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat do proprietário' referrerPolicy='no-referrer' />
         </section>,
         document.body,
       )}
