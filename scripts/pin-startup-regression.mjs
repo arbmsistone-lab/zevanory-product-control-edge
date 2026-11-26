@@ -157,4 +157,63 @@ for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const
  assert(maxChannelDelta<=1,'authenticated raster changed');
  checks['authenticated_visual_'+viewport.width+'_'+theme]=true;
 }
+// E3b/CA-07: comparação TAMBÉM com o botão do chat presente (sem retirá-lo), em 5 larguras x 2 temas.
+// Regras: nenhum elemento preexistente some ou aparece; só pode mudar geometria quem está dentro das ações do
+// cabeçalho (.zpcHeaderActions), e lá cada controle continua visível, inteiro na tela, >=24px, sem texto cortado e
+// sem encostar no botão do chat; o botão não cobre nenhum controle; fora da barra superior, raster idêntico (delta<=1).
+const CTRL='a[href],button,input,select,textarea,summary,[role="button"],[role="tab"]';
+async function snapWithButton(page){return page.evaluate((CTRL)=>{const nodes=[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().width&&e.getBoundingClientRect().height).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height,widget:!!e.closest('[data-owner-chat-widget]'),header:!!e.closest('.zpcHeaderActions'),control:e.matches(CTRL),clipped:e.matches(CTRL)&&e.scrollWidth>e.clientWidth+1}});
+ const top=document.querySelector('.zpcAppShell>.topbar');const t=top?top.getBoundingClientRect():null;return {nodes,topbar:t&&{x:t.x,y:t.y,w:t.width,h:t.height},vw:innerWidth,vh:innerHeight};},CTRL);}
+const inter=(a,b)=>Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)>0.5&&Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y)>0.5;
+function withButtonViolations(base,cand){
+ const v=[];const pre=cand.nodes.filter(n=>!n.widget);const btn=cand.nodes.find(n=>n.widget&&n.tag==='BUTTON');
+ if(!btn)v.push('chat button missing');
+ if(pre.length!==base.nodes.length)v.push('pre-existing element count changed '+base.nodes.length+'->'+pre.length);
+ const n=Math.min(pre.length,base.nodes.length);
+ for(let i=0;i<n;i++){const a=base.nodes[i],b=pre[i];
+  if(a.tag!==b.tag||a.cls!==b.cls){v.push('element sequence changed at '+i+': '+a.tag+'.'+a.cls+' -> '+b.tag+'.'+b.cls);break;}
+  const moved=Math.abs(a.x-b.x)>0.5||Math.abs(a.y-b.y)>0.5||Math.abs(a.w-b.w)>0.5||Math.abs(a.h-b.h)>0.5;
+  if(moved&&!b.header)v.push('moved outside header actions: '+b.tag+'.'+b.cls.slice(0,60)+' '+JSON.stringify({from:[a.x,a.y,a.w,a.h],to:[b.x,b.y,b.w,b.h]}));
+  if(b.header&&b.control){
+   if(b.x<-0.5||b.y<-0.5||b.x+b.w>cand.vw+0.5||b.y+b.h>cand.vh+0.5)v.push('header control outside viewport: '+b.cls.slice(0,40));
+   if(b.w<24||b.h<24)v.push('header control below 24px: '+b.cls.slice(0,40)+' '+b.w+'x'+b.h);
+   if(b.clipped&&!a.clipped)v.push('header control text clipped: '+b.cls.slice(0,40));
+   if(btn&&inter(b,btn))v.push('chat button touches header control: '+b.cls.slice(0,40));
+  }
+ }
+ if(btn){if(btn.x<-0.5||btn.y<-0.5||btn.x+btn.w>cand.vw+0.5||btn.y+btn.h>cand.vh+0.5)v.push('chat button outside viewport');
+  for(const c of pre)if(c.control&&inter(c,btn))v.push('chat button covers control: '+c.tag+'.'+c.cls.slice(0,40));}
+ if(JSON.stringify(base.topbar)!==JSON.stringify(cand.topbar))v.push('top bar box changed '+JSON.stringify([base.topbar,cand.topbar]));
+ return [...new Set(v)];
+}
+function rasterOutside(imgA,imgB,box){const a=PNG.sync.read(imgA),b=PNG.sync.read(imgB);if(a.width!==b.width||a.height!==b.height)return 255;let max=0;
+ for(let y=0;y<a.height;y++)for(let x=0;x<a.width;x++){if(box&&x>=box.x-1&&x<box.x+box.w+1&&y>=box.y-1&&y<box.y+box.h+1)continue;const i=(y*a.width+x)*4;for(let k=0;k<4;k++)max=Math.max(max,Math.abs(a.data[i+k]-b.data[i+k]));}return max;}
+for(const viewport of [{width:1365,height:900},{width:1024,height:768},{width:768,height:1024},{width:375,height:812},{width:320,height:568}])for(const theme of ['dark','light']){
+ const snaps=[],imgs=[];let negatives=null;
+ for(const port of [4174,4173]){
+  const {context,page}=await setup('http://127.0.0.1:'+port,true,viewport,theme);
+  await page.route('**/api/admin/bootstrap',r=>fulfill(r,200,fixture));
+  await page.goto('http://127.0.0.1:'+port);await page.locator('.zpcAppShell').waitFor();
+  await page.evaluate(()=>{const x=document.querySelector('.adminChip');if(x){const t=Array.from(x.childNodes).find(n=>n.nodeType===Node.TEXT_NODE);if(t)t.textContent=' ACESSO ADMINISTRATIVO';}});
+  await page.addStyleTag({content:'*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; caret-color: transparent !important; }'});
+  await page.evaluate(()=>document.fonts.ready);await page.waitForLoadState('networkidle');
+  snaps.push(await snapWithButton(page));imgs.push(await page.screenshot({animations:'disabled'}));
+  if(port===4173){
+   await page.screenshot({path:out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'.png',animations:'disabled'});
+   if(viewport.width===1365&&theme==='dark'){
+    // Contraprovas: deslocar um elemento fora do cabeçalho e encostar o botão num controle precisam ser detectados.
+    await page.addStyleTag({content:'.zpcWorkspace{margin-top:4px!important}'});const n1=withButtonViolations(snaps[0],await snapWithButton(page));
+    await page.addStyleTag({content:'.zpcWorkspace{margin-top:0!important}.zpcAppShell .zpcHeaderActions>.ownerChatFab{position:relative;left:40px}'});const n2=withButtonViolations(snaps[0],await snapWithButton(page));
+    negatives={workspaceShift:n1,buttonOverlap:n2};
+   }
+  }
+  await context.close();
+ }
+ const violations=withButtonViolations(snaps[0],snaps[1]);const delta=rasterOutside(imgs[0],imgs[1],snaps[1].topbar);
+ fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'.json',JSON.stringify({viewport,theme,baseline_nodes:snaps[0].nodes.length,candidate_nodes:snaps[1].nodes.length,topbar:snaps[1].topbar,moved_inside_header:snaps[1].nodes.filter(n=>!n.widget&&n.header).length,violations,raster_delta_outside_topbar:delta,negatives},null,2));
+ assert.deepEqual(violations,[],'with chat button '+viewport.width+theme+': '+violations.join(' | '));
+ assert(delta<=1,'raster outside the top bar changed with the chat button '+viewport.width+theme+' delta='+delta);
+ if(negatives){assert(negatives.workspaceShift.some(x=>x.startsWith('moved outside header actions')),'negative: workspace shift must be detected');assert(negatives.buttonOverlap.some(x=>/touches header control|covers control/.test(x)),'negative: button overlap must be detected');checks.ca07_with_button_negatives_detected=true;}
+ checks['authenticated_with_chat_button_'+viewport.width+'_'+theme]=true;
+}
 fs.writeFileSync(out+'/regression.json',JSON.stringify({status:'PASS',checks},null,2));console.log(JSON.stringify(checks));await browser.close();
