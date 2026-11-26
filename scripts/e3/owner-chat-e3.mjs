@@ -129,6 +129,11 @@ const BLOCK = {
   storage: () => { if (location.hostname === 'zevanory.api.br') { for (const k of ['getItem', 'setItem', 'removeItem']) Storage.prototype[k] = function () { throw new DOMException('bloqueado no teste', 'SecurityError'); }; } },
   jsCookie: () => { if (location.hostname === 'zevanory.api.br') { Object.defineProperty(Document.prototype, 'cookie', { configurable: true, get() { return ''; }, set() {} }); } },
 };
+// M1: conta, do lado da página, as consultas ao feed em curso ao mesmo tempo (o Chromium enfileira pedidos idênticos
+// na própria trava de cache, então só o servidor não basta para ver consultas em dobro).
+const COUNT_FEED = () => { if (location.hostname !== 'zevanory.api.br') return; const f = window.fetch; window.__feedNow = 0; window.__feedMax = 0;
+  window.fetch = function (u, o) { const isFeed = String(u).includes('/api/admin/owner-chat/feed'); if (isFeed) { window.__feedNow++; window.__feedMax = Math.max(window.__feedMax, window.__feedNow); }
+    const p = f.call(this, u, o); if (isFeed) p.then(() => { window.__feedNow--; }, () => { window.__feedNow--; }); return p; }; };
 // R2: logout sem confirmação com UM dos mecanismos de marca indisponível; o outro garante a trava ao recarregar.
 async function pendingWithBlocked(blocked) {
   const H = await mk(); const { context, page } = await ctxFor(H, { init: [BLOCK[blocked]] });
@@ -584,7 +589,7 @@ const TESTS = {
   // sessão (traz as mensagens que chegaram no intervalo); sessão revogada no intervalo -> PIN, nada privado; abrir e
   // fechar seguidamente nunca dispara consultas em dobro.
   async m1_close_pauses_reopen_validates() {
-    const H = await mk(); const { context, page } = await ctxFor(H);
+    const H = await mk(); const { context, page } = await ctxFor(H, { init: [COUNT_FEED] });
     await loginInPanel(page, H);
     const feeds = () => H.log.filter((x) => x.path === '/api/admin/owner-chat/feed').length;
     await m1Toggle(page, false); await page.waitForTimeout(1500); const f0 = feeds();
@@ -608,10 +613,12 @@ const TESTS = {
     assert(!(await secretVisibleAnywhere(page, H)));
     // Sem consultas em dobro: abre e fecha seguidamente com a resposta lenta.
     await chatFrame(page).locator('#p').fill(H.pin); await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
-    await page.waitForTimeout(500); H.feedMaxInflight = 0; H.holdNext('feed');
+    await page.waitForTimeout(500); H.feedMaxInflight = 0; await chatFrame(page).locator('body').evaluate(() => { window.__feedMax = window.__feedNow; }); H.holdNext('feed');
     for (let i = 0; i < 6; i++) { await m1Toggle(page, false); await m1Toggle(page, true); }
     await page.waitForTimeout(1500); H.release('feed'); await page.waitForTimeout(2500);
-    assert(H.feedMaxInflight <= 1, 'consultas simultâneas ao feed: ' + H.feedMaxInflight);
+    assert(H.feedMaxInflight <= 1, 'consultas simultâneas ao feed no servidor: ' + H.feedMaxInflight);
+    const pageMax = await chatFrame(page).locator('body').evaluate(() => window.__feedMax);
+    assert(pageMax <= 1, 'consultas simultâneas ao feed disparadas pela página: ' + pageMax);
     assert(await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).isVisible(), 'conversa de volta depois das trocas');
     await context.close();
   },
