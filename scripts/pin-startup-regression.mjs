@@ -163,7 +163,10 @@ for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const
 // sem encostar no botão do chat; o botão não cobre nenhum controle; fora da barra superior, raster idêntico (delta<=1).
 const CTRL='a[href],button,input,select,textarea,summary,[role="button"],[role="tab"]';
 async function snapWithButton(page){return page.evaluate((CTRL)=>{const nodes=[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().width&&e.getBoundingClientRect().height).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height,widget:!!e.closest('[data-owner-chat-widget]'),header:!!e.closest('.zpcHeaderActions'),control:e.matches(CTRL),clipped:e.matches(CTRL)&&e.scrollWidth>e.clientWidth+1}});
- const top=document.querySelector('.zpcAppShell>.topbar');const t=top?top.getBoundingClientRect():null;return {nodes,topbar:t&&{x:t.x,y:t.y,w:t.width,h:t.height},vw:innerWidth,vh:innerHeight};},CTRL);}
+ const top=document.querySelector('.zpcAppShell>.topbar');const t=top?top.getBoundingClientRect():null;
+ // Área VISUAL das ações do cabeçalho (caixa + contorno de foco), que pode passar um pouco da caixa da barra superior.
+ const headerVisual=[...document.querySelectorAll('.zpcHeaderActions, .zpcHeaderActions *')].map(e=>{const r=e.getBoundingClientRect();const cs=getComputedStyle(e);const o=cs.outlineStyle!=='none'?(parseFloat(cs.outlineWidth)||0)+Math.max(0,parseFloat(cs.outlineOffset)||0):0;return {x:r.x-o,y:r.y-o,w:r.width+2*o,h:r.height+2*o};}).filter(b=>b.w>0&&b.h>0);
+ return {nodes,topbar:t&&{x:t.x,y:t.y,w:t.width,h:t.height},headerVisual,vw:innerWidth,vh:innerHeight};},CTRL);}
 const inter=(a,b)=>Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)>0.5&&Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y)>0.5;
 function withButtonViolations(base,cand){
  const v=[];const pre=cand.nodes.filter(n=>!n.widget);const btn=cand.nodes.find(n=>n.widget&&n.tag==='BUTTON');
@@ -186,8 +189,8 @@ function withButtonViolations(base,cand){
  if(JSON.stringify(base.topbar)!==JSON.stringify(cand.topbar))v.push('top bar box changed '+JSON.stringify([base.topbar,cand.topbar]));
  return [...new Set(v)];
 }
-function rasterOutside(imgA,imgB,box){const a=PNG.sync.read(imgA),b=PNG.sync.read(imgB);if(a.width!==b.width||a.height!==b.height)return {max:255,bbox:null,pixels:-1};let max=0,n=0,x0=1e9,y0=1e9,x1=-1,y1=-1;
- for(let y=0;y<a.height;y++)for(let x=0;x<a.width;x++){if(box&&x>=box.x-1&&x<box.x+box.w+1&&y>=box.y-1&&y<box.y+box.h+1)continue;const i=(y*a.width+x)*4;let d=0;for(let k=0;k<4;k++)d=Math.max(d,Math.abs(a.data[i+k]-b.data[i+k]));if(d>1){n++;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}max=Math.max(max,d);}
+function rasterOutside(imgA,imgB,boxes){const inBox=(x,y)=>boxes.some(b=>x>=b.x-1&&x<b.x+b.w+1&&y>=b.y-1&&y<b.y+b.h+1);const a=PNG.sync.read(imgA),b=PNG.sync.read(imgB);if(a.width!==b.width||a.height!==b.height)return {max:255,bbox:null,pixels:-1};let max=0,n=0,x0=1e9,y0=1e9,x1=-1,y1=-1;
+ for(let y=0;y<a.height;y++)for(let x=0;x<a.width;x++){if(inBox(x,y))continue;const i=(y*a.width+x)*4;let d=0;for(let k=0;k<4;k++)d=Math.max(d,Math.abs(a.data[i+k]-b.data[i+k]));if(d>1){n++;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}max=Math.max(max,d);}
  return {max,pixels:n,bbox:n?{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1}:null};}
 for(const viewport of [{width:1365,height:900},{width:1024,height:768},{width:768,height:1024},{width:375,height:812},{width:320,height:568}])for(const theme of ['dark','light']){
  const snaps=[],imgs=[];let negatives=null;
@@ -210,7 +213,7 @@ for(const viewport of [{width:1365,height:900},{width:1024,height:768},{width:76
   }
   await context.close();
  }
- const violations=withButtonViolations(snaps[0],snaps[1]);const delta=rasterOutside(imgs[0],imgs[1],snaps[1].topbar);
+ const violations=withButtonViolations(snaps[0],snaps[1]);const delta=rasterOutside(imgs[0],imgs[1],[snaps[0].topbar,snaps[1].topbar,...snaps[0].headerVisual,...snaps[1].headerVisual].filter(Boolean));
  fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'.json',JSON.stringify({viewport,theme,baseline_nodes:snaps[0].nodes.length,candidate_nodes:snaps[1].nodes.length,topbar:snaps[1].topbar,moved_inside_header:snaps[1].nodes.filter(n=>!n.widget&&n.header).length,violations,raster_delta_outside_topbar:delta.max,raster_diff_pixels:delta.pixels,raster_diff_bbox:delta.bbox,negatives},null,2));
  assert.deepEqual(violations,[],'with chat button '+viewport.width+theme+': '+violations.join(' | '));
  if(delta.max>1){fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'-BASE.png',imgs[0]);fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'-CAND.png',imgs[1]);}
