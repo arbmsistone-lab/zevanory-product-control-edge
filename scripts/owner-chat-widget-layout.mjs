@@ -80,7 +80,7 @@ for(const viewport of viewports)for(const theme of ['dark','light']){
  const viewport={width:1365,height:900};const {context,page}=await open(viewport,'dark');
  const target=await page.evaluate(sel=>{const c=[...document.querySelectorAll(sel)].filter(e=>!e.closest('[data-owner-chat-widget]')).map(e=>e.getBoundingClientRect()).find(r=>r.width>=16&&r.height>=16&&r.x>=0&&r.y>=0&&r.right<=innerWidth&&r.bottom<=innerHeight);return c?{x:c.x+c.width/2,y:c.y+c.height/2}:null},INTERACTIVE);
  assert(target,'negative: need a visible control');
- await page.addStyleTag({content:`.ownerChatFab{right:auto!important;bottom:auto!important;left:${target.x-28}px!important;top:${target.y-28}px!important}`});
+ await page.addStyleTag({content:`.zpcAppShell .zpcHeaderActions>.ownerChatFab{position:fixed!important;z-index:9999!important;right:auto!important;bottom:auto!important;left:${target.x-22}px!important;top:${target.y-22}px!important}`});
  assert.notDeepEqual(await obstruction(page),[],'negative: FAB over a control must be detected');
  checks.negative_obstruction_detected=true;await context.close();
 }

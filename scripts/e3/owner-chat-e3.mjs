@@ -324,6 +324,7 @@ for (const [mutation, name] of NEGATIVES) {
   console.log((failed ? 'DETECTED ' : 'MISSED ') + mutation + ' -> ' + name + (error ? ' :: ' + error : ''));
 }
 results.refusedNonFixtureHosts = [...proxy.refused];
+console.log('REFUSED_HOSTS ' + JSON.stringify(results.refusedNonFixtureHosts));
 const okP = Object.values(results.positives).every((x) => x.pass);
 const okN = Object.values(results.negatives).every((x) => x.detected);
 results.status = okP && okN ? 'PASS' : 'FAIL';
