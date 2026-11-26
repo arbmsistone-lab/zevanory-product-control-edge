@@ -18,6 +18,7 @@ const PM = process.env.PUBLIC_MIRROR_DIR || 'public-mirror';
 const PANEL = process.env.PANEL_PREVIEW || 'http://127.0.0.1:4173';
 const out = `e3-evidence/${browserName}`; fs.mkdirSync(out, { recursive: true });
 let currentH = null;
+let panelActive = PANEL; // contraprova do painel: build mutante (PANEL_MUTANT), sem a checagem de origem/janela
 const panelApi = (pathname) => {
   if (/(^|\/)api\/admin\/bootstrap$/.test(pathname)) return [200, fixture];
   if (/(^|\/)api\/_auth_diagnostic$/.test(pathname)) return [200, { secretValid: true, locked: false, sessionRoundtrip: true, bootstrapOk: true }];
@@ -28,12 +29,15 @@ const panelApi = (pathname) => {
 };
 const proxy = await startProxy(async (host, request) => {
   const u = new URL(request.url);
+  if (host === 'zevanory.api.br' && u.pathname === '/__e3/form') return new Response('<!doctype html><script>fetch("/api/admin/owner-chat/message",{method:"POST",credentials:"include",headers:{"content-type":"text/plain"},body:JSON.stringify({text:"ordem forjada da mesma origem"})}).finally(()=>{window.__done=true})</script>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
+  if (host === 'zevanory.api.br' && u.pathname === '/__e3/esc-poster') return new Response('<!doctype html><script>parent.postMessage({type:"zv-owner-chat:escape"},"*")</script>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
   if (host === 'zevanory.api.br') { const h = new Headers(request.headers); h.set('cf-connecting-ip', currentH.ip); return currentH.fetch(new Request(request.url, { method: request.method, headers: h, body: ['GET', 'HEAD'].includes(request.method) ? undefined : await request.arrayBuffer() })); }
   if (host === 'controle.zevanory.api.br') {
     const api = panelApi(u.pathname); if (api) return new Response(JSON.stringify(api[1]), { status: api[0], headers: { 'content-type': 'application/json' } });
-    const r = await fetch(PANEL + u.pathname + u.search); return new Response(await r.arrayBuffer(), { status: r.status, headers: { 'content-type': r.headers.get('content-type') || 'application/octet-stream' } });
+    const r = await fetch(panelActive + u.pathname + u.search); return new Response(await r.arrayBuffer(), { status: r.status, headers: { 'content-type': r.headers.get('content-type') || 'application/octet-stream' } });
   }
   if (u.pathname === '/attack') return new Response(ATTACK(CHAT + '/admin/proprietario'), { headers: { 'content-type': 'text/html; charset=utf-8' } });
+  if (u.pathname === '/esc' || u.pathname === '/__e3/esc-poster') return new Response('<!doctype html><script>parent.postMessage({type:"zv-owner-chat:escape"},"*")</script>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
   return new Response('not found', { status: 404 });
 });
 const browser = await pw[browserName].launch({ proxy: { server: 'http://127.0.0.1:' + proxy.port } });
@@ -75,6 +79,29 @@ async function secretVisibleAnywhere(page, H) {
 }
 async function waitUntil(fn, ms = 12000, step = 250) { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return true; await new Promise((r) => setTimeout(r, step)); } return false; }
 
+async function lateResponse(kind) {
+  const H = await mk(); const { context, page } = await ctxFor(H);
+  await loginInPanel(page, H);
+  const late = 'SEGREDO-ATRASADO-' + Math.random().toString(16).slice(2, 10);
+  H.holdNext('feed'); await H.addPrivate('Mensagem que chega atrasada: ' + late);
+  assert(await waitUntil(() => H.waiting.feed > 0, 9000), 'uma consulta ficou pendente');
+  H.holdNext('page');
+  if (kind === 'logout') await chatFrame(page).locator('#sair').click();
+  // Expiração/revogação percebidas por uma ação do dono (POST de mensagem -> 401). A consulta periódica idêntica à
+  // segurada ficaria presa na trava de cache do navegador para a mesma URL; o caminho passivo já é coberto em
+  // expiry_12h_boundaries e revocation_server_side.
+  if (kind === 'expiry') H.advance(12 * 3600e3 + 1000);
+  if (kind === 'revocation') H.revokeSessions();
+  if (kind !== 'logout') { await chatFrame(page).locator('#q').fill('status'); await chatFrame(page).locator('#q').press('Enter'); }
+  assert(await waitUntil(() => H.waiting.page > 0, 12000), 'navegação para o PIN pendente (documento antigo vivo)');
+  assert(!(await secretVisibleAnywhere(page, H)), 'conversa apagada no encerramento');
+  H.release('feed'); await page.waitForTimeout(1500);
+  const leaked = [];
+  for (const fr of page.frames()) { try { const t = await fr.evaluate(() => document.documentElement.innerText || ''); if (t.includes(late) || t.includes(H.secret)) leaked.push(fr.url()); } catch {} }
+  assert.deepEqual(leaked, [], 'resposta atrasada voltou a desenhar conteúdo privado (' + kind + ')');
+  H.release('page'); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+  await context.close();
+}
 const TESTS = {
   async framing_only_panel() {
     const H = await mk(); const { context, page } = await ctxFor(H);
@@ -225,9 +252,9 @@ const TESTS = {
     await page.waitForTimeout(800);
     const cross = H.log.slice(mark).filter((x) => x.path.startsWith('/api/admin/owner-chat/'));
     const evil = cross.filter((x) => x.origin === 'https://evil.example.test');
-    assert(evil.length >= 1 && evil.every((x) => !x.cookie && x.status === 401), 'outro site: sem cookie e 401 ' + JSON.stringify(evil));
-    const sibling = cross.filter((x) => x.origin === 'https://outro.zevanory.api.br' && x.method === 'POST');
-    assert(sibling.every((x) => x.status === 403 || x.status === 401), 'vizinho do mesmo site: POST recusado ' + JSON.stringify(sibling));
+    assert(evil.length >= 1 && evil.every((x) => !x.cookie && (x.status === 403 || x.status === 401)), 'outro site: sem cookie e recusado ' + JSON.stringify(evil));
+    const sibling = cross.filter((x) => x.origin === 'https://outro.zevanory.api.br');
+    assert(sibling.length >= 1 && sibling.every((x) => x.status === 403), 'vizinho do mesmo site: tudo recusado no servidor (CA-11) ' + JSON.stringify(sibling));
     for (const [attacker, r] of Object.entries(seen)) { assert.equal(r.feed, 'bloqueado', 'JS de ' + attacker + ' leu o feed'); assert.equal(r.post, 'bloqueado', 'JS de ' + attacker + ' leu a resposta do POST'); }
     assert.equal(H.rowCount(), before, 'nenhuma mensagem forjada gravada');
     fs.writeFileSync(`${out}/api-protection.json`, JSON.stringify({ jsSaw: seen, serverLog: cross }, null, 2));
@@ -279,6 +306,102 @@ const TESTS = {
     await m.page.screenshot({ path: `${out}/movel-390-chat.png` });
     await m.context.close();
   },
+  // CA-08: resposta iniciada ANTES do fim da sessão e devolvida DEPOIS dele não pode voltar a desenhar nada privado.
+  // A resposta do feed é segurada (já calculada, com uma mensagem nova) e a navegação para o PIN também é segurada,
+  // para o documento antigo continuar vivo quando a resposta atrasada chega.
+  async late_response_after_logout() { await lateResponse('logout'); },
+  async late_response_after_expiry() { await lateResponse('expiry'); },
+  async late_response_after_revocation() { await lateResponse('revocation'); },
+  // CA-09: sem confirmação do servidor, a interface apaga tudo mas NÃO diz que encerrou, não volta a consultar e
+  // permite tentar de novo; com confirmação, volta ao PIN e a sessão some do servidor.
+  async logout_failure_modes() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H); const f = chatFrame(page); const modes = [];
+    for (const mode of ['500', '503', 'hang', 'offline']) {
+      if (mode === 'offline') await context.setOffline(true); else H.logoutMode = mode;
+      const first = modes.length === 0; modes.push(mode);
+      await f.locator(first ? '#sair' : '#retry').click();
+      await f.locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: mode === 'hang' ? 14000 : 8000 });
+      assert(!(await secretVisibleAnywhere(page, H)), 'nada privado depois de pedir para sair (' + mode + ')');
+      assert.equal(await f.locator('#log > *').count(), 0, 'conversa apagada (' + mode + ')');
+      assert.equal(await f.locator('#fimmsg').getByText('Sessão encerrada.', { exact: true }).count(), 0, 'não afirma encerramento sem confirmação (' + mode + ')');
+      assert.equal(H.sessionKeys().length, 1, 'a sessão de fato continua no servidor (' + mode + ')');
+      assert(await f.locator('#retry').isVisible(), 'oferece tentar de novo (' + mode + ')');
+      const feeds = H.log.filter((x) => x.path === '/api/admin/owner-chat/feed').length;
+      await page.waitForTimeout(6000);
+      assert.equal(H.log.filter((x) => x.path === '/api/admin/owner-chat/feed').length, feeds, 'consulta parada, a conversa não volta sozinha (' + mode + ')');
+      if (mode === 'offline') await context.setOffline(false); else H.logoutMode = null;
+    }
+    await page.screenshot({ path: `${out}/logout-sem-confirmacao.png` });
+    await f.locator('#retry').click(); await f.locator('#p').waitFor({ timeout: 15000 });
+    assert.equal(H.sessionKeys().length, 0, 'recuperação: com o servidor de volta, a sessão é encerrada');
+    assert.equal((await context.cookies(CHAT)).filter((x) => x.name === 'zv_owner_chat').length, 0, 'cookie apagado');
+    await context.close();
+  },
+  // CA-10: Esc com o foco DENTRO do chat (PIN, campo de mensagem, Enviar, Sair) fecha e devolve o foco ao botão.
+  async escape_inside_chat() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    const escFrom = async (sel) => {
+      if (!(await page.locator('.ownerChatPanel.isOpen').count())) { await page.locator('.ownerChatFab').click(); await page.locator('.ownerChatPanel.isOpen').waitFor(); }
+      await chatFrame(page).locator(sel).focus(); await page.keyboard.press('Escape');
+      assert(await waitUntil(async () => (await page.locator('.ownerChatPanel.isOpen').count()) === 0, 3000), 'Esc dentro do chat fecha (' + sel + ')');
+      assert(await waitUntil(() => page.locator('.ownerChatFab').evaluate((e) => e === document.activeElement), 2000), 'foco volta ao botão (' + sel + ')');
+    };
+    await openPanel(page); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+    await escFrom('#p');
+    await page.locator('.ownerChatFab').click(); await chatFrame(page).locator('#p').fill(H.pin);
+    await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
+    for (const sel of ['#q', '#b', '#sair']) await escFrom(sel);
+    await context.close();
+  },
+  // CA-10: o painel só aceita o aviso de Esc vindo da origem do chat E da janela do seu iframe.
+  async escape_spoofing_rejected() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await openPanel(page); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+    const stillOpen = async (label) => { await page.waitForTimeout(1500); assert.equal(await page.locator('.ownerChatPanel.isOpen').count(), 1, 'aviso forjado fechou o chat: ' + label); };
+    await page.evaluate(() => window.postMessage({ type: 'zv-owner-chat:escape' }, '*')); await stillOpen('o próprio painel');
+    for (const src of ['https://outro.zevanory.api.br/esc', 'https://evil.example.test/esc', CHAT + '/__e3/esc-poster']) {
+      await page.evaluate((u) => { const i = document.createElement('iframe'); i.src = u; i.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;border:0'; document.body.appendChild(i); }, src);
+      await stillOpen(src);
+    }
+    await chatFrame(page).locator('#p').focus(); await page.keyboard.press('Escape');
+    assert(await waitUntil(async () => (await page.locator('.ownerChatPanel.isOpen').count()) === 0, 3000), 'controle positivo: Esc legítimo fecha');
+    await context.close();
+  },
+  // CA-11: origem recusada no servidor, antes de KV e banco; pedidos legítimos seguem.
+  async origin_rejection() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H);
+    const token = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
+    const get = (headers) => H.fetch(new Request(CHAT + '/api/admin/owner-chat/feed', { headers: { cookie: 'zv_owner_chat=' + token, ...headers } }));
+    const k0 = H.kvReads(), s0 = H.sqlCalls();
+    for (const h of [{ origin: 'https://outro.zevanory.api.br' }, { 'sec-fetch-site': 'same-site' }, { origin: 'https://evil.example.test', 'sec-fetch-site': 'cross-site' }]) {
+      const r = await get(h); assert.equal(r.status, 403, 'recusado: ' + JSON.stringify(h)); assert.doesNotMatch(await r.text(), new RegExp(H.secret));
+    }
+    assert.equal(H.kvReads(), k0, 'recusa sem ler o KV'); assert.equal(H.sqlCalls(), s0, 'recusa sem tocar no banco');
+    for (const h of [{}, { 'sec-fetch-site': 'same-origin' }, { origin: CHAT, 'sec-fetch-site': 'same-origin' }]) assert.equal((await get(h)).status, 200, 'legítimo: ' + JSON.stringify(h));
+    // No navegador: o vizinho do mesmo site recebe 403 já no GET do feed (antes chegava 200, barrado só pelo CORS).
+    const p2 = await context.newPage(); const mark = H.log.length; await p2.goto('https://outro.zevanory.api.br/attack');
+    await waitUntil(() => p2.evaluate(() => window.__r && window.__r.feed && window.__r.post && window.__r.simplePost), 8000); await p2.close();
+    const sib = H.log.slice(mark).filter((x) => x.origin === 'https://outro.zevanory.api.br' && x.path.startsWith('/api/admin/owner-chat/'));
+    assert(sib.length >= 1 && sib.every((x) => x.status === 403), 'vizinho do mesmo site: 403 em tudo ' + JSON.stringify(sib));
+    // A conversa legítima no painel continua funcionando.
+    const before = H.rowCount(); await chatFrame(page).locator('#q').fill('status'); await chatFrame(page).locator('#q').press('Enter');
+    assert(await waitUntil(async () => H.rowCount() >= before + 2), 'chat legítimo segue funcionando');
+    await context.close();
+  },
+  // CSRF (independente do CA-11): mesmo vindo da própria origem (p. ex. uma página pública comprometida em
+  // zevanory.api.br), POST sem o cabeçalho x-owner-chat é recusado e nada é gravado.
+  async csrf_header_required() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H); const before = H.rowCount(); const mark = H.log.length;
+    const p2 = await context.newPage(); await p2.goto(CHAT + '/__e3/form');
+    await waitUntil(() => p2.evaluate(() => window.__done === true), 8000); await p2.close();
+    const posts = H.log.slice(mark).filter((x) => x.path === '/api/admin/owner-chat/message');
+    assert(posts.length >= 1 && posts.every((x) => x.cookie && x.status === 403), 'POST da mesma origem sem x-owner-chat recusado ' + JSON.stringify(posts));
+    assert.equal(H.rowCount(), before, 'nada gravado');
+    await context.close();
+  },
   async kv_and_commercial_untouched() {
     const H = await mk(); const { context, page } = await ctxFor(H);
     await loginInPanel(page, H); await chatFrame(page).locator('#q').fill('vendas'); await chatFrame(page).locator('#q').press('Enter'); await page.waitForTimeout(1500);
@@ -289,7 +412,7 @@ const TESTS = {
   },
 };
 // Contraprova -> teste que deve reprovar com o defeito ligado.
-const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-ttl', 'expiry_12h_boundaries'], ['csrf-off', 'admin_api_protection']];
+const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-ttl', 'expiry_12h_boundaries'], ['csrf-off', 'csrf_header_required'], ['no-render-guard', 'late_response_after_logout'], ['no-render-guard', 'late_response_after_expiry'], ['no-render-guard', 'late_response_after_revocation'], ['logout-unchecked', 'logout_failure_modes'], ['no-esc-bridge', 'escape_inside_chat'], ['origin-off', 'origin_rejection'], ['origin-off', 'admin_api_protection'], ['panel:no-origin-check', 'escape_spoofing_rejected']];
 
 const results = { browser: browserName, version: browser.version(), positives: {}, negatives: {} };
 // Diagnóstico de falha: captura de cada página aberta, URLs dos frames e cookies (sem valores).
@@ -316,10 +439,12 @@ for (const [name, fn] of Object.entries(TESTS)) {
 }
 for (const [mutation, name] of NEGATIVES) {
   if (ONLY.length && !ONLY.includes(name)) continue;
-  forced = mutation; const t = Date.now();
+  const panelMut = mutation.startsWith('panel:');
+  if (panelMut && !process.env.PANEL_MUTANT) { results.negatives[mutation + '->' + name] = { detected: false, error: 'PANEL_MUTANT ausente' }; console.log('MISSED ' + mutation + ' -> ' + name + ' :: PANEL_MUTANT ausente'); continue; }
+  forced = panelMut ? null : mutation; if (panelMut) panelActive = process.env.PANEL_MUTANT; const t = Date.now();
   let failed = false, error = null;
   try { await TESTS[name](); } catch (e) { failed = true; error = String(e && e.message || e).slice(0, 300); }
-  forced = null; await closeAll();
+  forced = null; panelActive = PANEL; await closeAll();
   results.negatives[mutation + '->' + name] = { detected: failed, ms: Date.now() - t, error };
   console.log((failed ? 'DETECTED ' : 'MISSED ') + mutation + ' -> ' + name + (error ? ' :: ' + error : ''));
 }

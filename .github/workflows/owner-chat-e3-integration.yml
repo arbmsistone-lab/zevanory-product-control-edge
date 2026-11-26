@@ -15,7 +15,7 @@ on:
       public_mirror_sha:
         description: 'SHA exato do Worker candidato (zevanory-public-mirror, PR #1098)'
         required: true
-        default: '59b9f6c6c03cdadb0c7b3dff961b8d1fbfaaa446'
+        default: '30c9d51a66ea16c916f0eaa4381d84f42bccfe73'
 
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '59b9f6c6c03cdadb0c7b3dff961b8d1fbfaaa446' }}
+      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '30c9d51a66ea16c916f0eaa4381d84f42bccfe73' }}
     steps:
       - name: Checkout panel candidate
         uses: actions/checkout@v4
@@ -74,10 +74,30 @@ jobs:
           nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/zpc-e3-preview.log 2>&1 &
           for i in $(seq 1 40); do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/zpc-e3-preview.log; exit 1
+      - name: Build MUTANT panel for the CA-10 counter-proof (origin/window check removed; never deployed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/zpc-mutant && mkdir -p /tmp/zpc-mutant
+          git archive HEAD | tar -x -C /tmp/zpc-mutant
+          ln -s "$PWD/node_modules" /tmp/zpc-mutant/node_modules
+          ANCHOR='if (event.origin !== OWNER_CHAT_ORIGIN || !frameRef.current || event.source !== frameRef.current.contentWindow) return;'
+          grep -qF "$ANCHOR" /tmp/zpc-mutant/src/OwnerChatWidget.tsx
+          python3 - <<'PYM'
+          from pathlib import Path
+          p=Path('/tmp/zpc-mutant/src/OwnerChatWidget.tsx');s=p.read_text()
+          a='if (event.origin !== OWNER_CHAT_ORIGIN || !frameRef.current || event.source !== frameRef.current.contentWindow) return;'
+          assert s.count(a)==1; p.write_text(s.replace(a,'if (false) return;'))
+          PYM
+          (cd /tmp/zpc-mutant && npx vite build >/tmp/zpc-mutant-build.log 2>&1 || (cat /tmp/zpc-mutant-build.log; exit 1))
+          (cd /tmp/zpc-mutant && nohup npx vite preview --host 127.0.0.1 --port 4175 > /tmp/zpc-mutant-preview.log 2>&1 &)
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:4175/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/zpc-mutant-preview.log; exit 1
       - name: E3 integration (${{ matrix.browser }})
         env:
           E3_BROWSER: ${{ matrix.browser }}
           PUBLIC_MIRROR_DIR: public-mirror
+          PANEL_MUTANT: http://127.0.0.1:4175
         run: node scripts/e3/owner-chat-e3.mjs
       - name: Upload evidence
         if: always()

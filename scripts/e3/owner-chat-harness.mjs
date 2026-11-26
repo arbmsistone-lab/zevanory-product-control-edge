@@ -8,20 +8,28 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-export const MUTATIONS = Object.freeze(['frame-star', 'no-clear', 'weak-cookie', 'no-lockout', 'inject-admin', 'no-ttl', 'csrf-off', 'no-revoke']);
+export const MUTATIONS = Object.freeze(['frame-star', 'no-clear', 'weak-cookie', 'no-lockout', 'inject-admin', 'no-ttl', 'csrf-off', 'no-revoke', 'no-render-guard', 'logout-unchecked', 'no-esc-bridge', 'origin-off']);
+const PAGE_MUTATIONS = new Set(['no-clear', 'inject-admin', 'no-render-guard', 'logout-unchecked', 'no-esc-bridge']);
 
 export async function createHarness(pmDir, { mutation = null, withPin = true } = {}) {
   if (mutation && !MUTATIONS.includes(mutation)) throw new Error('mutação desconhecida: ' + mutation);
   const mod = (p) => import(pathToFileURL(path.resolve(pmDir, p)).href);
-  const chat = await mod('worker/owner-chat.mjs');
+  // 'origin-off': cópia do Worker com a checagem de origem do CA-11 desligada (mesmo diretório, para os imports relativos).
+  let chat;
+  if (mutation === 'origin-off') {
+    const fsx = await import('node:fs'); const src = fsx.readFileSync(path.resolve(pmDir, 'worker/owner-chat.mjs'), 'utf8');
+    const anchor = '&& !sameOriginApi(request, url)) return'; if (!src.includes(anchor)) throw new Error('âncora CA-11 ausente');
+    const mp = path.resolve(pmDir, 'worker/owner-chat.e3-mutant-origin-off.mjs'); fsx.writeFileSync(mp, src.replace(anchor, '&& false) return'));
+    chat = await import(pathToFileURL(mp).href + '?' + Date.now()); fsx.rmSync(mp, { force: true });
+  } else chat = await mod('worker/owner-chat.mjs');
   const { injectInstitutionalChat } = await mod('worker/r120-chat-institutional.mjs');
   const { fakeSql } = await mod('tests/helpers/owner-chat-fakes.mjs');
 
   let offset = 0; const now = () => Date.now() + offset;
-  const data = new Map(); const kvWrites = [];
+  const data = new Map(); const kvWrites = []; let kvReads = 0;
   const live = (k) => { const e = data.get(k); if (!e) return null; if (mutation !== 'no-ttl' && e.exp && now() >= e.exp) { data.delete(k); return null; } return e; };
   const kv = {
-    get: async (k) => { if (mutation === 'no-lockout' && k.startsWith('zpc:owner-chat:pin-fail:')) return null; return live(k)?.v ?? null; },
+    get: async (k) => { kvReads++; if (mutation === 'no-lockout' && k.startsWith('zpc:owner-chat:pin-fail:')) return null; return live(k)?.v ?? null; },
     put: async (k, v, o = {}) => { kvWrites.push(k); data.set(k, { v: String(v), exp: o.expirationTtl ? now() + o.expirationTtl * 1000 : null }); },
     delete: async (k) => { if (mutation === 'no-revoke' && k.startsWith('zpc:owner-chat:pin-session:v1:')) return; data.delete(k); },
   };
@@ -38,11 +46,24 @@ export async function createHarness(pmDir, { mutation = null, withPin = true } =
     sessionKeys: () => [...data.keys()].filter((k) => k.startsWith('zpc:owner-chat:pin-session:v1:') && live(k)),
     revokeSessions: () => { for (const k of [...data.keys()]) if (k.startsWith('zpc:owner-chat:pin-session:v1:')) data.delete(k); },
     rowCount: () => sql.rows.length,
+    kvReads: () => kvReads, sqlCalls: () => sql.log.length,
+    // Segura a PRÓXIMA resposta de um caminho (já calculada) até release(): simula resposta atrasada.
+    holds: { feed: 0, page: 0 }, waiting: { feed: 0, page: 0 }, waiters: { feed: [], page: [] },
+    holdNext: (k) => { H.holds[k]++; },
+    release: (k) => { const w = H.waiters[k].splice(0); w.forEach((r) => r()); },
+    // Falha simulada do servidor no logout: '500' | '503' | 'hang' | null.
+    logoutMode: null,
+    addPrivate: async (text) => { await chat.insertOwnerMessage(sql, { from: 'zevanory', kind: 'chat', text }); await kv.put('zpc:owner-chat:versao:v1', crypto.randomBytes(4).toString('hex')); },
   };
   const page = (title, body) => new Response(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${title}</title></head><body>${body}</body></html>`, { headers: { 'content-type': 'text/html; charset=utf-8' } });
 
   H.fetch = async (request) => {
     const url = new URL(request.url);
+    if (url.pathname === '/api/admin/owner-chat/logout' && H.logoutMode) {
+      log.push({ method: request.method, path: url.pathname, status: 'simulado:' + H.logoutMode, cookie: /zv_owner_chat=/.test(request.headers.get('cookie') || ''), origin: request.headers.get('origin') });
+      if (H.logoutMode === 'hang') { await new Promise((r) => setTimeout(r, 20000)); return new Response('', { status: 504 }); }
+      return new Response(JSON.stringify({ error: 'e3_simulado' }), { status: Number(H.logoutMode), headers: { 'content-type': 'application/json' } });
+    }
     if (mutation === 'csrf-off' && request.method === 'POST' && chat.isOwnerChatPath(url.pathname)) {
       const h = new Headers(request.headers); h.set('origin', url.origin); h.set('x-owner-chat', '1');
       request = new Request(request.url, { method: 'POST', headers: h, body: await request.arrayBuffer() });
@@ -55,7 +76,9 @@ export async function createHarness(pmDir, { mutation = null, withPin = true } =
     else res = new Response('not found', { status: 404 });
     res = await injectInstitutionalChat(request, env, res);
     if (mutation) res = await mutate(res, url);
-    log.push({ method: request.method, path: url.pathname, status: res.status, cookie: /zv_owner_chat=/.test(request.headers.get('cookie') || ''), origin: request.headers.get('origin') });
+    log.push({ method: request.method, path: url.pathname, status: res.status, cookie: /zv_owner_chat=/.test(request.headers.get('cookie') || ''), origin: request.headers.get('origin'), site: request.headers.get('sec-fetch-site') });
+    const hk = url.pathname === '/api/admin/owner-chat/feed' ? 'feed' : url.pathname === '/admin/proprietario' ? 'page' : null;
+    if (hk && H.holds[hk] > 0) { H.holds[hk]--; H.waiting[hk]++; await new Promise((r) => H.waiters[hk].push(r)); H.waiting[hk]--; }
     return res;
   };
   async function mutate(res, url) {
@@ -64,9 +87,12 @@ export async function createHarness(pmDir, { mutation = null, withPin = true } =
     let body = await res.arrayBuffer();
     if (mutation === 'frame-star' && headers.has('content-security-policy')) headers.set('content-security-policy', headers.get('content-security-policy').replace(/frame-ancestors [^;]+/, 'frame-ancestors *'));
     if (mutation === 'weak-cookie' && headers.has('set-cookie')) headers.set('set-cookie', headers.get('set-cookie').replace('; HttpOnly', '').replace('SameSite=Strict', 'SameSite=Lax'));
-    if (html && (mutation === 'no-clear' || (mutation === 'inject-admin' && url.pathname.startsWith('/admin/') || mutation === 'inject-admin' && url.pathname.startsWith('/api/admin/owner-chat/app')))) {
+    if (html && PAGE_MUTATIONS.has(mutation) && (url.pathname.startsWith('/admin/') || url.pathname.startsWith('/api/admin/owner-chat/app'))) {
       let t = new TextDecoder().decode(body);
       if (mutation === 'no-clear') t = t.split('if(r.status===401)return fim();').join('');
+      if (mutation === 'no-render-guard') t = t.replace('function add(m){if(ended||!m||', 'function add(m){if(!m||').split('if(ended)return;').join('').replace('ctl.abort();', '');
+      if (mutation === 'logout-unchecked') t = t.replace('confirmed=r.ok&&j.ok===true;', 'confirmed=true;').replace('let confirmed=false;', 'let confirmed=true;');
+      if (mutation === 'no-esc-bridge') t = t.split('window.parent.postMessage(').join('void(');
       if (mutation === 'inject-admin') t = t.replace('</body>', '<script src="/site-chat.js" defer></script></body>');
       body = new TextEncoder().encode(t);
       headers.delete('content-length');
