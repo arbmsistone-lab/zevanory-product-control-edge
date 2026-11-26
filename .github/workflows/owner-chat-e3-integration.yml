@@ -15,7 +15,7 @@ on:
       public_mirror_sha:
         description: 'SHA exato do Worker candidato (zevanory-public-mirror, PR #1098)'
         required: true
-        default: '30c9d51a66ea16c916f0eaa4381d84f42bccfe73'
+        default: '9877e23648f3739c37066d9e824aaf262321c347'
 
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '30c9d51a66ea16c916f0eaa4381d84f42bccfe73' }}
+      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '9877e23648f3739c37066d9e824aaf262321c347' }}
     steps:
       - name: Checkout panel candidate
         uses: actions/checkout@v4

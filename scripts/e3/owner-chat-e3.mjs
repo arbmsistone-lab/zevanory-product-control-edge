@@ -102,6 +102,23 @@ async function lateResponse(kind) {
   H.release('page'); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
   await context.close();
 }
+async function kvFaultLogout(fault) {
+  const H = await mk(); const { context, page } = await ctxFor(H);
+  await loginInPanel(page, H);
+  const token = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
+  H.kvFault = fault; await chatFrame(page).locator('#sair').click();
+  await chatFrame(page).locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: 10000 });
+  assert.equal(await chatFrame(page).locator('#fimmsg').getByText('Sessão encerrada.', { exact: true }).count(), 0, 'não confirma (' + fault + ')');
+  assert(!(await secretVisibleAnywhere(page, H)), 'nada privado (' + fault + ')');
+  assert.equal(H.sessionKeys().length, 1, 'a sessão de fato continua (' + fault + ')');
+  assert.equal((await context.cookies(CHAT)).filter((x) => x.name === 'zv_owner_chat').length, 1, 'cookie mantido para repetir (' + fault + ')');
+  const unconf = H.log.filter((x) => x.path === '/api/admin/owner-chat/logout').at(-1); assert.equal(unconf.status, 503, 'servidor responde 503');
+  H.kvFault = null; await chatFrame(page).locator('#retry').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+  assert.equal(H.sessionKeys().length, 0, 'repetido com o KV de volta: revogado');
+  assert.equal((await context.cookies(CHAT)).filter((x) => x.name === 'zv_owner_chat').length, 0, 'cookie apagado na confirmação');
+  assert.equal((await H.fetch(new Request(CHAT + '/api/admin/owner-chat/feed', { headers: { cookie: 'zv_owner_chat=' + token } }))).status, 401, 'token anterior recusado');
+  await context.close();
+}
 const TESTS = {
   async framing_only_panel() {
     const H = await mk(); const { context, page } = await ctxFor(H);
@@ -420,6 +437,49 @@ const TESTS = {
     assert.equal(H.rowCount(), before, 'nada gravado');
     await context.close();
   },
+  // CA-09.1: falha INTERNA do KV na exclusão da sessão — o servidor não confirma, o cookie fica (para repetir), a
+  // interface avisa; repetindo com o KV de volta, confirma e o token anterior passa a ser recusado.
+  async logout_kv_internal_failure() { await kvFaultLogout('delete-throws'); },
+  // CA-09.1: exclusão "aceita" mas o valor continua visível na conferência (consistência eventual) — não confirma.
+  async logout_kv_stale_readback() { await kvFaultLogout('stale'); },
+  // CA-09.1: logout repetido com o mesmo token e logout de sessão que já expirou.
+  async logout_repeat_and_expired() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H);
+    const token = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
+    await chatFrame(page).locator('#sair').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+    const post = (tk) => H.fetch(new Request(CHAT + '/api/admin/owner-chat/logout', { method: 'POST', headers: { origin: CHAT, 'x-owner-chat': '1', 'sec-fetch-site': 'same-origin', cookie: 'zv_owner_chat=' + tk } }));
+    let r = await post(token); assert.equal(r.status, 200, 'logout repetido'); assert.equal((await r.json()).ok, true);
+    assert.equal((await H.fetch(new Request(CHAT + '/api/admin/owner-chat/feed', { headers: { cookie: 'zv_owner_chat=' + token } }))).status, 401, 'token anterior recusado');
+    await chatFrame(page).locator('#p').fill(H.pin); await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
+    const token2 = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
+    H.advance(12 * 3600e3 + 1000);
+    r = await post(token2); assert.equal(r.status, 200, 'logout de sessão expirada'); assert.deepEqual(await r.json(), { ok: true, revoked: true });
+    await context.close();
+  },
+  // CA-09.1: recarregar durante um logout NÃO confirmado não traz a conversa de volta (trava local persistente); a
+  // página abre encerrada, tenta encerrar de novo e não consulta o feed. Confirmação libera; novo login funciona.
+  async reload_during_unconfirmed_logout() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H); H.kvFault = 'delete-throws';
+    await chatFrame(page).locator('#sair').click();
+    await chatFrame(page).locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: 10000 });
+    const feeds = () => H.log.filter((x) => x.path === '/api/admin/owner-chat/feed').length;
+    const f0 = feeds(); const l0 = H.log.filter((x) => x.path === '/api/admin/owner-chat/logout').length;
+    await page.reload(); await page.locator('.zpcAppShell').waitFor(); await page.locator('.ownerChatFab').click();
+    await chatFrame(page).locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: 10000 });
+    await page.waitForTimeout(6000);
+    assert(!(await secretVisibleAnywhere(page, H)), 'recarregar não traz a conversa de volta');
+    assert.equal(feeds(), f0, 'nenhuma consulta ao feed depois de recarregar');
+    assert(H.log.filter((x) => x.path === '/api/admin/owner-chat/logout').length > l0, 'tentou encerrar de novo sozinho');
+    assert.equal(H.sessionKeys().length, 1, 'a trava é local: a sessão de fato ainda existe no servidor');
+    await page.screenshot({ path: `${out}/recarregar-logout-pendente.png` });
+    H.kvFault = null; await chatFrame(page).locator('#retry').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+    assert.equal(H.sessionKeys().length, 0);
+    await chatFrame(page).locator('#p').fill(H.pin); await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
+    assert.equal(await chatFrame(page).locator('body').evaluate(() => localStorage.getItem('zv_owner_chat_logout_pending')), null, 'novo login libera a trava');
+    await context.close();
+  },
   async kv_and_commercial_untouched() {
     const H = await mk(); const { context, page } = await ctxFor(H);
     await loginInPanel(page, H); await chatFrame(page).locator('#q').fill('vendas'); await chatFrame(page).locator('#q').press('Enter'); await page.waitForTimeout(1500);
@@ -430,7 +490,7 @@ const TESTS = {
   },
 };
 // Contraprova -> teste que deve reprovar com o defeito ligado.
-const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-ttl', 'expiry_12h_boundaries'], ['csrf-off', 'csrf_header_required'], ['no-render-guard', 'late_response_during_unconfirmed_logout'], ['no-render-guard', 'late_response_after_logout', 'chromium'], ['no-render-guard', 'late_response_after_expiry', 'chromium'], ['no-render-guard', 'late_response_after_revocation', 'chromium'], ['logout-unchecked', 'logout_failure_modes'], ['no-esc-bridge', 'escape_inside_chat'], ['origin-off', 'origin_rejection'], ['origin-off', 'admin_api_protection'], ['panel:no-origin-check', 'escape_spoofing_rejected']];
+const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-ttl', 'expiry_12h_boundaries'], ['csrf-off', 'csrf_header_required'], ['no-render-guard', 'late_response_during_unconfirmed_logout'], ['no-render-guard', 'late_response_after_logout', 'chromium'], ['no-render-guard', 'late_response_after_expiry', 'chromium'], ['no-render-guard', 'late_response_after_revocation', 'chromium'], ['logout-unchecked', 'logout_failure_modes'], ['no-esc-bridge', 'escape_inside_chat'], ['origin-off', 'origin_rejection'], ['origin-off', 'admin_api_protection'], ['panel:no-origin-check', 'escape_spoofing_rejected'], ['revoke-unchecked', 'logout_kv_internal_failure'], ['revoke-unchecked', 'logout_kv_stale_readback'], ['no-pending-lock', 'reload_during_unconfirmed_logout']];
 
 const results = { browser: browserName, version: browser.version(), positives: {}, negatives: {} };
 // Diagnóstico de falha: captura de cada página aberta, URLs dos frames e cookies (sem valores).
