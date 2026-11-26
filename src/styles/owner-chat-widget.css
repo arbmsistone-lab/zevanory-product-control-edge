@@ -1,28 +1,36 @@
+/* Chat do proprietário (Epaminondas): só tokens do design system — cores e geometria vêm de tokens.css/premium-shell.css,
+   então o widget acompanha o tema claro/escuro do painel. */
 .ownerChatFab {
-  position: fixed; right: 20px; bottom: 20px; z-index: 60;
-  width: 58px; height: 58px; border-radius: 50%; border: 0; cursor: pointer;
-  display: grid; place-items: center; color: #05070b;
-  background: linear-gradient(135deg, #1578ff, #00b8ff 55%, #21e6f3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  position: fixed; right: var(--zpc-space-4); bottom: var(--zpc-space-4); z-index: var(--zpc-z-overlay);
+  width: var(--zpc-size-56); height: var(--zpc-size-56); border-radius: var(--zpc-radius-pill); border: 0; cursor: pointer;
+  display: grid; place-items: center;
+  color: var(--action-primary-text); background: var(--action-primary);
+  box-shadow: 0 var(--zpc-space-2) var(--zpc-space-6) var(--palette-alpha-03);
 }
-.ownerChatFab:focus-visible { outline: 3px solid #f5f8fc; outline-offset: 3px; }
+.ownerChatFab:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: var(--zpc-space-1); }
 .ownerChatPanel {
-  position: fixed; right: 20px; bottom: 90px; z-index: 60;
-  width: min(420px, calc(100vw - 32px)); height: min(640px, calc(100vh - 120px));
+  position: fixed; right: var(--zpc-space-4); bottom: calc(var(--zpc-size-56) + var(--zpc-space-8)); z-index: var(--zpc-z-overlay);
+  width: min(420px, calc(100vw - var(--zpc-space-8))); height: min(640px, calc(100dvh - var(--zpc-size-56) - var(--zpc-space-16)));
   display: none; flex-direction: column; overflow: hidden;
-  border-radius: 16px; border: 1px solid #1e2633; background: #0b0f17;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, .45);
+  border-radius: var(--zpc-radius-lg); border: 1px solid var(--border); background: var(--surface);
+  box-shadow: 0 var(--zpc-space-4) var(--zpc-space-12) var(--palette-alpha-03);
 }
 .ownerChatPanel.isOpen { display: flex; }
 .ownerChatHeader {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 10px 12px 10px 16px; color: #f5f8fc; font-size: 14px; border-bottom: 1px solid #1e2633;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--zpc-space-2);
+  padding: var(--zpc-space-2) var(--zpc-space-3) var(--zpc-space-2) var(--zpc-space-4);
+  color: var(--text-primary); font-size: var(--zpc-font-xs); border-bottom: 1px solid var(--border);
 }
-.ownerChatClose { border: 0; background: transparent; color: #a9b4c2; cursor: pointer; padding: 4px; border-radius: 8px; }
-.ownerChatClose:hover { color: #f5f8fc; background: #141b27; }
-.ownerChatFrame { flex: 1; width: 100%; border: 0; background: #05070b; }
+.ownerChatClose {
+  display: grid; place-items: center; width: var(--zpc-size-36); height: var(--zpc-size-36);
+  border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; border-radius: var(--zpc-radius-sm);
+}
+.ownerChatClose:hover { color: var(--text-primary); background: var(--surface-elevated); }
+.ownerChatClose:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: 0; }
+.ownerChatFrame { flex: 1; width: 100%; border: 0; background: var(--bg-primary); }
 @media (max-width: 640px) {
   .ownerChatPanel { right: 0; bottom: 0; width: 100vw; height: 100dvh; border-radius: 0; }
   .ownerChatFab.isOpen { display: none; }
-  .ownerChatPanel .ownerChatClose { padding: 8px; }
+  .ownerChatClose { width: var(--zpc-size-44); height: var(--zpc-size-44); }
 }
+@media (prefers-reduced-motion: reduce) { .ownerChatFab, .ownerChatPanel { transition: none; } }
