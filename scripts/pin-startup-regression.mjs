@@ -186,8 +186,9 @@ function withButtonViolations(base,cand){
  if(JSON.stringify(base.topbar)!==JSON.stringify(cand.topbar))v.push('top bar box changed '+JSON.stringify([base.topbar,cand.topbar]));
  return [...new Set(v)];
 }
-function rasterOutside(imgA,imgB,box){const a=PNG.sync.read(imgA),b=PNG.sync.read(imgB);if(a.width!==b.width||a.height!==b.height)return 255;let max=0;
- for(let y=0;y<a.height;y++)for(let x=0;x<a.width;x++){if(box&&x>=box.x-1&&x<box.x+box.w+1&&y>=box.y-1&&y<box.y+box.h+1)continue;const i=(y*a.width+x)*4;for(let k=0;k<4;k++)max=Math.max(max,Math.abs(a.data[i+k]-b.data[i+k]));}return max;}
+function rasterOutside(imgA,imgB,box){const a=PNG.sync.read(imgA),b=PNG.sync.read(imgB);if(a.width!==b.width||a.height!==b.height)return {max:255,bbox:null,pixels:-1};let max=0,n=0,x0=1e9,y0=1e9,x1=-1,y1=-1;
+ for(let y=0;y<a.height;y++)for(let x=0;x<a.width;x++){if(box&&x>=box.x-1&&x<box.x+box.w+1&&y>=box.y-1&&y<box.y+box.h+1)continue;const i=(y*a.width+x)*4;let d=0;for(let k=0;k<4;k++)d=Math.max(d,Math.abs(a.data[i+k]-b.data[i+k]));if(d>1){n++;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}max=Math.max(max,d);}
+ return {max,pixels:n,bbox:n?{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1}:null};}
 for(const viewport of [{width:1365,height:900},{width:1024,height:768},{width:768,height:1024},{width:375,height:812},{width:320,height:568}])for(const theme of ['dark','light']){
  const snaps=[],imgs=[];let negatives=null;
  for(const port of [4174,4173]){
@@ -210,9 +211,10 @@ for(const viewport of [{width:1365,height:900},{width:1024,height:768},{width:76
   await context.close();
  }
  const violations=withButtonViolations(snaps[0],snaps[1]);const delta=rasterOutside(imgs[0],imgs[1],snaps[1].topbar);
- fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'.json',JSON.stringify({viewport,theme,baseline_nodes:snaps[0].nodes.length,candidate_nodes:snaps[1].nodes.length,topbar:snaps[1].topbar,moved_inside_header:snaps[1].nodes.filter(n=>!n.widget&&n.header).length,violations,raster_delta_outside_topbar:delta,negatives},null,2));
+ fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'.json',JSON.stringify({viewport,theme,baseline_nodes:snaps[0].nodes.length,candidate_nodes:snaps[1].nodes.length,topbar:snaps[1].topbar,moved_inside_header:snaps[1].nodes.filter(n=>!n.widget&&n.header).length,violations,raster_delta_outside_topbar:delta.max,raster_diff_pixels:delta.pixels,raster_diff_bbox:delta.bbox,negatives},null,2));
  assert.deepEqual(violations,[],'with chat button '+viewport.width+theme+': '+violations.join(' | '));
- assert(delta<=1,'raster outside the top bar changed with the chat button '+viewport.width+theme+' delta='+delta);
+ if(delta.max>1){fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'-BASE.png',imgs[0]);fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'-CAND.png',imgs[1]);}
+ assert(delta.max<=1,'raster outside the top bar changed with the chat button '+viewport.width+theme+' delta='+delta.max+' pixels='+delta.pixels+' bbox='+JSON.stringify(delta.bbox)+' topbar='+JSON.stringify(snaps[1].topbar));
  if(negatives){assert(negatives.workspaceShift.some(x=>x.startsWith('moved outside header actions')),'negative: workspace shift must be detected');assert(negatives.buttonOverlap.some(x=>/touches header control|covers control/.test(x)),'negative: button overlap must be detected');checks.ca07_with_button_negatives_detected=true;}
  checks['authenticated_with_chat_button_'+viewport.width+'_'+theme]=true;
 }
