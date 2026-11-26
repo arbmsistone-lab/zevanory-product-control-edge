@@ -1,0 +1,28 @@
+.ownerChatFab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 60;
+  width: 58px; height: 58px; border-radius: 50%; border: 0; cursor: pointer;
+  display: grid; place-items: center; color: #05070b;
+  background: linear-gradient(135deg, #1578ff, #00b8ff 55%, #21e6f3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+.ownerChatFab:focus-visible { outline: 3px solid #f5f8fc; outline-offset: 3px; }
+.ownerChatPanel {
+  position: fixed; right: 20px; bottom: 90px; z-index: 60;
+  width: min(420px, calc(100vw - 32px)); height: min(640px, calc(100vh - 120px));
+  display: none; flex-direction: column; overflow: hidden;
+  border-radius: 16px; border: 1px solid #1e2633; background: #0b0f17;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .45);
+}
+.ownerChatPanel.isOpen { display: flex; }
+.ownerChatHeader {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 12px 10px 16px; color: #f5f8fc; font-size: 14px; border-bottom: 1px solid #1e2633;
+}
+.ownerChatClose { border: 0; background: transparent; color: #a9b4c2; cursor: pointer; padding: 4px; border-radius: 8px; }
+.ownerChatClose:hover { color: #f5f8fc; background: #141b27; }
+.ownerChatFrame { flex: 1; width: 100%; border: 0; background: #05070b; }
+@media (max-width: 640px) {
+  .ownerChatPanel { right: 0; bottom: 0; width: 100vw; height: 100dvh; border-radius: 0; }
+  .ownerChatFab.isOpen { display: none; }
+  .ownerChatPanel .ownerChatClose { padding: 8px; }
+}

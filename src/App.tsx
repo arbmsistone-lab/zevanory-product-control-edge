@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import { api, OWNER_OAUTH_BASE } from './api';
+import { OwnerChatWidget } from './OwnerChatWidget';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
 import CommandCenter from './CommandCenter';
@@ -1587,6 +1588,7 @@ function App() {
         </div>
       )}
       </main>
+      <OwnerChatWidget />
     </div>
   );
 }
