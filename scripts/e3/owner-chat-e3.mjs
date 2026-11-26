@@ -1,6 +1,7 @@
 // E3: certificação funcional integrada do chat do proprietário (painel #224 + Worker #1098), em ambiente isolado.
 // Navegador: E3_BROWSER = chromium | firefox | webkit. Painel: build do candidato servido em 127.0.0.1:4173.
-// Worker: PUBLIC_MIRROR_DIR aponta para o checkout do #1098. Os navegadores saem por um proxy HTTPS local
+// Worker: PUBLIC_MIRROR_DIR aponta para o checkout do #1098; sessões e tentativas de PIN num PostgreSQL 16 real
+// descartável (E3_PG_HOST/E3_PG_PORT, um banco por harness). Os navegadores saem por um proxy HTTPS local
 // (e3-proxy.mjs, certificado autoassinado), então cookies, SameSite, CORS, CSP e redirecionamentos são do navegador:
 //   https://controle.zevanory.api.br -> build local do painel (APIs do painel com fixtures);
 //   https://zevanory.api.br          -> Worker real em Node (owner-chat-harness.mjs), dados e PIN fictícios;
@@ -53,12 +54,13 @@ fetch('${CHAT}/api/admin/owner-chat/message',{method:'POST',credentials:'include
 fetch('${CHAT}/api/admin/owner-chat/message',{method:'POST',credentials:'include',headers:{'content-type':'application/json','x-owner-chat':'1'},body:JSON.stringify({text:'ordem forjada 2'})}).then(r=>r.text()).then(t=>{window.__r.post='LIDO:'+t.slice(0,200)}).catch(()=>{window.__r.post='bloqueado'});
 </script></body></html>`;
 
-async function ctxFor(H, { viewport = { width: 1365, height: 900 }, theme = 'dark', mobile = false } = {}) {
+async function ctxFor(H, { viewport = { width: 1365, height: 900 }, theme = 'dark', mobile = false, init = [] } = {}) {
   currentH = H;
   const opts = { viewport, ignoreHTTPSErrors: true };
   if (mobile && browserName !== 'firefox') Object.assign(opts, { isMobile: true, hasTouch: true });
   const context = await browser.newContext(opts); openContexts.push(context); context.setDefaultTimeout(15000);
   await context.addInitScript(({ theme }) => { if (location.hostname === 'controle.zevanory.api.br') { localStorage.setItem('zpc_theme', theme); localStorage.setItem('arbm_admin_session', 'e3-fixture-session'); } }, { theme });
+  for (const fn of init) await context.addInitScript(fn);
   const page = await context.newPage();
   return { context, page };
 }
@@ -102,23 +104,54 @@ async function lateResponse(kind) {
   H.release('page'); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
   await context.close();
 }
-async function kvFaultLogout(fault) {
+// R1: falha INTERNA do banco na revogação (o adaptador lança erro na instrução, sem resposta HTTP simulada).
+async function dbFaultLogout(fault) {
   const H = await mk(); const { context, page } = await ctxFor(H);
   await loginInPanel(page, H);
   const token = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
-  H.kvFault = fault; await chatFrame(page).locator('#sair').click();
+  H.dbFault = fault; await chatFrame(page).locator('#sair').click();
   await chatFrame(page).locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: 10000 });
   assert.equal(await chatFrame(page).locator('#fimmsg').getByText('Sessão encerrada.', { exact: true }).count(), 0, 'não confirma (' + fault + ')');
   assert(!(await secretVisibleAnywhere(page, H)), 'nada privado (' + fault + ')');
-  assert.equal(H.sessionKeys().length, 1, 'a sessão de fato continua (' + fault + ')');
+  assert.equal(H.sessionKeys().length, 1, 'a sessão de fato continua no banco (' + fault + ')');
   assert.equal((await context.cookies(CHAT)).filter((x) => x.name === 'zv_owner_chat').length, 1, 'cookie mantido para repetir (' + fault + ')');
   const unconf = H.log.filter((x) => x.path === '/api/admin/owner-chat/logout').at(-1); assert.equal(unconf.status, 503, 'servidor responde 503');
-  H.kvFault = null; await chatFrame(page).locator('#retry').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
-  assert.equal(H.sessionKeys().length, 0, 'repetido com o KV de volta: revogado');
+  H.dbFault = null; await chatFrame(page).locator('#retry').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+  assert.equal(H.sessionKeys().length, 0, 'repetido com o banco de volta: revogado');
   assert.equal((await context.cookies(CHAT)).filter((x) => x.name === 'zv_owner_chat').length, 0, 'cookie apagado na confirmação');
   assert.equal((await H.fetch(new Request(CHAT + '/api/admin/owner-chat/feed', { headers: { cookie: 'zv_owner_chat=' + token } }))).status, 401, 'token anterior recusado');
   await context.close();
 }
+const END_COOKIE = 'zv_owner_chat_end';
+const endCookie = async (context) => (await context.cookies(CHAT)).filter((x) => x.name === END_COOKIE).length;
+// R2: bloqueia, só na origem do chat, o localStorage (lança erro) ou a escrita de cookie por JavaScript (ignorada).
+const BLOCK = {
+  storage: () => { if (location.hostname === 'zevanory.api.br') { for (const k of ['getItem', 'setItem', 'removeItem']) Storage.prototype[k] = function () { throw new DOMException('bloqueado no teste', 'SecurityError'); }; } },
+  jsCookie: () => { if (location.hostname === 'zevanory.api.br') { Object.defineProperty(Document.prototype, 'cookie', { configurable: true, get() { return ''; }, set() {} }); } },
+};
+// R2: logout sem confirmação com UM dos mecanismos de marca indisponível; o outro garante a trava ao recarregar.
+async function pendingWithBlocked(blocked) {
+  const H = await mk(); const { context, page } = await ctxFor(H, { init: [BLOCK[blocked]] });
+  await loginInPanel(page, H); H.dbFault = 'revoke';
+  await chatFrame(page).locator('#sair').click();
+  await chatFrame(page).locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: 10000 });
+  assert.equal(await chatFrame(page).locator('#fimmsg').getByText('não permitiu guardar', { exact: false }).count(), 0, 'a marca foi guardada pelo outro mecanismo');
+  if (blocked === 'storage') assert.equal(await endCookie(context), 1, 'marca no cookie');
+  else { assert.equal(await endCookie(context), 0, 'cookie por JS bloqueado'); assert.equal(await chatFrame(page).locator('body').evaluate(() => localStorage.getItem('zv_owner_chat_logout_pending')), '1', 'marca no localStorage'); }
+  const feeds = () => H.log.filter((x) => x.path === '/api/admin/owner-chat/feed').length;
+  const f0 = feeds(); const l0 = H.log.filter((x) => x.path === '/api/admin/owner-chat/logout').length;
+  await page.reload(); await page.locator('.zpcAppShell').waitFor(); await page.locator('.ownerChatFab').click();
+  await chatFrame(page).locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: 10000 });
+  await page.waitForTimeout(6000);
+  assert(!(await secretVisibleAnywhere(page, H)), 'recarregar não traz a conversa de volta (' + blocked + ' bloqueado)');
+  assert.equal(feeds(), f0, 'nenhuma consulta ao feed depois de recarregar (' + blocked + ' bloqueado)');
+  assert(H.log.filter((x) => x.path === '/api/admin/owner-chat/logout').length > l0, 'tentou encerrar de novo sozinho');
+  H.dbFault = null; await chatFrame(page).locator('#retry').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+  assert.equal(H.sessionKeys().length, 0, 'confirmado depois');
+  assert.equal(await endCookie(context), 0, 'confirmação apaga a marca');
+  await context.close();
+}
+async function m1Toggle(page, open) { await page.locator(open ? '.ownerChatFab' : '.ownerChatClose').click(); if (open) await page.locator('.ownerChatPanel.isOpen').waitFor(); else await waitUntil(async () => (await page.locator('.ownerChatPanel.isOpen').count()) === 0, 3000); }
 const TESTS = {
   async framing_only_panel() {
     const H = await mk(); const { context, page } = await ctxFor(H);
@@ -164,7 +197,7 @@ const TESTS = {
     const ttl = c.expires - Date.now() / 1000; assert(ttl > 43200 - 300 && ttl <= 43200 + 5, 'Max-Age 12 h: ' + ttl);
     assert.equal(await page.evaluate(() => document.cookie.includes('zv_owner_chat')), false, 'painel não lê o cookie');
     assert.equal(await chatFrame(page).locator('body').evaluate(() => document.cookie.includes('zv_owner_chat')), false, 'nem o JS do chat');
-    assert.equal(H.sessionKeys().length, 1, 'uma sessão no KV (só o hash)');
+    assert.equal(H.sessionKeys().length, 1, 'uma sessão no PostgreSQL (só o hash)'); assert.deepEqual(H.kvSessionKeys(), [], 'nada de sessão ou tentativa no KV');
     await context.close();
   },
   async close_reopen_and_reload_keep_session() {
@@ -176,7 +209,8 @@ const TESTS = {
     await page.locator('.ownerChatFab').click(); await page.locator('.ownerChatPanel.isOpen').waitFor();
     assert(await page.evaluate(() => window.__frameRef === document.querySelector('.ownerChatFrame')), 'mesmo iframe');
     assert.equal(H.log.filter((x) => x.path === '/api/admin/owner-chat/app').length, loads, 'sem recarregar o chat');
-    assert(await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).isVisible(), 'conversa preservada');
+    // M1: ao reabrir, a conversa volta depois da consulta que confirma a sessão (sem recarregar o iframe).
+    await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 8000 });
     await page.reload(); await page.locator('.zpcAppShell').waitFor(); await page.locator('.ownerChatFab').click();
     await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
     assert.equal(await chatFrame(page).locator('#p').count(), 0, 'sessão de 12 h vale depois de recarregar (cookie enviado no iframe)');
@@ -190,7 +224,7 @@ const TESTS = {
     await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
     assert(!(await secretVisibleAnywhere(page, H)), 'nada privado no DOM depois de sair');
     assert.equal((await context.cookies(CHAT)).filter((x) => x.name === 'zv_owner_chat').length, 0, 'cookie apagado');
-    assert.equal(H.sessionKeys().length, 0, 'sessão apagada no KV');
+    assert.equal(H.sessionKeys().length, 0, 'sessão revogada no banco');
     const replay = await H.fetch(new Request(CHAT + '/api/admin/owner-chat/feed', { headers: { cookie: 'zv_owner_chat=' + token } }));
     assert.equal(replay.status, 401, 'token antigo não vale mais');
     await page.screenshot({ path: `${out}/depois-de-sair.png` });
@@ -437,11 +471,11 @@ const TESTS = {
     assert.equal(H.rowCount(), before, 'nada gravado');
     await context.close();
   },
-  // CA-09.1: falha INTERNA do KV na exclusão da sessão — o servidor não confirma, o cookie fica (para repetir), a
-  // interface avisa; repetindo com o KV de volta, confirma e o token anterior passa a ser recusado.
-  async logout_kv_internal_failure() { await kvFaultLogout('delete-throws'); },
-  // CA-09.1: exclusão "aceita" mas o valor continua visível na conferência (consistência eventual) — não confirma.
-  async logout_kv_stale_readback() { await kvFaultLogout('stale'); },
+  // R1/CA-09.1: falha INTERNA do banco na revogação — o servidor não confirma, o cookie fica (para repetir), a
+  // interface avisa; repetindo com o banco de volta, confirma e o token anterior passa a ser recusado.
+  async logout_db_internal_failure() { await dbFaultLogout('revoke'); },
+  // R1: banco inteiro indisponível no logout — não confirma.
+  async logout_db_unavailable() { await dbFaultLogout('all'); },
   // CA-09.1: logout repetido com o mesmo token e logout de sessão que já expirou.
   async logout_repeat_and_expired() {
     const H = await mk(); const { context, page } = await ctxFor(H);
@@ -454,14 +488,14 @@ const TESTS = {
     await chatFrame(page).locator('#p').fill(H.pin); await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
     const token2 = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
     H.advance(12 * 3600e3 + 1000);
-    r = await post(token2); assert.equal(r.status, 200, 'logout de sessão expirada'); assert.deepEqual(await r.json(), { ok: true, revoked: true });
+    r = await post(token2); assert.equal(r.status, 200, 'logout de sessão expirada'); assert.deepEqual(await r.json(), { ok: true, revoked: true, pending_actions: 0 });
     await context.close();
   },
   // CA-09.1: recarregar durante um logout NÃO confirmado não traz a conversa de volta (trava local persistente); a
   // página abre encerrada, tenta encerrar de novo e não consulta o feed. Confirmação libera; novo login funciona.
   async reload_during_unconfirmed_logout() {
     const H = await mk(); const { context, page } = await ctxFor(H);
-    await loginInPanel(page, H); H.kvFault = 'delete-throws';
+    await loginInPanel(page, H); H.dbFault = 'revoke';
     await chatFrame(page).locator('#sair').click();
     await chatFrame(page).locator('#fimmsg').getByText('Não foi possível confirmar', { exact: false }).waitFor({ timeout: 10000 });
     const feeds = () => H.log.filter((x) => x.path === '/api/admin/owner-chat/feed').length;
@@ -473,24 +507,159 @@ const TESTS = {
     assert.equal(feeds(), f0, 'nenhuma consulta ao feed depois de recarregar');
     assert(H.log.filter((x) => x.path === '/api/admin/owner-chat/logout').length > l0, 'tentou encerrar de novo sozinho');
     assert.equal(H.sessionKeys().length, 1, 'a trava é local: a sessão de fato ainda existe no servidor');
+    assert.equal(await endCookie(context), 1, 'marca também no cookie (R2)');
     await page.screenshot({ path: `${out}/recarregar-logout-pendente.png` });
-    H.kvFault = null; await chatFrame(page).locator('#retry').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+    H.dbFault = null; await chatFrame(page).locator('#retry').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
     assert.equal(H.sessionKeys().length, 0);
     await chatFrame(page).locator('#p').fill(H.pin); await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
     assert.equal(await chatFrame(page).locator('body').evaluate(() => localStorage.getItem('zv_owner_chat_logout_pending')), null, 'novo login libera a trava');
+    assert.equal(await endCookie(context), 0, 'e a marca do cookie');
+    await context.close();
+  },
+  // R1: banco com falha interna na verificação, na criação da sessão ou na reserva de tentativa = acesso negado.
+  async db_failure_denies_access() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H); H.dbFault = 'check';
+    assert(await waitUntil(async () => !(await secretVisibleAnywhere(page, H)) && (await chatFrame(page).locator('#p').count()) === 1), 'falha na verificação: conversa apagada, volta ao PIN');
+    const f = chatFrame(page); const rows0 = H.sessionRows();
+    const cookie0 = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat')?.value;
+    for (const fault of ['create', 'reserve', 'all']) {
+      H.dbFault = fault; await f.locator('#m').evaluate((m) => { m.textContent = ''; });
+      await f.locator('#p').fill(H.pin); await f.locator('#m').getByText('Não foi possível entrar agora.', { exact: false }).waitFor({ timeout: 8000 });
+      assert.equal(await f.locator('#log').count(), 0, 'não entra com o banco em falha (' + fault + ')');
+      assert.equal(H.sessionRows(), rows0, 'nenhuma sessão nova no banco (' + fault + ')');
+      assert.equal((await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat')?.value, cookie0, 'nenhum cookie novo (' + fault + ')');
+    }
+    assert(!(await secretVisibleAnywhere(page, H)));
+    H.dbFault = null; await f.locator('#p').fill(H.pin); await f.locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
+    await context.close();
+  },
+  // R2: com a marca de encerramento pendente, o servidor não entrega nada privado (409) nem grava; GET nenhum revoga;
+  // a página, ao abrir, repete o logout (POST com origem e CSRF) e só ele revoga; novo login limpa a marca.
+  async server_respects_pending_logout() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H);
+    const token = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
+    const ck = 'zv_owner_chat=' + token + '; ' + END_COOKIE + '=1'; const before = H.rowCount();
+    const feed = await H.fetch(new Request(CHAT + '/api/admin/owner-chat/feed', { headers: { cookie: ck } }));
+    assert.equal(feed.status, 409); const ft = await feed.text(); assert.doesNotMatch(ft, new RegExp(H.secret)); assert.match(ft, /logout_pending/);
+    const H2 = { origin: CHAT, 'x-owner-chat': '1', 'content-type': 'application/json', cookie: ck };
+    assert.equal((await H.fetch(new Request(CHAT + '/api/admin/owner-chat/message', { method: 'POST', headers: H2, body: '{"text":"status"}' }))).status, 409);
+    assert.equal((await H.fetch(new Request(CHAT + '/api/admin/owner-chat/action', { method: 'POST', headers: H2, body: '{"id":"1"}' }))).status, 409);
+    assert.equal(H.rowCount(), before, 'nada gravado');
+    for (const p of ['/admin/proprietario', '/api/admin/owner-chat/app', '/api/admin/owner-chat/feed', '/api/admin/owner-chat/logout']) await H.fetch(new Request(CHAT + p, { headers: { cookie: ck } }));
+    assert.equal(H.sessionKeys().length, 1, 'nenhum GET revogou (nem GET no endereço do logout)');
+    // A página: marca gravada (como se o clique em Sair tivesse perdido a resposta) -> ao abrir, repete o logout.
+    await context.addCookies([{ name: END_COOKIE, value: '1', domain: 'zevanory.api.br', path: '/', secure: true, sameSite: 'Strict' }]);
+    await page.reload(); await page.locator('.zpcAppShell').waitFor(); await page.locator('.ownerChatFab').click();
+    await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+    assert(!(await secretVisibleAnywhere(page, H)));
+    assert.equal(H.sessionKeys().length, 0, 'revogado pelo POST de logout da página');
+    const lo = H.log.filter((x) => x.path === '/api/admin/owner-chat/logout' && x.method === 'POST'); assert(lo.length >= 1 && lo.every((x) => x.origin === CHAT));
+    assert.equal(await endCookie(context), 0, 'confirmação apagou a marca');
+    await context.addCookies([{ name: END_COOKIE, value: '1', domain: 'zevanory.api.br', path: '/', secure: true, sameSite: 'Strict' }]);
+    await chatFrame(page).locator('#p').fill(H.pin); await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
+    assert.equal(await endCookie(context), 0, 'novo login apaga a marca');
+    await context.close();
+  },
+  // R2: localStorage indisponível -> a marca no cookie segura a trava; cookie por JS bloqueado -> o localStorage segura.
+  async pending_logout_storage_unavailable() { await pendingWithBlocked('storage'); },
+  async pending_logout_js_cookie_blocked() { await pendingWithBlocked('jsCookie'); },
+  // R2: nada pode ser guardado no navegador e o servidor não confirma: a página diz isso com clareza, sem prometer que
+  // fechar o navegador resolve, e não afirma o encerramento (limite físico declarado).
+  async pending_logout_nothing_persistable() {
+    const H = await mk(); const { context, page } = await ctxFor(H, { init: [BLOCK.storage, BLOCK.jsCookie] });
+    await loginInPanel(page, H); H.dbFault = 'revoke';
+    await chatFrame(page).locator('#sair').click();
+    const msg = chatFrame(page).locator('#fimmsg');
+    await msg.getByText('não permitiu guardar o pedido de saída', { exact: false }).waitFor({ timeout: 10000 });
+    const t = await msg.innerText();
+    assert.doesNotMatch(t, /[Ff]eche o navegador|fechar o navegador/, 'sem alegar que fechar o navegador encerra');
+    assert.doesNotMatch(t, /^Sessão encerrada/, 'não afirma encerramento');
+    assert(!(await secretVisibleAnywhere(page, H)));
+    assert.equal(H.sessionKeys().length, 1, 'sessão continua válida no servidor (declarado na mensagem)');
+    await context.close();
+  },
+  // M1: chat fechado = nenhuma consulta e conversa oculta; reaberto = só mostra depois de uma consulta que comprove a
+  // sessão (traz as mensagens que chegaram no intervalo); sessão revogada no intervalo -> PIN, nada privado; abrir e
+  // fechar seguidamente nunca dispara consultas em dobro.
+  async m1_close_pauses_reopen_validates() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H);
+    const feeds = () => H.log.filter((x) => x.path === '/api/admin/owner-chat/feed').length;
+    await m1Toggle(page, false); await page.waitForTimeout(1500); const f0 = feeds();
+    await page.waitForTimeout(11000);
+    assert.equal(feeds(), f0, 'nenhuma consulta com o chat fechado');
+    assert.equal(await chatFrame(page).locator('#log').evaluate((e) => e.hidden), true, 'conversa oculta com o chat fechado');
+    const nova = 'NOVA-NO-INTERVALO-' + Math.random().toString(16).slice(2, 8); await H.addPrivate('Chegou com o chat fechado: ' + nova);
+    H.holdNext('feed'); await m1Toggle(page, true);
+    assert(await waitUntil(() => H.waiting.feed > 0, 6000), 'reabrir consulta o servidor');
+    await page.waitForTimeout(700);
+    assert(!(await secretVisibleAnywhere(page, H)), 'nada aparece antes da validação da sessão');
+    H.release('feed');
+    await chatFrame(page).locator('#log').getByText(nova, { exact: false }).waitFor({ timeout: 10000 });
+    assert(await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).isVisible(), 'histórico preservado');
+    // Revogada no intervalo: ao reabrir, nada privado e volta ao PIN.
+    await m1Toggle(page, false); await page.waitForTimeout(800); H.revokeSessions();
+    H.holdNext('feed'); await m1Toggle(page, true);
+    assert(await waitUntil(() => H.waiting.feed > 0, 6000)); await page.waitForTimeout(700);
+    assert(!(await secretVisibleAnywhere(page, H)), 'sessão revogada: nada reaparece');
+    H.release('feed'); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+    assert(!(await secretVisibleAnywhere(page, H)));
+    // Sem consultas em dobro: abre e fecha seguidamente com a resposta lenta.
+    await chatFrame(page).locator('#p').fill(H.pin); await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
+    await page.waitForTimeout(500); H.feedMaxInflight = 0; H.holdNext('feed');
+    for (let i = 0; i < 6; i++) { await m1Toggle(page, false); await m1Toggle(page, true); }
+    await page.waitForTimeout(1500); H.release('feed'); await page.waitForTimeout(2500);
+    assert(H.feedMaxInflight <= 1, 'consultas simultâneas ao feed: ' + H.feedMaxInflight);
+    assert(await chatFrame(page).locator('#log').getByText(H.secret, { exact: false }).isVisible(), 'conversa de volta depois das trocas');
+    await context.close();
+  },
+  // R1/R1.1: duas abas; o logout confirmado numa encerra a outra na próxima consulta (sem conteúdo privado).
+  async two_tabs_logout() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H);
+    const p2 = await context.newPage(); await openPanel(p2);
+    await chatFrame(p2).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 15000 });
+    const token = (await context.cookies(CHAT)).find((x) => x.name === 'zv_owner_chat').value;
+    await chatFrame(page).locator('#sair').click(); await chatFrame(page).locator('#p').waitFor({ timeout: 15000 });
+    assert.equal((await H.fetch(new Request(CHAT + '/api/admin/owner-chat/feed', { headers: { cookie: 'zv_owner_chat=' + token } }))).status, 401, 'token compartilhado pelas abas recusado no servidor');
+    assert(await waitUntil(async () => !(await secretVisibleAnywhere(p2, H)) && (await chatFrame(p2).locator('#p').count()) === 1, 12000), 'a outra aba encerra');
+    assert.equal(H.sessionKeys().length, 0);
+    await context.close();
+  },
+  // R1.1: ação autorizada antes do logout e ainda em execução: o logout é confirmado e informa a ação pendente (não
+  // afirma que a interrompeu); a ação termina e fica registrada.
+  async logout_reports_pending_action() {
+    const H = await mk(); const { context, page } = await ctxFor(H);
+    await loginInPanel(page, H); const f = chatFrame(page);
+    await f.locator('#q').fill('pausar'); await f.locator('#q').press('Enter');
+    const btn = f.locator('#log button', { hasText: 'Confirmar' }); await btn.waitFor({ timeout: 10000 });
+    const id = await btn.evaluate((b) => b.closest('[data-id]').dataset.id);
+    let open; H.actionGate = new Promise((r) => { open = r; });
+    await btn.click();
+    assert(await waitUntil(() => H.actionState(id) === 'executando', 8000), 'ação autorizada e em execução');
+    await f.locator('#sair').click();
+    await f.locator('#fimmsg').getByText('1 ação autorizada antes do encerramento ainda está sendo concluída', { exact: false }).waitFor({ timeout: 10000 });
+    assert(await f.locator('#topin').isVisible(), 'oferece ir ao PIN');
+    assert(!(await secretVisibleAnywhere(page, H)));
+    assert.equal(H.sessionKeys().length, 0, 'sessão revogada');
+    open(); H.actionGate = null;
+    assert(await waitUntil(() => H.actionState(id) === 'executado', 8000), 'a ação autorizada antes termina e fica registrada');
+    await f.locator('#topin').click(); await f.locator('#p').waitFor({ timeout: 15000 });
     await context.close();
   },
   async kv_and_commercial_untouched() {
     const H = await mk(); const { context, page } = await ctxFor(H);
     await loginInPanel(page, H); await chatFrame(page).locator('#q').fill('vendas'); await chatFrame(page).locator('#q').press('Enter'); await page.waitForTimeout(1500);
     await chatFrame(page).locator('#sair').click(); await chatFrame(page).locator('#p').waitFor();
-    const bad = H.kvWrites.filter((k) => !/^zpc:owner-chat:(pin-session|pin-fail|versao)/.test(k));
-    assert.deepEqual(bad, [], 'chat só grava chaves próprias no KV (nada de vendas, interruptores ou publicadores)');
+    const bad = H.kvWrites.filter((k) => !/^zpc:owner-chat:versao/.test(k));
+    assert.deepEqual(bad, [], 'chat só grava o marcador de versão no KV (nada de sessão, tentativas, vendas, interruptores ou publicadores)');
     await context.close();
   },
 };
 // Contraprova -> teste que deve reprovar com o defeito ligado.
-const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-ttl', 'expiry_12h_boundaries'], ['csrf-off', 'csrf_header_required'], ['no-render-guard', 'late_response_during_unconfirmed_logout'], ['no-render-guard', 'late_response_after_logout', 'chromium'], ['no-render-guard', 'late_response_after_expiry', 'chromium'], ['no-render-guard', 'late_response_after_revocation', 'chromium'], ['logout-unchecked', 'logout_failure_modes'], ['no-esc-bridge', 'escape_inside_chat'], ['origin-off', 'origin_rejection'], ['origin-off', 'admin_api_protection'], ['panel:no-origin-check', 'escape_spoofing_rejected'], ['revoke-unchecked', 'logout_kv_internal_failure'], ['revoke-unchecked', 'logout_kv_stale_readback'], ['no-pending-lock', 'reload_during_unconfirmed_logout']];
+const NEGATIVES = [['frame-star', 'framing_only_panel'], ['no-revoke', 'logout_clears_and_revokes'], ['no-clear', 'expiry_12h_boundaries'], ['no-clear', 'revocation_server_side'], ['weak-cookie', 'cookie_attributes'], ['no-lockout', 'excessive_attempts'], ['inject-admin', 'public_private_isolation'], ['no-expiry', 'expiry_12h_boundaries'], ['csrf-off', 'csrf_header_required'], ['no-render-guard', 'late_response_during_unconfirmed_logout'], ['no-render-guard', 'late_response_after_logout', 'chromium'], ['no-render-guard', 'late_response_after_expiry', 'chromium'], ['no-render-guard', 'late_response_after_revocation', 'chromium'], ['logout-unchecked', 'logout_failure_modes'], ['no-esc-bridge', 'escape_inside_chat'], ['origin-off', 'origin_rejection'], ['origin-off', 'admin_api_protection'], ['panel:no-origin-check', 'escape_spoofing_rejected'], ['revoke-unchecked', 'logout_db_internal_failure'], ['revoke-unchecked', 'logout_db_unavailable'], ['no-pending-lock', 'reload_during_unconfirmed_logout'], ['no-pending-lock', 'pending_logout_storage_unavailable'], ['no-pending-lock', 'pending_logout_js_cookie_blocked'], ['fail-open-check', 'db_failure_denies_access'], ['ignore-end-cookie', 'server_respects_pending_logout'], ['logout-unchecked', 'pending_logout_nothing_persistable'], ['poll-while-closed', 'm1_close_pauses_reopen_validates'], ['reveal-without-validation', 'm1_close_pauses_reopen_validates'], ['panel-vis:no-visibility', 'm1_close_pauses_reopen_validates'], ['no-inflight-guard', 'm1_close_pauses_reopen_validates'], ['logout-ignores-pending', 'logout_reports_pending_action'], ['no-revoke', 'two_tabs_logout']];
 
 const results = { browser: browserName, version: browser.version(), positives: {}, negatives: {} };
 // Diagnóstico de falha: captura de cada página aberta, URLs dos frames e cookies (sem valores).
@@ -518,11 +687,15 @@ for (const [name, fn] of Object.entries(TESTS)) {
 for (const [mutation, name, only] of NEGATIVES) {
   if (only && only !== browserName) { results.negatives[mutation + '->' + name] = { detected: null, skipped: 'só em ' + only + ' (a navegação pendente já descarta respostas neste navegador)' }; continue; }
   if (ONLY.length && !ONLY.includes(name)) continue;
-  const panelMut = mutation.startsWith('panel:');
-  if (panelMut && !process.env.PANEL_MUTANT) { results.negatives[mutation + '->' + name] = { detected: false, error: 'PANEL_MUTANT ausente' }; console.log('MISSED ' + mutation + ' -> ' + name + ' :: PANEL_MUTANT ausente'); continue; }
-  forced = panelMut ? null : mutation; if (panelMut) panelActive = process.env.PANEL_MUTANT; const t = Date.now();
+  const panelMut = mutation.startsWith('panel:') || mutation.startsWith('panel-vis:');
+  const panelUrl = mutation.startsWith('panel-vis:') ? process.env.PANEL_MUTANT_VIS : process.env.PANEL_MUTANT;
+  if (panelMut && !panelUrl) { results.negatives[mutation + '->' + name] = { detected: false, error: 'build mutante do painel ausente' }; console.log('MISSED ' + mutation + ' -> ' + name + ' :: build mutante do painel ausente'); continue; }
+  forced = panelMut ? null : mutation; if (panelMut) panelActive = panelUrl; const t = Date.now();
   let failed = false, error = null;
-  try { await TESTS[name](); } catch (e) { failed = true; error = String(e && e.message || e).slice(0, 300); }
+  // Contraprova efetiva: o teste precisa reprovar por uma ASSERÇÃO (ou espera do Playwright que não se cumpre), nunca
+  // por erro de execução (âncora ausente, exceção do harness), que não prova nada sobre o controle.
+  let kind = null;
+  try { await TESTS[name](); } catch (e) { kind = e && (e.code === 'ERR_ASSERTION' ? 'assert' : e.name === 'TimeoutError' ? 'timeout' : 'erro:' + (e.name || 'desconhecido')); failed = kind === 'assert' || kind === 'timeout'; error = kind + ' ' + String(e && e.message || e).slice(0, 300); }
   forced = null; panelActive = PANEL; await closeAll();
   results.negatives[mutation + '->' + name] = { detected: failed, ms: Date.now() - t, error };
   console.log((failed ? 'DETECTED ' : 'MISSED ') + mutation + ' -> ' + name + (error ? ' :: ' + error : ''));

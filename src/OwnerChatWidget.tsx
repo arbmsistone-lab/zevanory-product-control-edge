@@ -12,6 +12,12 @@ export const OWNER_CHAT_URL = 'https://zevanory.api.br/admin/proprietario';
 // Único remetente aceito para o aviso de Esc vindo de dentro do chat (CA-10): esta origem E a janela deste iframe.
 const OWNER_CHAT_ORIGIN = new URL(OWNER_CHAT_URL).origin;
 const ESCAPE_MESSAGE = 'zv-owner-chat:escape';
+// M1: o painel avisa a página do chat se a janela está aberta; fechada, ela para de consultar o servidor (e esconde a
+// conversa); ao reabrir, só mostra de novo depois de uma consulta que comprove a sessão. Só para a origem do chat.
+const VISIBILITY_MESSAGE = 'zv-owner-chat:visibility';
+function postVisibility(frame: HTMLIFrameElement | null, open: boolean) {
+  frame?.contentWindow?.postMessage({ type: VISIBILITY_MESSAGE, open }, OWNER_CHAT_ORIGIN);
+}
 
 export function OwnerChatWidget() {
   const [open, setOpen] = useState(false);
@@ -21,9 +27,12 @@ export function OwnerChatWidget() {
   const panelRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const wasOpen = useRef(false);
+  const openRef = useRef(false);
   const toggle = () => { setMounted(true); setOpen(value => !value); };
   // Teclado (E3): ao abrir, o foco vai para "Fechar"; Esc fecha; ao fechar, o foco volta para o botão flutuante.
   useEffect(() => {
+    openRef.current = open;
+    postVisibility(frameRef.current, open);
     if (open) closeRef.current?.focus();
     else if (wasOpen.current) fabRef.current?.focus();
     wasOpen.current = open;
@@ -56,7 +65,7 @@ export function OwnerChatWidget() {
             <span><strong>Epaminondas</strong> · chat da ZEVANORY</span>
             <button ref={closeRef} type='button' className='ownerChatClose' onClick={() => setOpen(false)} aria-label='Fechar chat'><X size={18} /></button>
           </header>
-          <iframe ref={frameRef} className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat do proprietário' referrerPolicy='no-referrer' />
+          <iframe ref={frameRef} className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat do proprietário' referrerPolicy='no-referrer' onLoad={() => postVisibility(frameRef.current, openRef.current)} />
         </section>,
         document.body,
       )}

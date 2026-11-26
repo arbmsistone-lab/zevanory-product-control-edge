@@ -1,8 +1,9 @@
 name: Owner chat E3 integration (isolated)
 
 # E3: certificação funcional integrada do chat do proprietário — painel (este repositório) + Worker do
-# zevanory-public-mirror num SHA exato. Ambiente isolado: PIN, dados e sessões fictícios; nenhuma URL de produção
-# é acessada (o teste aborta e registra qualquer pedido fora das origens simuladas). Sem deploy, sem segredos.
+# zevanory-public-mirror num SHA exato. Ambiente isolado: PIN, dados e sessões fictícios; sessões e tentativas de PIN
+# num PostgreSQL 16 real e descartável (serviço do job); nenhuma URL de produção é acessada (o teste aborta e registra
+# qualquer pedido fora das origens simuladas). Sem deploy, sem segredos.
 on:
   pull_request:
     branches: [main]
@@ -15,7 +16,7 @@ on:
       public_mirror_sha:
         description: 'SHA exato do Worker candidato (zevanory-public-mirror, PR #1098)'
         required: true
-        default: '9877e23648f3739c37066d9e824aaf262321c347'
+        default: '9f7f791895b14013279553d6d27d1f8ce5fdc6f3'
 
 permissions:
   contents: read
@@ -31,9 +32,17 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
     env:
-      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '9877e23648f3739c37066d9e824aaf262321c347' }}
+      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '9f7f791895b14013279553d6d27d1f8ce5fdc6f3' }}
     steps:
       - name: Checkout panel candidate
         uses: actions/checkout@v4
@@ -46,6 +55,7 @@ jobs:
           ref: ${{ env.PM_SHA }}
           path: public-mirror
           persist-credentials: false
+          fetch-depth: 0  # R1.2: a prova de rollback extrai o Worker de produção (813870c2) do histórico
       - name: Verify exact SHAs
         shell: bash
         run: |
@@ -65,6 +75,21 @@ jobs:
       - name: Worker owner-chat unit tests (candidate SHA)
         working-directory: public-mirror
         run: node --test tests/owner-chat-pin.test.mjs tests/owner-chat.test.mjs
+      - name: PostgreSQL 16 real — sessão, concorrência, O1, rollback e contraprovas do Worker (candidate SHA)
+        working-directory: public-mirror
+        env:
+          T4_PG_HOST: localhost
+          T4_PG_PORT: '5432'
+        shell: bash
+        run: |
+          set -eo pipefail
+          v="$(psql -h localhost -U postgres -tAc 'show server_version_num')"; [ "${v:0:2}" = "16" ]
+          echo "E3_POSTGRES_VERSION_NUM=$v"
+          mkdir -p ../e3-evidence/${{ matrix.browser }}
+          node --test tests/integration/owner-chat-session-postgres.test.mjs tests/integration/owner-chat-rollback-postgres.test.mjs 2>&1 | grep -v '"event":"owner_chat_pin_failed"' | tee ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
+          grep -qx "# tests 11" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
+          grep -qx "# pass 11" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
+          test "$(grep -c '=DETECTED$' ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt)" = "7"
       - name: Build panel candidate (no deploy)
         run: npx vite build
       - name: Start panel preview
@@ -93,11 +118,31 @@ jobs:
           (cd /tmp/zpc-mutant && nohup npx vite preview --host 127.0.0.1 --port 4175 > /tmp/zpc-mutant-preview.log 2>&1 &)
           for i in $(seq 1 40); do curl -fsS http://127.0.0.1:4175/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/zpc-mutant-preview.log; exit 1
+      - name: Build MUTANT panel for the M1 counter-proof (visibility message removed; never deployed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/zpc-mutant-vis && mkdir -p /tmp/zpc-mutant-vis
+          git archive HEAD | tar -x -C /tmp/zpc-mutant-vis
+          ln -s "$PWD/node_modules" /tmp/zpc-mutant-vis/node_modules
+          python3 - <<'PYM'
+          from pathlib import Path
+          p=Path('/tmp/zpc-mutant-vis/src/OwnerChatWidget.tsx');s=p.read_text()
+          a='  frame?.contentWindow?.postMessage({ type: VISIBILITY_MESSAGE, open }, OWNER_CHAT_ORIGIN);'
+          assert s.count(a)==1; p.write_text(s.replace(a,'  void frame; void open;'))
+          PYM
+          (cd /tmp/zpc-mutant-vis && npx vite build >/tmp/zpc-mutant-vis-build.log 2>&1 || (cat /tmp/zpc-mutant-vis-build.log; exit 1))
+          (cd /tmp/zpc-mutant-vis && nohup npx vite preview --host 127.0.0.1 --port 4176 > /tmp/zpc-mutant-vis-preview.log 2>&1 &)
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:4176/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/zpc-mutant-vis-preview.log; exit 1
       - name: E3 integration (${{ matrix.browser }})
         env:
           E3_BROWSER: ${{ matrix.browser }}
           PUBLIC_MIRROR_DIR: public-mirror
           PANEL_MUTANT: http://127.0.0.1:4175
+          PANEL_MUTANT_VIS: http://127.0.0.1:4176
+          E3_PG_HOST: localhost
+          E3_PG_PORT: '5432'
         run: node scripts/e3/owner-chat-e3.mjs
       - name: Upload evidence
         if: always()
