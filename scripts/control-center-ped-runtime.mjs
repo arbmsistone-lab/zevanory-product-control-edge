@@ -391,6 +391,15 @@ for(const size of sizes){
       if(dom.textDebt.length) fail('RUNTIME_FONT_SCALE',JSON.stringify(dom.textDebt));
       if(dom.theme!==theme) fail('THEME_RUNTIME',dom.theme);
       if(!dom.mainClass.includes('shell-'+key)) fail('VIEW_CLASS',dom.mainClass);
+      // E3 (chat do proprietário): o botão flutuante não pode cobrir nenhum controle desta área/página de cards,
+      // com os dados representativos deste audit. Grade 5x5 sob o botão, com ele oculto; base sem o widget => não se aplica.
+      const fabBlock=await page.evaluate(()=>{const fab=document.querySelector('.ownerChatFab');if(!fab)return {present:false,hits:[]};
+        const r=fab.getBoundingClientRect();const prev=fab.style.visibility;fab.style.visibility='hidden';const hits=new Set();
+        const sel='button,a[href],input,select,textarea,summary,[role="button"],[role="tab"],[tabindex]:not([tabindex="-1"])';
+        for(let i=0;i<5;i++)for(let j=0;j<5;j++){const el=document.elementFromPoint(r.x+r.width*(i+0.5)/5,r.y+r.height*(j+0.5)/5);const c=el&&el.closest(sel);if(c&&!c.closest('[data-owner-chat-widget]'))hits.add(c.tagName+'.'+String(c.className).slice(0,60)+':'+(c.getAttribute('aria-label')||c.textContent||'').trim().slice(0,40));}
+        fab.style.visibility=prev;return {present:true,hits:[...hits]};});
+      row.ownerChatFab=fabBlock;
+      if(fabBlock.hits.length) fail('OWNER_CHAT_FAB_OBSTRUCTION',JSON.stringify(fabBlock.hits));
 
       const contrast=await page.evaluate(()=>{
         const parseColor=value=>{
