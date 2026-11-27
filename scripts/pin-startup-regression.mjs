@@ -132,14 +132,17 @@ for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const
   // (so the tag cannot be used to hide any other element). It is measured, captured and archived, then removed
   // before the unchanged comparison below: every pre-existing node keeps exact geometry parity and raster delta <=1.
   const widget=await page.evaluate(()=>[...document.querySelectorAll('[data-owner-chat-widget]')].map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height,descendants:e.querySelectorAll('*').length}}));
+  // 27/11: o Epaminondas fica FIXO na coluna esquerda (uma <section> dentro da navegação), não mais um botão no
+  // cabeçalho; o main publicado na E5 ainda tem o botão. Fora do endereço oficial, a seção mostra só um aviso.
   if(port===4173){
-   assert.equal(widget.length,1,'candidate must render exactly one owner-chat node while closed '+viewport.width+theme);
-   assert.equal(widget[0].tag+'.'+widget[0].cls,'BUTTON.ownerChatFab','only the closed FAB may carry data-owner-chat-widget');
-   assert(widget[0].x>=0&&widget[0].y>=0&&widget[0].x+widget[0].w<=viewport.width&&widget[0].y+widget[0].h<=viewport.height,'owner-chat FAB must stay inside the viewport');
-   await page.screenshot({path:out+'/owner-chat-fab-'+viewport.width+'-'+theme+'.png',animations:'disabled'});
-  } else assert.equal(widget.length,0,'baseline (main) must not contain the owner-chat widget');
+   assert.equal(widget.length,1,'candidate must render exactly one owner-chat node '+viewport.width+theme);
+   assert.equal(widget[0].tag+'.'+widget[0].cls,'SECTION.ownerChatDock','only the fixed column dock may carry data-owner-chat-widget');
+   assert(widget[0].x>=0&&widget[0].y>=0&&widget[0].x+widget[0].w<=viewport.width&&widget[0].y+widget[0].h<=viewport.height,'owner-chat dock must stay inside the viewport');
+   await page.screenshot({path:out+'/owner-chat-dock-'+viewport.width+'-'+theme+'.png',animations:'disabled'});
+  } else assert(widget.length<=1&&widget.every(w=>w.tag+'.'+w.cls==='BUTTON.ownerChatFab'),'baseline (main) may only contain the E5 header button');
   widgets.push(widget);
-  await page.evaluate(()=>document.querySelectorAll('[data-owner-chat-widget]').forEach(e=>e.remove()));
+  // Sem o chat (nó marcado E a faixa reservada pela classe hasOwnerChat), o resto do painel precisa ser idêntico ao main.
+  await page.evaluate(()=>{document.querySelectorAll('[data-owner-chat-widget]').forEach(e=>e.remove());document.querySelector('.zpcAppShell')?.classList.remove('hasOwnerChat');});
   geometries.push(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().width&&e.getBoundingClientRect().height).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height}})));
   if(port===4173&&viewport.width===1365&&theme==='dark'){
    // CA-07 negative proof: after the normalization, a 4px change in a pre-existing element is still detected.
@@ -164,29 +167,36 @@ for(const viewport of [{width:1365,height:900},{width:375,height:812}])for(const
 const CTRL='a[href],button,input,select,textarea,summary,[role="button"],[role="tab"]';
 async function snapWithButton(page){return page.evaluate((CTRL)=>{const nodes=[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().width&&e.getBoundingClientRect().height).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,cls:String(e.className),x:r.x,y:r.y,w:r.width,h:r.height,widget:!!e.closest('[data-owner-chat-widget]'),header:!!e.closest('.zpcHeaderActions'),control:e.matches(CTRL),clipped:e.matches(CTRL)&&e.scrollWidth>e.clientWidth+1}});
  const top=document.querySelector('.zpcAppShell>.topbar');const t=top?top.getBoundingClientRect():null;
+ const navEl=document.querySelector('.zpcAppShell>.zpcNavigation');const nb=navEl&&getComputedStyle(navEl).display!=='none'?navEl.getBoundingClientRect():null;
  // Área VISUAL das ações do cabeçalho (caixa + contorno de foco), que pode passar um pouco da caixa da barra superior.
  const headerVisual=[...document.querySelectorAll('.zpcHeaderActions, .zpcHeaderActions *')].map(e=>{const r=e.getBoundingClientRect();const cs=getComputedStyle(e);const o=cs.outlineStyle!=='none'?(parseFloat(cs.outlineWidth)||0)+Math.max(0,parseFloat(cs.outlineOffset)||0):0;return {x:r.x-o,y:r.y-o,w:r.width+2*o,h:r.height+2*o};}).filter(b=>b.w>0&&b.h>0);
- return {nodes,topbar:t&&{x:t.x,y:t.y,w:t.width,h:t.height},headerVisual,vw:innerWidth,vh:innerHeight};},CTRL);}
+ return {nodes,topbar:t&&{x:t.x,y:t.y,w:t.width,h:t.height},nav:nb&&nb.width&&nb.height?{x:nb.x,y:nb.y,w:nb.width,h:nb.height}:null,headerVisual,vw:innerWidth,vh:innerHeight};},CTRL);}
 const inter=(a,b)=>Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)>0.5&&Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y)>0.5;
-function withButtonViolations(base,cand){
- const v=[];const pre=cand.nodes.filter(n=>!n.widget);const btn=cand.nodes.find(n=>n.widget&&n.tag==='BUTTON');
- if(!btn)v.push('chat button missing');
- if(pre.length!==base.nodes.length)v.push('pre-existing element count changed '+base.nodes.length+'->'+pre.length);
- const n=Math.min(pre.length,base.nodes.length);
- for(let i=0;i<n;i++){const a=base.nodes[i],b=pre[i];
+// 27/11: o chat é uma <section> FIXA na coluna da navegação (não mais um botão no cabeçalho; o main da E5 ainda o tem).
+// Acima de 900px: nenhum elemento preexistente fora das ações do cabeçalho pode mudar (o botão da E5 sai do cabeçalho).
+// Até 900px: a grade ganha a faixa do chat por desenho (a área de trabalho divide a altura com ele); ali se exige que
+// nenhum controle seja coberto pelo chat, saia da tela ou passe a ter texto cortado.
+function withDockViolations(base,cand,narrow){
+ const v=[];const dock=cand.nodes.find(n=>n.widget&&n.tag==='SECTION');
+ if(!dock)v.push('chat dock missing');
+ const basePre=base.nodes.filter(n=>!n.widget);
+ const pre=cand.nodes.filter(n=>!n.widget&&!(narrow&&/(^| )zpcNavigation( |$)/.test(n.cls)));
+ if(pre.length!==basePre.length)v.push('pre-existing element count changed '+basePre.length+'->'+pre.length);
+ const n=Math.min(pre.length,basePre.length);
+ for(let i=0;i<n;i++){const a=basePre[i],b=pre[i];
   if(a.tag!==b.tag||a.cls!==b.cls){v.push('element sequence changed at '+i+': '+a.tag+'.'+a.cls+' -> '+b.tag+'.'+b.cls);break;}
   const moved=Math.abs(a.x-b.x)>0.5||Math.abs(a.y-b.y)>0.5||Math.abs(a.w-b.w)>0.5||Math.abs(a.h-b.h)>0.5;
-  if(moved&&!b.header)v.push('moved outside header actions: '+b.tag+'.'+b.cls.slice(0,60)+' '+JSON.stringify({from:[a.x,a.y,a.w,a.h],to:[b.x,b.y,b.w,b.h]}));
-  if(b.header&&b.control){
-   if(b.x<-0.5||b.y<-0.5||b.x+b.w>cand.vw+0.5||b.y+b.h>cand.vh+0.5)v.push('header control outside viewport: '+b.cls.slice(0,40));
-   if(b.w<24||b.h<24)v.push('header control below 24px: '+b.cls.slice(0,40)+' '+b.w+'x'+b.h);
-   if(b.clipped&&!a.clipped)v.push('header control text clipped: '+b.cls.slice(0,40));
-   if(btn&&inter(b,btn))v.push('chat button touches header control: '+b.cls.slice(0,40));
+  if(moved&&!b.header&&!narrow)v.push('moved outside header actions: '+b.tag+'.'+b.cls.slice(0,60)+' '+JSON.stringify({from:[a.x,a.y,a.w,a.h],to:[b.x,b.y,b.w,b.h]}));
+  if(b.control){
+   const wasIn=a.x>=-0.5&&a.y>=-0.5&&a.x+a.w<=base.vw+0.5&&a.y+a.h<=base.vh+0.5;
+   if(wasIn&&(b.x<-0.5||b.y<-0.5||b.x+b.w>cand.vw+0.5||b.y+b.h>cand.vh+0.5))v.push('control pushed outside viewport: '+b.tag+'.'+b.cls.slice(0,40));
+   if(b.clipped&&!a.clipped)v.push('control text clipped: '+b.cls.slice(0,40));
+   if(dock&&inter(b,dock))v.push('chat dock covers control: '+b.tag+'.'+b.cls.slice(0,40));
+   if(b.header&&(b.w<24||b.h<24))v.push('header control below 24px: '+b.cls.slice(0,40)+' '+b.w+'x'+b.h);
   }
  }
- if(btn){if(btn.x<-0.5||btn.y<-0.5||btn.x+btn.w>cand.vw+0.5||btn.y+btn.h>cand.vh+0.5)v.push('chat button outside viewport');
-  for(const c of pre)if(c.control&&inter(c,btn))v.push('chat button covers control: '+c.tag+'.'+c.cls.slice(0,40));}
- if(JSON.stringify(base.topbar)!==JSON.stringify(cand.topbar))v.push('top bar box changed '+JSON.stringify([base.topbar,cand.topbar]));
+ if(dock&&(dock.x<-0.5||dock.y<-0.5||dock.x+dock.w>cand.vw+0.5||dock.y+dock.h>cand.vh+0.5))v.push('chat dock outside viewport');
+ if(!narrow&&JSON.stringify(base.topbar)!==JSON.stringify(cand.topbar))v.push('top bar box changed '+JSON.stringify([base.topbar,cand.topbar]));
  return [...new Set(v)];
 }
 function rasterOutside(imgA,imgB,boxes){const inBox=(x,y)=>boxes.some(b=>x>=b.x-1&&x<b.x+b.w+1&&y>=b.y-1&&y<b.y+b.h+1);const a=PNG.sync.read(imgA),b=PNG.sync.read(imgB);if(a.width!==b.width||a.height!==b.height)return {max:255,bbox:null,pixels:-1};let max=0,n=0,x0=1e9,y0=1e9,x1=-1,y1=-1;
@@ -203,22 +213,25 @@ for(const viewport of [{width:1365,height:900},{width:1024,height:768},{width:76
   await page.evaluate(()=>document.fonts.ready);await page.waitForLoadState('networkidle');
   snaps.push(await snapWithButton(page));imgs.push(await page.screenshot({animations:'disabled'}));
   if(port===4173){
-   await page.screenshot({path:out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'.png',animations:'disabled'});
+   await page.screenshot({path:out+'/owner-chat-dock-'+viewport.width+'-'+theme+'.png',animations:'disabled'});
    if(viewport.width===1365&&theme==='dark'){
-    // Contraprovas: deslocar um elemento fora do cabeçalho e encostar o botão num controle precisam ser detectados.
-    await page.addStyleTag({content:'.zpcWorkspace{margin-top:4px!important}'});const n1=withButtonViolations(snaps[0],await snapWithButton(page));
-    await page.addStyleTag({content:'.zpcWorkspace{margin-top:0!important}.zpcAppShell .zpcHeaderActions>.ownerChatFab{position:relative;left:40px}'});const n2=withButtonViolations(snaps[0],await snapWithButton(page));
-    negatives={workspaceShift:n1,buttonOverlap:n2};
+    // Contraprovas: deslocar um elemento fora do cabeçalho e o chat cobrir um controle precisam ser detectados.
+    await page.addStyleTag({content:'.zpcWorkspace{margin-top:4px!important}'});const n1=withDockViolations(snaps[0],await snapWithButton(page),false);
+    await page.addStyleTag({content:'.zpcWorkspace{margin-top:0!important}.ownerChatDock{position:fixed!important;left:220px!important;top:0!important;width:400px!important;height:300px!important;z-index:9}'});const n2=withDockViolations(snaps[0],await snapWithButton(page),false);
+    negatives={workspaceShift:n1,dockOverlap:n2};
    }
   }
   await context.close();
  }
- const violations=withButtonViolations(snaps[0],snaps[1]);const delta=rasterOutside(imgs[0],imgs[1],[snaps[0].topbar,snaps[1].topbar,...snaps[0].headerVisual,...snaps[1].headerVisual].filter(Boolean));
- fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'.json',JSON.stringify({viewport,theme,baseline_nodes:snaps[0].nodes.length,candidate_nodes:snaps[1].nodes.length,topbar:snaps[1].topbar,moved_inside_header:snaps[1].nodes.filter(n=>!n.widget&&n.header).length,violations,raster_delta_outside_topbar:delta.max,raster_diff_pixels:delta.pixels,raster_diff_bbox:delta.bbox,negatives},null,2));
- assert.deepEqual(violations,[],'with chat button '+viewport.width+theme+': '+violations.join(' | '));
- if(delta.max>1){fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'-BASE.png',imgs[0]);fs.writeFileSync(out+'/owner-chat-with-button-'+viewport.width+'-'+theme+'-CAND.png',imgs[1]);}
- assert(delta.max<=1,'raster outside the top bar changed with the chat button '+viewport.width+theme+' delta='+delta.max+' pixels='+delta.pixels+' bbox='+JSON.stringify(delta.bbox)+' topbar='+JSON.stringify(snaps[1].topbar));
- if(negatives){assert(negatives.workspaceShift.some(x=>x.startsWith('moved outside header actions')),'negative: workspace shift must be detected');assert(negatives.buttonOverlap.some(x=>/touches header control|covers control/.test(x)),'negative: button overlap must be detected');checks.ca07_with_button_negatives_detected=true;}
- checks['authenticated_with_chat_button_'+viewport.width+'_'+theme]=true;
+ const narrow=viewport.width<=900;const violations=withDockViolations(snaps[0],snaps[1],narrow);
+ // Raster: acima de 900px, idêntico fora do cabeçalho e da coluna da navegação (onde o chat entra); até 900px a faixa do
+ // chat reflui a área de trabalho por desenho, então vale a geometria acima (sem cobrir, cortar ou tirar da tela).
+ const delta=narrow?{max:0,pixels:0,bbox:null,skipped:'narrow_reflow_by_design'}:rasterOutside(imgs[0],imgs[1],[snaps[0].topbar,snaps[1].topbar,snaps[1].nav,...snaps[0].headerVisual,...snaps[1].headerVisual].filter(Boolean));
+ fs.writeFileSync(out+'/owner-chat-with-dock-'+viewport.width+'-'+theme+'.json',JSON.stringify({viewport,theme,baseline_nodes:snaps[0].nodes.length,candidate_nodes:snaps[1].nodes.length,topbar:snaps[1].topbar,moved_inside_header:snaps[1].nodes.filter(n=>!n.widget&&n.header).length,violations,raster_delta_outside_topbar:delta.max,raster_diff_pixels:delta.pixels,raster_diff_bbox:delta.bbox,negatives},null,2));
+ assert.deepEqual(violations,[],'with chat dock '+viewport.width+theme+': '+violations.join(' | '));
+ if(delta.max>1){fs.writeFileSync(out+'/owner-chat-with-dock-'+viewport.width+'-'+theme+'-BASE.png',imgs[0]);fs.writeFileSync(out+'/owner-chat-with-dock-'+viewport.width+'-'+theme+'-CAND.png',imgs[1]);}
+ assert(delta.max<=1,'raster outside the top bar and nav column changed with the chat dock '+viewport.width+theme+' delta='+delta.max+' pixels='+delta.pixels+' bbox='+JSON.stringify(delta.bbox)+' topbar='+JSON.stringify(snaps[1].topbar));
+ if(negatives){assert(negatives.workspaceShift.some(x=>x.startsWith('moved outside header actions')),'negative: workspace shift must be detected');assert(negatives.dockOverlap.some(x=>/chat dock covers control/.test(x)),'negative: dock overlap must be detected');checks.ca07_with_button_negatives_detected=true;}
+ checks['authenticated_with_chat_dock_'+viewport.width+'_'+theme]=true;
 }
 fs.writeFileSync(out+'/regression.json',JSON.stringify({status:'PASS',checks},null,2));console.log(JSON.stringify(checks));await browser.close();

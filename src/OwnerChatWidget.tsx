@@ -10,6 +10,10 @@ import './styles/owner-chat-widget.css';
 // painel manda o chat encerrar a sessão no servidor antes de limpar a sessão do painel.
 export const OWNER_CHAT_URL = 'https://zevanory.api.br/admin/proprietario';
 const OWNER_CHAT_ORIGIN = new URL(OWNER_CHAT_URL).origin;
+// O chat só aceita ser enquadrado pelo endereço oficial do painel (frame-ancestors do Worker). Em outro endereço
+// (prévia local, auditorias visuais) o espaço do chat é mantido com um aviso, sem iframe bloqueado.
+export const PANEL_ORIGIN = 'https://controle.zevanory.api.br';
+const onCanonicalPanel = () => typeof window !== 'undefined' && window.location.origin === PANEL_ORIGIN;
 export const RENEW_MS = 120_000;
 const LOGOUT_WAIT_MS = 4000;
 
@@ -78,7 +82,9 @@ export const OwnerChatDock = forwardRef<OwnerChatDockHandle, Props>(function Own
 
   return (
     <section className='ownerChatDock' data-owner-chat-widget='' aria-label='Chat com o Epaminondas'>
-      <iframe ref={frameRef} className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat com o Epaminondas' referrerPolicy='no-referrer' />
+      {onCanonicalPanel()
+        ? <iframe ref={frameRef} className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat com o Epaminondas' referrerPolicy='no-referrer' />
+        : <p className='ownerChatOffline'>O Epaminondas aparece aqui no endereço oficial do painel.</p>}
     </section>
   );
 });
