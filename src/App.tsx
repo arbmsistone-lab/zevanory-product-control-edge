@@ -24,7 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import { api, OWNER_OAUTH_BASE } from './api';
-import { OwnerChatWidget } from './OwnerChatWidget';
+import { OwnerChatDock, type OwnerChatDockHandle } from './OwnerChatWidget';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
 import CommandCenter from './CommandCenter';
@@ -539,6 +539,7 @@ function App() {
   // A failed action belongs to the screen where it happened: leaving the screen clears it.
   useEffect(() => { setError(''); }, [view]);
   const bootstrapController = useRef<AbortController | null>(null);
+  const ownerChatRef = useRef<OwnerChatDockHandle>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('zpc_theme');
     if (saved === 'light' || saved === 'dark') return saved;
@@ -725,6 +726,8 @@ function App() {
 
 
   const logout = async () => {
+    // Epaminondas: encerra a sessão do chat no servidor ANTES de limpar a do painel (sem passe novo depois disso).
+    try { await ownerChatRef.current?.endSession(); } catch { /* sem confirmação: a sessão do chat vence em até 5 min */ }
     ++loadGeneration.current;
     bootstrapController.current?.abort();
     try {
@@ -1033,10 +1036,9 @@ function App() {
   // Session restoration never blocks PIN entry; protected content still requires ready.
   if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} restoringSession={authState === 'checking'} />;
   return (
-    <div className='zpcAppShell'>
+    <div className='zpcAppShell hasOwnerChat'>
       <header className='topbar premiumShellTopbar' aria-label='Ações globais'>
         <div className='actions zpcHeaderActions'>
-          <OwnerChatWidget />
           <a
             className='secondary linkButton'
             href='/solucoes'
@@ -1111,6 +1113,7 @@ function App() {
             <button className='zpcNavSubitem' aria-current={view === 'channels' ? 'page' : undefined} onClick={() => setView('channels')}>Conectar canais</button>
           </div>}
         </div>
+        <OwnerChatDock ref={ownerChatRef} sessionToken={sessionToken} theme={theme} />
       </nav>
 
       <label className='areaSelectWrap'>

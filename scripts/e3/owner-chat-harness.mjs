@@ -76,7 +76,7 @@ async function loadChat(pmDir, mutation) {
   return import(pathToFileURL(path.join(dir, 'worker/owner-chat.mjs')).href);
 }
 
-export async function createHarness(pmDir, { mutation = null, withPin = true } = {}) {
+export async function createHarness(pmDir, { mutation = null, withPin = true, bridgeKey = null } = {}) {
   if (mutation && !MUTATIONS.includes(mutation)) throw new Error('mutação desconhecida: ' + mutation);
   const chat = await loadChat(pmDir, mutation);
   const { injectInstitutionalChat } = await import(pathToFileURL(path.resolve(pmDir, 'worker/r120-chat-institutional.mjs')).href);
@@ -117,7 +117,7 @@ export async function createHarness(pmDir, { mutation = null, withPin = true } =
   const secret = 'SEGREDO-FICTICIO-' + crypto.randomBytes(6).toString('hex');
   await chat.insertOwnerMessage(sql, { from: 'zevanory', kind: 'chat', text: 'Mensagem privada de teste: ' + secret });
   await (await import(pathToFileURL(path.resolve(pmDir, 'worker/owner-session.mjs')).href)).ensureSessionSchema(sql);
-  const env = { ZEVANORY_PRIVATE_ARTIFACTS: kv, DATABASE_URL: 'e3-postgres-isolado', SITE_CHAT_ENABLED: 'true', ...(withPin ? { OWNER_CHAT_PIN: pin } : {}) };
+  const env = { ZEVANORY_PRIVATE_ARTIFACTS: kv, DATABASE_URL: 'e3-postgres-isolado', SITE_CHAT_ENABLED: 'true', ...(withPin ? { OWNER_CHAT_PIN: pin } : {}), ...(bridgeKey ? { OWNER_OAUTH_BRIDGE_SECRET: bridgeKey } : {}) };
   // Sem credencial Basic no teste: o único caminho de entrada é o PIN.
   const deps = { isAdminAuthorized: () => false, sqlFactory: () => sql, snapshot: async () => ({ day: '2026-11-26', today: [] }) };
   const log = [];

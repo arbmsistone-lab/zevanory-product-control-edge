@@ -1,49 +1,39 @@
-/* Chat do proprietário (Epaminondas): só tokens do design system — cores e geometria vêm de tokens.css/premium-shell.css,
-   então o widget acompanha o tema claro/escuro do painel.
-   E3: o botão fica na barra superior (primeiro item das ações, alinhadas à direita), não mais flutuando sobre o conteúdo. */
-/* !important: o cabeçalho tem regras de altura/largura com !important por breakpoint (canonical-v4/shell); o alvo de
-   toque do chat fica sempre 44x44. */
-.zpcAppShell .zpcHeaderActions>.ownerChatFab {
-  flex: 0 0 auto; width: var(--zpc-size-44) !important; min-width: var(--zpc-size-44) !important;
-  height: var(--zpc-size-44) !important; min-height: var(--zpc-size-44) !important;
-  /* E3b/CA-07: alvo de toque 44x44, mas ocupa só 36px na linha das ações (a menor altura delas): o cabeçalho
-     nunca cresce por causa do chat (em 375px crescia 4px e empurrava todo o conteúdo). */
-  margin-block: calc((var(--zpc-size-36) - var(--zpc-size-44)) / 2) !important;
-  padding: 0 !important; border: 0; border-radius: var(--zpc-radius-pill); cursor: pointer;
-  display: grid; place-items: center;
-  color: var(--action-primary-text); background: var(--action-primary);
+/* Epaminondas fixo na coluna esquerda (27/11/2026): logo abaixo de "Sistema", ocupando o resto da coluna.
+   Só tokens do design system (tokens.css/premium-shell.css): acompanha o tema claro/escuro do painel.
+   A coluna não rola: o menu fica em cima com a altura dele e o chat pega o espaço que sobra (flex 1, min-height 0);
+   dentro do chat, só a lista de mensagens rola (página do Worker). */
+.zpcAppShell .zpcNavigation > .zpcNavGroup { flex: 0 0 auto; }
+.ownerChatDock {
+  flex: 1 1 auto; min-height: 0; min-width: 0;
+  margin-top: var(--zpc-space-3);
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--border); border-radius: var(--zpc-radius-md); background: var(--bg-primary);
 }
-.zpcAppShell .zpcHeaderActions>.ownerChatFab:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: var(--zpc-space-1); }
-.ownerChatPanel {
-  position: fixed; top: calc(var(--owner-chat-top, 72) * 1px); right: var(--zpc-space-4); z-index: var(--zpc-z-overlay);
-  width: 420px; max-width: calc(100% - var(--zpc-space-8)); /* % de um elemento fixo = viewport sem a barra de rolagem */
-  bottom: var(--zpc-space-4); height: auto; max-height: 640px; /* entre o botão e a borda inferior, no máximo 640px */
-  display: none; flex-direction: column; overflow: hidden;
-  border-radius: var(--zpc-radius-lg); border: 1px solid var(--border); background: var(--surface);
-  box-shadow: 0 var(--zpc-space-4) var(--zpc-space-12) var(--palette-alpha-03);
+.ownerChatDockHeader {
+  flex: 0 0 auto; display: flex; align-items: baseline; gap: var(--zpc-space-1); min-width: 0;
+  padding: var(--zpc-space-1) var(--zpc-space-2);
+  font-size: var(--zpc-font-xs); line-height: 1.2; color: var(--text-primary);
+  border-bottom: 1px solid var(--border); background: var(--surface);
 }
-.ownerChatPanel.isOpen { display: flex; }
-.ownerChatHeader {
-  display: flex; align-items: center; justify-content: space-between; gap: var(--zpc-space-2);
-  padding: var(--zpc-space-2) var(--zpc-space-3) var(--zpc-space-2) var(--zpc-space-4);
-  color: var(--text-primary); font-size: var(--zpc-font-xs); border-bottom: 1px solid var(--border);
+.ownerChatDockHeader span { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ownerChatFrame { flex: 1 1 auto; min-height: 0; width: 100%; border: 0; background: var(--bg-primary); display: block; }
+
+/* Telas de até 900px (o menu lateral vira o seletor de área e a grade tem uma coluna, com linhas explícitas):
+   a coluna do menu continua existindo só para o chat, como uma 5ª linha reservada no fim da grade, abaixo da área de
+   trabalho. Nada se sobrepõe e a página não rola: a área de trabalho divide a altura com o chat. */
+@media (max-width: 900px) {
+  .zpcAppShell.hasOwnerChat {
+    grid-template-rows: auto auto auto minmax(0, 1fr) clamp(180px, 38dvh, 360px) !important;
+  }
+  .zpcAppShell.hasOwnerChat > .zpcNavigation {
+    display: flex !important; grid-area: 5 / 1 / 6 / 2 !important;
+    height: 100%; min-height: 0; padding: 0 var(--zpc-space-3) var(--zpc-space-2) !important;
+    border: 0 !important; background: transparent !important;
+  }
+  .zpcAppShell.hasOwnerChat > .zpcNavigation > :not(.ownerChatDock) { display: none !important; }
+  .zpcAppShell.hasOwnerChat > .zpcNavigation > .ownerChatDock { margin-top: 0; }
 }
-.ownerChatClose {
-  display: grid; place-items: center; width: var(--zpc-size-36); height: var(--zpc-size-36);
-  border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; border-radius: var(--zpc-radius-sm);
+/* Celular com o teclado aberto (altura visível pequena): o chat, que está sendo usado, fica com mais da metade. */
+@media (max-width: 900px) and (max-height: 560px) {
+  .zpcAppShell.hasOwnerChat { grid-template-rows: auto auto auto minmax(0, 1fr) 58dvh !important; }
 }
-.ownerChatClose:hover { color: var(--text-primary); background: var(--surface-elevated); }
-.ownerChatClose:focus-visible { outline: var(--zpc-space-1) solid var(--focus-ring); outline-offset: 0; }
-.ownerChatFrame { flex: 1; width: 100%; border: 0; background: var(--bg-primary); }
-@media (max-width: 640px) {
-  /* CA-06: tela cheia por inset, sem unidades de viewport; nunca passa da largura visível */
-  .ownerChatPanel { inset: 0; width: auto; height: auto; max-width: none; max-height: none; border-radius: 0; }
-  /* coberto pelo painel em tela cheia; visibility (não display) para não mexer no cabeçalho */
-  .zpcAppShell .zpcHeaderActions>.ownerChatFab.isOpen { visibility: hidden; }
-  .ownerChatClose { width: var(--zpc-size-44); height: var(--zpc-size-44); }
-}
-@media (max-width: 560px) {
-  /* as ações viram grade de 2 colunas aqui; o chat ganha uma terceira coluna fixa, sem criar segunda linha */
-  .zpcAppShell .zpcHeaderActions:has(>.ownerChatFab) { grid-template-columns: repeat(2, minmax(0, 1fr)) var(--zpc-size-44) !important; }
-}
-@media (prefers-reduced-motion: reduce) { .ownerChatFab, .ownerChatPanel { transition: none; } }
