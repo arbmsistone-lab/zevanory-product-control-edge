@@ -1,77 +1,90 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { MessageCircle, X } from 'lucide-react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import { api } from './api';
 import './styles/owner-chat-widget.css';
 
-// Chat do proprietário (Epaminondas) dentro do painel: botão na barra superior (E3: o canto flutuante cobria controles
-// com dados reais — "Rejeitar" no celular, lista de Publicações em 1280x720) que abre a conversa por cima do painel.
-// O painel da conversa vai para document.body (portal): fica fora do layout do cabeçalho.
-// A conversa em si é a página do Worker central (zevanory.api.br), com o PIN de 6 dígitos e a sessão de 12 h dela;
-// o painel só a enquadra. O iframe só é criado no primeiro clique e fica montado depois (não perde a conversa).
+// Epaminondas fixo na coluna esquerda do painel (27/11/2026), logo abaixo de "Sistema": sempre aberto enquanto a sessão
+// do proprietário no painel for válida, sem PIN separado, sem botão de abrir nem de fechar.
+// A conversa é a página do Worker central (zevanory.api.br) num iframe que nunca é desmontado ao trocar de seção (o
+// texto digitado e a conversa ficam). A autenticação vem do PAINEL: esta borda confere a sessão e entrega um passe de
+// 60 s, de uso único, que a página do chat troca por uma sessão de até 5 min (renovada aqui a cada 2 min). Sair do
+// painel manda o chat encerrar a sessão no servidor antes de limpar a sessão do painel.
 export const OWNER_CHAT_URL = 'https://zevanory.api.br/admin/proprietario';
-// Único remetente aceito para o aviso de Esc vindo de dentro do chat (CA-10): esta origem E a janela deste iframe.
 const OWNER_CHAT_ORIGIN = new URL(OWNER_CHAT_URL).origin;
-const ESCAPE_MESSAGE = 'zv-owner-chat:escape';
-// M1: o painel avisa a página do chat se a janela está aberta; fechada, ela para de consultar o servidor (e esconde a
-// conversa); ao reabrir, só mostra de novo depois de uma consulta que comprove a sessão. Só para a origem do chat.
-const VISIBILITY_MESSAGE = 'zv-owner-chat:visibility';
-function postVisibility(frame: HTMLIFrameElement | null, open: boolean) {
-  frame?.contentWindow?.postMessage({ type: VISIBILITY_MESSAGE, open }, OWNER_CHAT_ORIGIN);
-}
+// O chat só aceita ser enquadrado pelo endereço oficial do painel (frame-ancestors do Worker). Em outro endereço
+// (prévia local, auditorias visuais) o espaço do chat é mantido com um aviso, sem iframe bloqueado.
+export const PANEL_ORIGIN = 'https://controle.zevanory.api.br';
+const onCanonicalPanel = () => typeof window !== 'undefined' && window.location.origin === PANEL_ORIGIN;
+export const RENEW_MS = 120_000;
+const LOGOUT_WAIT_MS = 4000;
 
-export function OwnerChatWidget() {
-  const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const fabRef = useRef<HTMLButtonElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLElement>(null);
+export type OwnerChatDockHandle = { endSession: () => Promise<boolean> };
+
+type Props = { sessionToken: string; theme: 'dark' | 'light' };
+
+export const OwnerChatDock = forwardRef<OwnerChatDockHandle, Props>(function OwnerChatDock({ sessionToken, theme }, ref) {
   const frameRef = useRef<HTMLIFrameElement>(null);
-  const wasOpen = useRef(false);
-  const openRef = useRef(false);
-  const toggle = () => { setMounted(true); setOpen(value => !value); };
-  // Teclado (E3): ao abrir, o foco vai para "Fechar"; Esc fecha; ao fechar, o foco volta para o botão flutuante.
+  const tokenRef = useRef(sessionToken);
+  const endingRef = useRef(false);
+  const themeRef = useRef(theme);
+  tokenRef.current = sessionToken;
+  themeRef.current = theme;
+
+  const post = useCallback((message: Record<string, unknown>) => {
+    frameRef.current?.contentWindow?.postMessage(message, OWNER_CHAT_ORIGIN);
+  }, []);
+
+  // Pede um passe novo à borda do painel (que confere a sessão) e entrega só à janela do chat, na origem do chat.
+  const sendTicket = useCallback(async () => {
+    if (endingRef.current || !tokenRef.current) return;
+    try {
+      const { data } = await api.post('/api/owner/chat/ticket', { sessionToken: tokenRef.current });
+      if (endingRef.current || !data?.ticket) return;
+      post({ type: 'zv-owner-chat:ticket', ticket: data.ticket });
+    } catch {
+      // Sem passe (sessão do painel vencida ou revogada, ou falha): o chat perde o acesso em até 5 min sozinho.
+    }
+  }, [post]);
+
   useEffect(() => {
-    openRef.current = open;
-    postVisibility(frameRef.current, open);
-    if (open) closeRef.current?.focus();
-    else if (wasOpen.current) fabRef.current?.focus();
-    wasOpen.current = open;
-    if (!open) return undefined;
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
-    // A conversa abre logo abaixo do botão, onde quer que o cabeçalho o coloque (inclusive quando as ações quebram linha).
-    const place = () => {
-      const button = fabRef.current; const panel = panelRef.current;
-      if (!button || !panel) return;
-      panel.style.setProperty('--owner-chat-top', String(Math.ceil(button.getBoundingClientRect().bottom) + 8));
-    };
-    // Esc com o foco dentro do chat (outra origem): a página do chat avisa por postMessage; só vale se vier da origem do
-    // chat E da janela deste iframe (outra aba, outro iframe ou o próprio painel são ignorados).
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== OWNER_CHAT_ORIGIN || !frameRef.current || event.source !== frameRef.current.contentWindow) return;
-      const data = event.data as { type?: unknown } | null;
-      if (data && data.type === ESCAPE_MESSAGE) setOpen(false);
+      const type = (event.data as { type?: unknown } | null)?.type;
+      if (type === 'zv-owner-chat:need-ticket' || type === 'zv-owner-chat:ready') {
+        post({ type: 'zv-owner-chat:theme', theme: themeRef.current });
+        if (type === 'zv-owner-chat:need-ticket') void sendTicket();
+      }
     };
-    place();
-    document.addEventListener('keydown', onKey);
-    window.addEventListener('resize', place);
     window.addEventListener('message', onMessage);
-    return () => { document.removeEventListener('keydown', onKey); window.removeEventListener('resize', place); window.removeEventListener('message', onMessage); };
-  }, [open]);
+    const timer = window.setInterval(() => { void sendTicket(); }, RENEW_MS);
+    return () => { window.removeEventListener('message', onMessage); window.clearInterval(timer); };
+  }, [post, sendTicket]);
+
+  useEffect(() => { post({ type: 'zv-owner-chat:theme', theme }); }, [theme, post]);
+
+  // Sair do painel: para de emitir passes e pede ao chat o logout no servidor; espera a confirmação (no máximo 4 s).
+  useImperativeHandle(ref, () => ({
+    endSession: () => new Promise<boolean>(resolve => {
+      endingRef.current = true;
+      const frame = frameRef.current;
+      if (!frame?.contentWindow) { resolve(false); return; }
+      let done = false;
+      const finish = (ok: boolean) => { if (done) return; done = true; window.removeEventListener('message', onMessage); window.clearTimeout(t); resolve(ok); };
+      const onMessage = (event: MessageEvent) => {
+        if (event.origin !== OWNER_CHAT_ORIGIN || event.source !== frame.contentWindow) return;
+        const data = event.data as { type?: unknown; ok?: unknown } | null;
+        if (data?.type === 'zv-owner-chat:logged-out') finish(data.ok === true);
+      };
+      window.addEventListener('message', onMessage);
+      const t = window.setTimeout(() => finish(false), LOGOUT_WAIT_MS);
+      post({ type: 'zv-owner-chat:logout' });
+    }),
+  }), [post]);
+
   return (
-    <>
-      {mounted && createPortal(
-        <section ref={panelRef} data-owner-chat-widget='' className={`ownerChatPanel${open ? ' isOpen' : ''}`} aria-label='Chat com o Epaminondas' aria-hidden={!open}>
-          <header className='ownerChatHeader'>
-            <span><strong>Epaminondas</strong> · chat da ZEVANORY</span>
-            <button ref={closeRef} type='button' className='ownerChatClose' onClick={() => setOpen(false)} aria-label='Fechar chat'><X size={18} /></button>
-          </header>
-          <iframe ref={frameRef} className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat do proprietário' referrerPolicy='no-referrer' onLoad={() => postVisibility(frameRef.current, openRef.current)} />
-        </section>,
-        document.body,
-      )}
-      <button ref={fabRef} type='button' data-owner-chat-widget='' className={`ownerChatFab${open ? ' isOpen' : ''}`} onClick={toggle} aria-expanded={open} aria-label={open ? 'Fechar chat' : 'Abrir chat com o Epaminondas'} title={open ? 'Fechar chat' : 'Falar com o Epaminondas'}>
-        {open ? <X size={20} /> : <MessageCircle size={20} />}
-      </button>
-    </>
+    <section className='ownerChatDock' data-owner-chat-widget='' aria-label='Chat com o Epaminondas'>
+      {onCanonicalPanel()
+        ? <iframe ref={frameRef} className='ownerChatFrame' src={OWNER_CHAT_URL} title='Chat com o Epaminondas' referrerPolicy='no-referrer' />
+        : <p className='ownerChatOffline'>O Epaminondas aparece aqui no endereço oficial do painel.</p>}
+    </section>
   );
-}
+});

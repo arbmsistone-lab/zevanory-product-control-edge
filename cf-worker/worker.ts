@@ -1,4 +1,5 @@
-import { guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
+import { decodeEdgeSessionPayload, guardProxiedEdgeSession, handler, setSessionRevocationStore, verifyEdgeSession } from './backend-index.ts';
+import { mintOwnerChatTicket } from './owner-chat-ticket.ts';
 import { ADS_POLICY, assessAdsReadiness } from '../src/ads-readiness.ts';
 import { portableHealth, setWorkerEnv } from './platform-worker.ts';
 import { adminAuthSourceKey, hasTrustedDevice, mintTrustedDevice, PASSPHRASE_AGGREGATE_BUCKET, PASSPHRASE_SOURCE_BUCKET_PREFIX, trustedDeviceSetCookie } from './admin-auth-throttle.ts';
@@ -1454,6 +1455,21 @@ export default {
       } catch (cause) {
         return Response.json({ error: 'Falha na aprovacao comercial: ' + String((cause as Error)?.message || cause).slice(0, 160) }, { status: 502, headers: { 'cache-control': 'no-store' } });
       }
+    }
+
+    if (normalizedPath === '/api/owner/chat/ticket' && request.method === 'POST') {
+      // Epaminondas sem PIN (27/11): a sessão do proprietário é conferida AQUI, na borda; o navegador recebe só um
+      // passe de 60 s, de uso único, que o chat (zevanory.api.br) troca por uma sessão de até 5 min. A sessão do painel
+      // e a chave da ponte nunca saem desta borda. Sem sessão válida = sem passe (o chat cai em até 5 min).
+      let input: any = {};
+      try { input = await request.clone().json(); } catch {}
+      const token = String(input?.sessionToken || '');
+      const noStore = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' };
+      if (!token || !(await verifyEdgeSession(token))) return Response.json({ error: 'unauthorized' }, { status: 401, headers: noStore });
+      const payload = decodeEdgeSessionPayload(token.split('.')[1] || '');
+      const ticket = payload ? await mintOwnerChatTicket(String((env as any).OWNER_OAUTH_BRIDGE_SECRET || ''), payload.exp, payload.jti) : null;
+      if (!ticket) return Response.json({ error: 'owner_chat_bridge_not_configured' }, { status: 503, headers: noStore });
+      return Response.json({ ticket }, { headers: noStore });
     }
 
     if (normalizedPath === '/api/owner/oauth/ticket' && request.method === 'POST') {

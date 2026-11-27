@@ -1344,7 +1344,7 @@ async function signEdgeSessionPayload(payload: string, secret: string) {
   return base64UrlBytes(new Uint8Array(signature));
 }
 
-function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string; authMode?: string; authEpoch?: string } | null {
+export function decodeEdgeSessionPayload(encoded: string): { exp: number; jti: string; authMode?: string; authEpoch?: string } | null {
   try {
     const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((encoded.length + 3) % 4);
     const json = decodeURIComponent(Array.from(atob(padded), c => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));

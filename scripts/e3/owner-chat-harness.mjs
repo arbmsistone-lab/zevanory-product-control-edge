@@ -76,7 +76,7 @@ async function loadChat(pmDir, mutation) {
   return import(pathToFileURL(path.join(dir, 'worker/owner-chat.mjs')).href);
 }
 
-export async function createHarness(pmDir, { mutation = null, withPin = true } = {}) {
+export async function createHarness(pmDir, { mutation = null, withPin = true, bridgeKey = null } = {}) {
   if (mutation && !MUTATIONS.includes(mutation)) throw new Error('mutação desconhecida: ' + mutation);
   const chat = await loadChat(pmDir, mutation);
   const { injectInstitutionalChat } = await import(pathToFileURL(path.resolve(pmDir, 'worker/r120-chat-institutional.mjs')).href);
@@ -117,7 +117,7 @@ export async function createHarness(pmDir, { mutation = null, withPin = true } =
   const secret = 'SEGREDO-FICTICIO-' + crypto.randomBytes(6).toString('hex');
   await chat.insertOwnerMessage(sql, { from: 'zevanory', kind: 'chat', text: 'Mensagem privada de teste: ' + secret });
   await (await import(pathToFileURL(path.resolve(pmDir, 'worker/owner-session.mjs')).href)).ensureSessionSchema(sql);
-  const env = { ZEVANORY_PRIVATE_ARTIFACTS: kv, DATABASE_URL: 'e3-postgres-isolado', SITE_CHAT_ENABLED: 'true', ...(withPin ? { OWNER_CHAT_PIN: pin } : {}) };
+  const env = { ZEVANORY_PRIVATE_ARTIFACTS: kv, DATABASE_URL: 'e3-postgres-isolado', SITE_CHAT_ENABLED: 'true', ...(withPin ? { OWNER_CHAT_PIN: pin } : {}), ...(bridgeKey ? { OWNER_OAUTH_BRIDGE_SECRET: bridgeKey } : {}) };
   // Sem credencial Basic no teste: o único caminho de entrada é o PIN.
   const deps = { isAdminAuthorized: () => false, sqlFactory: () => sql, snapshot: async () => ({ day: '2026-11-26', today: [] }) };
   const log = [];
@@ -131,7 +131,9 @@ export async function createHarness(pmDir, { mutation = null, withPin = true } =
       q1(`update zevanory_owner_chat_messages set action_expires_at = action_expires_at - ${iv} where action_expires_at is not null`);
       if (ms >= 3600e3) q1(`update zevanory_owner_chat_pin_attempts set k = k || '~hora-anterior' where scope = 'global'`);
     },
-    sessionKeys: () => q1(`select token_sha256 from zevanory_owner_chat_sessions where revoked_at is null and expires_at > now()`).map((r) => r.token_sha256),
+    // Sessões que VALEM (mesma regra do Worker: inclui a sessão do painel não encerrada, quando a coluna existe).
+    sessionKeys: () => { const hasCol = q1(`select count(*) as n from information_schema.columns where table_name = 'zevanory_owner_chat_sessions' and column_name = 'panel_end_marker'`)[0]?.n === '1';
+      return q1(`select token_sha256 from zevanory_owner_chat_sessions s where revoked_at is null and expires_at > now()${hasCol ? ' and (panel_end_marker is null or not exists (select 1 from zevanory_owner_chat_sessions m where m.token_sha256 = s.panel_end_marker))' : ''}`).map((r) => r.token_sha256); },
     sessionRows: () => n1(`select count(*) as n from zevanory_owner_chat_sessions`),
     revokeSessions: () => q1(`update zevanory_owner_chat_sessions set revoked_at = now() where revoked_at is null`),
     kvSessionKeys: () => [...data.keys()].filter((k) => k.startsWith('zpc:owner-chat:pin-session:') || k.startsWith('zpc:owner-chat:pin-fail:')),

@@ -24,7 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import { api, OWNER_OAUTH_BASE } from './api';
-import { OwnerChatWidget } from './OwnerChatWidget';
+import { OwnerChatDock, type OwnerChatDockHandle } from './OwnerChatWidget';
 import CommercialWorkspace from './CommercialWorkspace';
 import CfoWorkspace from './CfoWorkspace';
 import CommandCenter from './CommandCenter';
@@ -510,6 +510,8 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'channels' | 'cfo' | CommercialSection>('overview');
+  // Celular e tablet (até 900px): o Epaminondas é a 1ª área do seletor e ocupa a área de trabalho; no computador fica fixo na coluna.
+  const [chatArea, setChatArea] = useState(false);
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   // Live commercial truth for the product views: official catalog price and the hourly proof that
@@ -539,6 +541,7 @@ function App() {
   // A failed action belongs to the screen where it happened: leaving the screen clears it.
   useEffect(() => { setError(''); }, [view]);
   const bootstrapController = useRef<AbortController | null>(null);
+  const ownerChatRef = useRef<OwnerChatDockHandle>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('zpc_theme');
     if (saved === 'light' || saved === 'dark') return saved;
@@ -725,6 +728,8 @@ function App() {
 
 
   const logout = async () => {
+    // Epaminondas: encerra a sessão do chat no servidor ANTES de limpar a do painel (sem passe novo depois disso).
+    try { await ownerChatRef.current?.endSession(); } catch { /* sem confirmação: a sessão do chat vence em até 5 min */ }
     ++loadGeneration.current;
     bootstrapController.current?.abort();
     try {
@@ -1033,10 +1038,9 @@ function App() {
   // Session restoration never blocks PIN entry; protected content still requires ready.
   if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} restoringSession={authState === 'checking'} />;
   return (
-    <div className='zpcAppShell'>
+    <div className={chatArea ? 'zpcAppShell hasOwnerChat chatArea' : 'zpcAppShell hasOwnerChat'}>
       <header className='topbar premiumShellTopbar' aria-label='Ações globais'>
         <div className='actions zpcHeaderActions'>
-          <OwnerChatWidget />
           <a
             className='secondary linkButton'
             href='/solucoes'
@@ -1111,11 +1115,13 @@ function App() {
             <button className='zpcNavSubitem' aria-current={view === 'channels' ? 'page' : undefined} onClick={() => setView('channels')}>Conectar canais</button>
           </div>}
         </div>
+        <OwnerChatDock ref={ownerChatRef} sessionToken={sessionToken} theme={theme} />
       </nav>
 
       <label className='areaSelectWrap'>
         <span>Área do Control Center</span>
-        <select value={view} onChange={event => setView(event.target.value as typeof view)} aria-label='Selecionar área do Control Center'>
+        <select value={chatArea ? 'owner-chat' : view} onChange={event => { const value = event.target.value; if (value === 'owner-chat') { setChatArea(true); return; } setChatArea(false); setView(value as typeof view); }} aria-label='Selecionar área do Control Center'>
+          <option value='owner-chat'>Epaminondas (chat)</option>
           <option value='overview'>Visão Geral</option>
           <option value='products'>Produtos</option>
           <optgroup label='Comercial'>

@@ -1,0 +1,50 @@
+{
+ "dashboard": {
+  "systems": [],
+  "audits": [],
+  "improvements": [],
+  "incidents": [],
+  "policy": {
+   "zeroSpend": true,
+   "failClosed": true,
+   "destructiveActions": false,
+   "greenRule": "FALSE_GREEN=0"
+  },
+  "lastEngineRun": "2026-09-30T00:00:00Z",
+  "certificationRuns": []
+ },
+ "globalTrust": {
+  "state": "BLOCKED",
+  "sha": null,
+  "evidenceRoot": null,
+  "policyVersion": "ZEA-10",
+  "quorum": {
+   "passed": 0,
+   "total": 3,
+   "required": 3,
+   "conflicts": 0,
+   "independentKeys": 0
+  },
+  "zea10": {
+   "proven": 0,
+   "partial": 0,
+   "blocked": 10
+  },
+  "engines": [],
+  "checkedAt": "2026-09-30T00:00:00Z"
+ },
+ "operations": null,
+ "commercial": null,
+ "cfo": null,
+ "products": [],
+ "certificationTargets": [],
+ "summary": {
+  "total": 0,
+  "salesEnabled": 0,
+  "commercialReady": 0,
+  "blocked": 0,
+  "certified": 0,
+  "inCertification": 0,
+  "zeesBlocked": 0
+ }
+}
