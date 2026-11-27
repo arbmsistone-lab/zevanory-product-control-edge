@@ -200,6 +200,22 @@ T.ticket_issued_before_logout_cannot_restore = async () => {
   assert.equal(r.status, 401, 'passe anterior à saída recusado'); assert.deepEqual(await r.json(), { error: 'panel_session_ended' });
   assert.equal(H.sessionKeys().length, 0, 'nenhuma sessão reaberta');
 };
+T.two_tabs_logout_ends_all_even_during_renewal = async () => {
+  const H = await mk(); const { context, page } = await ctxFor(H);
+  await openPanel(page, H);
+  const page2 = await context.newPage(); await openPanel(page2, H); // 2ª aba, mesmo login do painel
+  assert(H.sessionKeys().length >= 1, 'sessões abertas');
+  const renew = mint(); // renovação da aba 2 correndo junto com a saída na aba 1
+  const [, rs] = await Promise.all([
+    page.locator('.zpcHeaderActions button', { hasText: 'Sair' }).click(),
+    frame(page2).locator('body').evaluate(async (t) => (await fetch('/api/admin/owner-chat/panel-session', { method: 'POST', headers: { 'content-type': 'application/json', 'x-owner-chat': '1' }, body: JSON.stringify(t) })).status, renew),
+  ]);
+  assert(await waitUntil(() => H.sessionKeys().length === 0, 8000), 'nenhuma sessão daquele login vale depois da saída (renovação: ' + rs + ')');
+  const st = await frame(page2).locator('body').evaluate(async () => (await fetch('/api/admin/owner-chat/feed', { cache: 'no-store' })).status);
+  assert.equal(st, 401, 'a 2ª aba perde a leitura na hora');
+  const send = await frame(page2).locator('body').evaluate(async () => (await fetch('/api/admin/owner-chat/message', { method: 'POST', headers: { 'content-type': 'application/json', 'x-owner-chat': '1' }, body: JSON.stringify({ text: 'status' }) })).status);
+  assert.equal(send, 401, 'a 2ª aba não envia');
+};
 T.panel_session_expired_loses_access_within_5min = async () => {
   const H = await mk(); const { page } = await ctxFor(H);
   await openPanel(page, H);

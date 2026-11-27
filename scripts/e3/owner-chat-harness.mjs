@@ -131,7 +131,9 @@ export async function createHarness(pmDir, { mutation = null, withPin = true, br
       q1(`update zevanory_owner_chat_messages set action_expires_at = action_expires_at - ${iv} where action_expires_at is not null`);
       if (ms >= 3600e3) q1(`update zevanory_owner_chat_pin_attempts set k = k || '~hora-anterior' where scope = 'global'`);
     },
-    sessionKeys: () => q1(`select token_sha256 from zevanory_owner_chat_sessions where revoked_at is null and expires_at > now()`).map((r) => r.token_sha256),
+    // Sessões que VALEM (mesma regra do Worker: inclui a sessão do painel não encerrada, quando a coluna existe).
+    sessionKeys: () => { const hasCol = q1(`select count(*) as n from information_schema.columns where table_name = 'zevanory_owner_chat_sessions' and column_name = 'panel_end_marker'`)[0]?.n === '1';
+      return q1(`select token_sha256 from zevanory_owner_chat_sessions s where revoked_at is null and expires_at > now()${hasCol ? ' and (panel_end_marker is null or not exists (select 1 from zevanory_owner_chat_sessions m where m.token_sha256 = s.panel_end_marker))' : ''}`).map((r) => r.token_sha256); },
     sessionRows: () => n1(`select count(*) as n from zevanory_owner_chat_sessions`),
     revokeSessions: () => q1(`update zevanory_owner_chat_sessions set revoked_at = now() where revoked_at is null`),
     kvSessionKeys: () => [...data.keys()].filter((k) => k.startsWith('zpc:owner-chat:pin-session:') || k.startsWith('zpc:owner-chat:pin-fail:')),

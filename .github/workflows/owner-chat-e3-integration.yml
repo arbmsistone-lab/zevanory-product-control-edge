@@ -16,7 +16,7 @@ on:
       public_mirror_sha:
         description: 'SHA exato do Worker candidato (zevanory-public-mirror, PR #1106)'
         required: true
-        default: '10364b01eef558c7c519a9d5b12c9d4090cc5eba'
+        default: 'd0ba893af47ed7b40e1f3563856fb2317587525f'
 
 permissions:
   contents: read
@@ -42,7 +42,7 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
     env:
-      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '10364b01eef558c7c519a9d5b12c9d4090cc5eba' }}
+      PM_SHA: ${{ github.event.inputs.public_mirror_sha || 'd0ba893af47ed7b40e1f3563856fb2317587525f' }}
     steps:
       - name: Checkout panel candidate
         uses: actions/checkout@v4
@@ -87,9 +87,9 @@ jobs:
           echo "E3_POSTGRES_VERSION_NUM=$v"
           mkdir -p ../e3-evidence/${{ matrix.browser }}
           node --test tests/integration/owner-chat-session-postgres.test.mjs tests/integration/owner-chat-rollback-postgres.test.mjs 2>&1 | grep -v '"event":"owner_chat_pin_failed"' | tee ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
-          grep -qx "# tests 12" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
-          grep -qx "# pass 12" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
-          test "$(grep -c '=DETECTED$' ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt)" = "7"
+          grep -qx "# tests 13" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
+          grep -qx "# pass 13" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
+          test "$(grep -c '=DETECTED$' ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt)" = "8"
       - name: Build panel candidate (no deploy)
         run: npx vite build
       - name: Start panel preview
@@ -127,7 +127,7 @@ jobs:
         run: |
           set -eo pipefail
           node scripts/e3/owner-chat-dock-e3.mjs | tee /tmp/dock.txt
-          grep -qx "OWNER_CHAT_DOCK_E3_$(echo ${{ matrix.browser }} | tr a-z A-Z)=PASS positives=11/11" /tmp/dock.txt
+          grep -qx "OWNER_CHAT_DOCK_E3_$(echo ${{ matrix.browser }} | tr a-z A-Z)=PASS positives=12/12" /tmp/dock.txt
           grep -qx "DETECTED panel:no-end-session -> panel_logout_revokes_now" /tmp/dock.txt
       - name: Upload evidence
         if: always()
