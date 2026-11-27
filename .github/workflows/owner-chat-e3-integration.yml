@@ -16,7 +16,7 @@ on:
       public_mirror_sha:
         description: 'SHA exato do Worker candidato (zevanory-public-mirror, PR #1106)'
         required: true
-        default: 'c4e135a2e45c11159762e2c46923552c0731b98f'
+        default: 'cadf3af971170a14a68639c9eced143da55f3162'
 
 permissions:
   contents: read
@@ -42,7 +42,7 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
     env:
-      PM_SHA: ${{ github.event.inputs.public_mirror_sha || 'c4e135a2e45c11159762e2c46923552c0731b98f' }}
+      PM_SHA: ${{ github.event.inputs.public_mirror_sha || 'cadf3af971170a14a68639c9eced143da55f3162' }}
     steps:
       - name: Checkout panel candidate
         uses: actions/checkout@v4
