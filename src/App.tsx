@@ -510,6 +510,8 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [certificationTargets, setCertificationTargets] = useState<CertificationTarget[]>([]);
   const [view, setView] = useState<'overview' | 'products' | 'operations' | 'governance' | 'channels' | 'cfo' | CommercialSection>('overview');
+  // Celular e tablet (até 900px): o Epaminondas é a 1ª área do seletor e ocupa a área de trabalho; no computador fica fixo na coluna.
+  const [chatArea, setChatArea] = useState(false);
   const [filter, setFilter] = useState<'all' | 'selling' | 'blocked' | 'archived'>('all');
   const [productPage, setProductPage] = useState(0);
   // Live commercial truth for the product views: official catalog price and the hourly proof that
@@ -1036,7 +1038,7 @@ function App() {
   // Session restoration never blocks PIN entry; protected content still requires ready.
   if (authState !== 'ready') return <LoginScreen onSuccess={handleLogin} restoringSession={authState === 'checking'} />;
   return (
-    <div className='zpcAppShell hasOwnerChat'>
+    <div className={chatArea ? 'zpcAppShell hasOwnerChat chatArea' : 'zpcAppShell hasOwnerChat'}>
       <header className='topbar premiumShellTopbar' aria-label='Ações globais'>
         <div className='actions zpcHeaderActions'>
           <a
@@ -1118,7 +1120,8 @@ function App() {
 
       <label className='areaSelectWrap'>
         <span>Área do Control Center</span>
-        <select value={view} onChange={event => setView(event.target.value as typeof view)} aria-label='Selecionar área do Control Center'>
+        <select value={chatArea ? 'owner-chat' : view} onChange={event => { const value = event.target.value; if (value === 'owner-chat') { setChatArea(true); return; } setChatArea(false); setView(value as typeof view); }} aria-label='Selecionar área do Control Center'>
+          <option value='owner-chat'>Epaminondas (chat)</option>
           <option value='overview'>Visão Geral</option>
           <option value='products'>Produtos</option>
           <optgroup label='Comercial'>

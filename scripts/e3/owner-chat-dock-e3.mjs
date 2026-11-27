@@ -70,6 +70,8 @@ async function ctxFor(H, { viewport = { width: 1920, height: 1080 }, theme = 'da
 const frame = (page) => page.frameLocator('.ownerChatFrame');
 async function openPanel(page, H) {
   await page.goto(PANEL_URL); await page.locator('.zpcAppShell').waitFor({ timeout: 20000 });
+  // Até 900px o chat é a 1ª área do seletor (fora da vista nas outras áreas, mas já conectado).
+  if (page.viewportSize().width <= 900) await page.locator('.areaSelectWrap select').selectOption('owner-chat');
   await frame(page).locator('#log').getByText(H.secret, { exact: false }).waitFor({ timeout: 20000 });
 }
 async function waitUntil(fn, ms = 12000, step = 250) { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return true; await new Promise((r) => setTimeout(r, step)); } return false; }
@@ -125,6 +127,13 @@ T.layout_narrow_and_phone = async () => {
     await openPanel(page, H);
     await page.screenshot({ path: `${out}/layout-${w}x${h}-${theme}.png` });
     await checkLayout(page, `${w}x${h} ${theme}`);
+    if (w <= 900) {
+      await frame(page).locator('#q').fill('rascunho no celular');
+      await page.locator('.areaSelectWrap select').selectOption('overview'); await page.waitForTimeout(300);
+      assert(await page.locator('main.shell').isVisible(), `${w}: outra área volta a aparecer`);
+      await page.locator('.areaSelectWrap select').selectOption('owner-chat'); await page.waitForTimeout(300);
+      assert.equal(await frame(page).locator('#q').inputValue(), 'rascunho no celular', `${w}: texto preservado ao trocar de área`);
+    }
     if (w === 390) { // teclado aberto: a área visível encolhe ~45%
       await frame(page).locator('#q').focus(); await page.setViewportSize({ width: 390, height: 464 });
       await page.waitForTimeout(300); await checkLayout(page, `390x464 teclado ${theme}`);

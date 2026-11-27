@@ -41,6 +41,14 @@ const MENU=['Visão Geral','Produtos','Comercial','Conteúdo','Atendimento','Fin
 const viewports=[{width:320,height:568},{width:375,height:812},{width:768,height:1024},{width:1024,height:768},{width:1365,height:900},{width:1920,height:1080}];
 for(const viewport of viewports)for(const theme of ['dark','light']){
  const id=viewport.width+'x'+viewport.height+'-'+theme;const {context,page}=await open(viewport,theme);
+ if(viewport.width<=900){
+  // Até 900px: fora da vista por padrão (nada encolhe); a 1ª opção do seletor abre o chat na área de trabalho.
+  const hidden=await page.locator('.ownerChatDock').evaluate(e=>{const r=e.getBoundingClientRect();return r.width<=2||r.height<=2||getComputedStyle(e.closest('.zpcNavigation')).opacity==='0';});
+  assert(hidden,'chat out of view by default on narrow screens '+id);
+  assert.equal(await page.locator('.areaSelectWrap select option').first().getAttribute('value'),'owner-chat','chat is the first area '+id);
+  await page.locator('.areaSelectWrap select').selectOption('owner-chat');
+  assert.equal(await page.locator('.zpcAppShell>main.shell').count()>0?await page.locator('.zpcAppShell>main.shell').isVisible():false,false,'workspace hidden while the chat area is open '+id);
+ }
  const dock=await rect(page,'.ownerChatDock');assert(dock,'chat missing '+id);
  assert(inside(dock,viewport),'chat outside viewport '+id+' '+JSON.stringify(dock));
  assert(dock.h>=150&&dock.w>=150,'chat too small '+id+' '+JSON.stringify(dock));
@@ -53,7 +61,9 @@ for(const viewport of viewports)for(const theme of ['dark','light']){
   const nav=await rect(page,'.zpcNavigation');
   assert(dock.y>=sistema&&dock.x>=nav.x-0.5&&dock.x+dock.w<=nav.x+nav.w+0.5,'chat below Sistema inside the column '+id);
  } else {
-  const main=await rect(page,'.zpcAppShell>main.shell');if(main)assert(dock.y>=main.y+main.h-0.5,'chat strip below the workspace '+id);
+  const sel=await rect(page,'.areaSelectWrap');assert(dock.y>=sel.y+sel.h-0.5,'chat area below the area selector '+id);
+  await page.locator('.areaSelectWrap select').selectOption('overview');
+  assert(await page.locator('.zpcAppShell>main.shell').isVisible(),'workspace back when another area is chosen '+id);
  }
  await page.screenshot({path:`${out}/${id}.png`});
  report.push({id,dock,scroll:s,blocked});checks['owner_chat_dock_layout_'+id]=true;await context.close();
@@ -61,6 +71,7 @@ for(const viewport of viewports)for(const theme of ['dark','light']){
 // Contraprovas: os detectores precisam reprovar defeitos reais.
 {
  const viewport={width:375,height:812};const {context,page}=await open(viewport,'dark');
+ await page.locator('.areaSelectWrap select').selectOption('owner-chat');
  await page.addStyleTag({content:'.ownerChatDock{position:fixed!important;left:0!important;top:0!important;width:calc(100vw + 40px)!important;height:200px!important}'});
  assert.equal(inside(await rect(page,'.ownerChatDock'),viewport),false,'negative: overflowing chat must be detected');
  checks.negative_overflow_detected=true;await context.close();
