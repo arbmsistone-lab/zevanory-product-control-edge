@@ -16,7 +16,7 @@ on:
       public_mirror_sha:
         description: 'SHA exato do Worker candidato (zevanory-public-mirror, PR #1106)'
         required: true
-        default: 'd0ba893af47ed7b40e1f3563856fb2317587525f'
+        default: 'c4e135a2e45c11159762e2c46923552c0731b98f'
 
 permissions:
   contents: read
@@ -42,7 +42,7 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
     env:
-      PM_SHA: ${{ github.event.inputs.public_mirror_sha || 'd0ba893af47ed7b40e1f3563856fb2317587525f' }}
+      PM_SHA: ${{ github.event.inputs.public_mirror_sha || 'c4e135a2e45c11159762e2c46923552c0731b98f' }}
     steps:
       - name: Checkout panel candidate
         uses: actions/checkout@v4
@@ -86,10 +86,10 @@ jobs:
           v="$(psql -h localhost -U postgres -tAc 'show server_version_num')"; [ "${v:0:2}" = "16" ]
           echo "E3_POSTGRES_VERSION_NUM=$v"
           mkdir -p ../e3-evidence/${{ matrix.browser }}
-          node --test tests/integration/owner-chat-session-postgres.test.mjs tests/integration/owner-chat-rollback-postgres.test.mjs 2>&1 | grep -v '"event":"owner_chat_pin_failed"' | tee ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
-          grep -qx "# tests 13" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
-          grep -qx "# pass 13" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
-          test "$(grep -c '=DETECTED$' ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt)" = "8"
+          node --test tests/integration/owner-chat-session-postgres.test.mjs tests/integration/owner-chat-rollback-postgres.test.mjs tests/integration/owner-chat-schema-migration-postgres.test.mjs 2>&1 | grep -v '"event":"owner_chat_pin_failed"' | tee ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
+          grep -qx "# tests 16" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
+          grep -qx "# pass 16" ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt
+          test "$(grep -c '=DETECTED$' ../e3-evidence/${{ matrix.browser }}/postgres-integration.txt)" = "9"
       - name: Build panel candidate (no deploy)
         run: npx vite build
       - name: Start panel preview
