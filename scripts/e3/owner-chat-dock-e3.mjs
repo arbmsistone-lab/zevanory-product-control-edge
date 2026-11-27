@@ -31,12 +31,33 @@ function mint() {
   const t = { ts, nonce, exp, sid, sig }; panelState.issued.push(t); return t;
 }
 const fixture = JSON.parse(fs.readFileSync(new URL('./owner-chat-dock-fixture.json', import.meta.url), 'utf8'));
+function commandCenterFixture() {
+  const at = new Date().toISOString(), day = at.slice(0, 10);
+  const m = (value, definition, source = 'Fixture E3-D') => ({ value, source, updatedAt: at, definition, integrity: 'real' });
+  return {
+    generatedAt: at, day, goals: [], revenue: {},
+    funnel: { visitors7: m(0, 'Pessoas reais em 7 dias'), views7: m(0, 'Visualizações em 7 dias'), leads7: m(0, 'Leads em 7 dias'), views30: m(0, 'Visualizações em 30 dias'),
+      intents30: m(0, 'Intenção de compra em 30 dias'), sales30: m(0, 'Vendas em 30 dias'), sources: {}, pages: [] },
+    acquisition: { reachAt: at, channels: [], youtubeRecent: [], history: [], publications: { expected: 6, published: 0, pct: 0, perChannel: {} }, today: [] },
+    autonomy: { runs: null, agenda: [], ownerOnly: [] },
+    operations: { probes: [{ url: 'https://zevanory.api.br/', http: 200, ms: 120, ok: true }, { url: 'https://vendas.zevanory.api.br/', http: 200, ms: 140, ok: true }, { url: 'https://controle.zevanory.api.br/', http: 200, ms: 110, ok: true }],
+      salesSwitch: { open: false }, checkoutMode: 'hotmart-direct', deploys: [] },
+    forecast: { status: 'insufficient', reason: 'Fixture E3-D: sem histórico de vendas' },
+    recommendations: [],
+  };
+}
 const panelApi = (pathname, body) => {
   if (/(^|\/)api\/owner\/chat\/ticket$/.test(pathname)) {
     if (!panelState.sessionValid || body?.sessionToken !== 'e3-fixture-session') return [401, { error: 'unauthorized' }];
     panelState.tickets++; return [200, { ticket: mint() }];
   }
   if (/(^|\/)api\/admin\/bootstrap$/.test(pathname)) return [200, fixture];
+  // Visão Geral carregada (captura do desktop pedida na contra-auditoria de 27/11): consolidado FICTÍCIO marcado como tal,
+  // no estado real de hoje (nenhuma venda). Exige a mesma sessão do painel que o passe do chat.
+  if (/(^|\/)api\/owner\/command-center$/.test(pathname)) {
+    if (!panelState.sessionValid || body?.sessionToken !== 'e3-fixture-session') return [401, { error: 'unauthorized' }];
+    return [200, { ok: true, snapshot: commandCenterFixture(), sales: null, servedAt: new Date().toISOString() }];
+  }
   if (/(^|\/)api\/_auth_diagnostic$/.test(pathname)) return [200, { secretValid: true, locked: false, sessionRoundtrip: true, bootstrapOk: true }];
   if (/(^|\/)api\/auth\/turnstile-config$/.test(pathname)) return [200, { enabled: false, sitekey: null, action: 'zpc_owner_login' }];
   if (/(^|\/)api\/pin\/logout$/.test(pathname)) { panelState.sessionValid = false; return [200, { ok: true }]; }
@@ -117,6 +138,9 @@ T.layout_reference_and_sizes = async () => {
     const inner = await checkLayout(page, `${w}x${h} ${theme}`);
     assert(inner.logScroll, `${w}x${h}: histórico longo rola dentro da lista`);
     assert.equal(await frame(page).locator('html').getAttribute('data-theme'), theme, 'chat segue o tema do painel');
+    // Visão Geral CARREGADA ao lado do chat (não "Central indisponível").
+    await page.getByText('Vendas hoje').first().waitFor({ state: 'visible', timeout: 15000 });
+    assert.equal(await page.getByText('Central indisponível').count(), 0, `${w}x${h}: Visão Geral carregada`);
     await page.screenshot({ path: `${out}/layout-${w}x${h}-${theme}.png` });
     await context.close();
   }
