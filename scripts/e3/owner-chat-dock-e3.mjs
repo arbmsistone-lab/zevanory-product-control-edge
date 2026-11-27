@@ -23,11 +23,12 @@ const CHAT = 'https://zevanory.api.br';
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 let currentH = null;
 let panelBase = PANEL;
-const panelState = { sessionValid: true, sessionExp: Date.now() + 8 * 3600e3, tickets: 0 };
+const panelState = { sessionValid: true, sessionExp: Date.now() + 8 * 3600e3, tickets: 0, jti: crypto.randomUUID(), issued: [] };
 function mint() {
   const ts = String(Date.now()), nonce = b64u(crypto.randomBytes(32)), exp = String(panelState.sessionExp);
-  const sig = b64u(crypto.createHmac('sha256', BRIDGE_KEY).update(['zpc-owner-chat-v1', 'session', ts, nonce, exp].join('\n')).digest());
-  return { ts, nonce, exp, sig };
+  const sid = b64u(crypto.createHash('sha256').update('zpc-owner-chat-sid:' + panelState.jti).digest());
+  const sig = b64u(crypto.createHmac('sha256', BRIDGE_KEY).update(['zpc-owner-chat-v1', 'session', ts, nonce, exp, sid].join('\n')).digest());
+  const t = { ts, nonce, exp, sid, sig }; panelState.issued.push(t); return t;
 }
 const fixture = JSON.parse(fs.readFileSync(new URL('./owner-chat-dock-fixture.json', import.meta.url), 'utf8'));
 const panelApi = (pathname, body) => {
@@ -38,7 +39,7 @@ const panelApi = (pathname, body) => {
   if (/(^|\/)api\/admin\/bootstrap$/.test(pathname)) return [200, fixture];
   if (/(^|\/)api\/_auth_diagnostic$/.test(pathname)) return [200, { secretValid: true, locked: false, sessionRoundtrip: true, bootstrapOk: true }];
   if (/(^|\/)api\/auth\/turnstile-config$/.test(pathname)) return [200, { enabled: false, sitekey: null, action: 'zpc_owner_login' }];
-  if (/(^|\/)api\/pin\/logout$/.test(pathname)) return [200, { ok: true }];
+  if (/(^|\/)api\/pin\/logout$/.test(pathname)) { panelState.sessionValid = false; return [200, { ok: true }]; }
   if (/\/global-trust\.json$/.test(pathname)) return [200, fixture.globalTrust];
   if (/^\/(control\/)?api\//.test(pathname)) return [404, { error: 'e3_not_mocked' }];
   return null;
@@ -58,7 +59,7 @@ const browser = await pw[browserName].launch({ proxy: { server: 'http://127.0.0.
 const mk = () => createHarness(PM, { bridgeKey: BRIDGE_KEY });
 const contexts = [];
 async function ctxFor(H, { viewport = { width: 1920, height: 1080 }, theme = 'dark', mobile = false, clock = false } = {}) {
-  currentH = H; panelState.sessionValid = true; panelState.sessionExp = Date.now() + 8 * 3600e3;
+  currentH = H; panelState.sessionValid = true; panelState.sessionExp = Date.now() + 8 * 3600e3; panelState.jti = crypto.randomUUID(); panelState.issued = [];
   const opts = { viewport, ignoreHTTPSErrors: true };
   if (mobile && browserName !== 'firefox') Object.assign(opts, { isMobile: true, hasTouch: true });
   const context = await browser.newContext(opts); contexts.push(context); context.setDefaultTimeout(15000);
@@ -129,7 +130,9 @@ T.layout_narrow_and_phone = async () => {
     await checkLayout(page, `${w}x${h} ${theme}`);
     if (w <= 900) {
       await frame(page).locator('#q').fill('rascunho no celular');
+      await page.screenshot({ path: `${out}/layout-${w}x${h}-${theme}-chat-aberto.png` });
       await page.locator('.areaSelectWrap select').selectOption('overview'); await page.waitForTimeout(300);
+      await page.screenshot({ path: `${out}/layout-${w}x${h}-${theme}-outra-area.png` });
       assert(await page.locator('main.shell').isVisible(), `${w}: outra área volta a aparecer`);
       await page.locator('.areaSelectWrap select').selectOption('owner-chat'); await page.waitForTimeout(300);
       assert.equal(await frame(page).locator('#q').inputValue(), 'rascunho no celular', `${w}: texto preservado ao trocar de área`);
@@ -176,7 +179,7 @@ T.renewal_rotates_session = async () => {
   const before = panelState.tickets;
   await page.clock.runFor(121_000);
   const ok = await waitUntil(() => { const k = H.sessionKeys(); return k.length === 1 && k[0] !== first[0]; }, 20000);
-  assert(ok, 'renovação: sessão nova e a anterior revogada ' + JSON.stringify({ tickets: panelState.tickets - before, keys: H.sessionKeys().length, log: H.log.slice(-4) }));
+  assert(ok, 'renovação: sessão nova e a anterior revogada ' + JSON.stringify({ tickets: panelState.tickets - before, keys: H.sessionKeys().length, renewals: H.log.filter((x) => x.path === '/api/admin/owner-chat/panel-session') }));
 };
 T.panel_logout_revokes_now = async () => {
   const H = await mk(); const { page } = await ctxFor(H);
@@ -186,6 +189,16 @@ T.panel_logout_revokes_now = async () => {
   assert(await waitUntil(() => H.sessionKeys().length === 0, 6000), 'sessão do chat revogada no servidor ao sair do painel');
   const r = await H.fetch(new Request(CHAT + '/api/admin/owner-chat/feed', { headers: { cookie: 'zv_owner_chat=' + cookie.value } }));
   assert.equal(r.status, 401, 'cookie antigo não lê mais nada');
+};
+T.ticket_issued_before_logout_cannot_restore = async () => {
+  const H = await mk(); const { page } = await ctxFor(H);
+  await openPanel(page, H);
+  const early = mint(); // passe da MESMA sessão do painel, emitido antes da saída e ainda não usado
+  await page.locator('.zpcHeaderActions button', { hasText: 'Sair' }).click();
+  assert(await waitUntil(() => H.sessionKeys().length === 0, 6000), 'sessão do chat revogada na saída');
+  const r = await H.fetch(new Request(CHAT + '/api/admin/owner-chat/panel-session', { method: 'POST', body: JSON.stringify(early), headers: { origin: CHAT, 'x-owner-chat': '1', 'content-type': 'application/json' } }));
+  assert.equal(r.status, 401, 'passe anterior à saída recusado'); assert.deepEqual(await r.json(), { error: 'panel_session_ended' });
+  assert.equal(H.sessionKeys().length, 0, 'nenhuma sessão reaberta');
 };
 T.panel_session_expired_loses_access_within_5min = async () => {
   const H = await mk(); const { page } = await ctxFor(H);

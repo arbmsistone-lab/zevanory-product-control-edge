@@ -1467,7 +1467,7 @@ export default {
       const noStore = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' };
       if (!token || !(await verifyEdgeSession(token))) return Response.json({ error: 'unauthorized' }, { status: 401, headers: noStore });
       const payload = decodeEdgeSessionPayload(token.split('.')[1] || '');
-      const ticket = payload ? await mintOwnerChatTicket(String((env as any).OWNER_OAUTH_BRIDGE_SECRET || ''), payload.exp) : null;
+      const ticket = payload ? await mintOwnerChatTicket(String((env as any).OWNER_OAUTH_BRIDGE_SECRET || ''), payload.exp, payload.jti) : null;
       if (!ticket) return Response.json({ error: 'owner_chat_bridge_not_configured' }, { status: 503, headers: noStore });
       return Response.json({ ticket }, { headers: noStore });
     }

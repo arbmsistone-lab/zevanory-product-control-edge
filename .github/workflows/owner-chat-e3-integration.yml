@@ -16,7 +16,7 @@ on:
       public_mirror_sha:
         description: 'SHA exato do Worker candidato (zevanory-public-mirror, PR #1106)'
         required: true
-        default: 'ff8d3fa8c5e772b425fcd1d2aacd02650681efbe'
+        default: '10364b01eef558c7c519a9d5b12c9d4090cc5eba'
 
 permissions:
   contents: read
@@ -42,7 +42,7 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
     env:
-      PM_SHA: ${{ github.event.inputs.public_mirror_sha || 'ff8d3fa8c5e772b425fcd1d2aacd02650681efbe' }}
+      PM_SHA: ${{ github.event.inputs.public_mirror_sha || '10364b01eef558c7c519a9d5b12c9d4090cc5eba' }}
     steps:
       - name: Checkout panel candidate
         uses: actions/checkout@v4
@@ -127,7 +127,7 @@ jobs:
         run: |
           set -eo pipefail
           node scripts/e3/owner-chat-dock-e3.mjs | tee /tmp/dock.txt
-          grep -qx "OWNER_CHAT_DOCK_E3_$(echo ${{ matrix.browser }} | tr a-z A-Z)=PASS positives=10/10" /tmp/dock.txt
+          grep -qx "OWNER_CHAT_DOCK_E3_$(echo ${{ matrix.browser }} | tr a-z A-Z)=PASS positives=11/11" /tmp/dock.txt
           grep -qx "DETECTED panel:no-end-session -> panel_logout_revokes_now" /tmp/dock.txt
       - name: Upload evidence
         if: always()
